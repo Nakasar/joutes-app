@@ -2,21 +2,23 @@
 
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
-import { 
-  searchUsersByUsername, 
-  getUserByUsernameAndDiscriminator, 
-  updateUserProfileVisibility, 
-  getUserByTagOrId,
-  updateUserProfileInfo,
-  updateUserProfileImage
-} from "@/lib/db/users.ts";
+import { searchUsersByUsername, getUserByUsernameAndDiscriminator } from "@/lib/db/users.ts";
 import { User } from "@/lib/types/User.ts";
-import { 
-  updateProfileVisibilitySchema, 
-  updateProfileInfoSchema,
-  updateProfileImageSchema
-} from "@/lib/schemas/user.schema.ts";
-import { put } from "@vercel/blob";
+
+/**
+ * Ce qui reste ici : deux recherches de compte, derrière une session.
+ *
+ * La visibilité, la description, l'avatar et la lecture d'un profil public sont
+ * parties — la vitrine les écrit par `account/showcase-actions.ts`, l'avatar
+ * passe par `/api/users/me/upload`, et la page de profil lit par
+ * `users/[userTagOrId]/profile-data.ts`. Deux de ces actions avaient de vrais
+ * défauts que le déplacement corrige : `getPublicUserProfileAction` renvoyait le
+ * document `user` entier — e-mail, identifiant Discord, amis, position exacte —
+ * à une page publique, et son découpage de tag concaténé gardait sur
+ * `substring(-4)`, qui rend la chaîne entière ; `updateProfileImageAction`
+ * déposait sous le seul nom du fichier, si bien que deux comptes déposant
+ * chacun un `avatar.png` entraient en collision.
+ */
 
 export async function searchUsersAction(
   searchTerm: string
@@ -65,202 +67,6 @@ export async function getUserByUsernameAction(
     return { success: true, user };
   } catch (error) {
     console.error("Erreur lors de la récupération de l'utilisateur:", error);
-    return { success: false, error: "Erreur serveur" };
-  }
-}
-
-/**
- * Met à jour la visibilité du profil de l'utilisateur connecté
- */
-export async function updateProfileVisibilityAction(
-  isPublicProfile: boolean
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return { success: false, error: "Non authentifié" };
-    }
-
-    // Validation avec Zod
-    const validation = updateProfileVisibilitySchema.safeParse({ isPublicProfile });
-    if (!validation.success) {
-      return { success: false, error: "Données invalides" };
-    }
-
-    const updated = await updateUserProfileVisibility(session.user.id, isPublicProfile);
-
-    if (!updated) {
-      return { success: false, error: "Erreur lors de la mise à jour" };
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Erreur lors de la mise à jour de la visibilité du profil:", error);
-    return { success: false, error: "Erreur serveur" };
-  }
-}
-
-/**
- * Récupère le profil public d'un utilisateur (accessible sans authentification)
- */
-export async function getPublicUserProfileAction(
-  userTagOrId: string
-): Promise<{ success: boolean; error?: string; user?: User; isPublic?: boolean }> {
-  try {
-    let formatted = userTagOrId.trim();
-    // Un identifiant se résout tel quel. Le découpage ci-dessous — qui recolle
-    // le « # » d'un tag concaténé, `Nakasar6666` devenant `Nakasar#6666` — en
-    // ferait sinon un tag imaginaire (`507f1f77bcf86cd7994390#9011`) qui ne
-    // désigne personne : les liens de profil par identifiant tombaient tous sur
-    // « utilisateur non trouvé ».
-    const isObjectId = /^[0-9a-f]{24}$/i.test(formatted);
-    if (!isObjectId && !userTagOrId.includes("#") && isNaN(+userTagOrId.substring(-4))) {
-      const lastFour = userTagOrId.slice(-4);
-      const namePart = userTagOrId.slice(0, -4);
-      formatted = `${namePart}#${lastFour}`;
-    }
-    const user = await getUserByTagOrId(formatted);
-
-    if (!user) {
-      return { success: false, error: "Utilisateur non trouvé" };
-    }
-
-    // Retourner l'utilisateur avec indication de visibilité
-    return { 
-      success: true, 
-      user,
-      isPublic: user.isPublicProfile || false
-    };
-  } catch (error) {
-    console.error("Erreur lors de la récupération du profil public:", error);
-    return { success: false, error: "Erreur serveur" };
-  }
-}
-
-/**
- * Met à jour les informations publiques du profil de l'utilisateur connecté
- */
-export async function updateProfileInfoAction(
-  data: {
-    description?: string;
-    website?: string;
-    socialLinks?: string[];
-  }
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return { success: false, error: "Non authentifié" };
-    }
-
-    // Validation avec Zod
-    const validation = updateProfileInfoSchema.safeParse(data);
-    if (!validation.success) {
-      return { 
-        success: false, 
-        error: validation.error.issues[0]?.message || "Données invalides" 
-      };
-    }
-
-    const updated = await updateUserProfileInfo(session.user.id, validation.data);
-
-    if (!updated) {
-      return { success: false, error: "Erreur lors de la mise à jour" };
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Erreur lors de la mise à jour des informations du profil:", error);
-    return { success: false, error: "Erreur serveur" };
-  }
-}
-
-/**
- * Met à jour l'image de profil de l'utilisateur connecté
- */
-export async function updateProfileImageAction(
-  formData: FormData
-): Promise<{ success: boolean; error?: string; imageUrl?: string }> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return { success: false, error: "Non authentifié" };
-    }
-
-    const file = formData.get("file") as File | null;
-
-    if (!file) {
-      return { success: false, error: "Aucun fichier fourni" };
-    }
-
-    // Vérifier le type de fichier
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      return {
-        success: false,
-        error: "Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou GIF.",
-      };
-    }
-
-    // Limiter la taille du fichier à 1 MB
-    const maxSize = 1 * 1024 * 1024; // 1 MB
-    if (file.size > maxSize) {
-      return {
-        success: false,
-        error: "Le fichier est trop volumineux (max 1 MB)",
-      };
-    }
-
-    // Upload vers Vercel Blob
-    const blob = await put(file.name, file, {
-      access: "public",
-    });
-
-    // Mettre à jour la base de données
-    const updated = await updateUserProfileImage(session.user.id, blob.url);
-
-    if (!updated) {
-      return { success: false, error: "Erreur lors de la mise à jour" };
-    }
-
-    return { success: true, imageUrl: blob.url };
-  } catch (error) {
-    console.error("Erreur lors de la mise à jour de l'image de profil:", error);
-    return { success: false, error: "Erreur serveur" };
-  }
-}
-
-/**
- * Supprime l'image de profil personnalisée de l'utilisateur connecté
- */
-export async function removeProfileImageAction(): Promise<{ success: boolean; error?: string }> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user?.id) {
-      return { success: false, error: "Non authentifié" };
-    }
-
-    const updated = await updateUserProfileImage(session.user.id, "");
-
-    if (!updated) {
-      return { success: false, error: "Erreur lors de la suppression" };
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Erreur lors de la suppression de l'image de profil:", error);
     return { success: false, error: "Erreur serveur" };
   }
 }

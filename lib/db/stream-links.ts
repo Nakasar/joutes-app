@@ -251,3 +251,35 @@ export async function purgeStreamTarget(target: StreamTarget): Promise<number> {
 
   return result.modifiedCount;
 }
+
+/**
+ * Les directs en cours parmi une liste de comptes.
+ *
+ * Le registre en a besoin par lot : afficher la pastille « en direct » sur
+ * vingt fiches ne doit pas coûter vingt lectures.
+ */
+export async function listLiveStreamLinksForUsers(userIds: string[]): Promise<StreamLink[]> {
+  if (userIds.length === 0) {
+    return [];
+  }
+
+  const docs = await collection.find({ userId: { $in: userIds }, live: { $ne: null } }).toArray();
+
+  return docs.map(toStreamLink);
+}
+
+/**
+ * Ceux qui diffusent en ce moment **et l'annoncent sur leur profil**.
+ *
+ * La destination compte : une chaîne liée qui n'annonce que sur un lieu ne doit
+ * pas apparaître dans la bande des directs du registre. C'est la même règle que
+ * partout ailleurs — la liste des destinations *est* le réglage.
+ */
+export async function listLiveUserShowcases(limit: number): Promise<StreamLink[]> {
+  const docs = await collection
+    .find({ live: { $ne: null }, "targets.kind": "user" })
+    .limit(Math.max(1, Math.min(limit, 50)))
+    .toArray();
+
+  return docs.map(toStreamLink);
+}

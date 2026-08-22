@@ -2730,6 +2730,7 @@
       },
       "contents": {
         "title": "Was die Gruppe veröffentlicht",
+        "byMember": "von {name}",
         "count": "{shown} von {total}",
         "empty": "In dieser Kategorie nichts veröffentlicht.",
         "filter": {
@@ -4863,5 +4864,389 @@
     "seeBadge": "Meine Erfolge ansehen",
     "emptyTitle": "Diesen Monat keine Veranstaltungen",
     "emptyBody": "Selbst die Gespenster sind fort. Probier einen anderen Monat, oder richte selbst etwas aus."
+  },
+  "Users": {
+    "bottomNav": {
+      "label": "Navigation der Gemeinschaft",
+      "registry": "Gemeinschaft",
+      "profile": "Mein Profil",
+      "settings": "Einstellungen"
+    },
+    "registry": {
+      "metadata": {
+        "title": "Gemeinschaft",
+        "description": "Finde Spieler in deiner Nähe, die dieselben Spiele spielen, Karten verkaufen oder gerade live sind.",
+        "openGraphTitle": "Gemeinschaft - Joutes"
+      },
+      "title": "Gemeinschaft",
+      "empty": "Kein Profil passt dazu.",
+      "reset": "Filter zurücksetzen",
+      "loadMore": "{count} weitere Profile laden",
+      "shownOf": "{shown} von {total}",
+      "search": {
+        "label": "Nach einem Spieler suchen",
+        "placeholder": "Name, Tag, Ort…",
+        "clear": "Suche leeren"
+      },
+      "filters": {
+        "all": "Alle",
+        "nearCity": "Rund um {city}",
+        "sells": "Verkauft Karten",
+        "live": "Live",
+        "sorts": {
+          "active": "Neueste",
+          "followers": "Meistgefolgt",
+          "name": "Nach Name"
+        }
+      },
+      "live": {
+        "badge": "Live",
+        "title": "{count, plural, one {# Spieler ist gerade live} other {# Spieler sind gerade live}}"
+      },
+      "card": {
+        "private": "Privates Profil",
+        "live": "Live",
+        "seeProfile": "Profil ansehen",
+        "followers": "{count, plural, =0 {keine Abonnenten} one {# Abonnent} other {# Abonnenten}}",
+        "games": "{count, plural, one {# gefolgtes Spiel} other {# gefolgte Spiele}}"
+      },
+      "sidebar": {
+        "yourProfile": "Dein Profil",
+        "public": "Öffentlich",
+        "private": "Privat",
+        "completion": "Schaufenster zu {percent} % fertig",
+        "myShowcase": "Mein Schaufenster",
+        "settings": "Einstellungen",
+        "nearby": "Rund um {city}",
+        "leaderboard": "Erfolgs-Rangliste",
+        "points": "{points} P.",
+        "yourRank": "Du bist auf Platz {rank} mit {points} Punkten.",
+        "joinTitle": "Der Gemeinschaft beitreten",
+        "joinHint": "Baue dein Schaufenster, folge deinen Spielen und Orten, und finde die Spieler in deiner Nähe.",
+        "signIn": "Anmelden"
+      }
+    },
+    "profile": {
+      "metadata": {
+        "description": "Profil von {tag} auf Joutes: Decks, Beiträge, Erfolge und geteilte Listen.",
+        "openGraphTitle": "{tag} - Joutes"
+      },
+      "hero": {
+        "addBanner": "Banner hinzufügen"
+      },
+      "meta": {
+        "memberSince": "Mitglied seit {date}",
+        "followers": "{count, plural, =0 {keine Abonnenten} one {# Abonnent} other {# Abonnenten}}"
+      },
+      "actions": {
+        "follow": "Folgen",
+        "following": "Folge ich ✓",
+        "addFriend": "Als Freund hinzufügen",
+        "friendPending": "Anfrage gesendet",
+        "friend": "Freund ✓",
+        "friendRequested": "Freundschaftsanfrage gesendet.",
+        "proposeTrade": "Tausch vorschlagen",
+        "customise": "Anpassen",
+        "errors": {
+          "UNAUTHENTICATED": "Melde dich an, um das zu tun.",
+          "SELF": "Auf dem eigenen Profil geht das nicht.",
+          "NOT_FOUND": "Dieses Konto gibt es nicht mehr.",
+          "ALREADY": "Ist bereits erledigt.",
+          "FAILED": "Das hat nicht geklappt."
+        }
+      },
+      "tabs": {
+        "label": "Profilbereiche",
+        "showcase": "Schaufenster",
+        "decks": "Decks",
+        "publications": "Beiträge",
+        "achievements": "Erfolge",
+        "trade": "Wünsche & Verkäufe"
+      },
+      "live": {
+        "badge": "Live",
+        "untitled": "Läuft gerade",
+        "since": "begonnen {relative}",
+        "justNow": "gerade eben",
+        "open": "Stream öffnen",
+        "openOn": "Auf {platform} öffnen"
+      },
+      "about": {
+        "title": "Über mich"
+      },
+      "decks": {
+        "title": "Decks",
+        "count": "{count, plural, one {# öffentliches Deck} other {# öffentliche Decks}}",
+        "pinned": "Angeheftet",
+        "pin": "Dieses Deck anheften",
+        "unpin": "Deck lösen",
+        "errors": {
+          "UNAUTHENTICATED": "Melde dich an, um das zu tun.",
+          "SELF": "Auf dem eigenen Profil geht das nicht.",
+          "NOT_FOUND": "Dieses Deck ist nicht mehr öffentlich.",
+          "ALREADY": "Ist bereits erledigt.",
+          "FAILED": "Das Anheften hat nicht geklappt."
+        }
+      },
+      "publications": {
+        "title": "Beiträge",
+        "manage": "Meine Beiträge verwalten",
+        "count": "{shown} von {total}",
+        "emptyForFilter": "Davon gibt es noch nichts.",
+        "filters": {
+          "all": "Alles",
+          "video": "Videos",
+          "article": "Artikel",
+          "replay": "Replays"
+        },
+        "kinds": {
+          "video": "Video",
+          "article": "Artikel",
+          "replay": "Replay"
+        }
+      },
+      "achievements": {
+        "title": "Erfolge",
+        "points": "{points} Punkte",
+        "pointsShort": "{points} P.",
+        "progress": "{unlocked} / {total}",
+        "more": "{count, plural, one {+ # weiterer Erfolg} other {+ # weitere Erfolge}}"
+      },
+      "trade": {
+        "title": "Wünsche & Verkäufe",
+        "wishlists": "Wunschlisten",
+        "sellList": "Verkaufsliste",
+        "cards": "{count, plural, one {# Karte} other {# Karten}}",
+        "forSale": "{count, plural, one {# Karte zu verkaufen} other {# Karten zu verkaufen}}",
+        "seeSellList": "Verkaufsliste ansehen",
+        "match": "{count, plural, one {# ihrer Wünsche steht in deiner Verkaufsliste.} other {# ihrer Wünsche stehen in deiner Verkaufsliste.}}",
+        "proposeTrade": "Tausch vorschlagen"
+      },
+      "sidebar": {
+        "games": "Gefolgte Spiele",
+        "favourite": "Lieblingsspiel",
+        "lairs": "Gefolgte Orte",
+        "groups": "Spielgruppen",
+        "members": "{count, plural, one {# Mitglied} other {# Mitglieder}}",
+        "findMe": "{name} finden",
+        "followers": "{count, plural, =0 {Noch keine Abonnenten} one {# Abonnent} other {# Abonnenten}}"
+      },
+      "private": {
+        "badge": "Privates Profil",
+        "title": "Dieses Profil ist privat",
+        "makePublic": "Mein Profil öffentlich machen"
+      },
+      "onboarding": {
+        "title": "Dein Schaufenster ist zu {percent} % fertig",
+        "go": "Hingehen",
+        "subscribe": "Angebote ansehen",
+        "bannerLocked": "Erfordert ein Supporter-Abo.",
+        "steps": {
+          "username": "Wähle deinen Namen",
+          "identity": "Avatar und Beschreibung hinzufügen",
+          "banner": "Banner setzen",
+          "follows": "Deinen Spielen und Orten folgen",
+          "public": "Dein Profil öffentlich machen"
+        }
+      }
+    }
+  },
+  "Account": {
+    "title": "Mein Konto",
+    "subtitle": "Verwalte dein Profil und deine Einstellungen",
+    "tabs": {
+      "label": "Kontobereiche",
+      "profile": "Profil",
+      "showcase": "Mein Schaufenster",
+      "games": "Spiele & Orte",
+      "achievements": "Erfolge",
+      "notifications": "Benachrichtigungen",
+      "subscription": "Abo"
+    },
+    "profile": {
+      "identity": {
+        "title": "Profilangaben",
+        "description": "Deine persönlichen und öffentlichen Angaben",
+        "email": "E-Mail-Adresse",
+        "emailLocked": "Die E-Mail-Adresse lässt sich nicht ändern"
+      },
+      "prices": {
+        "title": "Kartenpreise",
+        "description": "Woher die Preise auf deinen Karten, deiner Sammlung und deinen Tauschen kommen"
+      },
+      "quiz": {
+        "title": "Meine Quiz-Ergebnisse",
+        "description": "Das Ergebnis deines letzten Versuchs, Abschnitt für Abschnitt"
+      },
+      "links": {
+        "security": "Sicherheit",
+        "showcase": "Mein Schaufenster",
+        "integrations": "Integrationen",
+        "contents": "Meine Beiträge"
+      }
+    },
+    "games": {
+      "games": {
+        "title": "Spiele, denen ich folge",
+        "description": "Verwalte die Spiele, deren Veranstaltungen du verfolgen willst, und wähle die, die dir ins Menü folgen"
+      },
+      "lairs": {
+        "title": "Orte, denen ich folge",
+        "description": "Verwalte die Orte, deren Veranstaltungen du verfolgen willst"
+      }
+    },
+    "achievements": {
+      "title": "Meine Erfolge",
+      "description": "Verfolge deinen Fortschritt und schalte besondere Belohnungen frei.",
+      "progressTitle": "Gesamtfortschritt",
+      "progressDescription": "Du hast {unlocked} von {total} Erfolgen freigeschaltet ({points} Punkte).",
+      "percentComplete": "{percent} % abgeschlossen",
+      "unlocked": "Freigeschaltet",
+      "locked": "Gesperrt",
+      "points": "{points} P."
+    },
+    "notifications": {
+      "title": "Benachrichtigungen",
+      "description": "Verwalte deine Kommunikationseinstellungen.",
+      "channels": {
+        "email": "E-Mail",
+        "app": "Joutes-App"
+      },
+      "weekly": {
+        "title": "Wöchentliche Zusammenfassungen",
+        "description": "Erhalte jeden Montag eine Übersicht der Veranstaltungen, die dich interessieren könnten.",
+        "emailHint": "Erhalte deine Übersicht per E-Mail.",
+        "appHint": "Erhalte deine Übersicht als Push-Benachrichtigung in der App."
+      },
+      "push": {
+        "title": "Push-Benachrichtigungen",
+        "description": "Joutes-Benachrichtigungen — Zuordnungen, Tausche, Freundschaftsanfragen, Ankündigungen — erreichen auch die Telefone, auf denen du sie erlaubt hast.",
+        "switchHint": "Schalte das aus, um nichts mehr auf deinen Geräten zu erhalten, ohne sie einzeln entfernen zu müssen.",
+        "devices": "Registrierte Geräte"
+      },
+      "platform": {
+        "title": "Joutes-Neuigkeiten",
+        "description": "Bleib auf dem Laufenden, was es auf der Plattform Neues gibt.",
+        "emailHint": "Erhalte unsere Neuigkeiten per E-Mail."
+      }
+    },
+    "showcase": {
+      "title": "Mein Schaufenster",
+      "description": "Was ein Besucher von dir sieht, Block für Block.",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "saved": "Schaufenster gespeichert.",
+      "unsaved": "Nicht gespeicherte Änderungen",
+      "visibility": {
+        "title": "Öffentliches Profil",
+        "publicHint": "Dein Schaufenster ist offen: jeder kann es sehen und dich im Verzeichnis finden.",
+        "privateHint": "Dein Profil ist privat. Sichtbar bleiben dein Name, deine Abzeichen und die Listen, die du öffentlich gemacht hast."
+      },
+      "identity": {
+        "title": "Identität",
+        "description": "Dein Avatar, dein Banner und was du über dich sagst.",
+        "avatarLabel": "Avatar",
+        "bannerLabel": "Banner",
+        "bannerHint": "2400 × 600 empfohlen",
+        "bannerLocked": "Das Banner erfordert ein Supporter-Abo.",
+        "getBadge": "Hol dir einen Ring um deinen Avatar und ein Abzeichen mit einem Abo",
+        "descriptionLabel": "Beschreibung",
+        "descriptionPlaceholder": "Die Spiele, die du spielst, wie du sie spielst, wo man dich findet…",
+        "showCity": "Meinen Ort zeigen",
+        "showCityHint": "Nur die Gemeinde erscheint: {city}. Nie deine genaue Position.",
+        "showCityNoCity": "Trage zuerst einen Ort im Tab Profil ein."
+      },
+      "sections": {
+        "title": "Blöcke des Schaufensters",
+        "description": "Ordne sie neu und schalte ab, was du nicht zeigen willst.",
+        "privateHint": "Dein Profil ist privat: diese Blöcke erscheinen nirgends, solange es das bleibt.",
+        "alwaysShown": "immer sichtbar",
+        "moveUp": "{section} nach oben",
+        "moveDown": "{section} nach unten",
+        "labels": {
+          "live": "Live-Status",
+          "about": "Über mich",
+          "decks": "Decks",
+          "publications": "Beiträge",
+          "achievements": "Erfolge",
+          "follows": "Gefolgte Spiele, Orte und Gruppen",
+          "trade": "Wünsche & Verkäufe"
+        }
+      },
+      "links": {
+        "title": "Links",
+        "description": "Höchstens zehn. Das Symbol folgt aus der Domain, du musst nichts wählen.",
+        "placeholder": "twitch.tv/dein-kanal",
+        "add": "Hinzufügen",
+        "remove": "Diesen Link entfernen",
+        "tooMany": "Du kannst nicht mehr als {max} Links hinzufügen."
+      },
+      "upload": {
+        "failed": "Das Hochladen ist fehlgeschlagen.",
+        "remove": "Bild entfernen"
+      },
+      "preview": {
+        "title": "So sieht es ein Fremder",
+        "privateNotice": "Privates Profil",
+        "sections": {
+          "live": "Live-Status",
+          "about": "Über mich",
+          "decks": "Decks",
+          "publications": "Beiträge",
+          "achievements": "Erfolge",
+          "follows": "Spiele, Orte und Gruppen",
+          "trade": "Wünsche & Verkäufe"
+        }
+      },
+      "errors": {
+        "UNAUTHENTICATED": "Melde dich an, um das zu tun.",
+        "INVALID": "Einige Felder sind nicht gültig.",
+        "NOT_FOUND": "Dieses Konto gibt es nicht mehr.",
+        "FAILED": "Das Speichern hat nicht geklappt."
+      }
+    },
+    "contents": {
+      "title": "Meine Beiträge",
+      "description": "Deine Videos, Artikel und Replays — auf deinem Schaufenster und auf denen deiner Gruppen, wenn sie öffentlich sind.",
+      "empty": "Du hast noch nichts veröffentlicht.",
+      "new": "Neuer Beitrag",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "deleted": "Beitrag gelöscht.",
+      "saved": "Beitrag gespeichert.",
+      "back": "Zurück zu meinen Beiträgen",
+      "visibility": {
+        "public": "Öffentlich",
+        "private": "Entwurf",
+        "makePublic": "Veröffentlichen",
+        "makePrivate": "Zurück zum Entwurf"
+      },
+      "kinds": {
+        "video": "Video",
+        "article": "Artikel",
+        "replay": "Replay"
+      },
+      "form": {
+        "kind": "Art",
+        "title": "Titel",
+        "summary": "Zusammenfassung",
+        "body": "Text des Artikels",
+        "bodyHint": "Markdown erlaubt.",
+        "url": "Adresse des Videos",
+        "thumbnail": "Vorschaubild",
+        "duration": "Dauer",
+        "durationPlaceholder": "12 Min.",
+        "save": "Speichern",
+        "cancel": "Abbrechen"
+      },
+      "errors": {
+        "UNAUTHENTICATED": "Melde dich an, um das zu tun.",
+        "INVALID": "Einige Felder sind nicht gültig.",
+        "NOT_FOUND": "Diesen Beitrag gibt es nicht mehr.",
+        "FORBIDDEN": "Dieser Beitrag ist nicht deiner.",
+        "LIMIT": "Du hast die Höchstzahl an Beiträgen erreicht.",
+        "FAILED": "Das Speichern hat nicht geklappt."
+      }
+    }
   }
 }

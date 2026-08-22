@@ -17,6 +17,7 @@ import { deleteLair } from "@/lib/db/lairs";
 import { deleteLeague } from "@/lib/db/leagues";
 import { deleteTournament } from "@/lib/db/tournaments";
 import { moderateUserDescription } from "@/lib/db/users";
+import { deleteUserContentAsModerator } from "@/lib/db/user-contents";
 
 /** Texte qui remplace la biographie d'un profil modéré. */
 export const MODERATED_BIO_TEXT = "Contenu modéré";
@@ -298,6 +299,26 @@ const HANDLERS: Record<ReportableContentType, ReportableContentHandler> = {
       };
     },
     moderate: (id) => deleteDeckAsModerator(id),
+  },
+  "user-content": {
+    preview: async (id) => {
+      const doc = await findByObjectId("userContents", id);
+      if (!doc) return MISSING_CONTENT;
+
+      return {
+        exists: true,
+        title: doc.title ?? "Publication",
+        // Le résumé quand il existe, le corps de l'article sinon : c'est le
+        // texte que quelqu'un a signalé, et c'est lui qu'il faut pouvoir lire
+        // sans quitter la page d'administration.
+        excerpt: excerpt(doc.summary ?? doc.body),
+        // L'adresse dépend du profil de l'auteur, dont on n'a ici que
+        // l'identifiant : la forme par identifiant est celle que la page sait
+        // aussi résoudre.
+        url: `/users/${doc.authorId}?tab=publications&article=${id}`,
+      };
+    },
+    moderate: (id) => deleteUserContentAsModerator(id),
   },
 };
 

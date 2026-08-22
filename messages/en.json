@@ -2033,6 +2033,7 @@
       },
       "contents": {
         "title": "What the group publishes",
+        "byMember": "by {name}",
         "count": "{shown} of {total}",
         "empty": "Nothing published in this category.",
         "filter": {
@@ -4863,5 +4864,389 @@
     "seeBadge": "See my achievements",
     "emptyTitle": "No events this month",
     "emptyBody": "Even the ghosts have left. Try another month, or host your own."
+  },
+  "Users": {
+    "bottomNav": {
+      "label": "Community navigation",
+      "registry": "Community",
+      "profile": "My profile",
+      "settings": "Settings"
+    },
+    "registry": {
+      "metadata": {
+        "title": "Community",
+        "description": "Find players near you, who play the same games, who sell cards or who are streaming right now.",
+        "openGraphTitle": "Community - Joutes"
+      },
+      "title": "Community",
+      "empty": "No profile matches.",
+      "reset": "Reset the filters",
+      "loadMore": "Load {count} more profiles",
+      "shownOf": "{shown} of {total}",
+      "search": {
+        "label": "Search for a player",
+        "placeholder": "Name, tag, town…",
+        "clear": "Clear the search"
+      },
+      "filters": {
+        "all": "All",
+        "nearCity": "Around {city}",
+        "sells": "Sells cards",
+        "live": "Live",
+        "sorts": {
+          "active": "Most recent",
+          "followers": "Most followed",
+          "name": "By name"
+        }
+      },
+      "live": {
+        "badge": "Live",
+        "title": "{count, plural, one {# player is streaming right now} other {# players are streaming right now}}"
+      },
+      "card": {
+        "private": "Private profile",
+        "live": "Live",
+        "seeProfile": "See the profile",
+        "followers": "{count, plural, =0 {no followers} one {# follower} other {# followers}}",
+        "games": "{count, plural, one {# game followed} other {# games followed}}"
+      },
+      "sidebar": {
+        "yourProfile": "Your profile",
+        "public": "Public",
+        "private": "Private",
+        "completion": "Showcase {percent}% ready",
+        "myShowcase": "My showcase",
+        "settings": "Settings",
+        "nearby": "Around {city}",
+        "leaderboard": "Achievement ranking",
+        "points": "{points} pts",
+        "yourRank": "You are #{rank} with {points} points.",
+        "joinTitle": "Join the community",
+        "joinHint": "Build your showcase, follow your games and venues, and find the players near you.",
+        "signIn": "Sign in"
+      }
+    },
+    "profile": {
+      "metadata": {
+        "description": "{tag} on Joutes: decks, publications, achievements and shared lists.",
+        "openGraphTitle": "{tag} - Joutes"
+      },
+      "hero": {
+        "addBanner": "Add a banner"
+      },
+      "meta": {
+        "memberSince": "member since {date}",
+        "followers": "{count, plural, =0 {no followers} one {# follower} other {# followers}}"
+      },
+      "actions": {
+        "follow": "Follow",
+        "following": "Following ✓",
+        "addFriend": "Add friend",
+        "friendPending": "Request sent",
+        "friend": "Friend ✓",
+        "friendRequested": "Friend request sent.",
+        "proposeTrade": "Propose a trade",
+        "customise": "Customise",
+        "errors": {
+          "UNAUTHENTICATED": "Sign in to do that.",
+          "SELF": "You cannot do that on your own profile.",
+          "NOT_FOUND": "This account no longer exists.",
+          "ALREADY": "Already done.",
+          "FAILED": "That did not work."
+        }
+      },
+      "tabs": {
+        "label": "Profile sections",
+        "showcase": "Showcase",
+        "decks": "Decks",
+        "publications": "Publications",
+        "achievements": "Achievements",
+        "trade": "Wishlists & sales"
+      },
+      "live": {
+        "badge": "Live",
+        "untitled": "Streaming now",
+        "since": "started {relative}",
+        "justNow": "just now",
+        "open": "Open the stream",
+        "openOn": "Open on {platform}"
+      },
+      "about": {
+        "title": "About"
+      },
+      "decks": {
+        "title": "Decks",
+        "count": "{count, plural, one {# public deck} other {# public decks}}",
+        "pinned": "Pinned",
+        "pin": "Pin this deck",
+        "unpin": "Unpin this deck",
+        "errors": {
+          "UNAUTHENTICATED": "Sign in to do that.",
+          "SELF": "You cannot do that on your own profile.",
+          "NOT_FOUND": "This deck is no longer public.",
+          "ALREADY": "Already done.",
+          "FAILED": "Pinning did not work."
+        }
+      },
+      "publications": {
+        "title": "Publications",
+        "manage": "Manage my publications",
+        "count": "{shown} of {total}",
+        "emptyForFilter": "Nothing of that kind yet.",
+        "filters": {
+          "all": "All",
+          "video": "Videos",
+          "article": "Articles",
+          "replay": "Replays"
+        },
+        "kinds": {
+          "video": "Video",
+          "article": "Article",
+          "replay": "Replay"
+        }
+      },
+      "achievements": {
+        "title": "Achievements",
+        "points": "{points} points",
+        "pointsShort": "{points} pts",
+        "progress": "{unlocked} / {total}",
+        "more": "{count, plural, one {+ # more achievement} other {+ # more achievements}}"
+      },
+      "trade": {
+        "title": "Wishlists & sales",
+        "wishlists": "Wishlists",
+        "sellList": "Sale list",
+        "cards": "{count, plural, one {# card} other {# cards}}",
+        "forSale": "{count, plural, one {# card for sale} other {# cards for sale}}",
+        "seeSellList": "See the sale list",
+        "match": "{count, plural, one {# of their wishes is in your sale list.} other {# of their wishes are in your sale list.}}",
+        "proposeTrade": "Propose a trade"
+      },
+      "sidebar": {
+        "games": "Followed games",
+        "favourite": "Favourite game",
+        "lairs": "Followed venues",
+        "groups": "Play groups",
+        "members": "{count, plural, one {# member} other {# members}}",
+        "findMe": "Find {name}",
+        "followers": "{count, plural, =0 {No followers yet} one {# follower} other {# followers}}"
+      },
+      "private": {
+        "badge": "Private profile",
+        "title": "This profile is private",
+        "makePublic": "Make my profile public"
+      },
+      "onboarding": {
+        "title": "Your showcase is {percent}% ready",
+        "go": "Go there",
+        "subscribe": "See the tiers",
+        "bannerLocked": "Requires a Supporter subscription.",
+        "steps": {
+          "username": "Choose your display name",
+          "identity": "Add an avatar and a description",
+          "banner": "Put up a banner",
+          "follows": "Follow your games and venues",
+          "public": "Make your profile public"
+        }
+      }
+    }
+  },
+  "Account": {
+    "title": "My account",
+    "subtitle": "Manage your profile and your preferences",
+    "tabs": {
+      "label": "Account sections",
+      "profile": "Profile",
+      "showcase": "My showcase",
+      "games": "Games & venues",
+      "achievements": "Achievements",
+      "notifications": "Notifications",
+      "subscription": "Subscription"
+    },
+    "profile": {
+      "identity": {
+        "title": "Profile information",
+        "description": "Your personal and public information",
+        "email": "Email address",
+        "emailLocked": "The email address cannot be changed"
+      },
+      "prices": {
+        "title": "Card prices",
+        "description": "Where the prices on your cards, your collection and your trades come from"
+      },
+      "quiz": {
+        "title": "My quiz scores",
+        "description": "The result of your last attempt, section by section"
+      },
+      "links": {
+        "security": "Security",
+        "showcase": "My showcase",
+        "integrations": "Integrations",
+        "contents": "My publications"
+      }
+    },
+    "games": {
+      "games": {
+        "title": "Games I follow",
+        "description": "Manage the games whose events you want to follow, and pick the ones that follow you into the menu"
+      },
+      "lairs": {
+        "title": "Venues I follow",
+        "description": "Manage the venues whose events you want to follow"
+      }
+    },
+    "achievements": {
+      "title": "My achievements",
+      "description": "Track your progress and unlock exclusive rewards.",
+      "progressTitle": "Overall progress",
+      "progressDescription": "You have unlocked {unlocked} of {total} achievements ({points} points).",
+      "percentComplete": "{percent}% complete",
+      "unlocked": "Unlocked",
+      "locked": "Locked",
+      "points": "{points} pts"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Manage your communication preferences.",
+      "channels": {
+        "email": "Email",
+        "app": "Joutes app"
+      },
+      "weekly": {
+        "title": "Weekly digests",
+        "description": "Get a Monday round-up of the events that might interest you.",
+        "emailHint": "Get your digest by email.",
+        "appHint": "Get your digest as a push notification in the app."
+      },
+      "push": {
+        "title": "Push notifications",
+        "description": "Joutes notifications — matches, trades, friend requests, announcements — also reach the phones where you allowed them.",
+        "switchHint": "Turn this off to stop receiving anything on your devices, without removing them one by one.",
+        "devices": "Registered devices"
+      },
+      "platform": {
+        "title": "Joutes news",
+        "description": "Keep up with what is new on the Joutes platform.",
+        "emailHint": "Get our news by email."
+      }
+    },
+    "showcase": {
+      "title": "My showcase",
+      "description": "What a visitor sees of you, block by block.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Showcase saved.",
+      "unsaved": "Unsaved changes",
+      "visibility": {
+        "title": "Public profile",
+        "publicHint": "Your showcase is open: anyone can see it and find you in the registry.",
+        "privateHint": "Your profile is private. Your display name, your badges and the lists you marked public stay visible."
+      },
+      "identity": {
+        "title": "Identity",
+        "description": "Your avatar, your banner and what you say about yourself.",
+        "avatarLabel": "Avatar",
+        "bannerLabel": "Banner",
+        "bannerHint": "2400 × 600 recommended",
+        "bannerLocked": "The banner requires a Supporter subscription.",
+        "getBadge": "Add a ring to your avatar and a badge by starting a subscription",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "The games you play, how you play them, where to find you…",
+        "showCity": "Show my town",
+        "showCityHint": "Only the town appears: {city}. Never your exact position.",
+        "showCityNoCity": "Set a location in the Profile tab first."
+      },
+      "sections": {
+        "title": "Showcase blocks",
+        "description": "Reorder them, and switch off what you would rather not show.",
+        "privateHint": "Your profile is private: these blocks appear nowhere while it stays that way.",
+        "alwaysShown": "always shown",
+        "moveUp": "Move {section} up",
+        "moveDown": "Move {section} down",
+        "labels": {
+          "live": "Live status",
+          "about": "About",
+          "decks": "Decks",
+          "publications": "Publications",
+          "achievements": "Achievements",
+          "follows": "Followed games, venues and groups",
+          "trade": "Wishlists & sales"
+        }
+      },
+      "links": {
+        "title": "Links",
+        "description": "Ten at most. The icon follows from the domain, there is nothing to choose.",
+        "placeholder": "twitch.tv/your-channel",
+        "add": "Add",
+        "remove": "Remove this link",
+        "tooMany": "You cannot add more than {max} links."
+      },
+      "upload": {
+        "failed": "The upload failed.",
+        "remove": "Remove the image"
+      },
+      "preview": {
+        "title": "Seen by a stranger",
+        "privateNotice": "Private profile",
+        "sections": {
+          "live": "Live status",
+          "about": "About",
+          "decks": "Decks",
+          "publications": "Publications",
+          "achievements": "Achievements",
+          "follows": "Games, venues and groups",
+          "trade": "Wishlists & sales"
+        }
+      },
+      "errors": {
+        "UNAUTHENTICATED": "Sign in to do that.",
+        "INVALID": "Some fields are not valid.",
+        "NOT_FOUND": "This account no longer exists.",
+        "FAILED": "Saving did not work."
+      }
+    },
+    "contents": {
+      "title": "My publications",
+      "description": "Your videos, articles and replays — on your showcase, and on your groups' showcases when they are public.",
+      "empty": "You have not published anything yet.",
+      "new": "New publication",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleted": "Publication deleted.",
+      "saved": "Publication saved.",
+      "back": "Back to my publications",
+      "visibility": {
+        "public": "Public",
+        "private": "Draft",
+        "makePublic": "Publish",
+        "makePrivate": "Back to draft"
+      },
+      "kinds": {
+        "video": "Video",
+        "article": "Article",
+        "replay": "Replay"
+      },
+      "form": {
+        "kind": "Kind",
+        "title": "Title",
+        "summary": "Summary",
+        "body": "Article text",
+        "bodyHint": "Markdown accepted.",
+        "url": "Video address",
+        "thumbnail": "Thumbnail",
+        "duration": "Duration",
+        "durationPlaceholder": "12 min",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "errors": {
+        "UNAUTHENTICATED": "Sign in to do that.",
+        "INVALID": "Some fields are not valid.",
+        "NOT_FOUND": "This publication no longer exists.",
+        "FORBIDDEN": "This publication is not yours.",
+        "LIMIT": "You have reached the maximum number of publications.",
+        "FAILED": "Saving did not work."
+      }
+    }
   }
 }

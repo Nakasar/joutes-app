@@ -116,7 +116,7 @@ function GamesCustomizeCorner({
   return (
     <DropdownMenuItem asChild>
       <Link
-        href="/account#jeux"
+        href="/account?tab=games"
         aria-label={customizeLabel}
         title={customizeLabel}
         className="flex w-full cursor-pointer items-center justify-between gap-2"
@@ -301,7 +301,7 @@ export default function Header() {
   // passe par /account, qui renvoie vers la connexion pour un visiteur.
   const hasFavorites = gamesSelection.source === "favorites";
   if (!hasFavorites) {
-    gamesMenuItems.push({ href: "/account#jeux", label: t('menu.CustomizeGames'), icon: Settings2 });
+    gamesMenuItems.push({ href: "/account?tab=games", label: t('menu.CustomizeGames'), icon: Settings2 });
   }
 
   const eventsMenuItems: { href: string; label: string; icon: LucideIcon }[] = [
@@ -734,7 +734,7 @@ export default function Header() {
                   <p className="text-xs font-medium text-muted-foreground">{t('menu.Jeux')}</p>
                   {hasFavorites && (
                     <Link
-                      href="/account#jeux"
+                      href="/account?tab=games"
                       onClick={() => setMobileMenuOpen(false)}
                       aria-label={t('menu.CustomizeGames')}
                       title={t('menu.CustomizeGames')}

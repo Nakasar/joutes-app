@@ -19,6 +19,7 @@ export const REPORTABLE_CONTENT_TYPES = [
   "sell-list",
   "play-group",
   "deck",
+  "user-content",
 ] as const;
 
 export type ReportableContentType = (typeof REPORTABLE_CONTENT_TYPES)[number];
@@ -38,6 +39,7 @@ export const REPORTABLE_CONTENT_LABELS: Record<ReportableContentType, string> = 
   "sell-list": "Liste de vente",
   "play-group": "Groupe de jeu",
   deck: "Deck",
+  "user-content": "Publication d'un joueur",
 };
 
 /**

@@ -100,7 +100,7 @@ export default function CardPriceDetails({
           ))}
           {/* `Link` de next-intl : le lien garde la langue de la page. */}
           {canChooseSource ? (
-            <Link href="/account#prices" className="text-[11px] text-muted-foreground hover:underline">
+            <Link href="/account?tab=profile#prices" className="text-[11px] text-muted-foreground hover:underline">
               {t("settings")}
             </Link>
           ) : null}

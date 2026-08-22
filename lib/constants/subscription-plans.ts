@@ -29,6 +29,14 @@
  * s'arrête. Le droit `sub:profile-border` dit « cet avatar a droit à un
  * contour », `tone` dit lequel.
  *
+ * La bannière de vitrine suit la même règle et le même palier. La conception
+ * l'avait placée sur Expert ; elle est ici sur Supporter parce que c'est ce que
+ * dit le paragraphe ci-dessus — la cosmétique est le premier palier, et
+ * personne qui paie davantage ne doit s'en trouver privé. La placer sur Expert
+ * l'aurait retirée aux Supporters **et** aux Pro, Pro n'incluant pas Expert :
+ * l'inverse de ce qu'on voulait. Si le produit tranche autrement, c'est une
+ * ligne de cette table, et ce paragraphe à réécrire avec.
+ *
  * **`permissions` est l'autre porte, et elle est volontairement dans l'espace de
  * noms d'à côté.** Un droit `sub:` ne s'accorde qu'en donnant le palier entier ;
  * une permission, elle, se pose aussi à la main sur un compte
@@ -61,7 +69,7 @@ export const SUBSCRIPTION_PLANS = {
     // le test `subscription-plans.test.ts` le vérifie, faute de pouvoir le
     // typer sans que la table ne se référence circulairement.
     includes: [],
-    entitlements: ["sub:profile-badge", "sub:profile-border"],
+    entitlements: ["sub:profile-badge", "sub:profile-border", "sub:profile-banner"],
     permissions: [],
     tone: "silver",
   },
