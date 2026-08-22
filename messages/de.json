@@ -4994,5 +4994,212 @@
         }
       }
     }
+  },
+  "Account": {
+    "title": "Mein Konto",
+    "subtitle": "Verwalte dein Profil und deine Einstellungen",
+    "tabs": {
+      "label": "Kontobereiche",
+      "profile": "Profil",
+      "showcase": "Mein Schaufenster",
+      "games": "Spiele & Orte",
+      "achievements": "Erfolge",
+      "notifications": "Benachrichtigungen",
+      "subscription": "Abo"
+    },
+    "profile": {
+      "identity": {
+        "title": "Profilangaben",
+        "description": "Deine persönlichen und öffentlichen Angaben",
+        "email": "E-Mail-Adresse",
+        "emailLocked": "Die E-Mail-Adresse lässt sich nicht ändern"
+      },
+      "publicInfo": {
+        "title": "Öffentliche Angaben",
+        "description": "Diese Angaben erscheinen auf deinem öffentlichen Profil"
+      },
+      "prices": {
+        "title": "Kartenpreise",
+        "description": "Woher die Preise auf deinen Karten, deiner Sammlung und deinen Tauschen kommen"
+      },
+      "quiz": {
+        "title": "Meine Quiz-Ergebnisse",
+        "description": "Das Ergebnis deines letzten Versuchs, Abschnitt für Abschnitt"
+      },
+      "links": {
+        "security": "Sicherheit",
+        "integrations": "Integrationen",
+        "contents": "Meine Beiträge"
+      }
+    },
+    "games": {
+      "games": {
+        "title": "Spiele, denen ich folge",
+        "description": "Verwalte die Spiele, deren Veranstaltungen du verfolgen willst, und wähle die, die dir ins Menü folgen"
+      },
+      "lairs": {
+        "title": "Orte, denen ich folge",
+        "description": "Verwalte die Orte, deren Veranstaltungen du verfolgen willst"
+      }
+    },
+    "achievements": {
+      "title": "Meine Erfolge",
+      "description": "Verfolge deinen Fortschritt und schalte besondere Belohnungen frei.",
+      "progressTitle": "Gesamtfortschritt",
+      "progressDescription": "Du hast {unlocked} von {total} Erfolgen freigeschaltet ({points} Punkte).",
+      "percentComplete": "{percent} % abgeschlossen",
+      "unlocked": "Freigeschaltet",
+      "locked": "Gesperrt",
+      "points": "{points} P."
+    },
+    "notifications": {
+      "title": "Benachrichtigungen",
+      "description": "Verwalte deine Kommunikationseinstellungen.",
+      "channels": {
+        "email": "E-Mail",
+        "app": "Joutes-App"
+      },
+      "weekly": {
+        "title": "Wöchentliche Zusammenfassungen",
+        "description": "Erhalte jeden Montag eine Übersicht der Veranstaltungen, die dich interessieren könnten.",
+        "emailHint": "Erhalte deine Übersicht per E-Mail.",
+        "appHint": "Erhalte deine Übersicht als Push-Benachrichtigung in der App."
+      },
+      "push": {
+        "title": "Push-Benachrichtigungen",
+        "description": "Joutes-Benachrichtigungen — Zuordnungen, Tausche, Freundschaftsanfragen, Ankündigungen — erreichen auch die Telefone, auf denen du sie erlaubt hast.",
+        "switchHint": "Schalte das aus, um nichts mehr auf deinen Geräten zu erhalten, ohne sie einzeln entfernen zu müssen.",
+        "devices": "Registrierte Geräte"
+      },
+      "platform": {
+        "title": "Joutes-Neuigkeiten",
+        "description": "Bleib auf dem Laufenden, was es auf der Plattform Neues gibt.",
+        "emailHint": "Erhalte unsere Neuigkeiten per E-Mail."
+      }
+    },
+    "showcase": {
+      "title": "Mein Schaufenster",
+      "description": "Was ein Besucher von dir sieht, Block für Block.",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "saved": "Schaufenster gespeichert.",
+      "unsaved": "Nicht gespeicherte Änderungen",
+      "visibility": {
+        "title": "Öffentliches Profil",
+        "publicHint": "Dein Schaufenster ist offen: jeder kann es sehen und dich im Verzeichnis finden.",
+        "privateHint": "Dein Profil ist privat. Sichtbar bleiben dein Name, deine Abzeichen und die Listen, die du öffentlich gemacht hast."
+      },
+      "identity": {
+        "title": "Identität",
+        "description": "Dein Avatar, dein Banner und was du über dich sagst.",
+        "avatarLabel": "Avatar",
+        "bannerLabel": "Banner",
+        "bannerHint": "2400 × 600 empfohlen",
+        "bannerLocked": "Das Banner erfordert ein Supporter-Abo.",
+        "descriptionLabel": "Beschreibung",
+        "descriptionPlaceholder": "Die Spiele, die du spielst, wie du sie spielst, wo man dich findet…",
+        "showCity": "Meinen Ort zeigen",
+        "showCityHint": "Nur die Gemeinde erscheint: {city}. Nie deine genaue Position.",
+        "showCityNoCity": "Trage zuerst einen Ort im Tab Profil ein.",
+        "derived": "Der Ring um deinen Avatar und deine Abzeichen sind keine Einstellung: sie kommen von deinem Abo und von Status, die das Team vergibt.",
+        "derivedWithPlan": "Der Ring um deinen Avatar und dein {plan}-Abzeichen sind keine Einstellung: sie kommen von deinem Abo und von Status, die das Team vergibt."
+      },
+      "sections": {
+        "title": "Blöcke des Schaufensters",
+        "description": "Ordne sie neu und schalte ab, was du nicht zeigen willst.",
+        "privateHint": "Dein Profil ist privat: diese Blöcke erscheinen nirgends, solange es das bleibt.",
+        "alwaysShown": "immer sichtbar",
+        "moveUp": "{section} nach oben",
+        "moveDown": "{section} nach unten",
+        "labels": {
+          "live": "Live-Status",
+          "about": "Über mich",
+          "decks": "Decks",
+          "publications": "Beiträge",
+          "achievements": "Erfolge",
+          "follows": "Gefolgte Spiele, Orte und Gruppen",
+          "trade": "Wünsche & Verkäufe"
+        }
+      },
+      "links": {
+        "title": "Links",
+        "description": "Höchstens zehn. Das Symbol folgt aus der Domain, du musst nichts wählen.",
+        "placeholder": "twitch.tv/dein-kanal",
+        "add": "Hinzufügen",
+        "remove": "Diesen Link entfernen",
+        "tooMany": "Du kannst nicht mehr als {max} Links hinzufügen."
+      },
+      "upload": {
+        "failed": "Das Hochladen ist fehlgeschlagen.",
+        "remove": "Bild entfernen"
+      },
+      "preview": {
+        "title": "So sieht es ein Fremder",
+        "privateNotice": "Privates Profil",
+        "sections": {
+          "live": "Live-Status",
+          "about": "Über mich",
+          "decks": "Decks",
+          "publications": "Beiträge",
+          "achievements": "Erfolge",
+          "follows": "Spiele, Orte und Gruppen",
+          "trade": "Wünsche & Verkäufe"
+        }
+      },
+      "neverPublic": {
+        "title": "Nie öffentlich",
+        "description": "Deine E-Mail, deine genaue Position, deine Sammlung, deine privaten Gruppen, deine Sitzungen und deine privaten Listen erscheinen auf keinem Schaufenster, was diese Einstellungen auch sagen."
+      },
+      "errors": {
+        "UNAUTHENTICATED": "Melde dich an, um das zu tun.",
+        "INVALID": "Einige Felder sind nicht gültig.",
+        "NOT_FOUND": "Dieses Konto gibt es nicht mehr.",
+        "FAILED": "Das Speichern hat nicht geklappt."
+      }
+    },
+    "contents": {
+      "title": "Meine Beiträge",
+      "description": "Deine Videos, Artikel und Replays — auf deinem Schaufenster und auf denen deiner Gruppen, wenn sie öffentlich sind.",
+      "empty": "Du hast noch nichts veröffentlicht.",
+      "new": "Neuer Beitrag",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "deleted": "Beitrag gelöscht.",
+      "saved": "Beitrag gespeichert.",
+      "back": "Zurück zu meinen Beiträgen",
+      "visibility": {
+        "public": "Öffentlich",
+        "private": "Entwurf",
+        "makePublic": "Veröffentlichen",
+        "makePrivate": "Zurück zum Entwurf",
+        "hint": "Ein Entwurf erscheint nirgends: weder auf deinem Schaufenster noch auf denen deiner Gruppen."
+      },
+      "kinds": {
+        "video": "Video",
+        "article": "Artikel",
+        "replay": "Replay"
+      },
+      "form": {
+        "kind": "Art",
+        "title": "Titel",
+        "summary": "Zusammenfassung",
+        "body": "Text des Artikels",
+        "bodyHint": "Markdown erlaubt.",
+        "url": "Adresse des Videos",
+        "thumbnail": "Vorschaubild",
+        "duration": "Dauer",
+        "durationPlaceholder": "12 Min.",
+        "save": "Speichern",
+        "cancel": "Abbrechen"
+      },
+      "errors": {
+        "UNAUTHENTICATED": "Melde dich an, um das zu tun.",
+        "INVALID": "Einige Felder sind nicht gültig.",
+        "NOT_FOUND": "Diesen Beitrag gibt es nicht mehr.",
+        "FORBIDDEN": "Dieser Beitrag ist nicht deiner.",
+        "LIMIT": "Du hast die Höchstzahl an Beiträgen erreicht.",
+        "FAILED": "Das Speichern hat nicht geklappt."
+      }
+    }
   }
 }

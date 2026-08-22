@@ -4994,5 +4994,212 @@
         }
       }
     }
+  },
+  "Account": {
+    "title": "Mon compte",
+    "subtitle": "Gérez votre profil et vos préférences",
+    "tabs": {
+      "label": "Sections du compte",
+      "profile": "Profil",
+      "showcase": "Ma vitrine",
+      "games": "Jeux & lieux",
+      "achievements": "Succès",
+      "notifications": "Notifications",
+      "subscription": "Abonnement"
+    },
+    "profile": {
+      "identity": {
+        "title": "Informations du profil",
+        "description": "Vos informations personnelles et publiques",
+        "email": "Adresse e-mail",
+        "emailLocked": "L'e-mail ne peut pas être modifié"
+      },
+      "publicInfo": {
+        "title": "Informations publiques",
+        "description": "Ces informations seront visibles sur votre profil public"
+      },
+      "prices": {
+        "title": "Prix des cartes",
+        "description": "D'où viennent les prix affichés sur vos cartes, votre collection et vos échanges"
+      },
+      "quiz": {
+        "title": "Mes scores de quizz",
+        "description": "Le résultat de votre dernière validation, section par section"
+      },
+      "links": {
+        "security": "Sécurité",
+        "integrations": "Intégrations",
+        "contents": "Mes publications"
+      }
+    },
+    "games": {
+      "games": {
+        "title": "Mes jeux suivis",
+        "description": "Gérez les jeux dont vous souhaitez suivre les événements, et choisissez ceux qui vous suivent dans le menu"
+      },
+      "lairs": {
+        "title": "Mes lieux suivis",
+        "description": "Gérez les lieux dont vous souhaitez suivre les événements"
+      }
+    },
+    "achievements": {
+      "title": "Mes succès",
+      "description": "Suivez votre progression et débloquez des récompenses exclusives.",
+      "progressTitle": "Progression globale",
+      "progressDescription": "Vous avez débloqué {unlocked} sur {total} succès ({points} points).",
+      "percentComplete": "{percent} % complété",
+      "unlocked": "Débloqué",
+      "locked": "Verrouillé",
+      "points": "{points} pts"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Gérez vos préférences de communication.",
+      "channels": {
+        "email": "Courriels",
+        "app": "App Joutes"
+      },
+      "weekly": {
+        "title": "Récapitulatifs hebdomadaires",
+        "description": "Recevez chaque lundi un récapitulatif des évènements qui peuvent vous intéresser.",
+        "emailHint": "Recevez votre récapitulatif par courriel.",
+        "appHint": "Recevez votre récapitulatif par notification push sur l'application."
+      },
+      "push": {
+        "title": "Notifications push",
+        "description": "Les notifications Joutes — appariements, échanges, demandes d'ami, annonces — arrivent aussi sur les téléphones où vous les avez autorisées.",
+        "switchHint": "Décochez pour ne plus rien recevoir sur vos appareils, sans avoir à les retirer un par un.",
+        "devices": "Appareils enregistrés"
+      },
+      "platform": {
+        "title": "Actualités de Joutes",
+        "description": "Tenez-vous au courant des dernières nouveautés de la plateforme Joutes.",
+        "emailHint": "Recevez nos actualités par courriel."
+      }
+    },
+    "showcase": {
+      "title": "Ma vitrine",
+      "description": "Ce qu'un visiteur voit de vous, bloc par bloc.",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "saved": "Vitrine enregistrée.",
+      "unsaved": "Modifications non enregistrées",
+      "visibility": {
+        "title": "Profil public",
+        "publicHint": "Votre vitrine est ouverte : n'importe qui peut la voir et vous trouver dans le registre.",
+        "privateHint": "Votre profil est privé. Restent visibles votre pseudonyme, vos badges, et les listes que vous avez marquées publiques."
+      },
+      "identity": {
+        "title": "Identité",
+        "description": "Votre avatar, votre bannière et ce que vous dites de vous.",
+        "avatarLabel": "Avatar",
+        "bannerLabel": "Bannière",
+        "bannerHint": "2400 × 600 recommandé",
+        "bannerLocked": "La bannière demande un abonnement Supporter.",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Les jeux que vous pratiquez, votre façon de jouer, où vous trouver…",
+        "showCity": "Afficher ma ville",
+        "showCityHint": "Seule la commune apparaît : {city}. Jamais votre position exacte.",
+        "showCityNoCity": "Renseignez d'abord une localisation dans l'onglet Profil.",
+        "derived": "Le contour de votre avatar et vos badges ne se règlent pas : ils viennent de votre abonnement et des statuts posés par l'équipe.",
+        "derivedWithPlan": "Le contour de votre avatar et votre badge {plan} ne se règlent pas : ils viennent de votre abonnement et des statuts posés par l'équipe."
+      },
+      "sections": {
+        "title": "Blocs de la vitrine",
+        "description": "Réordonnez-les et coupez ce que vous ne voulez pas montrer.",
+        "privateHint": "Votre profil est privé : ces blocs n'apparaissent nulle part tant qu'il le reste.",
+        "alwaysShown": "toujours affiché",
+        "moveUp": "Monter {section}",
+        "moveDown": "Descendre {section}",
+        "labels": {
+          "live": "Statut en direct",
+          "about": "À propos",
+          "decks": "Decks",
+          "publications": "Publications",
+          "achievements": "Succès",
+          "follows": "Jeux, lieux et groupes suivis",
+          "trade": "Souhaits & ventes"
+        }
+      },
+      "links": {
+        "title": "Liens",
+        "description": "Dix au plus. L'icône se déduit du domaine, vous n'avez rien à choisir.",
+        "placeholder": "twitch.tv/votre-chaine",
+        "add": "Ajouter",
+        "remove": "Retirer ce lien",
+        "tooMany": "Vous ne pouvez pas ajouter plus de {max} liens."
+      },
+      "upload": {
+        "failed": "Le dépôt a échoué.",
+        "remove": "Retirer l'image"
+      },
+      "preview": {
+        "title": "Vu par un inconnu",
+        "privateNotice": "Profil privé",
+        "sections": {
+          "live": "Statut en direct",
+          "about": "À propos",
+          "decks": "Decks",
+          "publications": "Publications",
+          "achievements": "Succès",
+          "follows": "Jeux, lieux et groupes",
+          "trade": "Souhaits & ventes"
+        }
+      },
+      "neverPublic": {
+        "title": "Jamais public",
+        "description": "Votre e-mail, votre position exacte, votre collection, vos groupes privés, vos sessions et vos listes privées ne figurent sur aucune vitrine, quels que soient ces réglages."
+      },
+      "errors": {
+        "UNAUTHENTICATED": "Connectez-vous pour faire cela.",
+        "INVALID": "Certains champs ne sont pas valides.",
+        "NOT_FOUND": "Ce compte n'existe plus.",
+        "FAILED": "L'enregistrement a échoué."
+      }
+    },
+    "contents": {
+      "title": "Mes publications",
+      "description": "Vos vidéos, vos articles et vos replays — sur votre vitrine, et sur celles de vos groupes quand ils sont publics.",
+      "empty": "Vous n'avez encore rien publié.",
+      "new": "Nouvelle publication",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "deleted": "Publication supprimée.",
+      "saved": "Publication enregistrée.",
+      "back": "Retour à mes publications",
+      "visibility": {
+        "public": "Publique",
+        "private": "Brouillon",
+        "makePublic": "Publier",
+        "makePrivate": "Repasser en brouillon",
+        "hint": "Un brouillon n'apparaît nulle part : ni sur votre vitrine, ni sur celles de vos groupes."
+      },
+      "kinds": {
+        "video": "Vidéo",
+        "article": "Article",
+        "replay": "Replay"
+      },
+      "form": {
+        "kind": "Genre",
+        "title": "Titre",
+        "summary": "Résumé",
+        "body": "Texte de l'article",
+        "bodyHint": "Markdown accepté.",
+        "url": "Adresse de la vidéo",
+        "thumbnail": "Miniature",
+        "duration": "Durée",
+        "durationPlaceholder": "12 min",
+        "save": "Enregistrer",
+        "cancel": "Annuler"
+      },
+      "errors": {
+        "UNAUTHENTICATED": "Connectez-vous pour faire cela.",
+        "INVALID": "Certains champs ne sont pas valides.",
+        "NOT_FOUND": "Cette publication n'existe plus.",
+        "FORBIDDEN": "Cette publication n'est pas la vôtre.",
+        "LIMIT": "Vous avez atteint le nombre maximal de publications.",
+        "FAILED": "L'enregistrement a échoué."
+      }
+    }
   }
 }

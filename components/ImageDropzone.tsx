@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
 import { Loader2, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button.tsx";
@@ -12,30 +11,42 @@ import { cn } from "@/lib/utils.ts";
  * Le dépôt d'une image, avec son aperçu.
  *
  * Le composant ne connaît que l'URL : il dépose le fichier, rend l'URL
- * obtenue, et c'est au formulaire de décider quoi en faire. C'est ce qui lui
- * permet de servir aussi bien au logo qu'à la bannière, aux visuels d'annonces
- * et aux quatre photos de la galerie.
+ * obtenue, et c'est à l'écran de décider quoi en faire. C'est ce qui lui
+ * permet de servir aussi bien au logo d'un lieu qu'à sa bannière, aux visuels
+ * de ses annonces, aux photos de sa galerie — et à l'avatar comme à la
+ * bannière d'un compte.
+ *
+ * La route de dépôt et ses champs sont **passés**, pas devinés : le droit
+ * d'écrire une image se vérifie sur la ressource, et chaque ressource a la
+ * sienne (`/api/lairs/[lairId]/upload`, `/api/users/me/upload`). Les deux
+ * libellés d'erreur le sont aussi, pour que le composant n'ait pas à connaître
+ * l'espace de noms de traduction de l'écran qui l'emploie.
  */
 export default function ImageDropzone({
   value,
   onChange,
-  lairId,
+  uploadUrl,
+  extraFields,
   label,
   hint,
+  labels,
   disabled,
   className,
   previewClassName,
 }: {
   value?: string;
   onChange: (url: string | undefined) => void;
-  lairId: string;
+  /** La route qui reçoit le fichier, et qui vérifie le droit d'écrire ici. */
+  uploadUrl: string;
+  /** Champs de formulaire supplémentaires — « quelle image » pour un compte. */
+  extraFields?: Record<string, string>;
   label: string;
   hint?: string;
+  labels: { failed: string; remove: string };
   disabled?: boolean;
   className?: string;
   previewClassName?: string;
 }) {
-  const t = useTranslations("Lairs.manage.customization.upload");
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,18 +58,21 @@ export default function ImageDropzone({
     try {
       const body = new FormData();
       body.append("file", file);
+      for (const [key, fieldValue] of Object.entries(extraFields ?? {})) {
+        body.append(key, fieldValue);
+      }
 
-      const response = await fetch(`/api/lairs/${lairId}/upload`, { method: "POST", body });
+      const response = await fetch(uploadUrl, { method: "POST", body });
       const payload = await response.json();
 
       if (!response.ok) {
-        setError(payload.error ?? t("failed"));
+        setError(payload.error ?? labels.failed);
         return;
       }
 
       onChange(payload.url);
     } catch {
-      setError(t("failed"));
+      setError(labels.failed);
     } finally {
       setIsUploading(false);
     }
@@ -81,7 +95,7 @@ export default function ImageDropzone({
                 type="button"
                 size="icon"
                 variant="secondary"
-                aria-label={t("remove")}
+                aria-label={labels.remove}
                 className="absolute top-1.5 right-1.5 size-7"
                 onClick={() => onChange(undefined)}
               >

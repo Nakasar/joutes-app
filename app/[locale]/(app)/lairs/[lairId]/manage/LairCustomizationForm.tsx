@@ -24,7 +24,7 @@ import { readLairSections, type LairSection } from "@/lib/lairs/sections.ts";
 import { MAX_OPENING_RANGES_PER_DAY, rangesOfDay } from "@/lib/lairs/opening-hours.ts";
 import type { Lair, LairLink, LairOrganizer } from "@/lib/types/Lair";
 
-import ImageDropzone from "./ImageDropzone.tsx";
+import ImageDropzone from "@/components/ImageDropzone.tsx";
 import LairSectionsField from "./LairSectionsField.tsx";
 import {
   updateLairCustomization,
@@ -139,6 +139,10 @@ export default function LairCustomizationForm({
   upcomingEvents: { id: string; name: string; startDateTime: string }[];
 }) {
   const t = useTranslations("Lairs.manage.customization");
+  // Les deux libellés que le dépôt d'image affiche lui-même : il ne connaît
+  // pas l'espace de noms de l'écran qui l'emploie.
+  const tUpload = useTranslations("Lairs.manage.customization.upload");
+  const uploadLabels = { failed: tUpload("failed"), remove: tUpload("remove") };
   const [isPending, startTransition] = useTransition();
   const [state, setState] = useState<FormState>(() => initialState(lair));
   const [issues, setIssues] = useState<Record<string, string>>({});
@@ -247,7 +251,8 @@ export default function LairCustomizationForm({
 
         <div className="flex flex-wrap items-start gap-4">
           <ImageDropzone
-            lairId={lair.id}
+            uploadUrl={`/api/lairs/${lair.id}/upload`}
+            labels={uploadLabels}
             value={state.logo}
             onChange={(url) => set("logo", url)}
             label={t("identity.logoLabel")}
@@ -618,7 +623,8 @@ export default function LairCustomizationForm({
             {Array.from({ length: MAX_PHOTOS }, (_, index) => (
               <ImageDropzone
                 key={index}
-                lairId={lair.id}
+                uploadUrl={`/api/lairs/${lair.id}/upload`}
+            labels={uploadLabels}
                 value={state.photos[index]}
                 label={t("about.photoLabel", { index: index + 1 })}
                 previewClassName="h-24"
