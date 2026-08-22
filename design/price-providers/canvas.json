@@ -1,0 +1,34 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Fiche carte — le bloc prix", "x": 0, "y": 0, "w": 1240, "h": 700 },
+    { "file": "Variantes.dc.html", "title": "Variantes écartées", "x": 1360, "y": 0, "w": 1240, "h": 620 },
+    { "file": "Compte.dc.html", "title": "Compte — source des prix", "x": 0, "y": 880, "w": 900, "h": 800 },
+    { "file": "Raccourci.dc.html", "title": "Changer de source depuis la fiche", "x": 1020, "y": 880, "w": 1300, "h": 700 },
+    { "file": "Grille.dc.html", "title": "Galerie, collection, échanges", "x": 0, "y": 1820, "w": 1240, "h": 1020 },
+    { "file": "Etats.dc.html", "title": "Cas limites", "x": 1360, "y": 1820, "w": 1560, "h": 620 }
+  ],
+  "annotations": [
+    {
+      "id": "demande",
+      "x": 0,
+      "y": -380,
+      "w": 600,
+      "text": "Deux demandes, deux planches.\n\n1. La fiche d'une carte ne montre qu'un relevé (CardNexus quand il en a un). Les autres existent en base — getCardPrices les renvoie déjà, triés — et sont jetés à l'affichage. Ils reviennent sous un filet, en plus petit : le prix de la carte reste un seul montant.\n\n2. Le joueur choisit sa source. Le réglage vit dans son compte ; « Utiliser » sur la fiche écrit la même préférence.\n\nChaque planche porte un réglage clair / sombre au-dessus d'elle."
+    },
+    {
+      "id": "code",
+      "x": 700,
+      "y": -380,
+      "w": 600,
+      "text": "Ce que ça touche, côté code.\n\nLa lecture est déjà paramétrée : getMarketPrices(gameId, cardIds, sources) et getCardPricesByCardId prennent l'ordre des fournisseurs, et preferredBySource choisit carte par carte. La préférence n'est qu'un ordre passé à la place de CARD_PRICE_SOURCES.\n\nÀ écrire : le champ sur l'utilisateur (source choisie + repli oui/non), sa lecture côté serveur là où les prix sont attachés, et l'action du bouton « Utiliser ».\n\nNouvelles clés i18n, sous Prices : others, use, settings, fallbackMissing, noneFromSource — et les libellés du compte."
+    },
+    {
+      "id": "trancher",
+      "x": 1400,
+      "y": -380,
+      "w": 600,
+      "text": "À trancher.\n\n— Le réglage est global. Un réglage par jeu se défend (CardNexus cote 95 % de Riftbound et 9 % de Star Wars Unlimited), mais il multiplie les écrans pour un choix que peu de joueurs feront deux fois. Proposé : global, et par jeu plus tard si la demande vient.\n\n— Le repli est activé par défaut : sans lui, choisir Cardmarket viderait la moitié des prix d'un jeu que CardNexus couvre mieux.\n\n— joutes-mobile affiche le même bloc en plus court (CardPriceDetails, sans les valeurs) et ne connaît qu'un prix par carte : la parité demande une passe à part, une fois le web posé."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

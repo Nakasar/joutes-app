@@ -1,0 +1,242 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .app {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --border: oklch(1 0 0 / 10%);
+      --input: oklch(1 0 0 / 15%);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0);
+      --price: oklch(0.845 0.143 164.978);
+      font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      -webkit-font-smoothing: antialiased;
+    }
+    .app.clair {
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --price: oklch(0.508 0.118 165.612);
+    }
+
+    .price {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      padding: 12px;
+    }
+    .kicker {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted-foreground);
+    }
+    .fig-line { margin: 0; font-size: 11px; line-height: 1.45; color: var(--muted-foreground); }
+    .source { margin: 0; font-size: 11px; line-height: 1.375; color: var(--muted-foreground); }
+
+    /* Variante « rangs égaux » : un rang par fournisseur, séparés d'un filet. */
+    .rank { display: flex; flex-direction: column; gap: 3px; padding: 8px 0; border-top: 1px solid var(--border); }
+    .rank:first-of-type { border-top: 0; padding-top: 2px; }
+    .rank-top { display: flex; align-items: baseline; gap: 8px; }
+    .rank-name { font-size: 13px; font-weight: 600; }
+    .rank-amount {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .rank-amount.lead { font-size: 18px; line-height: 26px; font-weight: 700; color: var(--price); }
+    .rank-bottom { display: flex; align-items: center; gap: 8px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      background: var(--secondary);
+      color: var(--foreground);
+      padding: 1px 8px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .btn-use {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid var(--input);
+      background: transparent;
+      color: var(--foreground);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .btn-use:hover { background: var(--muted); }
+
+    /* Variante « onglets » : le sélecteur de densité de la galerie, à l'identique. */
+    .seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 10px; background: var(--muted); }
+    .seg button {
+      border: 0;
+      border-radius: 8px;
+      height: 26px;
+      padding: 0 10px;
+      background: transparent;
+      color: var(--muted-foreground);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .seg button.on { background: var(--card); color: var(--foreground); box-shadow: 0 1px 2px oklch(0 0 0 / 25%); }
+    .amount-row { display: flex; align-items: baseline; gap: 8px; }
+    .amount {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 18px;
+      line-height: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--price);
+    }
+    .figures { display: flex; flex-wrap: wrap; column-gap: 16px; row-gap: 4px; margin: 0; }
+    .fig { display: flex; align-items: baseline; gap: 6px; }
+    .fig dt { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground); }
+    .fig dd { margin: 0; font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+    .board-title { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+    .board-sub { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); max-width: 780px; }
+    .cols { display: flex; gap: 40px; align-items: flex-start; }
+    .col { display: flex; flex-direction: column; gap: 10px; width: 352px; }
+    .col-tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); }
+    .col-note { margin: 0; font-size: 12px; line-height: 1.55; color: var(--muted-foreground); }
+    .col-note b { font-weight: 600; color: var(--foreground); }
+  </style>
+</helmet>
+<div class="app {{theme}}" style="padding: 36px 36px 44px;">
+  <header style="margin-bottom: 28px;">
+    <h1 class="board-title">Deux autres façons de le dire</h1>
+    <p class="board-sub">Écartées au profit de la planche « Fiche carte », mais elles répondent à la même demande — les voici pour trancher sur pièce.</p>
+  </header>
+
+  <div class="cols">
+    <!-- VARIANTE A — tous les fournisseurs sur le même rang. -->
+    <section class="col">
+      <span class="col-tag">Variante A · rangs égaux</span>
+      <section class="price">
+        <span class="kicker">Prix du marché</span>
+        <div class="rank">
+          <div class="rank-top">
+            <span class="rank-name">CardNexus</span>
+            <span class="badge">Votre source</span>
+            <a class="rank-amount lead" href="#">0,25 €<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+          </div>
+          <p class="fig-line">bas 0,90 € · tendance 0,25 € · 22 août · 2 tirages</p>
+        </div>
+        <div class="rank">
+          <div class="rank-top">
+            <span class="rank-name">Cardmarket</span>
+            <a class="rank-amount" href="#">0,31 €<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+          </div>
+          <div class="rank-bottom">
+            <p class="fig-line" style="flex: 1; min-width: 0;">bas 0,28 € · tendance 0,31 € · 21 août</p>
+            <button class="btn-use" type="button">Utiliser</button>
+          </div>
+        </div>
+      </section>
+      <p class="col-note"><b>Pour :</b> la comparaison est immédiate, aucun fournisseur n'a l'air relégué, et la liste s'allonge sans se déformer.<br><b>Contre :</b> le bloc perd son montant unique en haut à droite — l'œil doit choisir entre deux prix là où la fiche n'en annonçait qu'un, et le repère des grilles se dilue.</p>
+    </section>
+
+    <!-- VARIANTE B — onglets, premier état. -->
+    <section class="col">
+      <span class="col-tag">Variante B · onglets</span>
+      <section class="price">
+        <div class="amount-row">
+          <span class="kicker">Prix du marché</span>
+          <a class="amount" href="#">0,25 €<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+        </div>
+        <div class="seg">
+          <button type="button" class="on">CardNexus</button>
+          <button type="button">Cardmarket</button>
+        </div>
+        <dl class="figures">
+          <div class="fig"><dt>Prix bas</dt><dd>0,90 €</dd></div>
+          <div class="fig"><dt>Tendance</dt><dd>0,25 €</dd></div>
+        </dl>
+        <p class="source">CardNexus · relevé le 22 août 2026 · 2 tirages relevés</p>
+      </section>
+      <p class="col-note">Onglet de la source utilisée : le bloc est exactement celui d'aujourd'hui, un rang d'onglets en plus.</p>
+    </section>
+
+    <!-- VARIANTE B — second état, l'autre fournisseur sélectionné. -->
+    <section class="col">
+      <span class="col-tag">Variante B · onglet Cardmarket</span>
+      <section class="price">
+        <div class="amount-row">
+          <span class="kicker">Prix du marché</span>
+          <a class="amount" href="#" style="color: var(--foreground);">0,31 €<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+        </div>
+        <div class="seg">
+          <button type="button">CardNexus</button>
+          <button type="button" class="on">Cardmarket</button>
+        </div>
+        <dl class="figures">
+          <div class="fig"><dt>Prix bas</dt><dd>0,28 €</dd></div>
+          <div class="fig"><dt>Tendance</dt><dd>0,31 €</dd></div>
+        </dl>
+        <p class="source">Cardmarket · relevé le 21 août 2026</p>
+        <button class="btn-use" type="button" style="align-self: flex-start;">Utiliser Cardmarket partout</button>
+      </section>
+      <p class="col-note"><b>Pour :</b> hauteur constante quel que soit le nombre de fournisseurs, et le bloc actuel n'est pas touché.<br><b>Contre :</b> il faut cliquer pour apprendre qu'un second prix existe, et le grand montant change de sens d'un onglet à l'autre — vert quand c'est le vôtre, gris sinon, une nuance qui ne se lit pas.</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"theme":{"editor":"enum","options":["sombre","clair"],"default":"sombre","tsType":"string"}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme === "clair" ? "clair" : "sombre" };
+  }
+}
+</script>
+</body>
+</html>

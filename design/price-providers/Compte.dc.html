@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: inherit; }
+
+    .app {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --border: oklch(1 0 0 / 10%);
+      --input: oklch(1 0 0 / 15%);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0);
+      --price: oklch(0.845 0.143 164.978);
+      font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      -webkit-font-smoothing: antialiased;
+    }
+    .app.clair {
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --price: oklch(0.508 0.118 165.612);
+    }
+
+    /* `Card` de shadcn : rounded-xl border bg-card py-6 shadow-sm, sections px-6. */
+    .card {
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      padding: 24px 0;
+      box-shadow: 0 1px 2px 0 oklch(0 0 0 / 20%);
+    }
+    .card-header { display: flex; align-items: flex-start; gap: 12px; padding: 0 24px; }
+    .icon-box { border-radius: 10px; padding: 8px; background: color-mix(in oklab, var(--primary) 10%, transparent); color: var(--primary); display: flex; }
+    .card-title { font-size: 24px; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; }
+    .card-desc { margin: 4px 0 0; font-size: 14px; line-height: 1.5; color: var(--muted-foreground); }
+    .card-content { padding: 0 24px; margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* Un choix par ligne : la ligne entière est la cible, pas seulement le rond. */
+    .choice {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      padding: 12px 14px;
+      cursor: pointer;
+    }
+    .choice:hover { background: color-mix(in oklab, var(--muted) 45%, transparent); }
+    .choice.on {
+      background: var(--muted);
+      border-color: color-mix(in oklab, var(--foreground) 32%, transparent);
+    }
+    .radio {
+      margin-top: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 9999px;
+      border: 1px solid color-mix(in oklab, var(--foreground) 40%, transparent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+    }
+    .choice.on .radio { border-color: var(--foreground); }
+    .radio span { width: 8px; height: 8px; border-radius: 9999px; background: var(--foreground); display: none; }
+    .choice.on .radio span { display: block; }
+
+    .choice-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .choice-name { font-size: 14px; font-weight: 600; }
+    .choice-desc { margin: 4px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+    .choice-meta { margin: 6px 0 0; font-size: 11px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      background: var(--secondary);
+      color: var(--foreground);
+      padding: 1px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    /* `Switch` de shadcn : piste 32 × 18,4 px, pastille 16 px. */
+    .switch { width: 32px; height: 18.4px; border-radius: 9999px; background: color-mix(in oklab, var(--input) 80%, transparent); display: flex; align-items: center; padding: 1px; flex: none; }
+    .switch.on { background: var(--primary); justify-content: flex-end; }
+    .switch span { width: 16px; height: 16px; border-radius: 9999px; background: var(--foreground); display: block; }
+    .switch.on span { background: var(--primary-foreground); }
+
+    .rule { border-top: 1px solid var(--border); margin: 18px 24px 0; padding-top: 18px; }
+    .foot { padding: 0 24px; margin-top: 14px; font-size: 12px; line-height: 1.55; color: var(--muted-foreground); }
+    .mono { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; }
+
+    .board-title { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+    .board-sub { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); max-width: 700px; }
+  </style>
+</helmet>
+<div class="app {{theme}}" style="padding: 36px 36px 44px;">
+  <header style="margin-bottom: 26px;">
+    <h1 class="board-title">Compte — « Prix des cartes »</h1>
+    <p class="board-sub">Nouvelle section de <span class="mono">/account</span>, à la suite des jeux suivis. C'est le réglage de référence ; la fiche carte n'en est qu'un raccourci.</p>
+  </header>
+
+  <div class="card" style="width: 760px;">
+    <div class="card-header">
+      <span class="icon-box">
+        <!-- lucide `coins` -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M18.09 10.37A6 6 0 1 1 10.34 18"></path><path d="M7 6h1v4"></path><path d="m16.71 13.88.7.71-2.82 2.82"></path></svg>
+      </span>
+      <div>
+        <div class="card-title">Prix des cartes</div>
+        <p class="card-desc">D'où viennent les prix affichés sur vos cartes, votre collection et vos échanges.</p>
+      </div>
+    </div>
+
+    <div class="card-content">
+      <div class="choice on">
+        <span class="radio"><span></span></span>
+        <div style="min-width: 0;">
+          <div class="choice-head">
+            <span class="choice-name">Laisser Joutes choisir</span>
+            <span class="badge">Par défaut</span>
+          </div>
+          <p class="choice-desc">CardNexus d'abord, Cardmarket ensuite, carte par carte. CardNexus rattache ses prix à l'extension et au numéro de collection : le montant est sûrement celui de cette carte-là.</p>
+        </div>
+      </div>
+
+      <div class="choice">
+        <span class="radio"><span></span></span>
+        <div style="min-width: 0;">
+          <div class="choice-head">
+            <span class="choice-name">CardNexus</span>
+          </div>
+          <p class="choice-desc">Rattaché par extension et numéro de collection. Ne couvre pas encore tous les jeux.</p>
+          <p class="choice-meta">Dernier relevé le 22 août 2026</p>
+        </div>
+      </div>
+
+      <div class="choice">
+        <span class="radio"><span></span></span>
+        <div style="min-width: 0;">
+          <div class="choice-head">
+            <span class="choice-name">Cardmarket</span>
+          </div>
+          <p class="choice-desc">Rattaché par nom de carte : le catalogue le plus large, au risque de se tromper de carte entre deux noms voisins.</p>
+          <p class="choice-meta">Dernier relevé le 21 août 2026</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="rule">
+      <div style="display: flex; align-items: flex-start; gap: 12px;">
+        <span class="switch on" style="margin-top: 2px;"><span></span></span>
+        <div style="min-width: 0;">
+          <div class="choice-name">Compléter avec les autres fournisseurs</div>
+          <p class="choice-desc">Quand votre source n'a pas relevé une carte, Joutes affiche le prix d'un autre plutôt qu'aucun prix. Le fournisseur reste écrit sur la fiche.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="foot">Le réglage vaut pour tous les jeux et partout où un prix s'affiche : galerie, collection, boosters, échanges, listes de vente. Il ne change aucun relevé — seulement celui qu'on vous montre.</p>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"theme":{"editor":"enum","options":["sombre","clair"],"default":"sombre","tsType":"string"}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme === "clair" ? "clair" : "sombre" };
+  }
+}
+</script>
+</body>
+</html>

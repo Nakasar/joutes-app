@@ -1,0 +1,262 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /*
+     * Les jetons de `app/globals.css`, recopiés tels quels : le bloc de prix
+     * n'introduit aucune couleur à lui. Le vert est celui que porte déjà
+     * `CardPriceTag` (emerald-400 en sombre, emerald-700 en clair).
+     */
+    .app {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --border: oklch(1 0 0 / 10%);
+      --input: oklch(1 0 0 / 15%);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0);
+      --ring: oklch(0.556 0 0);
+      --price: oklch(0.845 0.143 164.978);
+      --warn: oklch(0.828 0.189 84.429);
+      font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      -webkit-font-smoothing: antialiased;
+    }
+    .app.clair {
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --ring: oklch(0.708 0 0);
+      --price: oklch(0.508 0.118 165.612);
+      --warn: oklch(0.555 0.163 48.998);
+    }
+
+    /* Le bloc lui-même : `rounded-xl border bg-card p-3`, gap-2. */
+    .price {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      padding: 12px;
+    }
+    .price-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 4px; }
+    .kicker {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted-foreground);
+    }
+    .amount {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 18px;
+      line-height: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--price);
+    }
+    .figures { display: flex; flex-wrap: wrap; column-gap: 16px; row-gap: 4px; margin: 0; }
+    .fig { display: flex; align-items: baseline; gap: 6px; }
+    .fig dt { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground); }
+    .fig dd { margin: 0; font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .source { margin: 0; font-size: 11px; line-height: 1.375; color: var(--muted-foreground); }
+
+    /*
+     * Ce que la fiche gagne : les relevés que `getCardPrices` renvoie déjà et
+     * que l'écran jetait. Ils passent sous un filet, en plus petit — un prix
+     * doit rester *le* prix de la carte.
+     */
+    .others { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+    .prov { display: flex; flex-direction: column; gap: 3px; }
+    .prov-top { display: flex; align-items: baseline; gap: 8px; }
+    .prov-name { font-size: 12px; font-weight: 600; }
+    .prov-amount {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--foreground);
+    }
+    .prov-bottom { display: flex; align-items: center; gap: 8px; }
+    .prov-meta { margin: 0; flex: 1; min-width: 0; font-size: 11px; line-height: 1.4; color: var(--muted-foreground); }
+
+    /* `Button variant="outline" size="sm"`, resserré pour une colonne de 352 px. */
+    .btn-use {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid var(--input);
+      background: transparent;
+      color: var(--foreground);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .btn-use:hover { background: var(--muted); }
+
+    .settings-link { font-size: 11px; color: var(--muted-foreground); }
+
+    /* Habillage de la planche, hors maquette. */
+    .board-title { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+    .board-sub { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); max-width: 760px; }
+    .cols { display: flex; gap: 40px; align-items: flex-start; }
+    .col { display: flex; flex-direction: column; gap: 10px; width: 352px; }
+    .col-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted-foreground);
+    }
+    .col-tag.on { color: var(--price); }
+    .col-note { margin: 0; font-size: 12px; line-height: 1.55; color: var(--muted-foreground); }
+    .dot { width: 6px; height: 6px; border-radius: 9999px; background: currentColor; }
+  </style>
+</helmet>
+<div class="app {{theme}}" style="padding: 36px 36px 44px;">
+  <header style="margin-bottom: 28px;">
+    <h1 class="board-title">Fiche carte — le bloc « prix du marché »</h1>
+    <p class="board-sub">Colonne de gauche de <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px;">/games/[jeu]/cards/[carte]</span>, large de 352 px. Les trois blocs sont à l'échelle, dans le contexte où ils s'affichent.</p>
+  </header>
+
+  <div class="cols">
+    <!-- ÉTAT ACTUEL — repris de CardPriceDetails.tsx sans y toucher. -->
+    <section class="col">
+      <span class="col-tag"><span class="dot"></span>Aujourd'hui</span>
+      <section class="price">
+        <div class="price-head">
+          <span class="kicker">Prix du marché</span>
+          <a class="amount" href="#">0,25 €<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+        </div>
+        <dl class="figures">
+          <div class="fig"><dt>Prix bas</dt><dd>0,90 €</dd></div>
+          <div class="fig"><dt>Tendance</dt><dd>0,25 €</dd></div>
+        </dl>
+        <p class="source">CardNexus · relevé le 22 août 2026 · 2 tirages relevés</p>
+      </section>
+      <p class="col-note">Le relevé Cardmarket de la même carte existe en base — <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px;">getCardPrices</span> le renvoie — mais rien ne le montre : le joueur ne sait ni qu'il y a un second prix, ni pourquoi c'est l'autre qui s'affiche.</p>
+    </section>
+
+    <!-- PROPOSÉ — le bloc actuel, inchangé, prolongé sous un filet. -->
+    <section class="col">
+      <span class="col-tag on"><span class="dot"></span>Proposé</span>
+      <section class="price">
+        <div class="price-head">
+          <span class="kicker">Prix du marché</span>
+          <a class="amount" href="#">0,25 €<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+        </div>
+        <dl class="figures">
+          <div class="fig"><dt>Prix bas</dt><dd>0,90 €</dd></div>
+          <div class="fig"><dt>Tendance</dt><dd>0,25 €</dd></div>
+        </dl>
+        <p class="source">CardNexus · relevé le 22 août 2026 · 2 tirages relevés</p>
+
+        <div class="others">
+          <span class="kicker">Autres fournisseurs</span>
+          <div class="prov">
+            <div class="prov-top">
+              <span class="prov-name">Cardmarket</span>
+              <a class="prov-amount" href="#">0,31 €<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+            </div>
+            <div class="prov-bottom">
+              <p class="prov-meta">bas 0,28 € · tendance 0,31 € · 21 août</p>
+              <button class="btn-use" type="button">Utiliser</button>
+            </div>
+          </div>
+          <a class="settings-link" href="#">Choisir ma source de prix →</a>
+        </div>
+      </section>
+      <p class="col-note">Le haut du bloc ne bouge pas d'un pixel. Dessous, un filet, puis chaque autre relevé sur deux lignes : son montant, ses valeurs, sa date, et de quoi en faire sa source.</p>
+    </section>
+
+    <!-- MISE À L'ÉPREUVE — le même bloc quand un troisième import arrive. -->
+    <section class="col">
+      <span class="col-tag"><span class="dot"></span>Si un troisième arrive</span>
+      <section class="price">
+        <div class="price-head">
+          <span class="kicker">Prix du marché</span>
+          <a class="amount" href="#">0,25 €<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+        </div>
+        <dl class="figures">
+          <div class="fig"><dt>Prix bas</dt><dd>0,90 €</dd></div>
+          <div class="fig"><dt>Tendance</dt><dd>0,25 €</dd></div>
+        </dl>
+        <p class="source">CardNexus · relevé le 22 août 2026 · 2 tirages relevés</p>
+
+        <div class="others">
+          <span class="kicker">Autres fournisseurs</span>
+          <div class="prov">
+            <div class="prov-top">
+              <span class="prov-name">Cardmarket</span>
+              <a class="prov-amount" href="#">0,31 €<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+            </div>
+            <div class="prov-bottom">
+              <p class="prov-meta">bas 0,28 € · tendance 0,31 € · 21 août</p>
+              <button class="btn-use" type="button">Utiliser</button>
+            </div>
+          </div>
+          <div class="prov">
+            <div class="prov-top">
+              <span class="prov-name">TCGplayer</span>
+              <span class="prov-amount" style="color: var(--muted-foreground);">0,34 $ US</span>
+            </div>
+            <div class="prov-bottom">
+              <p class="prov-meta">bas 0,30 $ US · marché 0,34 $ US · 20 août</p>
+              <button class="btn-use" type="button">Utiliser</button>
+            </div>
+          </div>
+          <a class="settings-link" href="#">Choisir ma source de prix →</a>
+        </div>
+      </section>
+      <p class="col-note">La liste n'a pas de longueur fixe : elle suit <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px;">CARD_PRICE_SOURCES</span>. Un fournisseur qui cote dans une autre devise l'écrit en toutes lettres et son montant reste gris : deux devises ne se comparent pas, et rien ici ne convertit.</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"theme":{"editor":"enum","options":["sombre","clair"],"default":"sombre","tsType":"string"}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme === "clair" ? "clair" : "sombre" };
+  }
+}
+</script>
+</body>
+</html>
