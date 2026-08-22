@@ -4866,6 +4866,69 @@
     "emptyBody": "Même les revenants ont déserté. Changez de mois, ou ouvrez le vôtre."
   },
   "Users": {
+    "registry": {
+      "metadata": {
+        "title": "Communauté",
+        "description": "Trouvez des joueurs près de chez vous, qui jouent aux mêmes jeux, qui vendent des cartes ou qui diffusent en ce moment.",
+        "openGraphTitle": "Communauté - Joutes"
+      },
+      "title": "Communauté",
+      "counts": "{total, plural, one {# joueur} other {# joueurs}}, {publicProfiles, plural, one {# profil public} other {# profils publics}}",
+      "empty": "Aucun profil ne correspond.",
+      "reset": "Réinitialiser les filtres",
+      "loadMore": "Charger {count} profils de plus",
+      "shownOf": "{shown} sur {total}",
+      "search": {
+        "label": "Rechercher un joueur",
+        "placeholder": "Pseudo, tag, ville…",
+        "clear": "Effacer la recherche"
+      },
+      "filters": {
+        "all": "Tous",
+        "nearCity": "Autour de {city}",
+        "sells": "Vend des cartes",
+        "live": "En direct",
+        "sorts": {
+          "active": "Les plus récents",
+          "followers": "Les plus suivis",
+          "name": "Par pseudo"
+        }
+      },
+      "live": {
+        "badge": "En direct",
+        "title": "{count, plural, one {# joueur diffuse en ce moment} other {# joueurs diffusent en ce moment}}"
+      },
+      "card": {
+        "private": "Profil privé",
+        "live": "En direct",
+        "seeProfile": "Voir le profil",
+        "followers": "{count, plural, =0 {aucun abonné} one {# abonné} other {# abonnés}}",
+        "games": "{count, plural, one {# jeu suivi} other {# jeux suivis}}"
+      },
+      "sidebar": {
+        "yourProfile": "Votre profil",
+        "public": "Public",
+        "private": "Privé",
+        "completion": "Vitrine prête à {percent} %",
+        "myShowcase": "Ma vitrine",
+        "settings": "Réglages",
+        "nearby": "Autour de {city}",
+        "nearbyHint": "Au niveau de la commune, et seulement pour les comptes qui l'ont autorisée.",
+        "leaderboard": "Classement des succès",
+        "points": "{points} pts",
+        "yourRank": "Vous êtes {rank}ᵉ avec {points} points.",
+        "notRanked": "Vous n'y figurez pas : le classement ne compte que les profils publics ayant débloqué au moins un succès.",
+        "badgeLegend": "Les badges",
+        "planLegendTitle": "Un abonnement",
+        "planLegend": "Une teinte par offre, sur le contour de l'avatar et sur la pastille.",
+        "statusLegendTitle": "Un statut",
+        "statusLegend": "Posé par l'équipe. Ne s'achète pas.",
+        "seePlans": "Voir les offres",
+        "joinTitle": "Rejoindre la communauté",
+        "joinHint": "Créez votre vitrine, suivez vos jeux et vos lieux, et retrouvez les joueurs près de chez vous.",
+        "signIn": "Se connecter"
+      }
+    },
     "profile": {
       "metadata": {
         "description": "Profil de {tag} sur Joutes : decks, publications, succès et listes partagées.",

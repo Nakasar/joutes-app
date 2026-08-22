@@ -4866,6 +4866,69 @@
     "emptyBody": "Anche i fantasmi se ne sono andati. Prova un altro mese, o organizzane uno tu."
   },
   "Users": {
+    "registry": {
+      "metadata": {
+        "title": "Comunità",
+        "description": "Trova giocatori vicino a te, che giocano agli stessi giochi, che vendono carte o che trasmettono in questo momento.",
+        "openGraphTitle": "Comunità - Joutes"
+      },
+      "title": "Comunità",
+      "counts": "{total, plural, one {# giocatore} other {# giocatori}}, {publicProfiles, plural, one {# profilo pubblico} other {# profili pubblici}}",
+      "empty": "Nessun profilo corrisponde.",
+      "reset": "Azzera i filtri",
+      "loadMore": "Carica altri {count} profili",
+      "shownOf": "{shown} su {total}",
+      "search": {
+        "label": "Cerca un giocatore",
+        "placeholder": "Nome, tag, città…",
+        "clear": "Cancella la ricerca"
+      },
+      "filters": {
+        "all": "Tutti",
+        "nearCity": "Intorno a {city}",
+        "sells": "Vende carte",
+        "live": "In diretta",
+        "sorts": {
+          "active": "I più recenti",
+          "followers": "I più seguiti",
+          "name": "Per nome"
+        }
+      },
+      "live": {
+        "badge": "In diretta",
+        "title": "{count, plural, one {# giocatore trasmette in questo momento} other {# giocatori trasmettono in questo momento}}"
+      },
+      "card": {
+        "private": "Profilo privato",
+        "live": "In diretta",
+        "seeProfile": "Vedi il profilo",
+        "followers": "{count, plural, =0 {nessun iscritto} one {# iscritto} other {# iscritti}}",
+        "games": "{count, plural, one {# gioco seguito} other {# giochi seguiti}}"
+      },
+      "sidebar": {
+        "yourProfile": "Il tuo profilo",
+        "public": "Pubblico",
+        "private": "Privato",
+        "completion": "Vetrina pronta al {percent} %",
+        "myShowcase": "La mia vetrina",
+        "settings": "Impostazioni",
+        "nearby": "Intorno a {city}",
+        "nearbyHint": "Solo a livello di comune, e solo per gli account che l'hanno consentito.",
+        "leaderboard": "Classifica degli obiettivi",
+        "points": "{points} pt",
+        "yourRank": "Sei {rank}º con {points} punti.",
+        "notRanked": "Non compari: la classifica conta solo i profili pubblici che hanno sbloccato almeno un obiettivo.",
+        "badgeLegend": "I distintivi",
+        "planLegendTitle": "Un abbonamento",
+        "planLegend": "Una tonalità per offerta, sul contorno dell'avatar e sul distintivo.",
+        "statusLegendTitle": "Uno stato",
+        "statusLegend": "Assegnato dal team. Non si compra.",
+        "seePlans": "Vedi le offerte",
+        "joinTitle": "Unisciti alla comunità",
+        "joinHint": "Crea la tua vetrina, segui i tuoi giochi e luoghi, e trova i giocatori vicino a te.",
+        "signIn": "Accedi"
+      }
+    },
     "profile": {
       "metadata": {
         "description": "Profilo di {tag} su Joutes: mazzi, pubblicazioni, obiettivi e liste condivise.",

@@ -4866,6 +4866,69 @@
     "emptyBody": "Even the ghosts have left. Try another month, or host your own."
   },
   "Users": {
+    "registry": {
+      "metadata": {
+        "title": "Community",
+        "description": "Find players near you, who play the same games, who sell cards or who are streaming right now.",
+        "openGraphTitle": "Community - Joutes"
+      },
+      "title": "Community",
+      "counts": "{total, plural, one {# player} other {# players}}, {publicProfiles, plural, one {# public profile} other {# public profiles}}",
+      "empty": "No profile matches.",
+      "reset": "Reset the filters",
+      "loadMore": "Load {count} more profiles",
+      "shownOf": "{shown} of {total}",
+      "search": {
+        "label": "Search for a player",
+        "placeholder": "Name, tag, town…",
+        "clear": "Clear the search"
+      },
+      "filters": {
+        "all": "All",
+        "nearCity": "Around {city}",
+        "sells": "Sells cards",
+        "live": "Live",
+        "sorts": {
+          "active": "Most recent",
+          "followers": "Most followed",
+          "name": "By name"
+        }
+      },
+      "live": {
+        "badge": "Live",
+        "title": "{count, plural, one {# player is streaming right now} other {# players are streaming right now}}"
+      },
+      "card": {
+        "private": "Private profile",
+        "live": "Live",
+        "seeProfile": "See the profile",
+        "followers": "{count, plural, =0 {no followers} one {# follower} other {# followers}}",
+        "games": "{count, plural, one {# game followed} other {# games followed}}"
+      },
+      "sidebar": {
+        "yourProfile": "Your profile",
+        "public": "Public",
+        "private": "Private",
+        "completion": "Showcase {percent}% ready",
+        "myShowcase": "My showcase",
+        "settings": "Settings",
+        "nearby": "Around {city}",
+        "nearbyHint": "Town level only, and only for the accounts that allowed it.",
+        "leaderboard": "Achievement ranking",
+        "points": "{points} pts",
+        "yourRank": "You are #{rank} with {points} points.",
+        "notRanked": "You are not listed: the ranking only counts public profiles that unlocked at least one achievement.",
+        "badgeLegend": "The badges",
+        "planLegendTitle": "A subscription",
+        "planLegend": "One shade per tier, on the avatar ring and on the badge.",
+        "statusLegendTitle": "A status",
+        "statusLegend": "Granted by the team. Not for sale.",
+        "seePlans": "See the tiers",
+        "joinTitle": "Join the community",
+        "joinHint": "Build your showcase, follow your games and venues, and find the players near you.",
+        "signIn": "Sign in"
+      }
+    },
     "profile": {
       "metadata": {
         "description": "{tag} on Joutes: decks, publications, achievements and shared lists.",
