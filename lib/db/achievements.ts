@@ -151,3 +151,57 @@ export async function deleteAchievement(id: string): Promise<boolean> {
 
   return false;
 }
+
+/**
+ * Le classement des succès.
+ *
+ * Le score se calcule **en mémoire** plutôt que par une jointure : les
+ * déblocages portent `achievementId` en chaîne alors que les succès portent un
+ * `ObjectId`, si bien qu'un `$lookup` demanderait une conversion à chaque
+ * document. Le catalogue tient dans une lecture — c'est déjà l'arbitrage de
+ * `lib/db/user-badges.ts` — et le regroupement, lui, se fait bien en base.
+ *
+ * Les succès cachés comptent : ne pas les afficher n'est pas ne pas les avoir.
+ */
+export type LeaderboardRow = { userId: string; points: number; unlocked: number };
+
+async function readScores(): Promise<LeaderboardRow[]> {
+  const [achievements, rows] = await Promise.all([
+    getAllAchievements(),
+    db
+      .collection(USER_ACHIEVEMENTS_COLLECTION)
+      .aggregate<{ _id: string; achievementIds: string[] }>([
+        { $group: { _id: "$userId", achievementIds: { $push: "$achievementId" } } },
+      ])
+      .toArray(),
+  ]);
+
+  const points = new Map(achievements.map((achievement) => [achievement.id, achievement.points]));
+
+  return rows
+    .map((row) => ({
+      userId: row._id,
+      unlocked: row.achievementIds.length,
+      points: row.achievementIds.reduce((total, id) => total + (points.get(id) ?? 0), 0),
+    }))
+    // À points égaux, celui qui a débloqué le plus de succès passe devant : il a
+    // fait plus de choses, même si elles valaient moins.
+    .sort((a, b) => b.points - a.points || b.unlocked - a.unlocked);
+}
+
+/**
+ * Le classement, restreint aux comptes qu'on accepte d'y voir figurer.
+ *
+ * L'allowlist est passée plutôt que devinée : ce module ne connaît pas la
+ * confidentialité d'un profil, et un classement qui montrerait trois comptes
+ * publics tout en annonçant un rang calculé sur tout le monde annoncerait un
+ * rang qui ne correspond à aucune place visible.
+ *
+ * Rend le classement **entier** : le rang d'un compte est son index, et le
+ * tronquer ici obligerait à le recalculer ailleurs.
+ */
+export async function readAchievementsRanking(
+  eligibleUserIds: ReadonlySet<string>,
+): Promise<LeaderboardRow[]> {
+  return (await readScores()).filter((row) => eligibleUserIds.has(row.userId));
+}

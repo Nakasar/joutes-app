@@ -8,9 +8,14 @@ toutes les cartes n'en ont pas.
 ## Deux fournisseurs, un relevé par carte
 
 Chaque fournisseur a son import, écrit ses propres relevés et ne touche pas à
-ceux de l'autre. Une carte peut donc en porter deux ; l'écran n'en montre qu'un,
-et c'est **CardNexus qui passe devant, carte par carte** (`CARD_PRICE_SOURCES`,
+ceux de l'autre. Une carte peut donc en porter deux ; partout où un prix est un
+chiffre à côté d'un nom, l'écran n'en montre qu'un, et c'est **CardNexus qui
+passe devant, carte par carte** (`CARD_PRICE_SOURCES`,
 `lib/types/card-price.ts`) : là où il ne dit rien, Cardmarket reprend la main.
+
+La fiche d'une carte fait exception : elle les montre tous, celui qui la
+représente en grand et les autres dessous, avec leurs valeurs et leur date.
+C'est le seul écran qui ait la place de dire ce qui existe.
 
 |  | Cardmarket | CardNexus |
 | --- | --- | --- |
@@ -29,6 +34,48 @@ Le choix se fait carte par carte, et non jeu par jeu : un jeu que CardNexus ne
 couvre qu'à moitié garde les prix Cardmarket sur le reste, plutôt que de perdre
 la moitié de ses cotes. Un relevé qui ne porte aucun montant ne compte pas comme
 une réponse et laisse la place au suivant.
+
+## L'ordre du joueur
+
+Cet ordre est celui de la plateforme ; un joueur peut lui substituer le sien,
+depuis la section « Prix des cartes » de son compte ou depuis le bouton
+« Utiliser » de la fiche d'une carte. Le réglage vaut pour tous les jeux et
+pour tout ce qui affiche un prix — galerie, collection, boosters, échanges,
+export hors ligne.
+
+Une préférence n'est rien d'autre qu'un ordre de fournisseurs
+(`orderedPriceSources`, `lib/prices/preference.ts`), celui-là même que la
+lecture des relevés prend déjà en paramètre :
+
+| Réglage | Ordre suivi |
+| --- | --- |
+| aucun choix | `CARD_PRICE_SOURCES` |
+| un fournisseur, repli activé | ce fournisseur, puis les autres dans l'ordre de la plateforme |
+| un fournisseur, repli coupé | ce fournisseur seul — les cartes qu'il ignore n'ont pas de prix |
+
+Le repli est activé par défaut, et c'est le tableau de couverture ci-dessous qui
+l'impose : choisir un fournisseur sans repli sur un jeu qu'il couvre à 9 %
+reviendrait à effacer les prix de ce jeu.
+
+Aucun écran ne transporte cette préférence : les lectures de masse la demandent
+à `viewerPriceSources()` (`lib/prices/viewer.ts`), qui la lit une fois par
+requête.
+
+**Ce qui est écrit ou partagé passe son ordre explicitement**, et c'est la
+règle à retenir : un résultat qui survit à la requête ne peut pas porter la
+préférence de celui qui l'a déclenché.
+
+| Ce qui est produit | Ordre suivi | Pourquoi |
+| --- | --- | --- |
+| un écran (galerie, collection, fiche, échange) | celui qui regarde | il est rendu pour lui, et pour lui seul |
+| l'export hors ligne d'un jeu | `CARD_PRICE_SOURCES` | le document est déposé sur un stockage public et resservi à tout le monde pendant 24 h |
+| la valeur d'une collection de joueur | celle de son **propriétaire** (`priceSourcesForUser`) | le total est écrit en base et relu longtemps après le calcul |
+| la valeur d'une collection de groupe | `CARD_PRICE_SOURCES` | tout membre peut la recalculer, et un groupe n'a pas de préférence |
+
+La valeur d'un booster fait exception à la ligne « écrit en base » sans y
+contrevenir : elle n'est calculable que par le propriétaire du booster
+(`app/api/collection/boosters/[boosterId]/value/route.ts` répond 404 aux
+autres), si bien que celui qui regarde *est* le propriétaire.
 
 ## Ce que ça couvre
 
@@ -231,12 +278,55 @@ ceux dont l'extension n'a pas de code, ceux sans numéro de collection, ceux don
 aucune carte ne porte le numéro, et ceux qui tomberaient sur **deux** cartes de
 même numéro — leur donner le même prix reviendrait à en inventer un.
 
+#### La lettre de tirage n'est pas de la ponctuation
+
+Un numéro se termine parfois par une lettre, et cette lettre est le tirage :
+`299*` est le `299` signé, `222★` le `222` foil des anciens jeux de base de
+Magic. L'effacer avec le reste de la ponctuation confondrait la variante avec la
+carte dont elle est tirée — et comme les deux se retrouvent alors sous le même
+numéro, **aucune des deux** n'est départageable : toutes deux sont écartées, et
+perdent leur prix.
+
+Ces suffixes ne s'écrivent pas partout pareil, et un jeu ne les lit pas comme un
+autre. Le profil du jeu (`printNumberSuffixes`, dans `CARDNEXUS_GAME_PROFILES`)
+donne donc leur écriture canonique, appliquée aux **deux** catalogues :
+
+| Jeu | Suffixe | Pourquoi |
+| --- | --- | --- |
+| `riftbound` | `*` → `s` | Le tirage signé. Nous l'écrivons `299*` ; CardNexus l'écrit `299s` sur Origins et Spiritforged, `299*` sur Unleashed et Vendetta — les deux écritures cohabitent dans son propre catalogue. |
+| `mtg` | `★` → `star` | Le foil des anciens jeux de base. Les deux catalogues l'écrivent pareil ; c'est la normalisation qui l'effaçait, l'étoile n'étant pas une lettre latine. |
+
+L'étoile de Magic n'est pas son `s`, qui marque l'avant-première tamponnée, et
+les deux se rencontrent sur une même carte (`123s★`) : c'est pourquoi la table
+est propre à chaque jeu plutôt qu'une règle commune.
+
+Sur Riftbound, ces 45 cartes signées et leurs 45 cartes de base étaient toutes
+écartées ; le rapprochement passe de 92,3 % à 99,9 % des cartes du jeu.
+
+#### Codes d'extension
+
 Quand un code d'extension s'écrit franchement autrement des deux côtés, ou que
-CardNexus n'en publie pas, le profil du jeu le dit
-(`CARDNEXUS_GAME_PROFILES`) : c'est une table, pas une heuristique. Elle est
-vide aujourd'hui — les deux catalogues tiennent leur code de l'éditeur — et le
-bilan de l'import (`--sets`) montre extension par extension ce qui a été
-rapproché, de quoi la remplir si besoin.
+CardNexus n'en publie pas, le même profil le dit (`setCodes`, `setCodesBySlug`) :
+c'est une table, pas une heuristique. Aucun jeu n'en a besoin aujourd'hui — les
+deux catalogues tiennent leur code de l'éditeur — et le bilan de l'import
+(`--sets`) montre extension par extension ce qui a été rapproché, de quoi la
+remplir si besoin.
+
+CardNexus range les promotions dans une extension à part (`OGNX`, `SFDX`…) que
+nous n'avons pas : ses produits ne trouvent aucune carte, et c'est bien ainsi —
+les rattacher à l'extension de base donnerait le prix d'une promotion à une
+carte ordinaire.
+
+#### Une carte par langue
+
+Une carte publiée en plusieurs langues est chez nous plusieurs cartes, une par
+langue, chacune avec son identifiant — mais un seul numéro de collection. Elles
+se disputent donc ce numéro et sont écartées comme indépartageables, alors
+qu'elles valent la même chose : les prix de CardNexus ne distinguent pas les
+langues. Riftbound n'y est pas exposé (il n'est importé qu'en anglais) ; Magic,
+si — dans un relevé des jeux de base `8ed`, `9ed` et `10e`, c'est ce qui reste
+d'écarté une fois l'étoile rendue lisible. Rien n'est décidé ici : il faudra
+choisir quelle carte porte le prix, ou le donner à toutes.
 
 ### Chez Cardmarket : par le nom, et par déduction
 
@@ -488,11 +578,18 @@ CardNexus, un slug. La liste à jour se lit sur `GET /v1/games` ; les connus son
 `mtg`, `pokemon`, `fab`, `onepiece`, `lorcana`, `swu`, `riftbound`, et une
 douzaine d'autres jeux que la plateforme n'a pas encore. Yu-Gi-Oh n'y est pas.
 
-Rien d'autre n'est nécessaire : le rapprochement se fait par extension et
-numéro, sans profil. Lancez l'import en `--dry-run --sets` et regardez ce que
-les extensions donnent — c'est là qu'un code d'extension divergent se voit, et
-`CARDNEXUS_GAME_PROFILES` (`lib/prices/cardnexus-matching.ts`) sert à le
-traduire.
+Souvent, rien d'autre n'est nécessaire : le rapprochement se fait par extension
+et numéro. Lancez l'import en `--dry-run --sets` et lisez le bilan — deux
+chiffres disent ce qu'il manque, et `CARDNEXUS_GAME_PROFILES`
+(`lib/prices/cardnexus-matching.ts`) sert à le traduire :
+
+- une extension à **0 %** : son code s'écrit autrement des deux côtés, ou
+  CardNexus n'en publie pas (`setCodes`, `setCodesBySlug`). Une extension de
+  promotions que nous n'avons pas reste à 0 %, et c'est normal ;
+- des produits **ambigus** en nombre : deux de nos cartes se disputent un
+  numéro. Si elles ne diffèrent que par une fin de numéro (`299` et `299*`),
+  c'est une lettre de tirage à déclarer dans `printNumberSuffixes` ; si elles ne
+  diffèrent que par la langue, c'est la limite décrite plus haut.
 
 ### Chez Cardmarket
 

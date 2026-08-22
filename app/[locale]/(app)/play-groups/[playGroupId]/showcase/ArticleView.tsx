@@ -34,6 +34,10 @@ export default async function ArticleView({
 
   const content = group.options?.contents?.find((item) => item.id === contentId);
   if (!content || content.kind !== "article" || !content.body) {
+    // Un article de **membre** se lit sur son profil, pas ici : c'est là qu'il
+    // est signé, et là que son auteur peut le corriger. La vitrine du groupe y
+    // renvoie directement ; ce chemin-ci ne sert donc qu'aux articles du
+    // groupe lui-même, et ce qui n'en est pas un est bien introuvable ici.
     notFound();
   }
 

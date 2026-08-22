@@ -8,6 +8,8 @@ import {auth} from "@/lib/auth.ts";
 import {headers} from "next/headers";
 import {redirect} from "next/navigation";
 import {AddPassKeyButton, LinkProviderButton} from "@/app/[locale]/(app)/account/security/components.tsx";
+import StreamAccountCard from "@/app/[locale]/(app)/account/security/StreamAccountCard.tsx";
+import {readStreamAccountViews} from "@/lib/streams/account-view.ts";
 
 async function AccountSecurityContent() {
   const session = await auth.api.getSession({
@@ -34,6 +36,14 @@ async function AccountSecurityContent() {
     console.debug(err);
     return null;
   }) : null;
+
+  /**
+   * Twitch et YouTube arrivent en un bloc, et pas seulement pour la liaison :
+   * chaque carte porte aussi les endroits où le direct de la personne
+   * s'annoncera. Le réglage vit ici parce que c'est ici qu'on relie le compte —
+   * ailleurs, il faudrait expliquer de quelle chaîne on parle.
+   */
+  const streamAccounts = await readStreamAccountViews(session.user.id, socialAccounts);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
@@ -100,6 +110,10 @@ async function AccountSecurityContent() {
             </CardContent>
           </Card>
 
+          {streamAccounts.map((account) => (
+            <StreamAccountCard key={account.platform} {...account} />
+          ))}
+
           <Card className="border-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -148,7 +162,7 @@ export default function AccountSecurity() {
       fallback={
         <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
       <div className="container mx-auto px-4 max-w-5xl">
-          <AccountPanelSkeleton cards={2} label="Chargement des réglages de sécurité" />
+          <AccountPanelSkeleton cards={4} label="Chargement des réglages de sécurité" />
         </div>
     </div>
       }

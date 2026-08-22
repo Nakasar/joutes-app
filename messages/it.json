@@ -2033,6 +2033,7 @@
       },
       "contents": {
         "title": "Quello che il gruppo pubblica",
+        "byMember": "di {name}",
         "count": "{shown} su {total}",
         "empty": "Nulla pubblicato in questa categoria.",
         "filter": {
@@ -2657,13 +2658,13 @@
     "Features": {
       "metadata": {
         "title": "Funzionalità",
-        "description": "Scopri tutto ciò che Joutes offre per la tua passione per i giochi di carte collezionabili: collezione, liste dei desideri, gruppi di gioco, eventi e altro ancora."
+        "description": "Scopri tutto ciò che Joutes offre per la tua passione per i giochi di carte collezionabili: collezione, liste dei desideri, gruppi di gioco e la loro pagina pubblica, luoghi di gioco, eventi e altro ancora."
       },
       "hero": {
         "eyebrow": "Joutes",
         "titleHighlight": "Un'unica app",
         "title": "per tutti i tuoi giochi di carte collezionabili",
-        "subtitle": "Cataloghi di carte, collezione, liste dei desideri, gruppi di gioco, eventi… Joutes riunisce tutto ciò di cui hai bisogno per vivere la tua passione per i TCG, da solo o con altri giocatori.",
+        "subtitle": "Cataloghi di carte, collezione, liste dei desideri, gruppi di gioco e la loro pagina pubblica, luoghi di gioco, eventi… Joutes riunisce tutto ciò di cui hai bisogno per vivere la tua passione per i TCG, da solo o con altri giocatori.",
         "ctaPrimary": "Scopri i giochi",
         "ctaSecondary": "Crea un account"
       },
@@ -2696,12 +2697,39 @@
           ]
         },
         "playGroups": {
-          "title": "Gioca insieme ai tuoi gruppi",
-          "description": "Crea gruppi di gioco, condividi una collezione comune modificabile da tutti i membri, e tieni traccia di chi ha preso in prestito quale carta.",
+          "title": "Il tuo gruppo di gioco ha il suo Banco",
+          "description": "Un gruppo, una pagina: le sessioni in arrivo, i sondaggi di disponibilità, gli annunci e le liste del gruppo si leggono a colpo d'occhio, senza risalire una chat.",
           "bullets": [
-            "Una collezione condivisa tra tutti i membri",
-            "Tracciamento dei prestiti carta per carta",
-            "Inviti e ruoli (proprietario, admin, membro)"
+            "Sessioni fissate a una data certa, o aperte come sondaggio di disponibilità",
+            "Ci sono, forse, assente: ognuno risponde, il conteggio si tiene da solo",
+            "Luogo della sessione: un luogo Joutes con la sua scheda, un luogo libero o a casa di un membro",
+            "Annunci del gruppo, riservati ai membri o ripresi sulla pagina pubblica",
+            "Ruoli fondatore, admin e membro, inviti per nome utente o e-mail",
+            "Collezione comune, liste dei desideri e lista di vendita del gruppo",
+            "Scambi accostati da soli: chi cerca una carta, chi la vende"
+          ]
+        },
+        "groupShowcase": {
+          "title": "Una pagina pubblica a nome del gruppo",
+          "description": "Un gruppo non è più soltanto uno spazio privato: ha una pagina pubblica, con il suo marchio, che si può seguire. Le vostre sessioni e gli annunci interni, invece, restano interni.",
+          "bullets": [
+            "Logo, banner e colore d'accento: il Banco e la pagina pubblica prendono i vostri colori",
+            "Sottotitolo, descrizione, ritmo abituale e link ai vostri social",
+            "Follower che seguono il gruppo e vedono ciò che pubblica",
+            "Palmarès nei tornei, giochi e luoghi del gruppo, ripresi sulla pagina pubblica",
+            "Rotolo d'armi: i gruppi pubblici si scoprono per attività, per distanza o per novità",
+            "Gruppo privato: esce dal rotolo d'armi, e la sua pagina chiede di non essere indicizzata"
+          ]
+        },
+        "groupContents": {
+          "title": "Articoli, video e dirette",
+          "description": "Ciò che il vostro gruppo produce ha finalmente un posto dove vivere: articoli scritti in markdown, video e replay, e le vostre dirette Twitch o YouTube annunciate in cima alla pagina pubblica.",
+          "bullets": [
+            "Articoli scritti in markdown, con riassunto, miniatura e gioco associato",
+            "Video e replay YouTube o Twitch, con la loro durata",
+            "Filtri tutto, video, articoli e replay sulla pagina pubblica",
+            "Fino a tre dirette simultanee dichiarate dai membri, spettatori compresi",
+            "Dirette e pubblicazioni compaiono anche nel rotolo d'armi"
           ]
         },
         "wishlists": {
@@ -2714,12 +2742,14 @@
           ]
         },
         "lairs": {
-          "title": "Negozi ed eventi vicino a te",
-          "description": "Scopri i negozi di gioco, i loro eventi, e iscriviti in pochi secondi.",
+          "title": "I luoghi di gioco, in vetrina",
+          "description": "La pagina di un luogo non è più una scheda: è la sua vetrina, con le notizie, il calendario, i giochi che vi si giocano e la sua presentazione — e la sua diretta in cima alla pagina quando trasmette.",
           "bullets": [
-            "Calendario degli eventi per ogni luogo",
-            "Schede dei negozi con informazioni pratiche",
-            "Promemoria e notifiche"
+            "Quattro schede: notizie, calendario, giochi giocati qui, informazioni",
+            "Notizie del luogo, una delle quali fissata in cima, e un evento in primo piano",
+            "Calendario filtrabile sui giochi che segui, iscrizione in pochi secondi",
+            "Orari del giorno, itinerario, foto e attrezzature",
+            "Segui un luogo per ricevere i suoi annunci"
           ]
         },
         "decks": {
@@ -2766,11 +2796,27 @@
           "gameSet": "Game set"
         },
         "playGroups": {
-          "sharedCollection": "Collezione condivisa",
-          "cardName1": "Bagliore runico",
-          "cardName2": "Guardia d'acciaio",
-          "borrowedBy": "Prestata · {name}",
-          "available": "×{count} disponibili"
+          "hub": "Banco del gruppo",
+          "pollBadge": "Sondaggio aperto",
+          "slot1": "Giovedì 19:30",
+          "slot2": "Sabato 14:00",
+          "availability": "{count}/{total} disponibili",
+          "rsvp": "Ci sono · {count} presenti"
+        },
+        "groupShowcase": {
+          "name": "I Corvi",
+          "tagline": "Gruppo di gioco · Thionville",
+          "follow": "Segui",
+          "followers": "{count} follower",
+          "accent": "Accento"
+        },
+        "groupContents": {
+          "liveBadge": "IN DIRETTA",
+          "viewers": "{count} spettatori",
+          "article": "Articolo",
+          "articleTitle": "Ritorno sul GP di Metz",
+          "video": "Video",
+          "videoTitle": "Draft commentato · 12 min"
         },
         "wishlists": {
           "title": "La mia lista dei desideri",
@@ -2782,6 +2828,12 @@
         },
         "lairs": {
           "name": "La Tana del Drago",
+          "tabNews": "Notizie",
+          "tabAgenda": "Calendario",
+          "tabGames": "Giochi giocati qui",
+          "tabAbout": "Informazioni",
+          "pinned": "IN EVIDENZA",
+          "newsTitle": "Nuovo arrivo sabato",
           "event": "Torneo Riftbound · Sabato ore 14"
         },
         "decks": {
@@ -2797,7 +2849,7 @@
       "organizersLink": {
         "eyebrow": "Organizzi eventi?",
         "title": "Joutes per gli organizzatori di eventi",
-        "subtitle": "Negozi, associazioni, organizzatori, editori: calendario, iscrizioni, tornei, leghe e integrazioni, su una pagina dedicata.",
+        "subtitle": "Negozi, associazioni, organizzatori, editori: la vetrina del tuo luogo, il calendario, le iscrizioni, i tornei, le leghe e le integrazioni, su una pagina dedicata.",
         "cta": "Vai alla pagina organizzatori"
       }
     },
@@ -4459,6 +4511,14 @@
     "tooltip": "Prezzo {market} rilevato il {date}",
     "source": "{market} · rilevato il {date}",
     "printings": "{count, plural, one {# stampa rilevata} other {# stampe rilevate}}",
+    "others": "Altri fornitori",
+    "use": "Usa",
+    "useDone": "I tuoi prezzi ora vengono da {market}",
+    "useScope": "Ovunque, per tutti i giochi.",
+    "useFailed": "Impossibile cambiare la fonte dei prezzi.",
+    "settings": "Scegli la mia fonte dei prezzi →",
+    "noneFromSource": "{market}, la tua fonte, non ha rilevato questa carta.",
+    "noAmount": "Nessun importo",
     "figures": {
       "low": "Prezzo minimo",
       "trend": "Tendenza",
@@ -4468,13 +4528,13 @@
   "FeaturesOrganizers": {
     "metadata": {
       "title": "Joutes per gli organizzatori",
-      "description": "Calendario, iscrizioni, tornei, leghe e integrazioni: tutto quello che serve per organizzare i tuoi eventi di gioco e riempire i tavoli — negozi, associazioni, organizzatori ed editori."
+      "description": "La vetrina del tuo luogo, il calendario, le iscrizioni, i tornei, le leghe e le integrazioni: tutto quello che serve per parlare ai tuoi giocatori e riempire i tavoli — negozi, associazioni, organizzatori ed editori."
     },
     "hero": {
       "eyebrow": "Negozi · Associazioni · Organizzatori · Editori",
       "titleHighlight": "Riempi i tavoli,",
       "title": "non i fogli di calcolo",
-      "subtitle": "Pubblica il tuo calendario, apri le iscrizioni, fai girare tornei e leghe. Joutes avvisa i tuoi giocatori dove già si trovano: Discord, app mobile, web, notifiche.",
+      "subtitle": "Trasforma la pagina del tuo luogo in una vetrina, pubblica il tuo calendario, apri le iscrizioni, fai girare tornei e leghe. Joutes avvisa i tuoi giocatori dove già si trovano: Discord, app mobile, web, notifiche.",
       "ctaPrimary": "Crea un evento",
       "ctaSecondary": "Organizza un torneo"
     },
@@ -4484,7 +4544,7 @@
       "items": {
         "stores": {
           "title": "Negozi di gioco",
-          "description": "Il programma della settimana visibile ai giocatori della zona e le iscrizioni sempre aggiornate, senza foglio cartaceo."
+          "description": "Una vetrina con il tuo marchio, il programma della settimana visibile ai giocatori della zona e le iscrizioni sempre aggiornate, senza foglio cartaceo."
         },
         "associations": {
           "title": "Associazioni e club",
@@ -4501,7 +4561,28 @@
       }
     },
     "soonLabel": "Presto",
+    "proLabel": "Joutes Pro",
     "items": {
+      "lairPage": {
+        "title": "La pagina del tuo luogo diventa la tua vetrina",
+        "description": "Era solo una scheda con un indirizzo e un elenco di eventi. Ora è la pagina in cui parli ai tuoi giocatori: quattro schede, le tue notizie, il tuo marchio, e la tua diretta in cima alla pagina quando trasmetti.",
+        "bullets": [
+          "Quattro schede — notizie, calendario, giochi giocati qui, informazioni — ciascuna con la sua colonna di informazioni pratiche",
+          "Notizie del luogo: chiusure, nuovi arrivi, promozioni, con un annuncio fissato in cima",
+          "Un evento in primo piano, scelto da te, con i posti rimasti e il pulsante di iscrizione",
+          "Diretta Twitch o YouTube: incolli un URL e il player passa in cima alla pagina per tutti i visitatori",
+          "Orari giorno per giorno, orari spezzati compresi, e « aperto fino alle 19 » calcolato per il visitatore",
+          "Ritmo abituale: cosa si trova qui il venerdì sera, anche senza eventi in programma",
+          "Presentazione in markdown, galleria fotografica, attrezzature, accesso con i mezzi e parcheggio",
+          "La squadra del luogo con i nomi, i tuoi link e social, il tuo Discord",
+          "Follower che seguono il luogo e ricevono i suoi annunci"
+        ],
+        "pro": [
+          "Logo e colore d'accento: la pagina prende i tuoi colori, fino alle card e ai pulsanti",
+          "Ordine delle sezioni della pagina, deciso da te",
+          "Video di presentazione integrato nella scheda « Informazioni »"
+        ]
+      },
       "calendar": {
         "title": "Un calendario che i tuoi giocatori consultano già",
         "description": "I tuoi eventi non vivono su una pagina isolata: entrano nel calendario pubblico di Joutes, sulla scheda del tuo locale, nella ricerca per gioco e nella ricerca intorno a una posizione.",
@@ -4654,6 +4735,19 @@
         "points": "{count} pti",
         "deadline": "Finestra · 3 giorni rimasti"
       },
+      "lairPage": {
+        "name": "La Tana del Drago",
+        "tabNews": "Notizie",
+        "tabAgenda": "Calendario",
+        "tabGames": "Giochi giocati qui",
+        "tabAbout": "Informazioni",
+        "live": "IN DIRETTA",
+        "pinned": "IN EVIDENZA",
+        "newsTitle": "Nuovo arrivo: la nuova espansione sabato",
+        "featured": "In primo piano · Torneo del sabato",
+        "seats": "18 / 24 iscritti",
+        "openUntil": "Aperto fino alle 19"
+      },
       "integrations": {
         "endpoint": "GET /api/events",
         "field1": "\"name\": \"Torneo del sabato\"",
@@ -4770,5 +4864,389 @@
     "seeBadge": "Vedi i miei traguardi",
     "emptyTitle": "Nessun evento questo mese",
     "emptyBody": "Anche i fantasmi se ne sono andati. Prova un altro mese, o organizzane uno tu."
+  },
+  "Users": {
+    "bottomNav": {
+      "label": "Navigazione della comunità",
+      "registry": "Comunità",
+      "profile": "Il mio profilo",
+      "settings": "Impostazioni"
+    },
+    "registry": {
+      "metadata": {
+        "title": "Comunità",
+        "description": "Trova giocatori vicino a te, che giocano agli stessi giochi, che vendono carte o che trasmettono in questo momento.",
+        "openGraphTitle": "Comunità - Joutes"
+      },
+      "title": "Comunità",
+      "empty": "Nessun profilo corrisponde.",
+      "reset": "Azzera i filtri",
+      "loadMore": "Carica altri {count} profili",
+      "shownOf": "{shown} su {total}",
+      "search": {
+        "label": "Cerca un giocatore",
+        "placeholder": "Nome, tag, città…",
+        "clear": "Cancella la ricerca"
+      },
+      "filters": {
+        "all": "Tutti",
+        "nearCity": "Intorno a {city}",
+        "sells": "Vende carte",
+        "live": "In diretta",
+        "sorts": {
+          "active": "I più recenti",
+          "followers": "I più seguiti",
+          "name": "Per nome"
+        }
+      },
+      "live": {
+        "badge": "In diretta",
+        "title": "{count, plural, one {# giocatore trasmette in questo momento} other {# giocatori trasmettono in questo momento}}"
+      },
+      "card": {
+        "private": "Profilo privato",
+        "live": "In diretta",
+        "seeProfile": "Vedi il profilo",
+        "followers": "{count, plural, =0 {nessun iscritto} one {# iscritto} other {# iscritti}}",
+        "games": "{count, plural, one {# gioco seguito} other {# giochi seguiti}}"
+      },
+      "sidebar": {
+        "yourProfile": "Il tuo profilo",
+        "public": "Pubblico",
+        "private": "Privato",
+        "completion": "Vetrina pronta al {percent} %",
+        "myShowcase": "La mia vetrina",
+        "settings": "Impostazioni",
+        "nearby": "Intorno a {city}",
+        "leaderboard": "Classifica degli obiettivi",
+        "points": "{points} pt",
+        "yourRank": "Sei {rank}º con {points} punti.",
+        "joinTitle": "Unisciti alla comunità",
+        "joinHint": "Crea la tua vetrina, segui i tuoi giochi e luoghi, e trova i giocatori vicino a te.",
+        "signIn": "Accedi"
+      }
+    },
+    "profile": {
+      "metadata": {
+        "description": "Profilo di {tag} su Joutes: mazzi, pubblicazioni, obiettivi e liste condivise.",
+        "openGraphTitle": "{tag} - Joutes"
+      },
+      "hero": {
+        "addBanner": "Aggiungi un banner"
+      },
+      "meta": {
+        "memberSince": "iscritto da {date}",
+        "followers": "{count, plural, =0 {nessun iscritto} one {# iscritto} other {# iscritti}}"
+      },
+      "actions": {
+        "follow": "Segui",
+        "following": "Seguito ✓",
+        "addFriend": "Aggiungi agli amici",
+        "friendPending": "Richiesta inviata",
+        "friend": "Amico ✓",
+        "friendRequested": "Richiesta di amicizia inviata.",
+        "proposeTrade": "Proponi uno scambio",
+        "customise": "Personalizza",
+        "errors": {
+          "UNAUTHENTICATED": "Accedi per farlo.",
+          "SELF": "Non puoi farlo sul tuo profilo.",
+          "NOT_FOUND": "Questo account non esiste più.",
+          "ALREADY": "È già fatto.",
+          "FAILED": "L'operazione non è riuscita."
+        }
+      },
+      "tabs": {
+        "label": "Sezioni del profilo",
+        "showcase": "Vetrina",
+        "decks": "Mazzi",
+        "publications": "Pubblicazioni",
+        "achievements": "Obiettivi",
+        "trade": "Desideri e vendite"
+      },
+      "live": {
+        "badge": "In diretta",
+        "untitled": "Diretta in corso",
+        "since": "iniziata {relative}",
+        "justNow": "poco fa",
+        "open": "Apri la diretta",
+        "openOn": "Apri su {platform}"
+      },
+      "about": {
+        "title": "Informazioni"
+      },
+      "decks": {
+        "title": "Mazzi",
+        "count": "{count, plural, one {# mazzo pubblico} other {# mazzi pubblici}}",
+        "pinned": "In evidenza",
+        "pin": "Metti questo mazzo in evidenza",
+        "unpin": "Togli dall'evidenza",
+        "errors": {
+          "UNAUTHENTICATED": "Accedi per farlo.",
+          "SELF": "Non puoi farlo sul tuo profilo.",
+          "NOT_FOUND": "Questo mazzo non è più pubblico.",
+          "ALREADY": "È già fatto.",
+          "FAILED": "L'operazione non è riuscita."
+        }
+      },
+      "publications": {
+        "title": "Pubblicazioni",
+        "manage": "Gestisci le mie pubblicazioni",
+        "count": "{shown} su {total}",
+        "emptyForFilter": "Ancora niente di questo tipo.",
+        "filters": {
+          "all": "Tutto",
+          "video": "Video",
+          "article": "Articoli",
+          "replay": "Replay"
+        },
+        "kinds": {
+          "video": "Video",
+          "article": "Articolo",
+          "replay": "Replay"
+        }
+      },
+      "achievements": {
+        "title": "Obiettivi",
+        "points": "{points} punti",
+        "pointsShort": "{points} pt",
+        "progress": "{unlocked} / {total}",
+        "more": "{count, plural, one {+ # altro obiettivo} other {+ # altri obiettivi}}"
+      },
+      "trade": {
+        "title": "Desideri e vendite",
+        "wishlists": "Liste dei desideri",
+        "sellList": "Lista di vendita",
+        "cards": "{count, plural, one {# carta} other {# carte}}",
+        "forSale": "{count, plural, one {# carta in vendita} other {# carte in vendita}}",
+        "seeSellList": "Vedi la lista di vendita",
+        "match": "{count, plural, one {# dei suoi desideri è nella tua lista di vendita.} other {# dei suoi desideri sono nella tua lista di vendita.}}",
+        "proposeTrade": "Proponi uno scambio"
+      },
+      "sidebar": {
+        "games": "Giochi seguiti",
+        "favourite": "Gioco preferito",
+        "lairs": "Luoghi seguiti",
+        "groups": "Gruppi di gioco",
+        "members": "{count, plural, one {# membro} other {# membri}}",
+        "findMe": "Trova {name}",
+        "followers": "{count, plural, =0 {Ancora nessun iscritto} one {# iscritto} other {# iscritti}}"
+      },
+      "private": {
+        "badge": "Profilo privato",
+        "title": "Questo profilo è privato",
+        "makePublic": "Rendi pubblico il mio profilo"
+      },
+      "onboarding": {
+        "title": "La tua vetrina è pronta al {percent} %",
+        "go": "Vai",
+        "subscribe": "Vedi le offerte",
+        "bannerLocked": "Richiede un abbonamento Supporter.",
+        "steps": {
+          "username": "Scegli il tuo nome",
+          "identity": "Aggiungi un avatar e una descrizione",
+          "banner": "Metti un banner",
+          "follows": "Segui i tuoi giochi e luoghi",
+          "public": "Rendi pubblico il tuo profilo"
+        }
+      }
+    }
+  },
+  "Account": {
+    "title": "Il mio account",
+    "subtitle": "Gestisci il tuo profilo e le tue preferenze",
+    "tabs": {
+      "label": "Sezioni dell'account",
+      "profile": "Profilo",
+      "showcase": "La mia vetrina",
+      "games": "Giochi e luoghi",
+      "achievements": "Obiettivi",
+      "notifications": "Notifiche",
+      "subscription": "Abbonamento"
+    },
+    "profile": {
+      "identity": {
+        "title": "Informazioni del profilo",
+        "description": "Le tue informazioni personali e pubbliche",
+        "email": "Indirizzo e-mail",
+        "emailLocked": "L'e-mail non può essere modificata"
+      },
+      "prices": {
+        "title": "Prezzi delle carte",
+        "description": "Da dove vengono i prezzi mostrati sulle tue carte, sulla collezione e sugli scambi"
+      },
+      "quiz": {
+        "title": "I miei punteggi dei quiz",
+        "description": "Il risultato del tuo ultimo tentativo, sezione per sezione"
+      },
+      "links": {
+        "security": "Sicurezza",
+        "showcase": "La mia vetrina",
+        "integrations": "Integrazioni",
+        "contents": "Le mie pubblicazioni"
+      }
+    },
+    "games": {
+      "games": {
+        "title": "I giochi che seguo",
+        "description": "Gestisci i giochi di cui vuoi seguire gli eventi e scegli quelli che ti seguono nel menu"
+      },
+      "lairs": {
+        "title": "I luoghi che seguo",
+        "description": "Gestisci i luoghi di cui vuoi seguire gli eventi"
+      }
+    },
+    "achievements": {
+      "title": "I miei obiettivi",
+      "description": "Segui i tuoi progressi e sblocca ricompense esclusive.",
+      "progressTitle": "Progressi complessivi",
+      "progressDescription": "Hai sbloccato {unlocked} obiettivi su {total} ({points} punti).",
+      "percentComplete": "{percent} % completato",
+      "unlocked": "Sbloccato",
+      "locked": "Bloccato",
+      "points": "{points} pt"
+    },
+    "notifications": {
+      "title": "Notifiche",
+      "description": "Gestisci le tue preferenze di comunicazione.",
+      "channels": {
+        "email": "E-mail",
+        "app": "App Joutes"
+      },
+      "weekly": {
+        "title": "Riepiloghi settimanali",
+        "description": "Ricevi ogni lunedì un riepilogo degli eventi che potrebbero interessarti.",
+        "emailHint": "Ricevi il riepilogo per e-mail.",
+        "appHint": "Ricevi il riepilogo come notifica push sull'applicazione."
+      },
+      "push": {
+        "title": "Notifiche push",
+        "description": "Le notifiche Joutes — abbinamenti, scambi, richieste di amicizia, annunci — arrivano anche sui telefoni dove le hai autorizzate.",
+        "switchHint": "Disattiva per non ricevere più nulla sui tuoi dispositivi, senza doverli togliere uno per uno.",
+        "devices": "Dispositivi registrati"
+      },
+      "platform": {
+        "title": "Novità di Joutes",
+        "description": "Resta aggiornato sulle ultime novità della piattaforma Joutes.",
+        "emailHint": "Ricevi le nostre novità per e-mail."
+      }
+    },
+    "showcase": {
+      "title": "La mia vetrina",
+      "description": "Ciò che un visitatore vede di te, blocco per blocco.",
+      "save": "Salva",
+      "cancel": "Annulla",
+      "saved": "Vetrina salvata.",
+      "unsaved": "Modifiche non salvate",
+      "visibility": {
+        "title": "Profilo pubblico",
+        "publicHint": "La tua vetrina è aperta: chiunque può vederla e trovarti nel registro.",
+        "privateHint": "Il tuo profilo è privato. Restano visibili il tuo nome, i tuoi distintivi e le liste che hai contrassegnato come pubbliche."
+      },
+      "identity": {
+        "title": "Identità",
+        "description": "Il tuo avatar, il tuo banner e ciò che dici di te.",
+        "avatarLabel": "Avatar",
+        "bannerLabel": "Banner",
+        "bannerHint": "2400 × 600 consigliato",
+        "bannerLocked": "Il banner richiede un abbonamento Supporter.",
+        "getBadge": "Aggiungi un contorno al tuo avatar e un distintivo attivando un abbonamento",
+        "descriptionLabel": "Descrizione",
+        "descriptionPlaceholder": "I giochi che pratichi, il tuo modo di giocare, dove trovarti…",
+        "showCity": "Mostra la mia città",
+        "showCityHint": "Appare solo il comune: {city}. Mai la tua posizione esatta.",
+        "showCityNoCity": "Indica prima una posizione nella scheda Profilo."
+      },
+      "sections": {
+        "title": "Blocchi della vetrina",
+        "description": "Riordinali e spegni ciò che non vuoi mostrare.",
+        "privateHint": "Il tuo profilo è privato: questi blocchi non appaiono da nessuna parte finché resta così.",
+        "alwaysShown": "sempre visibile",
+        "moveUp": "Sposta su {section}",
+        "moveDown": "Sposta giù {section}",
+        "labels": {
+          "live": "Stato in diretta",
+          "about": "Informazioni",
+          "decks": "Mazzi",
+          "publications": "Pubblicazioni",
+          "achievements": "Obiettivi",
+          "follows": "Giochi, luoghi e gruppi seguiti",
+          "trade": "Desideri e vendite"
+        }
+      },
+      "links": {
+        "title": "Link",
+        "description": "Dieci al massimo. L'icona si deduce dal dominio, non devi scegliere nulla.",
+        "placeholder": "twitch.tv/il-tuo-canale",
+        "add": "Aggiungi",
+        "remove": "Rimuovi questo link",
+        "tooMany": "Non puoi aggiungere più di {max} link."
+      },
+      "upload": {
+        "failed": "Il caricamento non è riuscito.",
+        "remove": "Rimuovi l'immagine"
+      },
+      "preview": {
+        "title": "Visto da uno sconosciuto",
+        "privateNotice": "Profilo privato",
+        "sections": {
+          "live": "Stato in diretta",
+          "about": "Informazioni",
+          "decks": "Mazzi",
+          "publications": "Pubblicazioni",
+          "achievements": "Obiettivi",
+          "follows": "Giochi, luoghi e gruppi",
+          "trade": "Desideri e vendite"
+        }
+      },
+      "errors": {
+        "UNAUTHENTICATED": "Accedi per farlo.",
+        "INVALID": "Alcuni campi non sono validi.",
+        "NOT_FOUND": "Questo account non esiste più.",
+        "FAILED": "Il salvataggio non è riuscito."
+      }
+    },
+    "contents": {
+      "title": "Le mie pubblicazioni",
+      "description": "I tuoi video, articoli e replay — sulla tua vetrina e su quelle dei tuoi gruppi quando sono pubblici.",
+      "empty": "Non hai ancora pubblicato nulla.",
+      "new": "Nuova pubblicazione",
+      "edit": "Modifica",
+      "delete": "Elimina",
+      "deleted": "Pubblicazione eliminata.",
+      "saved": "Pubblicazione salvata.",
+      "back": "Torna alle mie pubblicazioni",
+      "visibility": {
+        "public": "Pubblica",
+        "private": "Bozza",
+        "makePublic": "Pubblica",
+        "makePrivate": "Torna a bozza"
+      },
+      "kinds": {
+        "video": "Video",
+        "article": "Articolo",
+        "replay": "Replay"
+      },
+      "form": {
+        "kind": "Genere",
+        "title": "Titolo",
+        "summary": "Riassunto",
+        "body": "Testo dell'articolo",
+        "bodyHint": "Markdown accettato.",
+        "url": "Indirizzo del video",
+        "thumbnail": "Miniatura",
+        "duration": "Durata",
+        "durationPlaceholder": "12 min",
+        "save": "Salva",
+        "cancel": "Annulla"
+      },
+      "errors": {
+        "UNAUTHENTICATED": "Accedi per farlo.",
+        "INVALID": "Alcuni campi non sono validi.",
+        "NOT_FOUND": "Questa pubblicazione non esiste più.",
+        "FORBIDDEN": "Questa pubblicazione non è tua.",
+        "LIMIT": "Hai raggiunto il numero massimo di pubblicazioni.",
+        "FAILED": "Il salvataggio non è riuscito."
+      }
+    }
   }
 }

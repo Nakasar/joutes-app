@@ -2033,6 +2033,7 @@
       },
       "contents": {
         "title": "What the group publishes",
+        "byMember": "by {name}",
         "count": "{shown} of {total}",
         "empty": "Nothing published in this category.",
         "filter": {
@@ -2657,13 +2658,13 @@
     "Features": {
       "metadata": {
         "title": "Features",
-        "description": "Discover everything Joutes offers for your trading card game passion: collection tracking, wishlists, play groups, events and more."
+        "description": "Discover everything Joutes offers for your trading card game passion: collection tracking, wishlists, play groups and their public page, game venues, events and more."
       },
       "hero": {
         "eyebrow": "Joutes",
         "titleHighlight": "One app",
         "title": "for all your trading card games",
-        "subtitle": "Card catalogs, collection tracking, wishlists, play groups, events… Joutes brings together everything you need to live your TCG passion, solo or with friends.",
+        "subtitle": "Card catalogs, collection tracking, wishlists, play groups and their public page, game venues, events… Joutes brings together everything you need to live your TCG passion, solo or with friends.",
         "ctaPrimary": "Explore games",
         "ctaSecondary": "Create an account"
       },
@@ -2696,12 +2697,39 @@
           ]
         },
         "playGroups": {
-          "title": "Play together with your groups",
-          "description": "Create play groups, share a collection that any member can update, and keep track of who borrowed which card.",
+          "title": "Your play group gets its Workbench",
+          "description": "One group, one page: upcoming sessions, availability polls, announcements and the group's lists, all readable at a glance — with no chat thread to scroll back through.",
           "bullets": [
-            "A collection shared across all members",
-            "Card-by-card borrow tracking",
-            "Invitations and roles (owner, admin, member)"
+            "Sessions set on a known date, or opened as an availability poll",
+            "In, maybe, out: everyone answers and the count keeps itself",
+            "Session venue: a Joutes location with its own page, a free-form place, or a member's home",
+            "Group announcements, members-only or carried over to the public page",
+            "Founder, admin and member roles, invitations by username or email",
+            "Shared collection, wishlists and the group's sale list",
+            "Trades matched on their own: who is after a card, who is selling it"
+          ]
+        },
+        "groupShowcase": {
+          "title": "A public page in your group's name",
+          "description": "A group is no longer just a private space: it has a public page, in its own colors, that players can follow. Your sessions and internal announcements stay internal.",
+          "bullets": [
+            "Logo, banner and accent color: the Workbench and the public page take your colors",
+            "Tagline, description, usual rhythm and links to your networks",
+            "Followers who subscribe to the group and see what it publishes",
+            "Tournament record, games and venues, carried over to the public page",
+            "Roll of arms: public groups are found by activity, by distance or by how new they are",
+            "Private group: it leaves the roll of arms, and its page asks not to be indexed"
+          ]
+        },
+        "groupContents": {
+          "title": "Articles, videos and live streams",
+          "description": "What your group produces finally has somewhere to live: articles written in markdown, videos and replays, and your Twitch or YouTube streams announced at the top of the public page.",
+          "bullets": [
+            "Articles written in markdown, with summary, thumbnail and related game",
+            "YouTube or Twitch videos and replays, with their running time",
+            "All, videos, articles and replays filters on the public page",
+            "Up to three simultaneous streams declared by members, viewer counts included",
+            "Streams and posts also surface on the roll of arms"
           ]
         },
         "wishlists": {
@@ -2714,12 +2742,14 @@
           ]
         },
         "lairs": {
-          "title": "Local game stores and events near you",
-          "description": "Discover game stores (lairs), their events, and sign up in a few seconds.",
+          "title": "Game venues, turned into showcases",
+          "description": "A venue's page is no longer a listing: it is its showcase, with news, an agenda, the games played there and a proper introduction — plus its live stream at the top of the page whenever it is broadcasting.",
           "bullets": [
-            "Event calendar for every location",
-            "Store pages with practical info",
-            "Reminders and notifications"
+            "Four tabs: news, agenda, games played here, about",
+            "Venue news, one of them pinned, and a featured event",
+            "Agenda filtered on the games you follow, sign-up in seconds",
+            "Today's opening hours, directions, photos and amenities",
+            "Follow a venue to receive its announcements"
           ]
         },
         "decks": {
@@ -2766,11 +2796,27 @@
           "gameSet": "Game set"
         },
         "playGroups": {
-          "sharedCollection": "Shared collection",
-          "cardName1": "Runic Flare",
-          "cardName2": "Steel Guard",
-          "borrowedBy": "Borrowed · {name}",
-          "available": "×{count} available"
+          "hub": "Group Workbench",
+          "pollBadge": "Poll open",
+          "slot1": "Thursday 7:30pm",
+          "slot2": "Saturday 2pm",
+          "availability": "{count}/{total} available",
+          "rsvp": "I'm in · {count} coming"
+        },
+        "groupShowcase": {
+          "name": "The Ravens",
+          "tagline": "Play group · Thionville",
+          "follow": "Follow",
+          "followers": "{count} followers",
+          "accent": "Accent"
+        },
+        "groupContents": {
+          "liveBadge": "LIVE",
+          "viewers": "{count} viewers",
+          "article": "Article",
+          "articleTitle": "Looking back at the Metz GP",
+          "video": "Video",
+          "videoTitle": "Commentated draft · 12 min"
         },
         "wishlists": {
           "title": "My wishlist",
@@ -2782,6 +2828,12 @@
         },
         "lairs": {
           "name": "The Dragon's Lair",
+          "tabNews": "News",
+          "tabAgenda": "Agenda",
+          "tabGames": "Games played here",
+          "tabAbout": "About",
+          "pinned": "PINNED",
+          "newsTitle": "New stock in on Saturday",
           "event": "Riftbound tournament · Saturday 2pm"
         },
         "decks": {
@@ -2797,7 +2849,7 @@
       "organizersLink": {
         "eyebrow": "Running events?",
         "title": "Joutes for event organizers",
-        "subtitle": "Stores, clubs, organizers, publishers: calendar, registrations, tournaments, leagues and integrations, on a page of their own.",
+        "subtitle": "Stores, clubs, organizers, publishers: your venue's showcase, calendar, registrations, tournaments, leagues and integrations, on a page of their own.",
         "cta": "See the organizers page"
       }
     },
@@ -4459,6 +4511,14 @@
     "tooltip": "{market} price recorded on {date}",
     "source": "{market} · recorded on {date}",
     "printings": "{count, plural, one {# printing recorded} other {# printings recorded}}",
+    "others": "Other providers",
+    "use": "Use",
+    "useDone": "Your prices now come from {market}",
+    "useScope": "Everywhere, for every game.",
+    "useFailed": "Could not change the price source.",
+    "settings": "Choose my price source →",
+    "noneFromSource": "{market}, your source, has no price for this card.",
+    "noAmount": "No amount",
     "figures": {
       "low": "Low",
       "trend": "Trend",
@@ -4468,13 +4528,13 @@
   "FeaturesOrganizers": {
     "metadata": {
       "title": "Joutes for organizers",
-      "description": "Calendar, registrations, tournaments, leagues and integrations: everything you need to run your gaming events and fill your tables — stores, clubs, organizers and publishers."
+      "description": "Your venue's showcase, calendar, registrations, tournaments, leagues and integrations: everything you need to talk to your players and fill your tables — stores, clubs, organizers and publishers."
     },
     "hero": {
       "eyebrow": "Stores · Clubs · Organizers · Publishers",
       "titleHighlight": "Fill your tables,",
       "title": "not your spreadsheets",
-      "subtitle": "Publish your calendar, open registrations, run your tournaments and leagues. Joutes reaches your players where they already are: Discord, mobile, web, notifications.",
+      "subtitle": "Turn your venue's page into a showcase, publish your calendar, open registrations, run your tournaments and leagues. Joutes reaches your players where they already are: Discord, mobile, web, notifications.",
       "ctaPrimary": "Create an event",
       "ctaSecondary": "Run a tournament"
     },
@@ -4484,7 +4544,7 @@
       "items": {
         "stores": {
           "title": "Game stores",
-          "description": "Your weekly schedule visible to players nearby, and your registrations kept up to date without a paper sign-up sheet."
+          "description": "A showcase in your own brand, your weekly schedule visible to players nearby, and your registrations kept up to date without a paper sign-up sheet."
         },
         "associations": {
           "title": "Clubs and associations",
@@ -4501,7 +4561,28 @@
       }
     },
     "soonLabel": "Coming soon",
+    "proLabel": "Joutes Pro",
     "items": {
+      "lairPage": {
+        "title": "Your venue's page becomes your showcase",
+        "description": "It used to be a listing with an address and a list of events. It is now the page where you talk to your players: four tabs, your news, your brand, and your live stream at the top of the page whenever you are broadcasting.",
+        "bullets": [
+          "Four tabs — news, agenda, games played here, about — each with its own column of practical information",
+          "Venue news: closures, new stock, promotions, with one announcement pinned at the top",
+          "A featured event of your choosing, with its remaining seats and its sign-up button",
+          "Twitch or YouTube stream: paste a URL and the player moves to the top of the page for every visitor",
+          "Opening hours day by day, split hours included, with \"open until 7pm\" worked out for the visitor",
+          "Usual rhythm: what players find here on a Friday night, even with no event listed",
+          "Markdown introduction, photo gallery, amenities, public transport access and parking",
+          "Your team named, your links and networks, your Discord",
+          "Followers who subscribe to the venue and receive its announcements"
+        ],
+        "pro": [
+          "Logo and accent color: the page takes your colors, down to the cards and buttons",
+          "The order of the page's sections, set by you",
+          "Introduction video embedded in the \"About\" tab"
+        ]
+      },
       "calendar": {
         "title": "A calendar your players already check",
         "description": "Your events do not sit on an isolated page: they land in the public Joutes calendar, on your venue's page, in per-game search and in search around a location.",
@@ -4654,6 +4735,19 @@
         "points": "{count} pts",
         "deadline": "Window · 3 days left"
       },
+      "lairPage": {
+        "name": "The Dragon's Lair",
+        "tabNews": "News",
+        "tabAgenda": "Agenda",
+        "tabGames": "Games played here",
+        "tabAbout": "About",
+        "live": "LIVE",
+        "pinned": "PINNED",
+        "newsTitle": "New stock: the new set lands Saturday",
+        "featured": "Featured · Saturday tournament",
+        "seats": "18 / 24 registered",
+        "openUntil": "Open until 7pm"
+      },
       "integrations": {
         "endpoint": "GET /api/events",
         "field1": "\"name\": \"Saturday tournament\"",
@@ -4770,5 +4864,389 @@
     "seeBadge": "See my achievements",
     "emptyTitle": "No events this month",
     "emptyBody": "Even the ghosts have left. Try another month, or host your own."
+  },
+  "Users": {
+    "bottomNav": {
+      "label": "Community navigation",
+      "registry": "Community",
+      "profile": "My profile",
+      "settings": "Settings"
+    },
+    "registry": {
+      "metadata": {
+        "title": "Community",
+        "description": "Find players near you, who play the same games, who sell cards or who are streaming right now.",
+        "openGraphTitle": "Community - Joutes"
+      },
+      "title": "Community",
+      "empty": "No profile matches.",
+      "reset": "Reset the filters",
+      "loadMore": "Load {count} more profiles",
+      "shownOf": "{shown} of {total}",
+      "search": {
+        "label": "Search for a player",
+        "placeholder": "Name, tag, town…",
+        "clear": "Clear the search"
+      },
+      "filters": {
+        "all": "All",
+        "nearCity": "Around {city}",
+        "sells": "Sells cards",
+        "live": "Live",
+        "sorts": {
+          "active": "Most recent",
+          "followers": "Most followed",
+          "name": "By name"
+        }
+      },
+      "live": {
+        "badge": "Live",
+        "title": "{count, plural, one {# player is streaming right now} other {# players are streaming right now}}"
+      },
+      "card": {
+        "private": "Private profile",
+        "live": "Live",
+        "seeProfile": "See the profile",
+        "followers": "{count, plural, =0 {no followers} one {# follower} other {# followers}}",
+        "games": "{count, plural, one {# game followed} other {# games followed}}"
+      },
+      "sidebar": {
+        "yourProfile": "Your profile",
+        "public": "Public",
+        "private": "Private",
+        "completion": "Showcase {percent}% ready",
+        "myShowcase": "My showcase",
+        "settings": "Settings",
+        "nearby": "Around {city}",
+        "leaderboard": "Achievement ranking",
+        "points": "{points} pts",
+        "yourRank": "You are #{rank} with {points} points.",
+        "joinTitle": "Join the community",
+        "joinHint": "Build your showcase, follow your games and venues, and find the players near you.",
+        "signIn": "Sign in"
+      }
+    },
+    "profile": {
+      "metadata": {
+        "description": "{tag} on Joutes: decks, publications, achievements and shared lists.",
+        "openGraphTitle": "{tag} - Joutes"
+      },
+      "hero": {
+        "addBanner": "Add a banner"
+      },
+      "meta": {
+        "memberSince": "member since {date}",
+        "followers": "{count, plural, =0 {no followers} one {# follower} other {# followers}}"
+      },
+      "actions": {
+        "follow": "Follow",
+        "following": "Following ✓",
+        "addFriend": "Add friend",
+        "friendPending": "Request sent",
+        "friend": "Friend ✓",
+        "friendRequested": "Friend request sent.",
+        "proposeTrade": "Propose a trade",
+        "customise": "Customise",
+        "errors": {
+          "UNAUTHENTICATED": "Sign in to do that.",
+          "SELF": "You cannot do that on your own profile.",
+          "NOT_FOUND": "This account no longer exists.",
+          "ALREADY": "Already done.",
+          "FAILED": "That did not work."
+        }
+      },
+      "tabs": {
+        "label": "Profile sections",
+        "showcase": "Showcase",
+        "decks": "Decks",
+        "publications": "Publications",
+        "achievements": "Achievements",
+        "trade": "Wishlists & sales"
+      },
+      "live": {
+        "badge": "Live",
+        "untitled": "Streaming now",
+        "since": "started {relative}",
+        "justNow": "just now",
+        "open": "Open the stream",
+        "openOn": "Open on {platform}"
+      },
+      "about": {
+        "title": "About"
+      },
+      "decks": {
+        "title": "Decks",
+        "count": "{count, plural, one {# public deck} other {# public decks}}",
+        "pinned": "Pinned",
+        "pin": "Pin this deck",
+        "unpin": "Unpin this deck",
+        "errors": {
+          "UNAUTHENTICATED": "Sign in to do that.",
+          "SELF": "You cannot do that on your own profile.",
+          "NOT_FOUND": "This deck is no longer public.",
+          "ALREADY": "Already done.",
+          "FAILED": "Pinning did not work."
+        }
+      },
+      "publications": {
+        "title": "Publications",
+        "manage": "Manage my publications",
+        "count": "{shown} of {total}",
+        "emptyForFilter": "Nothing of that kind yet.",
+        "filters": {
+          "all": "All",
+          "video": "Videos",
+          "article": "Articles",
+          "replay": "Replays"
+        },
+        "kinds": {
+          "video": "Video",
+          "article": "Article",
+          "replay": "Replay"
+        }
+      },
+      "achievements": {
+        "title": "Achievements",
+        "points": "{points} points",
+        "pointsShort": "{points} pts",
+        "progress": "{unlocked} / {total}",
+        "more": "{count, plural, one {+ # more achievement} other {+ # more achievements}}"
+      },
+      "trade": {
+        "title": "Wishlists & sales",
+        "wishlists": "Wishlists",
+        "sellList": "Sale list",
+        "cards": "{count, plural, one {# card} other {# cards}}",
+        "forSale": "{count, plural, one {# card for sale} other {# cards for sale}}",
+        "seeSellList": "See the sale list",
+        "match": "{count, plural, one {# of their wishes is in your sale list.} other {# of their wishes are in your sale list.}}",
+        "proposeTrade": "Propose a trade"
+      },
+      "sidebar": {
+        "games": "Followed games",
+        "favourite": "Favourite game",
+        "lairs": "Followed venues",
+        "groups": "Play groups",
+        "members": "{count, plural, one {# member} other {# members}}",
+        "findMe": "Find {name}",
+        "followers": "{count, plural, =0 {No followers yet} one {# follower} other {# followers}}"
+      },
+      "private": {
+        "badge": "Private profile",
+        "title": "This profile is private",
+        "makePublic": "Make my profile public"
+      },
+      "onboarding": {
+        "title": "Your showcase is {percent}% ready",
+        "go": "Go there",
+        "subscribe": "See the tiers",
+        "bannerLocked": "Requires a Supporter subscription.",
+        "steps": {
+          "username": "Choose your display name",
+          "identity": "Add an avatar and a description",
+          "banner": "Put up a banner",
+          "follows": "Follow your games and venues",
+          "public": "Make your profile public"
+        }
+      }
+    }
+  },
+  "Account": {
+    "title": "My account",
+    "subtitle": "Manage your profile and your preferences",
+    "tabs": {
+      "label": "Account sections",
+      "profile": "Profile",
+      "showcase": "My showcase",
+      "games": "Games & venues",
+      "achievements": "Achievements",
+      "notifications": "Notifications",
+      "subscription": "Subscription"
+    },
+    "profile": {
+      "identity": {
+        "title": "Profile information",
+        "description": "Your personal and public information",
+        "email": "Email address",
+        "emailLocked": "The email address cannot be changed"
+      },
+      "prices": {
+        "title": "Card prices",
+        "description": "Where the prices on your cards, your collection and your trades come from"
+      },
+      "quiz": {
+        "title": "My quiz scores",
+        "description": "The result of your last attempt, section by section"
+      },
+      "links": {
+        "security": "Security",
+        "showcase": "My showcase",
+        "integrations": "Integrations",
+        "contents": "My publications"
+      }
+    },
+    "games": {
+      "games": {
+        "title": "Games I follow",
+        "description": "Manage the games whose events you want to follow, and pick the ones that follow you into the menu"
+      },
+      "lairs": {
+        "title": "Venues I follow",
+        "description": "Manage the venues whose events you want to follow"
+      }
+    },
+    "achievements": {
+      "title": "My achievements",
+      "description": "Track your progress and unlock exclusive rewards.",
+      "progressTitle": "Overall progress",
+      "progressDescription": "You have unlocked {unlocked} of {total} achievements ({points} points).",
+      "percentComplete": "{percent}% complete",
+      "unlocked": "Unlocked",
+      "locked": "Locked",
+      "points": "{points} pts"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Manage your communication preferences.",
+      "channels": {
+        "email": "Email",
+        "app": "Joutes app"
+      },
+      "weekly": {
+        "title": "Weekly digests",
+        "description": "Get a Monday round-up of the events that might interest you.",
+        "emailHint": "Get your digest by email.",
+        "appHint": "Get your digest as a push notification in the app."
+      },
+      "push": {
+        "title": "Push notifications",
+        "description": "Joutes notifications — matches, trades, friend requests, announcements — also reach the phones where you allowed them.",
+        "switchHint": "Turn this off to stop receiving anything on your devices, without removing them one by one.",
+        "devices": "Registered devices"
+      },
+      "platform": {
+        "title": "Joutes news",
+        "description": "Keep up with what is new on the Joutes platform.",
+        "emailHint": "Get our news by email."
+      }
+    },
+    "showcase": {
+      "title": "My showcase",
+      "description": "What a visitor sees of you, block by block.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Showcase saved.",
+      "unsaved": "Unsaved changes",
+      "visibility": {
+        "title": "Public profile",
+        "publicHint": "Your showcase is open: anyone can see it and find you in the registry.",
+        "privateHint": "Your profile is private. Your display name, your badges and the lists you marked public stay visible."
+      },
+      "identity": {
+        "title": "Identity",
+        "description": "Your avatar, your banner and what you say about yourself.",
+        "avatarLabel": "Avatar",
+        "bannerLabel": "Banner",
+        "bannerHint": "2400 × 600 recommended",
+        "bannerLocked": "The banner requires a Supporter subscription.",
+        "getBadge": "Add a ring to your avatar and a badge by starting a subscription",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "The games you play, how you play them, where to find you…",
+        "showCity": "Show my town",
+        "showCityHint": "Only the town appears: {city}. Never your exact position.",
+        "showCityNoCity": "Set a location in the Profile tab first."
+      },
+      "sections": {
+        "title": "Showcase blocks",
+        "description": "Reorder them, and switch off what you would rather not show.",
+        "privateHint": "Your profile is private: these blocks appear nowhere while it stays that way.",
+        "alwaysShown": "always shown",
+        "moveUp": "Move {section} up",
+        "moveDown": "Move {section} down",
+        "labels": {
+          "live": "Live status",
+          "about": "About",
+          "decks": "Decks",
+          "publications": "Publications",
+          "achievements": "Achievements",
+          "follows": "Followed games, venues and groups",
+          "trade": "Wishlists & sales"
+        }
+      },
+      "links": {
+        "title": "Links",
+        "description": "Ten at most. The icon follows from the domain, there is nothing to choose.",
+        "placeholder": "twitch.tv/your-channel",
+        "add": "Add",
+        "remove": "Remove this link",
+        "tooMany": "You cannot add more than {max} links."
+      },
+      "upload": {
+        "failed": "The upload failed.",
+        "remove": "Remove the image"
+      },
+      "preview": {
+        "title": "Seen by a stranger",
+        "privateNotice": "Private profile",
+        "sections": {
+          "live": "Live status",
+          "about": "About",
+          "decks": "Decks",
+          "publications": "Publications",
+          "achievements": "Achievements",
+          "follows": "Games, venues and groups",
+          "trade": "Wishlists & sales"
+        }
+      },
+      "errors": {
+        "UNAUTHENTICATED": "Sign in to do that.",
+        "INVALID": "Some fields are not valid.",
+        "NOT_FOUND": "This account no longer exists.",
+        "FAILED": "Saving did not work."
+      }
+    },
+    "contents": {
+      "title": "My publications",
+      "description": "Your videos, articles and replays — on your showcase, and on your groups' showcases when they are public.",
+      "empty": "You have not published anything yet.",
+      "new": "New publication",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleted": "Publication deleted.",
+      "saved": "Publication saved.",
+      "back": "Back to my publications",
+      "visibility": {
+        "public": "Public",
+        "private": "Draft",
+        "makePublic": "Publish",
+        "makePrivate": "Back to draft"
+      },
+      "kinds": {
+        "video": "Video",
+        "article": "Article",
+        "replay": "Replay"
+      },
+      "form": {
+        "kind": "Kind",
+        "title": "Title",
+        "summary": "Summary",
+        "body": "Article text",
+        "bodyHint": "Markdown accepted.",
+        "url": "Video address",
+        "thumbnail": "Thumbnail",
+        "duration": "Duration",
+        "durationPlaceholder": "12 min",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "errors": {
+        "UNAUTHENTICATED": "Sign in to do that.",
+        "INVALID": "Some fields are not valid.",
+        "NOT_FOUND": "This publication no longer exists.",
+        "FORBIDDEN": "This publication is not yours.",
+        "LIMIT": "You have reached the maximum number of publications.",
+        "FAILED": "Saving did not work."
+      }
+    }
   }
 }

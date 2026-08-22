@@ -1,5 +1,6 @@
 import db from "@/lib/mongodb";
 import { Filter, ObjectId, UpdateFilter, WithId } from "mongodb";
+import { purgeStreamTarget } from "@/lib/db/stream-links";
 import { readRollFilter } from "@/lib/play-groups/access";
 import type {
   PlayGroup,
@@ -544,5 +545,21 @@ export async function deletePlayGroup(playGroupId: string): Promise<boolean> {
 
   await playGroupInvitationsCollection.deleteMany({ playGroupId });
   await playGroupFollowersCollection.deleteMany({ playGroupId });
+
+  // Le groupe disparaît, les directs qui devaient s'y annoncer aussi : une
+  // destination fantôme ferait échouer une annonce sur deux sans que son
+  // propriétaire comprenne pourquoi (voir `docs/STREAM_LINKING.md`).
+  //
+  // Au mieux, et jamais au prix de la suppression : le groupe est **déjà** parti
+  // quand on arrive ici, et jeter maintenant ferait rendre un échec pour une
+  // opération réussie. Une destination restée en place est inoffensive :
+  // l'annonce la saute faute de droit, et l'écran de compte l'affiche comme
+  // supprimée pour qu'on l'ôte.
+  try {
+    await purgeStreamTarget({ kind: "play-group", id: playGroupId });
+  } catch (error) {
+    console.error(`Purge des destinations de direct du groupe ${playGroupId} impossible:`, error);
+  }
+
   return true;
 }

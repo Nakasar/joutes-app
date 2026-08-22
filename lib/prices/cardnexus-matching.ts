@@ -27,14 +27,48 @@ export type CardnexusGameProfile = {
   setCodes?: Record<string, string>;
   /** Extensions dont CardNexus ne publie pas le code, retrouvées par leur slug. */
   setCodesBySlug?: Record<string, string>;
+  /**
+   * Fins de numéro qui désignent le même tirage des deux côtés sans s'écrire
+   * pareil, suffixe canonique en valeur. Appliquées **aux deux catalogues** :
+   * elles ramènent une même variante à une même écriture, d'où qu'elle vienne.
+   *
+   * Un suffixe est une lettre de tirage, pas une décoration : le retirer
+   * confondrait la variante avec la carte dont elle est tirée. C'est pourquoi
+   * ces réécritures sont propres à un jeu — `s` et `★` sont deux tirages
+   * distincts chez Magic (l'un tamponné en avant-première, l'autre non), là où
+   * chez Riftbound `*` et `s` sont deux façons d'écrire le seul tirage signé.
+   */
+  printNumberSuffixes?: Record<string, string>;
 };
 
 /**
- * Jeux dont une extension au moins ne se retrouve pas par son code. Un jeu
- * absent s'importe quand même : ses codes sont pris tels quels, et le bilan de
- * l'import dit lesquels n'ont rien trouvé en face.
+ * Jeux dont une extension ou un suffixe au moins ne se retrouve pas tel quel.
+ * Un jeu absent s'importe quand même : ses codes et ses numéros sont pris tels
+ * quels, et le bilan de l'import dit lesquels n'ont rien trouvé en face.
  */
-export const CARDNEXUS_GAME_PROFILES: Record<string, CardnexusGameProfile> = {};
+export const CARDNEXUS_GAME_PROFILES: Record<string, CardnexusGameProfile> = {
+  /**
+   * Magic numérote d'une étoile noire le tirage foil des anciens jeux de base :
+   * `222★` est le `222` foil. Les deux catalogues l'écrivent pareil ; c'est la
+   * normalisation qui l'effaçait, faute d'être une lettre latine. Le rendre
+   * lisible suffit à le distinguer.
+   *
+   * L'étoile n'est pas le `s` de Magic, qui marque un tout autre tirage — celui
+   * tamponné en avant-première —, et les deux se rencontrent sur une même carte
+   * (`123s★`) : les confondre donnerait le prix de l'un pour l'autre.
+   */
+  mtg: { printNumberSuffixes: { "★": "star" } },
+
+  /**
+   * Riftbound marque d'une étoile le tirage signé d'une carte : `299*` est le
+   * `299` signé. CardNexus le nomme `299s` sur les extensions d'origine et
+   * `299*` sur les suivantes — les deux écritures pour le même tirage, jusque
+   * dans son propre catalogue. Sans cette table, l'étoile tombait à la
+   * normalisation : le tirage signé se confondait avec sa carte de base, et les
+   * deux étaient écartés comme indépartageables.
+   */
+  riftbound: { printNumberSuffixes: { "*": "s" } },
+};
 
 /** Les codes d'extension se comparent sans casse ni ponctuation. */
 export function normalizeSetCode(code: string): string {
@@ -45,17 +79,29 @@ export function normalizeSetCode(code: string): string {
  * Les numéros de collection se comparent sans ponctuation, sans casse et sans
  * zéros de tête : un catalogue écrit `027a` là où l'autre écrit `27a`, et les
  * deux désignent la variante du numéro 27.
+ *
+ * La lettre de tirage, elle, est gardée : `27a` n'est pas `27`. Quand un jeu
+ * l'écrit autrement d'un catalogue à l'autre, `suffixes` la ramène à une seule
+ * écriture — c'est la seule ponctuation qui survive à la normalisation, et
+ * seulement pour les jeux qui la déclarent (cf. `CardnexusGameProfile`).
  */
-export function normalizePrintNumber(printNumber: string): string {
-  return printNumber
+export function normalizePrintNumber(printNumber: string, suffixes: Record<string, string> = {}): string {
+  const trimmed = printNumber.trim();
+
+  // Une seule réécriture, jamais en chaîne : le suffixe canonique de l'une ne
+  // doit pas se faire relire comme le suffixe écrit d'une autre.
+  const written = Object.keys(suffixes).find((suffix) => suffix.length > 0 && trimmed.endsWith(suffix));
+  const canonical = written ? `${trimmed.slice(0, -written.length)}${suffixes[written]}` : trimmed;
+
+  return canonical
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "")
     .replace(/0*(\d+)/g, "$1");
 }
 
 /** Clé d'identité d'une carte : son extension et son numéro. */
-function identityKey(setCode: string, printNumber: string): string {
-  return `${normalizeSetCode(setCode)}|${normalizePrintNumber(printNumber)}`;
+function identityKey(setCode: string, printNumber: string, suffixes: Record<string, string>): string {
+  return `${normalizeSetCode(setCode)}|${normalizePrintNumber(printNumber, suffixes)}`;
 }
 
 /** Ce qu'une extension CardNexus a donné, pour que l'import reste vérifiable. */
@@ -96,13 +142,22 @@ export type CardnexusMatchReport = {
  * alors tous rattachés, à charge pour l'appelant d'en tirer un prix de
  * référence. L'inverse, deux cartes pour un numéro, n'a pas de réponse : leur
  * donner le même prix reviendrait à en inventer un, elles sont écartées.
+ *
+ * Le catalogue n'est parcouru qu'une fois et n'est jamais gardé : le flux du
+ * feed se passe donc tel quel, sans l'avoir rangé d'abord — seuls les produits
+ * rapprochés survivent à l'appel. Un tableau reste accepté, ce qu'attendent les
+ * tests. Les extensions, elles, sont lues d'un bloc : il en faut la table
+ * entière avant le premier produit, et un jeu en compte quelques centaines tout
+ * au plus.
  */
-export function matchCardnexusProducts(
-  products: Iterable<CardnexusProduct>,
+export async function matchCardnexusProducts(
+  products: AsyncIterable<CardnexusProduct> | Iterable<CardnexusProduct>,
   expansions: Iterable<CardnexusExpansion>,
   cards: PriceableCard[],
   profile: CardnexusGameProfile = {}
-): CardnexusMatchReport {
+): Promise<CardnexusMatchReport> {
+  const suffixes = profile.printNumberSuffixes ?? {};
+
   const expansionById = new Map<number, CardnexusExpansion>();
   for (const expansion of expansions) {
     expansionById.set(expansion.id, expansion);
@@ -120,7 +175,7 @@ export function matchCardnexusProducts(
     if (!card.setCode || !card.collectorNumber) {
       continue;
     }
-    const key = identityKey(card.setCode, card.collectorNumber);
+    const key = identityKey(card.setCode, card.collectorNumber, suffixes);
     cardsByIdentity.set(key, [...(cardsByIdentity.get(key) ?? []), card]);
   }
 
@@ -128,7 +183,7 @@ export function matchCardnexusProducts(
   const skipped = { sealed: 0, unknownExpansion: 0, noPrintNumber: 0, unknownCard: 0, ambiguous: 0 };
   const reports = new Map<number, CardnexusExpansionReport>();
 
-  for (const product of products) {
+  for await (const product of products) {
     if (product.productType !== "card") {
       skipped.sealed++;
       continue;
@@ -159,7 +214,7 @@ export function matchCardnexusProducts(
       continue;
     }
 
-    const candidates = cardsByIdentity.get(identityKey(setCode, product.printNumber)) ?? [];
+    const candidates = cardsByIdentity.get(identityKey(setCode, product.printNumber, suffixes)) ?? [];
 
     if (candidates.length === 0) {
       skipped.unknownCard++;

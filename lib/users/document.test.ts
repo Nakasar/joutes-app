@@ -42,6 +42,42 @@ describe("toUser", () => {
     assert.equal(toUser(document()).id, objectId.toString());
   });
 
+  it("rend la date de création, quelle que soit sa forme en base", () => {
+    // better-auth pose une `Date` ; les comptes invités écrivent déjà une
+    // chaîne ISO. Les deux doivent ressortir de la même façon.
+    assert.equal(
+      toUser(document({ createdAt: new Date("2024-01-02T03:04:05.000Z") })).createdAt,
+      "2024-01-02T03:04:05.000Z",
+    );
+    assert.equal(
+      toUser(document({ createdAt: "2024-01-02T03:04:05.000Z" })).createdAt,
+      "2024-01-02T03:04:05.000Z",
+    );
+    assert.equal(toUser(document()).createdAt, undefined);
+  });
+
+  it("écarte les blocs de vitrine dont la clé n'existe plus", () => {
+    // Une clé retirée du code reste en base. La laisser traverser ferait porter
+    // à chaque lecteur le soin de s'en méfier.
+    const user = toUser(
+      document({
+        showcase: {
+          sections: [
+            { key: "podcast", enabled: true },
+            { key: "decks", enabled: false },
+          ],
+        },
+      }),
+    );
+
+    assert.deepEqual(user.showcase?.sections, [{ key: "decks", enabled: false }]);
+  });
+
+  it("ne rend une ville visible que si le compte l'a demandé", () => {
+    assert.equal(toUser(document({ showcase: {} })).showcase?.showCity, false);
+    assert.equal(toUser(document({ showcase: { showCity: true } })).showcase?.showCity, true);
+  });
+
   it("laisse tomber ce que le document porte en plus", () => {
     // better-auth écrit ses propres champs dans la même collection : ils n'ont
     // pas à ressortir avec l'utilisateur.
@@ -60,16 +96,26 @@ describe("toUser", () => {
       email: "kevin@example.test",
       discordId: "42",
       avatar: "https://example.test/a.png",
+      createdAt: "2024-01-02T03:04:05.000Z",
       lairs: ["l1"],
       games: ["g1"],
       favoriteGames: ["g1"],
       friends: ["u2"],
       friendCode: "ABCD1234",
       isPublicProfile: true,
+      pricePreference: { source: "cardmarket", fallback: false },
       description: "Joueur du mardi",
       website: "https://example.test",
       socialLinks: ["https://example.test/social"],
       profileImage: "https://example.test/p.png",
+      showcase: {
+        banner: "https://example.test/b.png",
+        sections: [{ key: "about", enabled: false }],
+        pinnedDeckId: "d1",
+        links: [{ url: "https://example.test/x" }],
+        showCity: true,
+        playStyles: ["commander"],
+      },
       location: { latitude: 45.75, longitude: 4.85, label: "Lyon", city: "Lyon", postalCode: "69000" },
       notifications: { emails: { weekly: { enabled: true } } },
     };

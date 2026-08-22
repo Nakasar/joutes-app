@@ -14,14 +14,18 @@ import { revalidatePath } from "next/cache";
  * Toutes commencent par `requireAdmin()` : le rendu conditionnel côté serveur
  * n'est qu'une commodité d'affichage, le vrai contrôle est ici.
  *
- * **Sur la revalidation** : la route du profil est `/users/[userTagOrId]`, et on
- * y arrive presque toujours par le pseudonyme, pas par l'identifiant. L'ancien
+ * **Sur la revalidation** : la route du profil est `/[locale]/users/[userTagOrId]`,
+ * et on y arrive presque toujours par le pseudonyme, pas par l'identifiant.
  * `revalidatePath('/users/' + userId)` n'invalidait donc jamais la page que les
  * gens regardent. On invalide le motif de route, ce qui couvre les deux formes.
+ *
+ * Le `[locale]` de tête n'est pas décoratif : ce chemin désigne la **structure
+ * de fichiers de routes** et non l'URL, que next-intl réécrit pour servir le
+ * français sans préfixe. Sans lui, le motif ne désignait aucune route.
  */
 
 function revalidateProfil() {
-  revalidatePath("/users/[userTagOrId]", "page");
+  revalidatePath("/[locale]/users/[userTagOrId]", "page");
   revalidatePath("/account/achievements");
   revalidatePath("/account/subscription");
 }

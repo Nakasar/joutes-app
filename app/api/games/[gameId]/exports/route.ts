@@ -16,6 +16,7 @@ import {
 } from "@/lib/db/game-exports";
 import {gameExportChunks} from "@/lib/games/export-document";
 import {withMarketPricesStream} from "@/lib/db/card-prices";
+import {CARD_PRICE_SOURCES} from "@/lib/types/card-price";
 
 const EXPORT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
@@ -130,7 +131,11 @@ export async function GET(request: Request, {params}: { params: Promise<{ gameId
     // Le prix suit la carte plutôt que de voyager à part : hors ligne, il n'y a
     // pas de seconde requête à faire. Il est lu par paquets, pour ne pas
     // ramener en mémoire les relevés de tout un catalogue.
-    const cards = withMarketPricesStream(new ObjectId(game.id), cursor);
+    // L'ordre de la plateforme, explicitement : le document est déposé sur un
+    // stockage public et resservi tel quel à tout le monde pendant 24 h (cf.
+    // `getRecentGameExport`). Il ne peut pas porter la préférence de prix de
+    // celui qui a demandé sa génération.
+    const cards = withMarketPricesStream(new ObjectId(game.id), cursor, CARD_PRICE_SOURCES);
 
     const stream = new PassThrough();
     const upload = put(pathname, stream, {

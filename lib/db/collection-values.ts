@@ -5,6 +5,8 @@ import { ObjectId } from "mongodb";
 import { getMarketPrices } from "@/lib/db/card-prices";
 import { sumOwnedCardPrices, type CollectionValue } from "@/lib/collection/value";
 import { ownerField, ownerMatch, type CollectionOwner } from "@/lib/db/collection-owner";
+import { priceSourcesForUser } from "@/lib/prices/viewer";
+import { CARD_PRICE_SOURCES } from "@/lib/types/card-price";
 
 /**
  * Valeur estimée d'une collection, un document par (propriétaire, jeu).
@@ -158,6 +160,13 @@ async function getOwnedCopiesByCard(
  * Le calcul est une action explicite du propriétaire : les prix ne sont
  * relevés que de temps en temps, et une valeur datée du dernier clic se
  * comprend mieux qu'un total qui bouge tout seul.
+ *
+ * Le total est **écrit en base** et relu longtemps après : les prix suivent
+ * donc la préférence du propriétaire, jamais celle de qui presse le bouton.
+ * La distinction n'est pas théorique — la collection d'un groupe de jeu se
+ * recalcule par n'importe lequel de ses membres, et sans cela le réglage d'un
+ * seul déciderait de la valeur que tous les autres liraient. Un groupe n'ayant
+ * pas de préférence, il prend l'ordre de la plateforme.
  */
 export async function computeGameCollectionValue(
   owner: CollectionOwner,
@@ -167,7 +176,9 @@ export async function computeGameCollectionValue(
 
   const gameObjId = new ObjectId(gameId);
   const owned = await getOwnedCopiesByCard(owner, gameObjId);
-  const prices = await getMarketPrices(gameObjId, owned.map((entry) => entry.cardId));
+  const sources =
+    owner.type === "user" ? await priceSourcesForUser(owner.id) : CARD_PRICE_SOURCES;
+  const prices = await getMarketPrices(gameObjId, owned.map((entry) => entry.cardId), sources);
 
   const value = sumOwnedCardPrices(
     owned.map((entry) => ({ copies: entry.copies, price: prices.get(entry.cardId) })),

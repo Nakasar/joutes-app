@@ -1,4 +1,5 @@
 import db from "@/lib/mongodb";
+import { purgeStreamTarget } from "@/lib/db/stream-links";
 import { Lair, LairProGrant } from "@/lib/types/Lair";
 import { ObjectId, WithId, Document, Filter } from "mongodb";
 
@@ -341,9 +342,29 @@ export async function getLairIdsWithProGrant(lairIds: string[]): Promise<Set<str
 }
 
 export async function deleteLair(id: string): Promise<boolean> {
-  
+
   const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
-  return result.deletedCount > 0;
+
+  if (result.deletedCount === 0) {
+    return false;
+  }
+
+  // Le lieu disparaît, les directs qui devaient s'y annoncer aussi : une
+  // destination fantôme ferait échouer une annonce sur deux sans que son
+  // propriétaire comprenne pourquoi (voir `docs/STREAM_LINKING.md`).
+  //
+  // Au mieux, et jamais au prix de la suppression : le lieu est **déjà** parti
+  // quand on arrive ici, et jeter maintenant ferait rendre un échec pour une
+  // opération réussie — voire retenter une suppression sans objet. Une
+  // destination restée en place est inoffensive : l'annonce la saute faute de
+  // droit, et l'écran de compte l'affiche comme supprimée pour qu'on l'ôte.
+  try {
+    await purgeStreamTarget({ kind: "lair", id });
+  } catch (error) {
+    console.error(`Purge des destinations de direct du lieu ${id} impossible:`, error);
+  }
+
+  return true;
 }
 
 export async function addOwnerToLair(lairId: string, userId: string): Promise<boolean> {

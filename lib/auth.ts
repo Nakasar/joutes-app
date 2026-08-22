@@ -57,6 +57,73 @@ function patreonOAuthConfigs() {
   ];
 }
 
+/**
+ * Twitch et YouTube, en fournisseurs de **liaison d'abord**.
+ *
+ * Les deux ouvrent la connexion à Joutes comme Discord, mais seulement à qui a
+ * déjà lié son compte : `disableSignUp` refuse la création d'un compte Joutes
+ * par ce chemin. C'est la règle de la fonctionnalité, et elle a une raison —
+ * une chaîne ne prouve rien sur l'identité de son propriétaire tant que
+ * personne ne l'a revendiquée depuis un compte existant. La revendication passe
+ * par « Connexions et comptes », qui appelle `linkSocial` sur une session
+ * ouverte.
+ *
+ * Chaque bloc est rendu vide quand ses secrets manquent : un aperçu sans
+ * configuration fonctionne alors normalement, la liaison s'affichant désactivée.
+ *
+ * `overrideUserInfo` reste à son défaut (`false`) : l'adresse Twitch ou Google
+ * ne doit pas écraser celle du compte. `allowDifferentEmails` est déjà posé plus
+ * bas, une divergence est donc normale et sans conséquence.
+ */
+function streamSocialProviders() {
+  const providers: NonNullable<Parameters<typeof betterAuth>[0]["socialProviders"]> = {};
+
+  const twitchClientId = process.env.TWITCH_CLIENT_ID?.trim();
+  const twitchClientSecret = process.env.TWITCH_CLIENT_SECRET?.trim();
+
+  if (twitchClientId && twitchClientSecret) {
+    providers.twitch = {
+      clientId: twitchClientId,
+      clientSecret: twitchClientSecret,
+      disableSignUp: true,
+      // Twitch ne rend l'adresse que si le compte en a une vérifiée ; une
+      // adresse de repli garde la liaison possible dans le cas contraire, comme
+      // pour Discord juste au-dessus.
+      mapProfileToUser: (profile) => ({
+        email: profile.email ?? `${profile.sub}@twitch.placeholder.local`,
+      }),
+    };
+  }
+
+  const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim();
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+
+  if (googleClientId && googleClientSecret) {
+    providers.google = {
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
+      disableSignUp: true,
+      /**
+       * Le périmètre YouTube en lecture, et rien d'autre.
+       *
+       * Il sert à une seule question, posée une fois à la liaison : « quelle
+       * chaîne appartient à ce compte ? ». Tout le reste de la surveillance
+       * passe ensuite par des données publiques — le hub WebSub et une clé
+       * d'API — et ne touche plus jamais au compte de l'utilisateur.
+       *
+       * `accessType: "offline"` avec `prompt: "consent"` obtient un jeton de
+       * rafraîchissement : sans lui, le jeton expire en une heure et
+       * resynchroniser le nom d'une chaîne exigerait de refaire la liaison.
+       */
+      scope: ["https://www.googleapis.com/auth/youtube.readonly"],
+      accessType: "offline",
+      prompt: "consent",
+    };
+  }
+
+  return providers;
+}
+
 export const auth = betterAuth({
   database: mongodbAdapter(db),
   emailAndPassword: {
@@ -70,6 +137,7 @@ export const auth = betterAuth({
         email: profile.email ?? `${profile.id}@discord.placeholder.local`,
       }),
     },
+    ...streamSocialProviders(),
   },
   plugins: [
     jwt(),

@@ -14,7 +14,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog.tsx";
 import { cn } from "@/lib/utils.ts";
 import type { LairNewsItem } from "@/lib/types/Lair";
 
-import ImageDropzone from "./ImageDropzone.tsx";
+import ImageDropzone from "@/components/ImageDropzone.tsx";
 import { updateLairNews, type LairCustomizationError } from "./customization-actions.ts";
 
 const ERROR_KEYS: Record<LairCustomizationError, string> = {
@@ -51,6 +51,8 @@ export default function LairNewsEditor({
   news: LairNewsItem[];
 }) {
   const t = useTranslations("Lairs.manage.customization.news");
+  const tUpload = useTranslations("Lairs.manage.customization.upload");
+  const uploadLabels = { failed: tUpload("failed"), remove: tUpload("remove") };
   const [items, setItems] = useState<LairNewsItem[]>(news);
   const [editing, setEditing] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -194,7 +196,8 @@ export default function LairNewsEditor({
                 <div className="flex flex-col gap-1.5">
                   <Label>{t("fields.banner")}</Label>
                   <ImageDropzone
-                    lairId={lairId}
+                    uploadUrl={`/api/lairs/${lairId}/upload`}
+                    labels={uploadLabels}
                     value={item.banner}
                     label={t("fields.bannerLabel")}
                     previewClassName="h-32"

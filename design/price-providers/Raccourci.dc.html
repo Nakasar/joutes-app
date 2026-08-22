@@ -1,0 +1,236 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .app {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --border: oklch(1 0 0 / 10%);
+      --input: oklch(1 0 0 / 15%);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0);
+      --price: oklch(0.845 0.143 164.978);
+      font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      -webkit-font-smoothing: antialiased;
+    }
+    .app.clair {
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --price: oklch(0.508 0.118 165.612);
+    }
+
+    .price { display: flex; flex-direction: column; gap: 8px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); padding: 12px; }
+    .price-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 4px; }
+    .kicker { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground); }
+    .amount { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 18px; line-height: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--price); }
+    .figures { display: flex; flex-wrap: wrap; column-gap: 16px; row-gap: 4px; margin: 0; }
+    .fig { display: flex; align-items: baseline; gap: 6px; }
+    .fig dt { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground); }
+    .fig dd { margin: 0; font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .source { margin: 0; font-size: 11px; line-height: 1.375; color: var(--muted-foreground); }
+
+    .others { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+    .prov { display: flex; flex-direction: column; gap: 3px; border-radius: 8px; margin: 0 -6px; padding: 4px 6px; }
+    .prov.hover { background: color-mix(in oklab, var(--muted) 60%, transparent); }
+    .prov-top { display: flex; align-items: baseline; gap: 8px; }
+    .prov-name { font-size: 12px; font-weight: 600; }
+    .prov-amount { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .prov-bottom { display: flex; align-items: center; gap: 8px; }
+    .prov-meta { margin: 0; flex: 1; min-width: 0; font-size: 11px; line-height: 1.4; color: var(--muted-foreground); }
+    .settings-link { font-size: 11px; color: var(--muted-foreground); }
+
+    .btn-use { display: inline-flex; align-items: center; justify-content: center; height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--input); background: transparent; color: var(--foreground); font-family: inherit; font-size: 11px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+    .btn-use.hovered { background: var(--muted); border-color: color-mix(in oklab, var(--foreground) 30%, transparent); }
+
+    /* `Toaster` (sonner) : fond popover, bordure, rayon --radius, ombre. */
+    .toast {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      width: 356px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      padding: 16px;
+      box-shadow: 0 10px 30px -12px oklch(0 0 0 / 60%);
+    }
+    .toast-title { font-size: 13px; font-weight: 500; line-height: 1.35; }
+    .toast-desc { margin: 4px 0 0; font-size: 13px; line-height: 1.4; color: var(--muted-foreground); }
+    .toast-action { height: 24px; padding: 0 8px; border-radius: 6px; border: 0; background: var(--primary); color: var(--primary-foreground); font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer; align-self: center; margin-left: auto; }
+
+    /* Vignette de galerie : densité par défaut, 190 px (TILE_WIDTHS[2]). */
+    .tile { width: 190px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); overflow: hidden; }
+    .tile-art { height: 266px; background: var(--muted); display: flex; align-items: center; justify-content: center; color: var(--muted-foreground); }
+    .tile-body { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; }
+    .tile-line { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+    .tile-name { font-size: 13px; font-weight: 600; line-height: 1.2; }
+    .tile-price { font-size: 11px; font-weight: 500; line-height: 1.2; font-variant-numeric: tabular-nums; color: var(--price); white-space: nowrap; }
+    .tile-ref { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; color: var(--muted-foreground); }
+    .tile-type { font-size: 11px; color: var(--muted-foreground); }
+
+    .board-title { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+    .board-sub { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); max-width: 780px; }
+    .cols { display: flex; gap: 40px; align-items: flex-start; }
+    .col { display: flex; flex-direction: column; gap: 12px; width: 352px; }
+    .col-tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); }
+    .col-note { margin: 0; font-size: 12px; line-height: 1.55; color: var(--muted-foreground); }
+    .step-no { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 9999px; background: var(--secondary); font-size: 11px; font-weight: 600; margin-right: 8px; }
+  </style>
+</helmet>
+<div class="app {{theme}}" style="padding: 36px 36px 44px;">
+  <header style="margin-bottom: 26px;">
+    <h1 class="board-title">Changer de source depuis la fiche</h1>
+    <p class="board-sub">Le raccourci : « Utiliser » sur un fournisseur écrit la même préférence que la page du compte. Un réglage général se changeant depuis un écran particulier, il s'annonce et se défait d'un clic.</p>
+  </header>
+
+  <div class="cols">
+    <!-- 1 — le survol. -->
+    <section class="col">
+      <span class="col-tag"><span class="step-no">1</span>Au survol</span>
+      <section class="price">
+        <div class="price-head">
+          <span class="kicker">Prix du marché</span>
+          <a class="amount" href="#">0,25 €<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+        </div>
+        <dl class="figures">
+          <div class="fig"><dt>Prix bas</dt><dd>0,90 €</dd></div>
+          <div class="fig"><dt>Tendance</dt><dd>0,25 €</dd></div>
+        </dl>
+        <p class="source">CardNexus · relevé le 22 août 2026 · 2 tirages relevés</p>
+        <div class="others">
+          <span class="kicker">Autres fournisseurs</span>
+          <div class="prov hover">
+            <div class="prov-top">
+              <span class="prov-name">Cardmarket</span>
+              <a class="prov-amount" href="#">0,31 €<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+            </div>
+            <div class="prov-bottom">
+              <p class="prov-meta">bas 0,28 € · tendance 0,31 € · 21 août</p>
+              <button class="btn-use hovered" type="button">Utiliser</button>
+            </div>
+          </div>
+          <a class="settings-link" href="#">Choisir ma source de prix →</a>
+        </div>
+      </section>
+      <p class="col-note">La ligne entière s'éclaire, comme une ligne de liste ailleurs dans l'application. Le bouton reste visible sans survol : sur un téléphone, il n'y a pas de survol.</p>
+    </section>
+
+    <!-- 2 — après le clic. -->
+    <section class="col">
+      <span class="col-tag"><span class="step-no">2</span>Après le clic</span>
+      <section class="price">
+        <div class="price-head">
+          <span class="kicker">Prix du marché</span>
+          <a class="amount" href="#">0,31 €<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+        </div>
+        <dl class="figures">
+          <div class="fig"><dt>Prix bas</dt><dd>0,28 €</dd></div>
+          <div class="fig"><dt>Tendance</dt><dd>0,31 €</dd></div>
+        </dl>
+        <p class="source">Cardmarket · relevé le 21 août 2026</p>
+        <div class="others">
+          <span class="kicker">Autres fournisseurs</span>
+          <div class="prov">
+            <div class="prov-top">
+              <span class="prov-name">CardNexus</span>
+              <a class="prov-amount" href="#">0,25 €<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+            </div>
+            <div class="prov-bottom">
+              <p class="prov-meta">bas 0,90 € · tendance 0,25 € · 22 août</p>
+              <button class="btn-use" type="button">Utiliser</button>
+            </div>
+          </div>
+          <a class="settings-link" href="#">Choisir ma source de prix →</a>
+        </div>
+      </section>
+
+      <div class="toast">
+        <span style="color: var(--price); display: flex; margin-top: 1px;">
+          <!-- lucide `circle-check` -->
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
+        </span>
+        <div style="min-width: 0;">
+          <div class="toast-title">Vos prix viennent maintenant de Cardmarket</div>
+          <p class="toast-desc">Partout, pour tous les jeux.</p>
+        </div>
+        <button class="toast-action" type="button">Annuler</button>
+      </div>
+      <p class="col-note">Le bloc se réordonne : la source choisie prend la tête et ses valeurs, l'ancienne descend d'un rang. La confirmation dit la portée du geste — « partout » — et le défait tant qu'elle est à l'écran.</p>
+    </section>
+
+    <!-- 3 — la conséquence, ailleurs. -->
+    <section class="col" style="width: 420px;">
+      <span class="col-tag"><span class="step-no">3</span>Ailleurs, aussitôt</span>
+      <div style="display: flex; gap: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <span class="col-tag" style="letter-spacing: 0.04em;">Avant</span>
+          <div class="tile">
+            <div class="tile-art">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.35" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
+            </div>
+            <div class="tile-body">
+              <div class="tile-line">
+                <span class="tile-name">Abandon</span>
+                <span class="tile-price">0,25 €</span>
+              </div>
+              <span class="tile-ref">#UNL-131</span>
+              <span class="tile-type">Spell</span>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <span class="col-tag" style="letter-spacing: 0.04em; color: var(--price);">Après</span>
+          <div class="tile">
+            <div class="tile-art">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.35" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
+            </div>
+            <div class="tile-body">
+              <div class="tile-line">
+                <span class="tile-name">Abandon</span>
+                <span class="tile-price">0,31 €</span>
+              </div>
+              <span class="tile-ref">#UNL-131</span>
+              <span class="tile-type">Spell</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="col-note">La vignette ne change pas de forme, seulement de montant : la source se lit dans l'infobulle du prix, qui la nomme déjà (« Prix Cardmarket relevé le 21 août 2026 »). Rien à ajouter sur la vignette — une grille de 1 189 cartes n'a pas la place de répéter 1 189 fois le nom d'une place de marché.</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"theme":{"editor":"enum","options":["sombre","clair"],"default":"sombre","tsType":"string"}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme === "clair" ? "clair" : "sombre" };
+  }
+}
+</script>
+</body>
+</html>

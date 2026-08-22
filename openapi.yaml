@@ -360,7 +360,7 @@ paths:
                         orientation: { type: string, enum: [portrait, landscape], description: "Absent means `portrait`; a landscape card is shown rotated a quarter turn." }
                         quantity: { type: integer }
                         variantsOwned: { type: integer }
-                        marketPrice: { $ref: "#/components/schemas/CardMarketPrice" }
+                        marketPrice: { $ref: "#/components/schemas/MarketPrice" }
                   total: { type: integer }
                   page: { type: integer }
                   limit: { type: integer }
@@ -4230,7 +4230,7 @@ components:
             some — Riftbound battlefields — are printed sideways and are shown
             rotated a quarter turn. Absent means `portrait`.
         price: { type: number }
-        marketPrice: { $ref: "#/components/schemas/CardMarketPrice" }
+        marketPrice: { $ref: "#/components/schemas/MarketPrice" }
         newInCollection: { type: boolean }
         banned: { type: boolean }
         text: { type: string }
@@ -4247,7 +4247,7 @@ components:
         max: { type: number, description: "Numeric facets only." }
         values: { type: array, items: { type: string }, description: "Value facets only." }
 
-    CardMarketPrice:
+    MarketPrice:
       type: object
       description: >
         Second-hand market price of a card, as read from a marketplace on

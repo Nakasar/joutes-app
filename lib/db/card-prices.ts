@@ -7,6 +7,7 @@ import { CARD_PRICE_SOURCES } from "@/lib/types/card-price";
 import { cardPriceAmount, type MarketPrice } from "@/lib/prices/display";
 import { referenceOffer } from "@/lib/prices/offers";
 import { attachInBatches } from "@/lib/prices/stream";
+import { viewerPriceSources } from "@/lib/prices/viewer";
 
 /**
  * Relevés de prix des cartes, une place de marché à la fois.
@@ -17,9 +18,16 @@ import { attachInBatches } from "@/lib/prices/stream";
  *
  * Une carte peut donc en porter plusieurs, un par fournisseur importé. À
  * l'écran il n'y a de place que pour un prix : c'est celui du premier
- * fournisseur de `CARD_PRICE_SOURCES` qui en a un pour cette carte-là, carte
- * par carte — un jeu à demi couvert par le plus sûr des deux garde ainsi les
- * prix de l'autre pour le reste.
+ * fournisseur de la liste qui en a un pour cette carte-là, carte par carte —
+ * un jeu à demi couvert par le plus sûr des deux garde ainsi les prix de
+ * l'autre pour le reste.
+ *
+ * Cette liste, c'est `CARD_PRICE_SOURCES` — l'ordre de la plateforme — sauf
+ * pour un joueur qui s'est choisi un fournisseur. Les lectures de masse la
+ * demandent alors à `viewerPriceSources()` : la préférence se lit une fois par
+ * requête, plutôt que d'être transportée par la douzaine d'écrans qui affichent
+ * un prix. Un appelant qui sait de quel ordre il a besoin — un travail de fond,
+ * un export — le passe explicitement.
  */
 
 type CardPriceDoc = Omit<CardPrice, "sourceUpdatedAt" | "updatedAt"> & {
@@ -85,21 +93,31 @@ export async function upsertCardPrices(gameId: ObjectId, prices: CardPrice[]): P
 
 /**
  * Relevés d'une carte, toutes places de marché confondues, celui qui la
- * représente en tête : la fiche d'une carte n'en montre qu'un, et c'est le
- * premier de cette liste.
+ * représente en tête : la fiche d'une carte les montre tous, ce premier-là en
+ * grand et les autres dessous.
+ *
+ * `sources` est l'ordre à suivre — celui de la plateforme, ou celui qu'un
+ * joueur s'est choisi. Aucun relevé n'est écarté pour autant : un fournisseur
+ * absent de la liste passe en dernier, mais la fiche le montre. C'est le seul
+ * écran qui dise ce qui existe.
  *
  * Un relevé sans montant passe derrière ceux qui en ont un, quel que soit son
  * fournisseur : il ne représente pas la carte, il constate qu'elle ne se vend
  * pas.
  */
-export async function getCardPrices(gameId: ObjectId, cardId: string): Promise<CardPrice[]> {
+export async function getCardPrices(
+  gameId: ObjectId,
+  cardId: string,
+  sources: readonly CardPriceSource[] = CARD_PRICE_SOURCES
+): Promise<CardPrice[]> {
   const docs = await collection().find({ gameId, cardId }).toArray();
 
   const rank = (doc: CardPriceDoc): [number, number] => {
-    const priority = CARD_PRICE_SOURCES.indexOf(doc.source);
-    // Un fournisseur retiré de la liste garde ses relevés en base : ils passent
+    const priority = sources.indexOf(doc.source);
+    // Un fournisseur absent de la liste garde ses relevés en base — retiré de
+    // la plateforme, ou écarté par la préférence du joueur : ils passent
     // derrière, plutôt que devant à la faveur d'un `indexOf` négatif.
-    return [cardPriceAmount(doc.prices) === undefined ? 1 : 0, priority < 0 ? CARD_PRICE_SOURCES.length : priority];
+    return [cardPriceAmount(doc.prices) === undefined ? 1 : 0, priority < 0 ? sources.length : priority];
   };
 
   return docs
@@ -115,21 +133,25 @@ export async function getCardPrices(gameId: ObjectId, cardId: string): Promise<C
  * chiffrer une collection ou une liste de vente sans une requête par carte.
  *
  * Un relevé par carte : celui du fournisseur le mieux placé parmi `sources`.
+ * Sans `sources`, c'est l'ordre de celui qui regarde la page — sa préférence,
+ * ou celle de la plateforme (`lib/prices/viewer.ts`).
  */
 export async function getCardPricesByCardId(
   gameId: ObjectId,
   cardIds: string[],
-  sources: readonly CardPriceSource[] = CARD_PRICE_SOURCES
+  sources?: readonly CardPriceSource[]
 ): Promise<Map<string, CardPrice>> {
   if (cardIds.length === 0) {
     return new Map();
   }
 
+  const order = sources ?? (await viewerPriceSources());
+
   const docs = await collection()
-    .find({ gameId, source: { $in: [...sources] }, cardId: { $in: cardIds } })
+    .find({ gameId, source: { $in: [...order] }, cardId: { $in: cardIds } })
     .toArray();
 
-  return new Map(preferredBySource(docs, sources).map((doc) => [doc.cardId, toCardPrice(doc)]));
+  return new Map(preferredBySource(docs, order).map((doc) => [doc.cardId, toCardPrice(doc)]));
 }
 
 /**
@@ -165,15 +187,17 @@ function preferredBySource<T extends { cardId: string; source: CardPriceSource }
 export async function getMarketPrices(
   gameId: ObjectId,
   cardIds: string[],
-  sources: readonly CardPriceSource[] = CARD_PRICE_SOURCES
+  sources?: readonly CardPriceSource[]
 ): Promise<Map<string, MarketPrice>> {
   if (cardIds.length === 0) {
     return new Map();
   }
 
+  const order = sources ?? (await viewerPriceSources());
+
   const docs = await collection()
     .find(
-      { gameId, source: { $in: [...sources] }, cardId: { $in: [...new Set(cardIds)] } },
+      { gameId, source: { $in: [...order] }, cardId: { $in: [...new Set(cardIds)] } },
       { projection: { _id: 0, cardId: 1, source: 1, prices: 1, offers: 1, currency: 1, sourceUpdatedAt: 1 } }
     )
     .toArray();
@@ -186,7 +210,7 @@ export async function getMarketPrices(
   });
 
   return new Map(
-    preferredBySource(priced, sources).map((doc) => {
+    preferredBySource(priced, order).map((doc) => {
       // Le montant vient du tirage le moins cher : c'est vers ce produit-là que
       // le lien renvoie, pas vers un autre tirage de la même carte.
       const productId = referenceOffer(doc.offers ?? [])?.productId;
@@ -213,16 +237,22 @@ export async function getMarketPrices(
  * recherche portent en `id` une version épurée de l'identifiant (Meilisearch
  * n'accepte pas `*`) et le vrai en `cardId`, et c'est le vrai qui date les
  * relevés.
+ *
+ * Sans `sources`, les prix sont ceux de celui qui regarde la page — ce qu'il
+ * faut pour un écran. **Tout ce qui est écrit ou partagé passe l'ordre de la
+ * plateforme** : un document servi à tout le monde ne peut pas porter la
+ * préférence de celui qui l'a déclenché.
  */
 export async function withMarketPrices<T extends { id: string; cardId?: string }>(
   gameId: ObjectId,
-  cards: T[]
+  cards: T[],
+  sources?: readonly CardPriceSource[]
 ): Promise<(T & { marketPrice?: MarketPrice })[]> {
   if (cards.length === 0) {
     return cards;
   }
 
-  const prices = await getMarketPrices(gameId, cards.map((card) => card.cardId ?? card.id));
+  const prices = await getMarketPrices(gameId, cards.map((card) => card.cardId ?? card.id), sources);
 
   return cards.map((card) => {
     const marketPrice = prices.get(card.cardId ?? card.id);
@@ -241,9 +271,10 @@ export async function withMarketPrices<T extends { id: string; cardId?: string }
 export function withMarketPricesStream<T extends { id: string; cardId?: string }>(
   gameId: ObjectId,
   cards: AsyncIterable<T>,
+  sources?: readonly CardPriceSource[],
   batchSize = 500
 ): AsyncGenerator<T & { marketPrice?: MarketPrice }> {
-  return attachInBatches(cards, (batch) => withMarketPrices(gameId, batch), batchSize);
+  return attachInBatches(cards, (batch) => withMarketPrices(gameId, batch, sources), batchSize);
 }
 
 /** Nombre de cartes du jeu qui portent un relevé de ce fournisseur. */

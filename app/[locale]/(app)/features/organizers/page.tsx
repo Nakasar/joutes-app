@@ -8,6 +8,7 @@ import {
   CalendarDays,
   ClipboardList,
   Landmark,
+  LayoutDashboard,
   Medal,
   Megaphone,
   Plug,
@@ -20,6 +21,7 @@ import {
   EngagementMockup,
   HeroMockup,
   IntegrationsMockup,
+  LairPageMockup,
   LeaguesMockup,
   RegistrationsMockup,
   TournamentsMockup,
@@ -34,6 +36,8 @@ export async function generateMetadata(): Promise<Metadata> {
       "organisateur d'événements",
       "boutique de jeu",
       "local game store",
+      "page de lieu de jeu",
+      "vitrine boutique",
       "association de jeu",
       "tournoi",
       "ligue",
@@ -56,6 +60,7 @@ const AUDIENCE = [
 ] as const;
 
 const FEATURES = [
+  { id: "lairPage", icon: LayoutDashboard, accent: "from-cyan-500 to-blue-500", Mockup: LairPageMockup },
   { id: "calendar", icon: CalendarDays, accent: "from-blue-500 to-cyan-500", Mockup: CalendarMockup },
   { id: "engagement", icon: Megaphone, accent: "from-violet-500 to-fuchsia-500", Mockup: EngagementMockup },
   { id: "registrations", icon: ClipboardList, accent: "from-emerald-500 to-teal-500", Mockup: RegistrationsMockup },
@@ -156,6 +161,12 @@ export default async function OrganizersFeaturesPage({
           const soon = t.has(`items.${feature.id}.soon`)
             ? (t.raw(`items.${feature.id}.soon`) as string[])
             : [];
+          // Même règle pour ce qui demande un abonnement : livré, mais pas
+          // ouvert à tous les lieux — le badge le dit plutôt que la note de bas
+          // de page.
+          const pro = t.has(`items.${feature.id}.pro`)
+            ? (t.raw(`items.${feature.id}.pro`) as string[])
+            : [];
           return (
             <div
               key={feature.id}
@@ -178,6 +189,22 @@ export default async function OrganizersFeaturesPage({
                         className={`mt-1.5 size-1.5 shrink-0 rounded-full bg-gradient-to-br ${feature.accent}`}
                       />
                       <span>{bullet}</span>
+                    </li>
+                  ))}
+                  {pro.map((bullet) => (
+                    <li key={bullet} className="flex items-start gap-2.5 text-sm">
+                      <span
+                        className={`mt-1.5 size-1.5 shrink-0 rounded-full bg-gradient-to-br ${feature.accent}`}
+                      />
+                      {/* Le badge vit dans le texte, et non à côté : ces lignes
+                          passent à deux lignes, et un badge frère se retrouverait
+                          seul à la ligne, décollé de ce qu'il qualifie. */}
+                      <span className="min-w-0">
+                        {bullet}{" "}
+                        <Badge variant="secondary" className="align-middle text-[10px]">
+                          {t("proLabel")}
+                        </Badge>
+                      </span>
                     </li>
                   ))}
                   {soon.map((bullet) => (
