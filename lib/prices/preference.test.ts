@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { orderedPriceSources, otherCardPrices, referenceCardPrice } from "./preference";
+import { chosenPriceSource, orderedPriceSources, otherCardPrices, referenceCardPrice } from "./preference";
 import { CARD_PRICE_SOURCES, type CardPrice, type CardPriceValues } from "@/lib/types/card-price";
 
 /**
@@ -46,6 +46,24 @@ describe("orderedPriceSources", () => {
       orderedPriceSources({ source: "tcgplayer" as never, fallback: false }),
       CARD_PRICE_SOURCES
     );
+  });
+});
+
+describe("chosenPriceSource", () => {
+  it("rend le fournisseur choisi, celui que l'écran nomme", () => {
+    assert.equal(chosenPriceSource({ source: "cardmarket" }), "cardmarket");
+  });
+
+  it("ne rend rien sans choix", () => {
+    assert.equal(chosenPriceSource(undefined), undefined);
+    assert.equal(chosenPriceSource({ fallback: false }), undefined);
+  });
+
+  it("ne rend pas un fournisseur que la plateforme ne connaît plus", () => {
+    // Sinon l'écran écrirait « undefined, votre source, n'a pas relevé cette
+    // carte » : `PRICE_SOURCE_LABELS` n'a pas de libellé pour lui, et
+    // `orderedPriceSources` l'a déjà écarté du calcul.
+    assert.equal(chosenPriceSource({ source: "tcgplayer" as never }), undefined);
   });
 });
 

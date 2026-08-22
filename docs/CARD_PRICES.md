@@ -59,8 +59,23 @@ reviendrait à effacer les prix de ce jeu.
 
 Aucun écran ne transporte cette préférence : les lectures de masse la demandent
 à `viewerPriceSources()` (`lib/prices/viewer.ts`), qui la lit une fois par
-requête. Un appelant qui sait de quel ordre il a besoin — un travail de fond —
-le passe explicitement, et rien ne change pour lui.
+requête.
+
+**Ce qui est écrit ou partagé passe son ordre explicitement**, et c'est la
+règle à retenir : un résultat qui survit à la requête ne peut pas porter la
+préférence de celui qui l'a déclenché.
+
+| Ce qui est produit | Ordre suivi | Pourquoi |
+| --- | --- | --- |
+| un écran (galerie, collection, fiche, échange) | celui qui regarde | il est rendu pour lui, et pour lui seul |
+| l'export hors ligne d'un jeu | `CARD_PRICE_SOURCES` | le document est déposé sur un stockage public et resservi à tout le monde pendant 24 h |
+| la valeur d'une collection de joueur | celle de son **propriétaire** (`priceSourcesForUser`) | le total est écrit en base et relu longtemps après le calcul |
+| la valeur d'une collection de groupe | `CARD_PRICE_SOURCES` | tout membre peut la recalculer, et un groupe n'a pas de préférence |
+
+La valeur d'un booster fait exception à la ligne « écrit en base » sans y
+contrevenir : elle n'est calculable que par le propriétaire du booster
+(`app/api/collection/boosters/[boosterId]/value/route.ts` répond 404 aux
+autres), si bien que celui qui regarde *est* le propriétaire.
 
 ## Ce que ça couvre
 

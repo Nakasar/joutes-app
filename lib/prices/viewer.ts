@@ -48,3 +48,22 @@ export const viewerPricePreference = cache(async (): Promise<CardPricePreference
 export async function viewerPriceSources(): Promise<readonly CardPriceSource[]> {
   return orderedPriceSources(await viewerPricePreference());
 }
+
+/**
+ * L'ordre d'un joueur nommé, qui n'est pas forcément celui qui regarde.
+ *
+ * C'est ce qu'il faut à un total **écrit en base** : la valeur d'une
+ * collection appartient à son propriétaire et se relit longtemps après le
+ * calcul, elle ne peut donc pas suivre la préférence de qui a pressé le
+ * bouton. Un bien sans propriétaire — la collection d'un groupe de jeu, que
+ * tout membre peut recalculer — n'a personne à suivre : il prend l'ordre de la
+ * plateforme (`CARD_PRICE_SOURCES`), passé explicitement.
+ */
+export async function priceSourcesForUser(userId: string): Promise<readonly CardPriceSource[]> {
+  try {
+    return orderedPriceSources((await getUserById(userId))?.pricePreference);
+  } catch (error) {
+    console.error("Préférence de prix illisible, retour à l'ordre de la plateforme :", error);
+    return orderedPriceSources(undefined);
+  }
+}

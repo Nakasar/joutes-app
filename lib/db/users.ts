@@ -381,12 +381,6 @@ export async function getUserDiscriminator(userId: string): Promise<string | nul
 }
 
 /**
- * Met à jour la visibilité du profil de l'utilisateur
- * @param userId L'ID de l'utilisateur
- * @param isPublicProfile true pour rendre le profil public, false pour privé
- * @returns true si la mise à jour a réussi, false sinon
- */
-/**
  * Enregistre le fournisseur de prix qu'un joueur a choisi, et ce qu'il veut
  * pour les cartes que ce fournisseur ne cote pas.
  *
@@ -414,6 +408,12 @@ export async function updateUserPricePreference(
   return result.modifiedCount > 0 || result.matchedCount > 0;
 }
 
+/**
+ * Met à jour la visibilité du profil de l'utilisateur
+ * @param userId L'ID de l'utilisateur
+ * @param isPublicProfile true pour rendre le profil public, false pour privé
+ * @returns true si la mise à jour a réussi, false sinon
+ */
 export async function updateUserProfileVisibility(
   userId: string,
   isPublicProfile: boolean

@@ -75,8 +75,11 @@ async function save(
   preference: CardPricePreference
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await updateUserPricePreference(userId, preference);
-    return { success: true };
+    // Un compte que l'écriture ne trouve pas n'a rien enregistré : le dire,
+    // plutôt que d'annoncer au joueur un réglage qui n'existe pas.
+    const written = await updateUserPricePreference(userId, preference);
+
+    return written ? { success: true } : { success: false, error: "Compte introuvable" };
   } catch (error) {
     console.error("Enregistrement de la préférence de prix impossible :", error);
     return { success: false, error: "Erreur serveur" };

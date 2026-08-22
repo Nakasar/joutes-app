@@ -33,6 +33,21 @@ export function orderedPriceSources(preference?: CardPricePreference): readonly 
 }
 
 /**
+ * Le fournisseur que le joueur a choisi, une fois écarté ce qui n'en est plus
+ * un : c'est lui que l'écran nomme (« Cardmarket, votre source, n'a pas relevé
+ * cette carte »).
+ *
+ * `orderedPriceSources` écarte déjà un fournisseur inconnu du calcul ; sans le
+ * même filtre ici, l'écran nommerait un fournisseur que la plateforme ne
+ * connaît plus — et, faute de libellé, écrirait « undefined ».
+ */
+export function chosenPriceSource(preference?: CardPricePreference): CardPriceSource | undefined {
+  const chosen = preference?.source;
+
+  return chosen && CARD_PRICE_SOURCES.includes(chosen) ? chosen : undefined;
+}
+
+/**
  * Le relevé qui représente la carte parmi ceux qu'elle porte : le premier de
  * `sources` qui annonce un montant.
  *

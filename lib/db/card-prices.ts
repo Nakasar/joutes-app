@@ -237,16 +237,22 @@ export async function getMarketPrices(
  * recherche portent en `id` une version épurée de l'identifiant (Meilisearch
  * n'accepte pas `*`) et le vrai en `cardId`, et c'est le vrai qui date les
  * relevés.
+ *
+ * Sans `sources`, les prix sont ceux de celui qui regarde la page — ce qu'il
+ * faut pour un écran. **Tout ce qui est écrit ou partagé passe l'ordre de la
+ * plateforme** : un document servi à tout le monde ne peut pas porter la
+ * préférence de celui qui l'a déclenché.
  */
 export async function withMarketPrices<T extends { id: string; cardId?: string }>(
   gameId: ObjectId,
-  cards: T[]
+  cards: T[],
+  sources?: readonly CardPriceSource[]
 ): Promise<(T & { marketPrice?: MarketPrice })[]> {
   if (cards.length === 0) {
     return cards;
   }
 
-  const prices = await getMarketPrices(gameId, cards.map((card) => card.cardId ?? card.id));
+  const prices = await getMarketPrices(gameId, cards.map((card) => card.cardId ?? card.id), sources);
 
   return cards.map((card) => {
     const marketPrice = prices.get(card.cardId ?? card.id);
@@ -265,9 +271,10 @@ export async function withMarketPrices<T extends { id: string; cardId?: string }
 export function withMarketPricesStream<T extends { id: string; cardId?: string }>(
   gameId: ObjectId,
   cards: AsyncIterable<T>,
+  sources?: readonly CardPriceSource[],
   batchSize = 500
 ): AsyncGenerator<T & { marketPrice?: MarketPrice }> {
-  return attachInBatches(cards, (batch) => withMarketPrices(gameId, batch), batchSize);
+  return attachInBatches(cards, (batch) => withMarketPrices(gameId, batch, sources), batchSize);
 }
 
 /** Nombre de cartes du jeu qui portent un relevé de ce fournisseur. */

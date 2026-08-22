@@ -43,7 +43,7 @@ import ErrataList, {type ErrataEntry} from "@/app/[locale]/(app)/games/[gameSlug
 import CardPriceDetails from "@/components/cards/CardPriceDetails.tsx";
 import CardImage from "@/components/cards/CardImage.tsx";
 import {getCardPrices} from "@/lib/db/card-prices.ts";
-import {referenceCardPrice} from "@/lib/prices/preference.ts";
+import {chosenPriceSource, referenceCardPrice} from "@/lib/prices/preference.ts";
 import {viewerPricePreference, viewerPriceSources} from "@/lib/prices/viewer.ts";
 import { UserLabel } from "@/components/UserLabel.tsx";
 
@@ -419,7 +419,7 @@ async function CardDetail({
       <CardPriceDetails
         prices={cardPrices}
         reference={referencePrice}
-        chosenSource={pricePreference?.source}
+        chosenSource={chosenPriceSource(pricePreference)}
         canChooseSource={Boolean(userId)}
         gameSlug={game.slug ?? gameSlugOrId}
       />
