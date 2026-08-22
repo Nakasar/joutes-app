@@ -54,8 +54,9 @@
     .tile-fav { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; }
     .icon-btn { width: 24px; height: 24px; border-radius: 9999px; background: color-mix(in oklab, var(--card) 82%, transparent); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--foreground); }
 
-    /* L'infobulle native de l'attribut `title` : nomme déjà la place de marché. */
-    .tip { position: absolute; top: 300px; right: -6px; z-index: 5; border-radius: 8px; border: 1px solid var(--border); background: var(--card); padding: 5px 8px; font-size: 11px; line-height: 1.3; color: var(--foreground); box-shadow: 0 10px 24px -12px oklch(0 0 0 / 65%); white-space: nowrap; }
+    /* L'infobulle native de l'attribut `title` : nomme déjà la place de marché.
+       Elle est posée hors de la vignette, que `overflow: hidden` rognerait. */
+    .tip { position: absolute; top: 332px; left: 24px; z-index: 5; border-radius: 8px; border: 1px solid var(--border); background: var(--card); padding: 5px 8px; font-size: 11px; line-height: 1.3; color: var(--foreground); box-shadow: 0 10px 24px -12px oklch(0 0 0 / 65%); white-space: nowrap; }
 
     /* Ligne du panneau d'échange : `flex items-center gap-3 rounded-lg border p-2`. */
     .row { display: flex; align-items: center; gap: 12px; border-radius: 10px; border: 1px solid var(--border); padding: 8px; }
@@ -109,15 +110,17 @@
           <span class="tile-type">Battlefield</span>
         </div>
       </div>
-      <div class="tile">
-        <div class="tile-art"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.3" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg></div>
-        <div class="tile-fav">
-          <span class="icon-btn" style="color: oklch(0.645 0.246 16.439);"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg></span>
-        </div>
-        <div class="tile-body">
-          <div class="tile-line"><span class="tile-name">Acceleration Gate</span><span class="tile-price">0,27 €<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></span></div>
-          <span class="tile-ref">#VEN-150</span>
-          <span class="tile-type">Spell</span>
+      <div style="position: relative;">
+        <div class="tile">
+          <div class="tile-art"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.3" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg></div>
+          <div class="tile-fav">
+            <span class="icon-btn" style="color: oklch(0.645 0.246 16.439);"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg></span>
+          </div>
+          <div class="tile-body">
+            <div class="tile-line"><span class="tile-name">Acceleration Gate</span><span class="tile-price">0,27 €<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></span></div>
+            <span class="tile-ref">#VEN-150</span>
+            <span class="tile-type">Spell</span>
+          </div>
         </div>
         <div class="tip">Prix Cardmarket relevé le 21 août 2026</div>
       </div>
@@ -138,7 +141,9 @@
           <span class="icon-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg></span>
         </div>
         <div class="tile-body">
-          <div class="tile-line"><span class="tile-name">Adaptatron</span><span class="tile-price">—</span></div>
+          <!-- Sans relevé, `CardPriceTag` ne rend rien : un tiret se lirait
+               comme un prix nul. -->
+          <div class="tile-line"><span class="tile-name">Adaptatron</span></div>
           <span class="tile-ref">#OGN-056</span>
           <span class="tile-type">Unit</span>
         </div>
