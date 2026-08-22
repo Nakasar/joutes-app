@@ -55,6 +55,32 @@ describe("normalizePrintNumber", () => {
   it("ne confond pas une variante avec son numéro de base", () => {
     assert.notEqual(normalizePrintNumber("027a"), normalizePrintNumber("027"));
   });
+
+  it("efface la ponctuation d'un suffixe qu'aucun jeu ne déclare", () => {
+    assert.equal(normalizePrintNumber("299*"), normalizePrintNumber("299"));
+  });
+
+  it("ramène à une même écriture les suffixes qu'un jeu déclare", () => {
+    const riftbound = { "*": "s" };
+
+    assert.equal(normalizePrintNumber("299*", riftbound), normalizePrintNumber("299s", riftbound));
+    assert.notEqual(normalizePrintNumber("299*", riftbound), normalizePrintNumber("299", riftbound));
+  });
+
+  it("garde lisible un suffixe que la normalisation effacerait", () => {
+    const mtg = { "★": "star" };
+
+    assert.equal(normalizePrintNumber("222★", mtg), normalizePrintNumber("222★", mtg));
+    assert.notEqual(normalizePrintNumber("222★", mtg), normalizePrintNumber("222", mtg));
+    // L'étoile de Magic n'est pas son `s` d'avant-première, et les deux se
+    // rencontrent sur une même carte.
+    assert.notEqual(normalizePrintNumber("222★", mtg), normalizePrintNumber("222s", mtg));
+    assert.notEqual(normalizePrintNumber("222s★", mtg), normalizePrintNumber("222★", mtg));
+  });
+
+  it("ne réécrit un suffixe qu'en fin de numéro", () => {
+    assert.equal(normalizePrintNumber("1*2", { "*": "s" }), normalizePrintNumber("12"));
+  });
 });
 
 describe("matchCardnexusProducts", () => {
@@ -88,6 +114,38 @@ describe("matchCardnexusProducts", () => {
 
     assert.equal(matches.get("OGN027")?.[0].id, 1);
     assert.equal(matches.get("OGN027a")?.[0].id, 2);
+  });
+
+  it("départage le tirage signé et sa carte de base quand le jeu déclare son suffixe", () => {
+    // Riftbound écrit `299*` là où CardNexus écrit tantôt `299s`, tantôt `299*`.
+    const { matches, skipped } = matchCardnexusProducts(
+      [product(1, 42, "299"), product(2, 42, "299s"), product(3, 43, "237"), product(4, 43, "237*")],
+      [expansion(42, "OGN"), expansion(43, "UNL")],
+      [
+        card("OGN299", "OGN", "299"),
+        card("OGN299s", "OGN", "299*"),
+        card("UNL237", "UNL", "237"),
+        card("UNL237s", "UNL", "237*"),
+      ],
+      { printNumberSuffixes: { "*": "s" } }
+    );
+
+    assert.equal(matches.get("OGN299")?.[0].id, 1);
+    assert.equal(matches.get("OGN299s")?.[0].id, 2);
+    assert.equal(matches.get("UNL237")?.[0].id, 3);
+    assert.equal(matches.get("UNL237s")?.[0].id, 4);
+    assert.equal(skipped.ambiguous, 0);
+  });
+
+  it("confond le tirage signé et sa carte de base sans suffixe déclaré", () => {
+    const { matches, skipped } = matchCardnexusProducts(
+      [product(1, 42, "299")],
+      [expansion(42, "OGN")],
+      [card("OGN299", "OGN", "299"), card("OGN299s", "OGN", "299*")]
+    );
+
+    assert.equal(matches.size, 0);
+    assert.equal(skipped.ambiguous, 1);
   });
 
   it("écarte les produits scellés", () => {

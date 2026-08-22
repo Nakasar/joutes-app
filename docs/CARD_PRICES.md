@@ -231,12 +231,55 @@ ceux dont l'extension n'a pas de code, ceux sans numéro de collection, ceux don
 aucune carte ne porte le numéro, et ceux qui tomberaient sur **deux** cartes de
 même numéro — leur donner le même prix reviendrait à en inventer un.
 
+#### La lettre de tirage n'est pas de la ponctuation
+
+Un numéro se termine parfois par une lettre, et cette lettre est le tirage :
+`299*` est le `299` signé, `222★` le `222` foil des anciens jeux de base de
+Magic. L'effacer avec le reste de la ponctuation confondrait la variante avec la
+carte dont elle est tirée — et comme les deux se retrouvent alors sous le même
+numéro, **aucune des deux** n'est départageable : toutes deux sont écartées, et
+perdent leur prix.
+
+Ces suffixes ne s'écrivent pas partout pareil, et un jeu ne les lit pas comme un
+autre. Le profil du jeu (`printNumberSuffixes`, dans `CARDNEXUS_GAME_PROFILES`)
+donne donc leur écriture canonique, appliquée aux **deux** catalogues :
+
+| Jeu | Suffixe | Pourquoi |
+| --- | --- | --- |
+| `riftbound` | `*` → `s` | Le tirage signé. Nous l'écrivons `299*` ; CardNexus l'écrit `299s` sur Origins et Spiritforged, `299*` sur Unleashed et Vendetta — les deux écritures cohabitent dans son propre catalogue. |
+| `mtg` | `★` → `star` | Le foil des anciens jeux de base. Les deux catalogues l'écrivent pareil ; c'est la normalisation qui l'effaçait, l'étoile n'étant pas une lettre latine. |
+
+L'étoile de Magic n'est pas son `s`, qui marque l'avant-première tamponnée, et
+les deux se rencontrent sur une même carte (`123s★`) : c'est pourquoi la table
+est propre à chaque jeu plutôt qu'une règle commune.
+
+Sur Riftbound, ces 45 cartes signées et leurs 45 cartes de base étaient toutes
+écartées ; le rapprochement passe de 92,3 % à 99,9 % des cartes du jeu.
+
+#### Codes d'extension
+
 Quand un code d'extension s'écrit franchement autrement des deux côtés, ou que
-CardNexus n'en publie pas, le profil du jeu le dit
-(`CARDNEXUS_GAME_PROFILES`) : c'est une table, pas une heuristique. Elle est
-vide aujourd'hui — les deux catalogues tiennent leur code de l'éditeur — et le
-bilan de l'import (`--sets`) montre extension par extension ce qui a été
-rapproché, de quoi la remplir si besoin.
+CardNexus n'en publie pas, le même profil le dit (`setCodes`, `setCodesBySlug`) :
+c'est une table, pas une heuristique. Aucun jeu n'en a besoin aujourd'hui — les
+deux catalogues tiennent leur code de l'éditeur — et le bilan de l'import
+(`--sets`) montre extension par extension ce qui a été rapproché, de quoi la
+remplir si besoin.
+
+CardNexus range les promotions dans une extension à part (`OGNX`, `SFDX`…) que
+nous n'avons pas : ses produits ne trouvent aucune carte, et c'est bien ainsi —
+les rattacher à l'extension de base donnerait le prix d'une promotion à une
+carte ordinaire.
+
+#### Une carte par langue
+
+Une carte publiée en plusieurs langues est chez nous plusieurs cartes, une par
+langue, chacune avec son identifiant — mais un seul numéro de collection. Elles
+se disputent donc ce numéro et sont écartées comme indépartageables, alors
+qu'elles valent la même chose : les prix de CardNexus ne distinguent pas les
+langues. Riftbound n'y est pas exposé (il n'est importé qu'en anglais) ; Magic,
+si — dans un relevé des jeux de base `8ed`, `9ed` et `10e`, c'est ce qui reste
+d'écarté une fois l'étoile rendue lisible. Rien n'est décidé ici : il faudra
+choisir quelle carte porte le prix, ou le donner à toutes.
 
 ### Chez Cardmarket : par le nom, et par déduction
 
@@ -488,11 +531,18 @@ CardNexus, un slug. La liste à jour se lit sur `GET /v1/games` ; les connus son
 `mtg`, `pokemon`, `fab`, `onepiece`, `lorcana`, `swu`, `riftbound`, et une
 douzaine d'autres jeux que la plateforme n'a pas encore. Yu-Gi-Oh n'y est pas.
 
-Rien d'autre n'est nécessaire : le rapprochement se fait par extension et
-numéro, sans profil. Lancez l'import en `--dry-run --sets` et regardez ce que
-les extensions donnent — c'est là qu'un code d'extension divergent se voit, et
-`CARDNEXUS_GAME_PROFILES` (`lib/prices/cardnexus-matching.ts`) sert à le
-traduire.
+Souvent, rien d'autre n'est nécessaire : le rapprochement se fait par extension
+et numéro. Lancez l'import en `--dry-run --sets` et lisez le bilan — deux
+chiffres disent ce qu'il manque, et `CARDNEXUS_GAME_PROFILES`
+(`lib/prices/cardnexus-matching.ts`) sert à le traduire :
+
+- une extension à **0 %** : son code s'écrit autrement des deux côtés, ou
+  CardNexus n'en publie pas (`setCodes`, `setCodesBySlug`). Une extension de
+  promotions que nous n'avons pas reste à 0 %, et c'est normal ;
+- des produits **ambigus** en nombre : deux de nos cartes se disputent un
+  numéro. Si elles ne diffèrent que par une fin de numéro (`299` et `299*`),
+  c'est une lettre de tirage à déclarer dans `printNumberSuffixes` ; si elles ne
+  diffèrent que par la langue, c'est la limite décrite plus haut.
 
 ### Chez Cardmarket
 
