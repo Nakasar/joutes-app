@@ -19,6 +19,32 @@ export type CardPriceSource = "cardnexus" | "cardmarket";
 export const CARD_PRICE_SOURCES: readonly CardPriceSource[] = ["cardnexus", "cardmarket"];
 
 /**
+ * Le fournisseur qu'un joueur veut voir représenter ses cartes.
+ *
+ * L'ordre ci-dessus est celui de la plateforme ; celui-ci est le sien. Les deux
+ * ne se contredisent pas : une préférence n'est qu'un ordre substitué à
+ * `CARD_PRICE_SOURCES`, que `orderedPriceSources` (`lib/prices/preference.ts`)
+ * calcule et que la lecture des relevés prend déjà en paramètre.
+ *
+ * Sans préférence enregistrée, le joueur suit la plateforme — c'est le cas de
+ * tous les comptes existants, et des visiteurs sans compte.
+ */
+export type CardPricePreference = {
+  /** Fournisseur choisi ; absent, la plateforme choisit (`CARD_PRICE_SOURCES`). */
+  source?: CardPriceSource;
+  /**
+   * Ce que devient une carte que le fournisseur choisi ne cote pas : un prix
+   * d'un autre fournisseur (`true`, la valeur par défaut) ou aucun prix
+   * (`false`).
+   *
+   * Le repli est le défaut parce que la couverture d'un fournisseur va de 95 %
+   * à 9 % selon le jeu (cf. docs/CARD_PRICES.md) : sans lui, choisir un
+   * fournisseur reviendrait souvent à vider la moitié des prix d'un jeu.
+   */
+  fallback?: boolean;
+};
+
+/**
  * Les valeurs d'une place de marché, dans sa devise. Toutes facultatives :
  * une carte sans vente récente n'a ni moyenne ni tendance, et une carte
  * jamais mise en vente n'a aucune valeur du tout.

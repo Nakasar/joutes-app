@@ -8,6 +8,7 @@ import { getAllGames } from "@/lib/db/games.ts";
 import { getLairById } from "@/lib/db/lairs.ts";
 import GamesManager from "./GamesManager.tsx";
 import LairsManager from "./LairsManager.tsx";
+import PricePreferenceManager from "./PricePreferenceManager.tsx";
 import UsernameDisplay from "./UsernameDisplay.tsx";
 import ProfileEditor from "./ProfileEditor.tsx";
 import ProfileImageDisplay from "./ProfileImageDisplay.tsx";
@@ -16,7 +17,7 @@ import ProfileVisibilitySwitch from "./ProfileVisibilitySwitch.tsx";
 import QuizScores from "./QuizScores.tsx";
 import { getUserQuizScores } from "@/lib/db/quiz-scores.ts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
-import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield, Trophy, MailIcon, GraduationCap, Heart} from "lucide-react";
+import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield, Trophy, MailIcon, GraduationCap, Heart, Coins} from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
 
@@ -218,6 +219,27 @@ async function AccountPageContent() {
                 allGames={allGames}
                 favoriteGameIds={user.favoriteGames ?? []}
               />
+            </CardContent>
+          </Card>
+
+          {/* Section Prix des cartes. L'ancre sert au raccourci « Choisir ma
+              source de prix » de la fiche d'une carte. */}
+          <Card id="prices" className="border-2 shadow-lg scroll-mt-20">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Coins className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">Prix des cartes</CardTitle>
+                  <CardDescription className="mt-1">
+                    D&apos;où viennent les prix affichés sur vos cartes, votre collection et vos échanges
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <PricePreferenceManager initialPreference={user.pricePreference} />
             </CardContent>
           </Card>
 

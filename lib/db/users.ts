@@ -8,6 +8,7 @@ import {
   parseAdminUserSearch,
 } from "@/lib/users/admin-search";
 import type { UserBadges } from "@/lib/db/user-badges";
+import type { CardPricePreference } from "@/lib/types/card-price";
 
 const COLLECTION_NAME = "user";
 
@@ -385,6 +386,34 @@ export async function getUserDiscriminator(userId: string): Promise<string | nul
  * @param isPublicProfile true pour rendre le profil public, false pour privé
  * @returns true si la mise à jour a réussi, false sinon
  */
+/**
+ * Enregistre le fournisseur de prix qu'un joueur a choisi, et ce qu'il veut
+ * pour les cartes que ce fournisseur ne cote pas.
+ *
+ * Le réglage se change depuis deux endroits — la page du compte et la fiche
+ * d'une carte —, d'où un seul point d'écriture. `source` absent efface le
+ * choix : le joueur revient à l'ordre de la plateforme, et le champ ne garde
+ * pas un fournisseur qu'il ne suit plus.
+ */
+export async function updateUserPricePreference(
+  userId: string,
+  preference: CardPricePreference
+): Promise<boolean> {
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: ObjectId.createFromHexString(userId) },
+    {
+      $set: {
+        pricePreference: {
+          ...(preference.source ? { source: preference.source } : {}),
+          fallback: preference.fallback !== false,
+        },
+      },
+    }
+  );
+
+  return result.modifiedCount > 0 || result.matchedCount > 0;
+}
+
 export async function updateUserProfileVisibility(
   userId: string,
   isPublicProfile: boolean

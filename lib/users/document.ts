@@ -30,6 +30,15 @@ export function toUser(doc: WithId<Document>): User {
     friends: doc.friends || [],
     friendCode: doc.friendCode || undefined,
     isPublicProfile: doc.isPublicProfile || false,
+    // Un compte sans préférence de prix suit l'ordre de la plateforme :
+    // l'objet vide dit « rien de choisi » sans obliger chaque lecture à
+    // distinguer l'absence de champ.
+    pricePreference: {
+      source: doc.pricePreference?.source || undefined,
+      // Le repli n'est coupé que s'il a été coupé : un champ absent vaut
+      // activé, comme pour tous les comptes créés avant le réglage.
+      fallback: doc.pricePreference?.fallback !== false,
+    },
     description: doc.description || undefined,
     website: doc.website || undefined,
     socialLinks: doc.socialLinks || [],

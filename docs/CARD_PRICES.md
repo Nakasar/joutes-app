@@ -8,9 +8,14 @@ toutes les cartes n'en ont pas.
 ## Deux fournisseurs, un relevé par carte
 
 Chaque fournisseur a son import, écrit ses propres relevés et ne touche pas à
-ceux de l'autre. Une carte peut donc en porter deux ; l'écran n'en montre qu'un,
-et c'est **CardNexus qui passe devant, carte par carte** (`CARD_PRICE_SOURCES`,
+ceux de l'autre. Une carte peut donc en porter deux ; partout où un prix est un
+chiffre à côté d'un nom, l'écran n'en montre qu'un, et c'est **CardNexus qui
+passe devant, carte par carte** (`CARD_PRICE_SOURCES`,
 `lib/types/card-price.ts`) : là où il ne dit rien, Cardmarket reprend la main.
+
+La fiche d'une carte fait exception : elle les montre tous, celui qui la
+représente en grand et les autres dessous, avec leurs valeurs et leur date.
+C'est le seul écran qui ait la place de dire ce qui existe.
 
 |  | Cardmarket | CardNexus |
 | --- | --- | --- |
@@ -29,6 +34,33 @@ Le choix se fait carte par carte, et non jeu par jeu : un jeu que CardNexus ne
 couvre qu'à moitié garde les prix Cardmarket sur le reste, plutôt que de perdre
 la moitié de ses cotes. Un relevé qui ne porte aucun montant ne compte pas comme
 une réponse et laisse la place au suivant.
+
+## L'ordre du joueur
+
+Cet ordre est celui de la plateforme ; un joueur peut lui substituer le sien,
+depuis la section « Prix des cartes » de son compte ou depuis le bouton
+« Utiliser » de la fiche d'une carte. Le réglage vaut pour tous les jeux et
+pour tout ce qui affiche un prix — galerie, collection, boosters, échanges,
+export hors ligne.
+
+Une préférence n'est rien d'autre qu'un ordre de fournisseurs
+(`orderedPriceSources`, `lib/prices/preference.ts`), celui-là même que la
+lecture des relevés prend déjà en paramètre :
+
+| Réglage | Ordre suivi |
+| --- | --- |
+| aucun choix | `CARD_PRICE_SOURCES` |
+| un fournisseur, repli activé | ce fournisseur, puis les autres dans l'ordre de la plateforme |
+| un fournisseur, repli coupé | ce fournisseur seul — les cartes qu'il ignore n'ont pas de prix |
+
+Le repli est activé par défaut, et c'est le tableau de couverture ci-dessous qui
+l'impose : choisir un fournisseur sans repli sur un jeu qu'il couvre à 9 %
+reviendrait à effacer les prix de ce jeu.
+
+Aucun écran ne transporte cette préférence : les lectures de masse la demandent
+à `viewerPriceSources()` (`lib/prices/viewer.ts`), qui la lit une fois par
+requête. Un appelant qui sait de quel ordre il a besoin — un travail de fond —
+le passe explicitement, et rien ne change pour lui.
 
 ## Ce que ça couvre
 
