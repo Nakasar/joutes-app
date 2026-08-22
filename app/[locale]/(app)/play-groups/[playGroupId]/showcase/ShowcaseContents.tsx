@@ -22,11 +22,27 @@ export type ShowcaseContent = {
   url?: string;
   /** Renseigné pour un article : la vitrine le lit sur place. */
   href?: string;
+  /** ISO 8601 — ce sur quoi la liste se trie avant d'être affichée. */
+  publishedAt: string;
   publishedLabel: string | null;
+  /**
+   * Le membre qui l'a publié, quand le contenu vient de **lui** et non du
+   * groupe.
+   *
+   * C'est ce qui distingue les deux à l'œil : ce que le groupe publie porte sa
+   * signature à lui, ce qu'un membre publie sur sa propre vitrine et qui
+   * remonte ici porte la sienne. Sans cette ligne, un groupe paraîtrait
+   * signer des vidéos qu'il n'a pas choisies.
+   */
+  authorName?: string;
 };
 
 /**
- * Ce que le groupe publie.
+ * Ce que le groupe publie — et ce que ses membres publient publiquement.
+ *
+ * Les deux listes se mêlent, triées par date : un groupe est autant ce que ses
+ * membres font que ce qu'il annonce. Un contenu de membre porte son nom, celui
+ * du groupe n'en porte pas — c'est ce qui les distingue sans deux sections.
  *
  * Les filtres agissent vraiment sur la grille — trois onglets décoratifs
  * seraient pires que pas d'onglets. Un filtre qui ne ramènerait rien reste
@@ -96,8 +112,12 @@ export default function ShowcaseContents({ contents }: { contents: ShowcaseConte
                   {content.summary && (
                     <span className="text-[13px] leading-[1.5] text-pretty text-muted-foreground">{content.summary}</span>
                   )}
-                  {content.publishedLabel && (
-                    <span className="font-mono text-[11px] text-muted-foreground">{content.publishedLabel}</span>
+                  {(content.publishedLabel || content.authorName) && (
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                      {[content.authorName ? t("byMember", { name: content.authorName }) : null, content.publishedLabel]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
                   )}
                 </span>
               </>

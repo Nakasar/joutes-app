@@ -2730,6 +2730,7 @@
       },
       "contents": {
         "title": "Was die Gruppe veröffentlicht",
+        "byMember": "von {name}",
         "count": "{shown} von {total}",
         "empty": "In dieser Kategorie nichts veröffentlicht.",
         "filter": {

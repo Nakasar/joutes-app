@@ -17,6 +17,9 @@ import { readPlayGroupResults } from "@/lib/db/play-group-results.ts";
 import { readPlayGroupAccent } from "@/lib/play-groups/theme.ts";
 import { readLiveEmbed } from "@/lib/media/live-embed.ts";
 import { externalUrl } from "@/lib/lairs/urls.ts";
+import { mergeContents } from "@/lib/content/items.ts";
+import { listPublicContentsByAuthors } from "@/lib/db/user-contents.ts";
+import { userProfilePath } from "@/lib/users/handle.ts";
 import { viewHref } from "../views.ts";
 
 import ShowcaseLives, { type ShowcaseLive } from "./ShowcaseLives.tsx";
@@ -263,26 +266,65 @@ async function LivesSection({ playGroupId }: { playGroupId: string }) {
   return <ShowcaseLives lives={lives} groupName={group.name} />;
 }
 
+/**
+ * Ce que le groupe publie, et ce que ses membres publient publiquement.
+ *
+ * Le contenu d'un membre remonte ici **s'il est public**, et seulement à ce
+ * titre : un brouillon n'apparaît nulle part, ni sur sa propre vitrine ni sur
+ * celle de ses groupes. Une seule requête pour toute la liste des membres —
+ * une par membre coûterait autant qu'il y a de monde dans le groupe.
+ */
 async function ContentsSection({ playGroupId }: { playGroupId: string }) {
-  const [group, locale] = await Promise.all([requirePlayGroup(playGroupId), getLocale()]);
+  const [group, members, locale] = await Promise.all([
+    requirePlayGroup(playGroupId),
+    readGroupMembers(playGroupId),
+    getLocale(),
+  ]);
 
-  const contents: ShowcaseContent[] = sortContents(group.options?.contents ?? []).map((content) => {
-    const date = DateTime.fromISO(content.publishedAt).setLocale(locale);
+  const memberContents = await listPublicContentsByAuthors(
+    members.map((member) => member.userId),
+  );
 
-    return {
-      id: content.id,
-      kind: content.kind,
-      title: content.title,
-      summary: content.summary,
-      thumbnail: content.thumbnail,
-      duration: content.duration,
-      // Un article se lit sur Joutes ; une vidéo et un replay renvoient à leur
-      // plateforme, où le lecteur est chez lui.
-      href: content.kind === "article" ? viewHref(playGroupId, "showcase", { article: content.id }) : undefined,
-      url: content.kind === "article" ? undefined : externalUrl(content.url) ?? undefined,
-      publishedLabel: date.isValid ? date.toFormat("d LLLL yyyy") : null,
-    };
-  });
+  const label = (publishedAt: string) => {
+    const date = DateTime.fromISO(publishedAt).setLocale(locale);
+    return date.isValid ? date.toFormat("d LLLL yyyy") : null;
+  };
+
+  const owned: ShowcaseContent[] = sortContents(group.options?.contents ?? []).map((content) => ({
+    id: content.id,
+    kind: content.kind,
+    title: content.title,
+    summary: content.summary,
+    thumbnail: content.thumbnail,
+    duration: content.duration,
+    // Un article se lit sur Joutes ; une vidéo et un replay renvoient à leur
+    // plateforme, où le lecteur est chez lui.
+    href: content.kind === "article" ? viewHref(playGroupId, "showcase", { article: content.id }) : undefined,
+    url: content.kind === "article" ? undefined : externalUrl(content.url) ?? undefined,
+    publishedAt: content.publishedAt,
+    publishedLabel: label(content.publishedAt),
+  }));
+
+  const fromMembers: ShowcaseContent[] = memberContents.map((content) => ({
+    id: content.id,
+    kind: content.kind,
+    title: content.title,
+    summary: content.summary,
+    thumbnail: content.thumbnail,
+    duration: content.duration,
+    // L'article d'un membre se lit sur **son** profil : c'est là qu'il est
+    // signé, et c'est là que son auteur peut le corriger.
+    href:
+      content.kind === "article"
+        ? `${userProfilePath({ id: content.authorId })}?tab=publications&article=${content.id}`
+        : undefined,
+    url: content.kind === "article" ? undefined : (externalUrl(content.url) ?? undefined),
+    publishedAt: content.publishedAt,
+    publishedLabel: label(content.publishedAt),
+    authorName: memberName(members, content.authorId),
+  }));
+
+  const contents = mergeContents(owned, fromMembers);
 
   if (contents.length === 0) {
     return null;

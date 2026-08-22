@@ -2033,6 +2033,7 @@
       },
       "contents": {
         "title": "Ce que le groupe publie",
+        "byMember": "par {name}",
         "count": "{shown} sur {total}",
         "empty": "Rien de publié dans cette catégorie.",
         "filter": {
