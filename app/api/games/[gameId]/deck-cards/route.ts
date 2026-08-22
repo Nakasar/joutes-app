@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getGameBySlugOrId } from "@/lib/db/games";
 import { getDeckCardInfos, resolveCardIdsByName } from "@/lib/db/deck-cards";
 import { normalizeCardName } from "@/lib/decks/text";
+import type { DeckCardInfo } from "@/lib/decks/contents";
 
 type Params = Promise<{ gameId: string }>;
 
@@ -55,14 +56,20 @@ export async function POST(request: NextRequest, { params }: { params: Params })
 
   const byName = await resolveCardIdsByName(game.id, parsed.data.names);
 
-  // Le client apparie sur le nom normalisé : la réponse porte donc la clé, pas
-  // la forme exacte que la carte a en base, qui peut différer par un accent.
-  return NextResponse.json({
-    matches: Object.fromEntries(
-      parsed.data.names.flatMap((name) => {
-        const card = byName.get(normalizeCardName(name));
-        return card ? [[name, card] as const] : [];
-      })
-    ),
-  });
+  // Le client apparie sur le nom normalisé : la réponse porte donc la clé telle
+  // qu'elle a été envoyée, pas la forme exacte que la carte a en base, qui peut
+  // différer par un accent.
+  //
+  // Objet à prototype nul : les clés sont des noms venus de la requête, et un
+  // `__proto__` ou un `constructor` n'a rien à faire dans la chaîne de
+  // prototypes de ce que l'on sérialise.
+  const matches: Record<string, DeckCardInfo> = Object.create(null);
+  for (const name of parsed.data.names) {
+    const card = byName.get(normalizeCardName(name));
+    if (card) {
+      matches[name] = card;
+    }
+  }
+
+  return NextResponse.json({ matches });
 }

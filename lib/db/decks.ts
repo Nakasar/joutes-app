@@ -413,7 +413,14 @@ export type DeckLegendFacet = {
  * publiés qui les jouent — c'est ce que liste la combobox « Légende ».
  */
 export async function getDeckLegendFacets(gameId?: string): Promise<DeckLegendFacet[]> {
-  const match: Record<string, unknown> = { visibility: "public", legendCardId: { $ne: null } };
+  // `$type: "string"` plutôt que « différent de null » : un deck à moitié écrit
+  // — un `legendName` sans `legendCardId`, ou un identifiant d'un autre type —
+  // produirait un groupe dont la clé n'est pas un identifiant de carte, et donc
+  // une entrée de combobox qui ne filtre rien.
+  const match: Record<string, unknown> = {
+    visibility: "public",
+    legendCardId: { $type: "string", $ne: "" },
+  };
   if (gameId) {
     match.gameId = gameId;
   }

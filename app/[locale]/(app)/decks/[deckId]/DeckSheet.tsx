@@ -325,8 +325,12 @@ export function DeckSheet({
         {tab === "cards" && cardsCard}
       </div>
 
-      {/* Barre d'action basse : les trois gestes de la fiche, à portée de pouce. */}
-      <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t bg-muted/50 p-3 backdrop-blur supports-[backdrop-filter]:bg-muted/70 lg:hidden">
+      {/* Barre d'action basse : les trois gestes de la fiche, à portée de pouce.
+          `flex-wrap` obligatoire — les deux libellés portent `whitespace-nowrap`
+          et, sur un écran de 320 px, la somme de leurs largeurs minimales
+          dépasse la rangée de quelques pixels : sans lui, ce n'est pas la barre
+          qui déborde, c'est toute la page qui se décale. */}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex flex-wrap items-center gap-2 border-t bg-muted/50 p-3 backdrop-blur supports-[backdrop-filter]:bg-muted/70 lg:hidden">
         <Button
           type="button"
           variant={favorited ? "default" : "outline"}
