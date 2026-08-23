@@ -4,6 +4,19 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+  Une colonne latérale collante à hauteur plafonnée ne tient que si l'écran est
+  à la fois large et haut. Sur un portable posé à plat ou une tablette en
+  paysage, le plafond tombe au milieu du contenu : ce qui dépasse part dans un
+  défilement interne que personne ne cherche, et se lit comme un bloc coupé.
+  Sous ce seuil, la colonne redevient un bloc ordinaire qui suit la page.
+
+  56rem laisse la place à une illustration de carte, ses boutons et son bloc de
+  prix — le contenu essentiel d'une fiche — avant que le défilement interne
+  n'entre en jeu.
+*/
+@custom-variant desktop-tall (@media (min-width: 64rem) and (min-height: 56rem));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
