@@ -5,6 +5,7 @@ import {Errata} from "@/lib/types/errata.ts";
 import {auth} from "@/lib/auth.ts";
 import {canAnalyzeDeckListImages} from "@/lib/games/deck-image-access.ts";
 import {DECK_IMAGE_PATH_PREFIX} from "@/lib/games/deck-images.ts";
+import {readDeckImageModel} from "@/lib/games/deck-image-model.ts";
 import {headers} from "next/headers";
 import {generateText} from "ai";
 import {openai} from "@ai-sdk/openai";
@@ -282,9 +283,10 @@ export async function canAnalyzeDeckListImagesAction(): Promise<boolean> {
 export async function analyzeDeckListImageBase64Action(imageBase64: string): Promise<{ raw: string; deckList: DeckList }> {
   await requireDeckListImageAnalyst();
 
-  // Extraire les cartes de la photo avec OpenAI Vision
+  // Extraire les cartes de la photo avec OpenAI Vision. Le modèle se règle
+  // dans l'administration : le remplacer ne demande pas de redéploiement.
   const { text } = await generateText({
-    model: openai("gpt-5.6-luna"),
+    model: openai(await readDeckImageModel()),
     messages: [
       {
         role: "user",
@@ -319,9 +321,10 @@ export async function analyzeDeckListImageURLAction(url: string): Promise<{ raw:
     throw new Error('Unauthorized');
   }
 
-  // Extraire les cartes de la photo avec OpenAI Vision
+  // Extraire les cartes de la photo avec OpenAI Vision. Le modèle se règle
+  // dans l'administration : le remplacer ne demande pas de redéploiement.
   const { text } = await generateText({
-    model: openai("gpt-5.6-luna"),
+    model: openai(await readDeckImageModel()),
     messages: [
       {
         role: "user",
