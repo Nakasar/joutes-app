@@ -42,7 +42,7 @@ function AdminChromeSkeleton() {
       <div className="border-b border-border bg-card shadow-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 animate-pulse items-center gap-8" aria-hidden>
-            {[64, 40, 88, 64, 56, 64, 48].map((width, index) => (
+            {[64, 40, 88, 64, 56, 64, 48, 72].map((width, index) => (
               <div key={index} className="h-4 shrink-0 rounded bg-muted" style={{ width }} />
             ))}
           </div>
@@ -138,6 +138,12 @@ async function AdminChrome({ children }: { children: React.ReactNode }) {
                 className="inline-flex items-center shrink-0 whitespace-nowrap px-1 pt-1 text-sm font-medium text-foreground border-b-2 border-transparent hover:border-blue-500"
               >
                 Signalements
+              </Link>
+              <Link
+                href="/admin/settings"
+                className="inline-flex items-center shrink-0 whitespace-nowrap px-1 pt-1 text-sm font-medium text-foreground border-b-2 border-transparent hover:border-blue-500"
+              >
+                Réglages
               </Link>
             </div>
             {/* Repère de contexte, pas une commande : sur un écran étroit il
