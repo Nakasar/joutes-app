@@ -801,6 +801,7 @@
           "importFailed": "Impossibile recuperare il mazzo da Piltover Archive.",
           "imageRead": "Errore durante la lettura dell'immagine",
           "imageCheck": "Errore durante la verifica",
+          "imageTooLarge": "L'immagine supera i 10 MB.",
           "generic": "Si è verificato un errore."
         }
       },

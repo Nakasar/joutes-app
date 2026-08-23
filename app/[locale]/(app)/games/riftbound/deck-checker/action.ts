@@ -3,7 +3,8 @@
 import db from '@/lib/mongodb.ts';
 import {Errata} from "@/lib/types/errata.ts";
 import {auth} from "@/lib/auth.ts";
-import {isAdmin} from "@/lib/config/admins.ts";
+import {canAnalyzeDeckListImages} from "@/lib/games/deck-image-access.ts";
+import {DECK_IMAGE_PATH_PREFIX} from "@/lib/games/deck-images.ts";
 import {headers} from "next/headers";
 import {generateText} from "ai";
 import {openai} from "@ai-sdk/openai";
@@ -256,19 +257,6 @@ export async function getDeckFromPiltoverCode(code: string): Promise<DeckList> {
   return result;
 }
 
-/**
- * La lecture d'une liste par l'IA passe par un modèle facturé à l'appel : elle
- * reste réservée aux administrateurs. `admins` est la liste de référence du
- * projet ; `ADMIN_EMAIL` est conservé pour les déploiements qui ne
- * s'appuyaient que sur cette variable.
- */
-function canAnalyzeDeckListImages(email: string | null | undefined): boolean {
-  if (!email) return false;
-  if (isAdmin(email)) return true;
-  const adminEmail = process.env.ADMIN_EMAIL;
-  return !!adminEmail && email.toLowerCase() === adminEmail.toLowerCase();
-}
-
 async function requireDeckListImageAnalyst() {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -296,7 +284,7 @@ export async function analyzeDeckListImageBase64Action(imageBase64: string): Pro
 
   // Extraire les cartes de la photo avec OpenAI Vision
   const { text } = await generateText({
-    model: openai("gpt-4o"),
+    model: openai("gpt-5.6-luna"),
     messages: [
       {
         role: "user",
@@ -327,7 +315,7 @@ export async function analyzeDeckListImageBase64Action(imageBase64: string): Pro
 export async function analyzeDeckListImageURLAction(url: string): Promise<{ raw: string; deckList: DeckList }> {
   await requireDeckListImageAnalyst();
 
-  if (!url.startsWith('https://uiez8a3cxaj4q4wl.public.blob.vercel-storage.com/deck-images/')) {
+  if (!url.startsWith(`https://uiez8a3cxaj4q4wl.public.blob.vercel-storage.com/${DECK_IMAGE_PATH_PREFIX}`)) {
     throw new Error('Unauthorized');
   }
 

@@ -801,6 +801,7 @@
           "importFailed": "Unable to retrieve the deck from Piltover Archive.",
           "imageRead": "Error while reading the image",
           "imageCheck": "Error while verifying the image",
+          "imageTooLarge": "The image is larger than 10 MB.",
           "generic": "An error occurred."
         }
       },

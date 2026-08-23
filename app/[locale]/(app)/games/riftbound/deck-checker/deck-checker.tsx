@@ -30,6 +30,7 @@ import {type BoosterCard} from "@/lib/types/booster.ts";
 import {useSession} from "@/lib/auth-client.ts";
 import {parseDeckList, serializeDeckList, stringifyDeckList} from "@/app/[locale]/(app)/games/riftbound/deck-checker/utils.ts";
 import {upload} from "@vercel/blob/client";
+import {DECK_IMAGE_MAX_SIZE, deckImageUploadPathname} from "@/lib/games/deck-images.ts";
 import {Pencil} from "lucide-react";
 import {useLocale, useTranslations} from "next-intl";
 import CardImage from "@/components/cards/CardImage.tsx";
@@ -432,6 +433,15 @@ export function RiftboundDeckChecker({ input }: { input?: string }) {
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
+      // Au-delà, le jeton de dépôt est refusé côté serveur : autant le dire
+      // ici, avant d'avoir fait patienter sur un envoi voué à l'échec.
+      if (file.size > DECK_IMAGE_MAX_SIZE) {
+        setError(t('form.errors.imageTooLarge'));
+        e.target.value = '';
+        return;
+      }
+
+      setError(null);
       setIsLoading(true);
       // if file <1 MB
       if (file.size <= 1024 * 1024) {
@@ -461,7 +471,10 @@ export function RiftboundDeckChecker({ input }: { input?: string }) {
       } else {
         // upload file to vercel storage using pre-signed URL first.
         try {
-          const newBlob = await upload(`/deck-images/${file.name}`, file, {
+          // Sans barre oblique en tête : le chemin est relatif au magasin, et
+          // un segment vide décalerait l'URL rendue hors du dossier que
+          // `analyzeDeckListImageURLAction` accepte.
+          const newBlob = await upload(deckImageUploadPathname(file.name), file, {
             access: 'public',
             handleUploadUrl: '/api/deck-images/upload',
           });
@@ -479,6 +492,10 @@ export function RiftboundDeckChecker({ input }: { input?: string }) {
           setIsLoading(false);
         }
       }
+
+      // Sans ça, redéposer le même fichier après une erreur ne relance rien :
+      // la valeur du champ n'ayant pas changé, `change` ne se déclenche pas.
+      e.target.value = '';
     }
   }
 

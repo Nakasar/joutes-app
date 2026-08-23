@@ -801,6 +801,7 @@
           "importFailed": "Das Deck konnte nicht von Piltover Archive abgerufen werden.",
           "imageRead": "Fehler beim Lesen des Bildes",
           "imageCheck": "Fehler bei der Überprüfung",
+          "imageTooLarge": "Das Bild ist größer als 10 MB.",
           "generic": "Ein Fehler ist aufgetreten."
         }
       },
