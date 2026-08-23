@@ -333,7 +333,7 @@ export async function analyzeDeckListImageURLAction(url: string): Promise<{ raw:
 
   // Extraire les cartes de la photo avec OpenAI Vision
   const { text } = await generateText({
-    model: openai("gpt-4o"),
+    model: openai("gpt-5.6-luna"),
     messages: [
       {
         role: "user",
