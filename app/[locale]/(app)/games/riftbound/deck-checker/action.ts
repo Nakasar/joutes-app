@@ -3,6 +3,7 @@
 import db from '@/lib/mongodb.ts';
 import {Errata} from "@/lib/types/errata.ts";
 import {auth} from "@/lib/auth.ts";
+import {isAdmin} from "@/lib/config/admins.ts";
 import {headers} from "next/headers";
 import {generateText} from "ai";
 import {openai} from "@ai-sdk/openai";
@@ -255,13 +256,43 @@ export async function getDeckFromPiltoverCode(code: string): Promise<DeckList> {
   return result;
 }
 
-export async function analyzeDeckListImageBase64Action(imageBase64: string): Promise<{ raw: string; deckList: DeckList }> {
+/**
+ * La lecture d'une liste par l'IA passe par un modèle facturé à l'appel : elle
+ * reste réservée aux administrateurs. `admins` est la liste de référence du
+ * projet ; `ADMIN_EMAIL` est conservé pour les déploiements qui ne
+ * s'appuyaient que sur cette variable.
+ */
+function canAnalyzeDeckListImages(email: string | null | undefined): boolean {
+  if (!email) return false;
+  if (isAdmin(email)) return true;
+  const adminEmail = process.env.ADMIN_EMAIL;
+  return !!adminEmail && email.toLowerCase() === adminEmail.toLowerCase();
+}
+
+async function requireDeckListImageAnalyst() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  if (session?.user.email !== process.env.ADMIN_EMAIL) {
+  if (!canAnalyzeDeckListImages(session?.user.email)) {
     throw new Error('Unauthorized');
   }
+}
+
+/**
+ * Le client ne peut pas décider seul d'afficher le bouton de lecture par IA :
+ * la liste des administrateurs et `ADMIN_EMAIL` ne vivent que côté serveur.
+ * Cette action lui rend la réponse, et rien d'autre.
+ */
+export async function canAnalyzeDeckListImagesAction(): Promise<boolean> {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  return canAnalyzeDeckListImages(session?.user.email);
+}
+
+export async function analyzeDeckListImageBase64Action(imageBase64: string): Promise<{ raw: string; deckList: DeckList }> {
+  await requireDeckListImageAnalyst();
 
   // Extraire les cartes de la photo avec OpenAI Vision
   const { text } = await generateText({
@@ -294,12 +325,7 @@ export async function analyzeDeckListImageBase64Action(imageBase64: string): Pro
 }
 
 export async function analyzeDeckListImageURLAction(url: string): Promise<{ raw: string; deckList: DeckList }> {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  if (session?.user.email !== process.env.ADMIN_EMAIL) {
-    throw new Error('Unauthorized');
-  }
+  await requireDeckListImageAnalyst();
 
   if (!url.startsWith('https://uiez8a3cxaj4q4wl.public.blob.vercel-storage.com/deck-images/')) {
     throw new Error('Unauthorized');
