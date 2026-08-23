@@ -379,10 +379,15 @@ async function CardDetail({
         carte suivie de ses variantes dépasse la fenêtre, et son bas
         deviendrait alors impossible à atteindre.
 
-        `[&>*]:shrink-0` : sans lui, la hauteur plafonnée écrase les enfants au
-        lieu de faire défiler la colonne, et l'illustration — dans un cadre
-        `overflow-hidden` — se retrouve rognée sous le bloc des prix. */}
-    <div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto [&>*]:shrink-0">
+        Ce plafond ne vaut que sur un écran assez haut pour la fiche entière
+        (`desktop-tall`) : plus bas, il tombait au milieu de l'illustration ou
+        du bloc des prix, et la suite partait dans un défilement interne qui ne
+        se voit pas. La colonne y suit simplement la page.
+
+        `[&>*]:shrink-0` : sous le plafond, les enfants se laisseraient écraser
+        plutôt que déborder, et l'illustration — dans un cadre
+        `overflow-hidden` — s'en trouverait rognée. */}
+    <div className="flex flex-col gap-4 desktop-tall:sticky desktop-tall:top-6 desktop-tall:max-h-[calc(100dvh-3rem)] desktop-tall:overflow-y-auto [&>*]:shrink-0">
       {/* Une carte toujours foil est présentée comme telle : voile irisé sur
           l'illustration, comme dans la collection. */}
       <div className={`relative overflow-hidden rounded-xl shadow-lg ${card.foil ? "foil-shine" : ""}`}>
