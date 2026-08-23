@@ -39,8 +39,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       request,
       onBeforeGenerateToken: async (pathname) => {
         // Le chemin vient du navigateur : le jeton ne doit ouvrir que le
-        // dossier des listes, et rien d'autre du magasin de blobs.
-        if (!pathname.startsWith(DECK_IMAGE_PATH_PREFIX) || pathname.includes('..')) {
+        // dossier des listes, et rien d'autre du magasin de blobs. La
+        // traversée se juge segment par segment — `photo..jpg` est un nom de
+        // fichier ordinaire, que chercher `..` dans la chaîne entière
+        // refuserait sans raison.
+        const segments = pathname.split('/');
+        const traverses = segments.some(
+          (segment) => segment === '' || segment === '.' || segment === '..'
+        );
+
+        if (!pathname.startsWith(DECK_IMAGE_PATH_PREFIX) || traverses) {
           throw new Error("Chemin de dépôt refusé");
         }
 
