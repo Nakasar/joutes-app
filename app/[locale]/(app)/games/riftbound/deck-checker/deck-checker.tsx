@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/command.tsx";
 import {
   validateDeckList, type DeckListCard, type DeckList, analyzeDeckListImageBase64Action,
-  analyzeDeckListImageURLAction, getDeckFromPiltover, getDeckFromPiltoverCode
+  analyzeDeckListImageURLAction, canAnalyzeDeckListImagesAction, getDeckFromPiltover, getDeckFromPiltoverCode
 } from "./action.ts";
 import {type ErrataType} from "@/lib/types/errata.ts";
 import {type BoosterCard} from "@/lib/types/booster.ts";
@@ -401,7 +401,7 @@ export function RiftboundDeckChecker({ input }: { input?: string }) {
   const [deckList, setDeckList] = useState<DeckList | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [canUseImageLoader] = useState<boolean>(false);
+  const [canUseImageLoader, setCanUseImageLoader] = useState<boolean>(false);
   const [editingCard, setEditingCard] = useState<{ section: keyof DeckList; index: number } | null>(null);
 
   async function importDeckList() {
@@ -482,11 +482,27 @@ export function RiftboundDeckChecker({ input }: { input?: string }) {
     }
   }
 
+  // La lecture d'une photo par l'IA est réservée aux administrateurs, et seul le
+  // serveur sait qui l'est : on lui demande avant d'afficher le bouton.
   useEffect(() => {
     if (!session?.data) {
+      setCanUseImageLoader(false);
       return;
     }
-  }, [session]);
+
+    let cancelled = false;
+    canAnalyzeDeckListImagesAction()
+      .then((allowed) => {
+        if (!cancelled) setCanUseImageLoader(allowed);
+      })
+      .catch(() => {
+        if (!cancelled) setCanUseImageLoader(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.data]);
 
   useEffect(() => {
     if (input && input.length > 10) {
