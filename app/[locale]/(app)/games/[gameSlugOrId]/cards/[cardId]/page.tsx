@@ -377,8 +377,12 @@ async function CardDetail({
   <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,22rem)_1fr] lg:items-start">
     {/* Collante, mais jamais plus haute que l'écran : sur un portable, une
         carte suivie de ses variantes dépasse la fenêtre, et son bas
-        deviendrait alors impossible à atteindre. */}
-    <div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+        deviendrait alors impossible à atteindre.
+
+        `[&>*]:shrink-0` : sans lui, la hauteur plafonnée écrase les enfants au
+        lieu de faire défiler la colonne, et l'illustration — dans un cadre
+        `overflow-hidden` — se retrouve rognée sous le bloc des prix. */}
+    <div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto [&>*]:shrink-0">
       {/* Une carte toujours foil est présentée comme telle : voile irisé sur
           l'illustration, comme dans la collection. */}
       <div className={`relative overflow-hidden rounded-xl shadow-lg ${card.foil ? "foil-shine" : ""}`}>
