@@ -2,6 +2,7 @@
 
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/middleware/admin.ts";
 import { clearAppSetting, writeAppSetting } from "@/lib/db/app-settings.ts";
@@ -26,6 +27,14 @@ export type SaveResult =
 export type TestResult =
   | { ok: true; reply: string }
   | { ok: false; error: string };
+
+/**
+ * L'écran se relit à chaque requête, mais le cache de navigation du routeur,
+ * lui, garde la charge rendue : sans cette invalidation, un retour arrière
+ * réaffiche le formulaire tel qu'il était avant l'enregistrement, et le
+ * réglage a l'air perdu.
+ */
+const ADMIN_SETTINGS_PATH = '/admin/settings';
 
 /**
  * Un damier 16×16, 94 octets, encodé ici plutôt que déposé quelque part : la
@@ -63,6 +72,7 @@ export async function saveDeckImageModelAction(rawModelId: string): Promise<Save
 
   const updatedBy = session.user.email;
   await writeAppSetting(DECK_IMAGE_MODEL_SETTING_KEY, modelId, updatedBy);
+  revalidatePath(ADMIN_SETTINGS_PATH);
 
   return {
     ok: true,
@@ -80,6 +90,7 @@ export async function resetDeckImageModelAction(): Promise<SaveResult> {
   await requireAdmin();
 
   await clearAppSetting(DECK_IMAGE_MODEL_SETTING_KEY);
+  revalidatePath(ADMIN_SETTINGS_PATH);
 
   return {
     ok: true,
