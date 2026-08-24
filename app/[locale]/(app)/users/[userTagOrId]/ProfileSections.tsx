@@ -293,41 +293,45 @@ export async function AchievementsSection({
 
       {full ? (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {shown.map((achievement) => (
-            <li key={achievement.id} className="flex gap-3 rounded-[10px] border bg-card p-4">
-              <AchievementIcon
-                icon={achievement.icon}
-                iconImage={achievement.iconImage}
-                name={achievement.name}
-                size={40}
-                className="shrink-0"
-              />
+          {shown.map((achievement) => {
+            // Une date que Mongo rend en chaîne illisible se tait plutôt que
+            // d'écrire « Invalid DateTime » sous le nom du succès.
+            const unlockedOn = achievement.unlockedAt
+              ? DateTime.fromJSDate(new Date(achievement.unlockedAt)).setLocale(locale)
+              : null;
 
-              <div className="flex min-w-0 flex-col gap-1">
-                <span className="text-[14px] leading-tight font-medium">{achievement.name}</span>
+            return (
+              <li key={achievement.id} className="flex gap-3 rounded-[10px] border bg-card p-4">
+                <AchievementIcon
+                  icon={achievement.icon}
+                  iconImage={achievement.iconImage}
+                  name={achievement.name}
+                  size={40}
+                  className="shrink-0"
+                />
 
-                {achievement.description && (
-                  <p className="text-[13px] leading-snug text-pretty text-muted-foreground">
-                    {achievement.description}
-                  </p>
-                )}
+                <div className="flex min-w-0 flex-col gap-1">
+                  <span className="text-[14px] leading-tight font-medium">{achievement.name}</span>
 
-                <p className="font-mono text-[11px] text-muted-foreground">
-                  {t("pointsShort", { points: achievement.points })}
-                  {achievement.unlockedAt && (
-                    <>
-                      {" · "}
-                      {t("unlockedOn", {
-                        date: DateTime.fromJSDate(new Date(achievement.unlockedAt))
-                          .setLocale(locale)
-                          .toLocaleString(DateTime.DATE_MED),
-                      })}
-                    </>
+                  {achievement.description && (
+                    <p className="text-[13px] leading-snug text-pretty text-muted-foreground">
+                      {achievement.description}
+                    </p>
                   )}
-                </p>
-              </div>
-            </li>
-          ))}
+
+                  <p className="font-mono text-[11px] text-muted-foreground">
+                    {t("pointsShort", { points: achievement.points })}
+                    {unlockedOn?.isValid && (
+                      <>
+                        {" · "}
+                        {t("unlockedOn", { date: unlockedOn.toLocaleString(DateTime.DATE_MED) })}
+                      </>
+                    )}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">

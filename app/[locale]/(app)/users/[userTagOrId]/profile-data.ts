@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 
+import { unlockedMostRecentFirst } from "@/lib/achievements/unlocked.ts";
 import { auth } from "@/lib/auth.ts";
 import { getAchievementsForUser } from "@/lib/db/achievements.ts";
 import { searchDecks } from "@/lib/db/decks.ts";
@@ -221,22 +222,14 @@ export const readProfileGroups = cache(async (userTagOrId: string): Promise<Play
 /**
  * Le catalogue des succès et ceux que ce compte a décrochés.
  *
- * `unlocked` sort du plus récent au plus ancien : la vitrine n'en montre que
- * les premiers, et « les trois derniers » est la seule sélection qui veuille
- * dire quelque chose — l'ordre du catalogue, lui, n'en dit aucune.
+ * `unlocked` sort du plus récent au plus ancien — la règle et ses pièges de
+ * dates vivent dans `lib/achievements/unlocked.ts`, où ils se testent sans
+ * base.
  */
 export const readProfileAchievements = cache(async (userTagOrId: string) => {
   const { user } = await requireProfile(userTagOrId);
   const achievements = await getAchievementsForUser(user.id);
-  // `new Date` plutôt que `.getTime()` directement : la date vient de Mongo, et
-  // un document importé par script peut la porter en chaîne — un tri qui plante
-  // emporterait la page entière.
-  const unlockedTime = (achievement: { unlockedAt?: Date }) =>
-    achievement.unlockedAt ? new Date(achievement.unlockedAt).getTime() : 0;
-
-  const unlocked = achievements
-    .filter((achievement) => achievement.unlockedAt)
-    .sort((a, b) => unlockedTime(b) - unlockedTime(a));
+  const unlocked = unlockedMostRecentFirst(achievements);
 
   return {
     all: achievements,
