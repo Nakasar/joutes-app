@@ -109,6 +109,25 @@ routage de Vercel plafonne à 2048 entrées et chaque segment y est multiplié p
 les quatre locales — c'est la raison qui a mené les groupes de jeu au `?view=`
 et les lieux au `?tab=`, et elle vaut ici aussi.
 
+### Un bloc peut se rendre en deux tailles
+
+Le bloc des succès est le premier à le faire. Sur la vitrine, il n'affiche que
+**les trois derniers succès décrochés**, suivis d'une tuile qui compte le reste
+et mène à l'onglet « Succès » — un compte qui en a vingt n'a pas à les dérouler
+tous avant qu'on arrive à ses decks. Sur son onglet, il les montre **tous**,
+chacun avec sa description et sa date de déblocage.
+
+C'est `full` sur `AchievementsSection`, décidé par `ProfileBlocks` à partir de
+l'onglet actif. La tuile « + N autres » n'était jusque-là qu'un compteur : elle
+disait qu'il y avait autre chose sans dire où le voir, et l'onglet « Succès »
+répétait l'aperçu.
+
+`readProfileAchievements` trie donc les succès débloqués **du plus récent au
+plus ancien** : « les trois derniers » est la seule sélection de trois qui
+veuille dire quelque chose, l'ordre du catalogue n'en disant aucune. Les succès
+non débloqués restent hors de la vitrine — le profil montre ce qu'on a fait,
+`/account` (onglet « Succès ») montre ce qui reste à faire.
+
 ## Suivre, et être ami
 
 **Deux relations, et c'est délibéré.** S'abonner ne demande rien à personne : on

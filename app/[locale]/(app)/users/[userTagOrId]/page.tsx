@@ -4,7 +4,11 @@ import { getTranslations } from "next-intl/server";
 
 import CommunityBottomNav from "@/components/users/CommunityBottomNav.tsx";
 import { userProfilePath } from "@/lib/users/handle.ts";
-import { sectionsForTab, visibleProfileTabs } from "@/lib/users/profile-tabs.ts";
+import {
+  readUserProfileTab,
+  sectionsForTab,
+  visibleProfileTabs,
+} from "@/lib/users/profile-tabs.ts";
 import type { UserShowcaseSectionKey } from "@/lib/users/showcase.ts";
 
 import ProfileAdminTools from "./ProfileAdminTools.tsx";
@@ -247,7 +251,7 @@ async function ProfileBlocks({ userTagOrId, tab }: { userTagOrId: string; tab?: 
   ]);
 
   const tabs = visibleProfileTabs(sections, content);
-  const activeTab = tabs.includes(tab as never) ? (tab as never) : "showcase";
+  const activeTab = readUserProfileTab(tab, tabs);
   const keys = sectionsForTab(sections, activeTab);
 
   const blocks: Record<UserShowcaseSectionKey, React.ReactNode> = {
@@ -255,7 +259,15 @@ async function ProfileBlocks({ userTagOrId, tab }: { userTagOrId: string; tab?: 
     about: <AboutSection key="about" userTagOrId={userTagOrId} />,
     decks: <DecksSection key="decks" userTagOrId={userTagOrId} />,
     publications: <PublicationsSection key="publications" userTagOrId={userTagOrId} />,
-    achievements: <AchievementsSection key="achievements" userTagOrId={userTagOrId} />,
+    // Sur son propre onglet, le bloc des succès les montre tous ; empilé sur la
+    // vitrine, il n'en montre qu'un aperçu.
+    achievements: (
+      <AchievementsSection
+        key="achievements"
+        userTagOrId={userTagOrId}
+        full={activeTab === "achievements"}
+      />
+    ),
     // Jeux, lieux et groupes vivent dans la colonne de droite : le bloc n'a pas
     // de corps propre, seul son interrupteur compte.
     follows: null,
