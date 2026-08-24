@@ -306,6 +306,42 @@ export default function TradeEditor({
     updateDraft(target, next);
   };
 
+  /**
+   * Remplace une face par la liste écrite au format texte.
+   *
+   * Le prix décidé pour une carte n'est pas de la liste : il appartient à
+   * l'échange, et une carte qui traverse l'opération garde le sien — sans quoi
+   * relire sa propre liste effacerait ce qui a été négocié.
+   */
+  const applyTextEntries = (target: OfferTarget, entries: { card: TradeCard; quantity: number }[]) => {
+    const previous = new Map(draftsRef.current[target].map((card) => [card.key, card]));
+
+    const next = entries.map(({ card, quantity }) => {
+      if (target === "mine") {
+        ownedHints.current.set(card.key, card.owned);
+      }
+      const max = target === "mine" ? Math.max(1, card.owned) : TRADE_MAX_QUANTITY;
+
+      return {
+        key: card.key,
+        cardId: card.cardId,
+        name: card.name,
+        setCode: card.setCode,
+        collectorNumber: card.collectorNumber,
+        image: card.image,
+        orientation: card.orientation,
+        gameName: card.gameName,
+        gameSlug: card.gameSlug,
+        quantity: Math.max(1, Math.min(max, quantity)),
+        maxQuantity: max,
+        marketPrice: card.marketPrice,
+        unitPrice: previous.get(card.key)?.unitPrice,
+      };
+    });
+
+    updateDraft(target, next);
+  };
+
   const changeQuantity = (target: OfferTarget, key: string, quantity: number) => {
     updateDraft(
       target,
@@ -576,6 +612,7 @@ export default function TradeEditor({
           onQuantityChange={(key, quantity) => changeQuantity("mine", key, quantity)}
           onPriceChange={(key, unitPrice) => changePrice("mine", key, unitPrice)}
           onRemove={(key) => removeCard("mine", key)}
+          onApplyText={(entries) => applyTextEntries("mine", entries)}
         />
         <TradePanel
           title={partnerName ? t("request.titleWithPartner", { name: partnerName }) : t("request.title")}
@@ -595,6 +632,7 @@ export default function TradeEditor({
           onQuantityChange={(key, quantity) => changeQuantity("counterparty", key, quantity)}
           onPriceChange={(key, unitPrice) => changePrice("counterparty", key, unitPrice)}
           onRemove={(key) => removeCard("counterparty", key)}
+          onApplyText={(entries) => applyTextEntries("counterparty", entries)}
         />
       </div>
 

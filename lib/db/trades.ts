@@ -17,6 +17,7 @@ import {
   partnerMatches,
   type TradeHistoryQuery,
 } from "@/lib/trade/history";
+import { normalizeCardName } from "@/lib/decks/text";
 import { getMarketPrices } from "@/lib/db/card-prices";
 import { findLandscapeCards, type LandscapeCards } from "@/lib/db/card-orientations";
 import type { MarketPrice } from "@/lib/prices/display";
@@ -230,64 +231,8 @@ export async function searchTradeCards({
   const total = facet?.total?.[0]?.n ?? 0;
   const rows = facet?.items ?? [];
 
-  const rawItems = rows.map((row) => {
-    const id = row._id as Record<string, unknown>;
-    const catalog = (row.catalog ?? null) as { gameId?: ObjectId; type?: string } | null;
-    const rowGameId = (scope === "collection" ? catalog?.gameId : (id.gameId as ObjectId | undefined)) ?? null;
-
-    return {
-      name: (scope === "collection" ? id.name : row.name) as string,
-      setCode: id.setCode as string,
-      collectorNumber: (id.collectorNumber as string) ?? "",
-      cardId: (row.cardId as string | undefined) || undefined,
-      image: (row.image as string | undefined) ?? "",
-      type: (scope === "collection" ? catalog?.type : (row.type as string | undefined)) || undefined,
-      gameId: rowGameId ? rowGameId.toString() : undefined,
-      owned: (row.owned as number | undefined) ?? 0,
-    };
-  });
-
-  const gamesMeta = await getGamesMeta(
-    [...new Set(rawItems.map((it) => it.gameId).filter((id): id is string => !!id))].map((id) => new ObjectId(id))
-  );
-
-  // Le catalogue ne connaît pas les exemplaires possédés : on les compte pour la
-  // page renvoyée, sur la même identité (nom + extension + numéro) que celle
-  // utilisée par le reste de la collection.
-  const ownedByKey =
-    scope === "catalog" ? await getOwnedCountsByKey(userObjId, rawItems) : new Map<string, number>();
-
-  // Le prix accompagne la carte dès la recherche : c'est aussi ce qui aide à
-  // choisir quoi mettre dans une offre. Le sens d'impression est relu de la
-  // même façon — sur la seule page renvoyée, et depuis le catalogue, qui en est
-  // la source —, et les deux lectures partent ensemble : elles ne dépendent que
-  // des cartes déjà connues ici.
-  const [marketPrices, landscapeCards] = await Promise.all([
-    marketPricesForCards(rawItems),
-    findLandscapeCards(rawItems),
-  ]);
-
-  const items: TradeCard[] = rawItems.map((it) => {
-    const key = cardKey(it.name, it.setCode, it.collectorNumber);
-    const game = it.gameId ? gamesMeta.get(it.gameId) : undefined;
-    const marketPrice = it.cardId && it.gameId ? marketPrices.get(`${it.gameId}|${it.cardId}`) : undefined;
-
-    return {
-      key,
-      cardId: it.cardId,
-      name: it.name,
-      setCode: it.setCode,
-      collectorNumber: it.collectorNumber,
-      image: it.image,
-      type: it.type,
-      ...(landscapeCards.has(it) ? { orientation: "landscape" as const } : {}),
-      gameId: it.gameId,
-      gameName: game?.name,
-      gameSlug: game?.slug,
-      owned: scope === "catalog" ? ownedByKey.get(key) ?? 0 : it.owned,
-      ...(marketPrice ? { marketPrice } : {}),
-    };
-  });
+  const rawItems = rows.map((row) => toRawTradeCard(row, scope));
+  const items = await hydrateTradeCards(rawItems, { userObjId, countOwned: scope === "catalog" });
 
   return {
     items,
@@ -321,6 +266,260 @@ async function getOwnedCountsByKey(
     .toArray();
 
   return new Map(rows.map((row) => [cardKey(row._id.name, row._id.setCode, row._id.collectorNumber), row.n]));
+}
+
+/** Une impression telle que sortie d'une agrégation, avant enrichissement. */
+type RawTradeCard = {
+  name: string;
+  setCode: string;
+  collectorNumber: string;
+  cardId?: string;
+  image: string;
+  type?: string;
+  gameId?: string;
+  owned: number;
+};
+
+/** Lit une ligne d'agrégation, dont la forme diffère selon la source lue. */
+function toRawTradeCard(row: Record<string, unknown>, scope: TradeCardScope): RawTradeCard {
+  const id = row._id as Record<string, unknown>;
+  const catalog = (row.catalog ?? null) as { gameId?: ObjectId; type?: string } | null;
+  const rowGameId = (scope === "collection" ? catalog?.gameId : (id.gameId as ObjectId | undefined)) ?? null;
+
+  return {
+    name: (scope === "collection" ? id.name : row.name) as string,
+    setCode: id.setCode as string,
+    collectorNumber: (id.collectorNumber as string) ?? "",
+    cardId: (row.cardId as string | undefined) || undefined,
+    image: (row.image as string | undefined) ?? "",
+    type: (scope === "collection" ? catalog?.type : (row.type as string | undefined)) || undefined,
+    gameId: rowGameId ? rowGameId.toString() : undefined,
+    owned: (row.owned as number | undefined) ?? 0,
+  };
+}
+
+/**
+ * Complète des impressions brutes de ce qui ne vient pas de la même source
+ * qu'elles : le jeu d'appartenance, les exemplaires possédés quand la lecture
+ * part du catalogue, le prix de marché et le sens d'impression.
+ *
+ * Le prix accompagne la carte dès la recherche : c'est aussi ce qui aide à
+ * choisir quoi mettre dans une offre. Le sens d'impression est relu de la même
+ * façon — sur les seules cartes déjà connues ici, et depuis le catalogue, qui
+ * en est la source —, et les deux lectures partent ensemble.
+ */
+async function hydrateTradeCards(
+  rawItems: RawTradeCard[],
+  { userObjId, countOwned }: { userObjId: ObjectId; countOwned: boolean }
+): Promise<TradeCard[]> {
+  if (rawItems.length === 0) return [];
+
+  const gamesMeta = await getGamesMeta(
+    [...new Set(rawItems.map((it) => it.gameId).filter((id): id is string => !!id))].map((id) => new ObjectId(id))
+  );
+
+  // Le catalogue ne connaît pas les exemplaires possédés : on les compte pour
+  // les cartes rendues, sur la même identité (nom + extension + numéro) que
+  // celle utilisée par le reste de la collection.
+  const ownedByKey = countOwned ? await getOwnedCountsByKey(userObjId, rawItems) : new Map<string, number>();
+
+  const [marketPrices, landscapeCards] = await Promise.all([
+    marketPricesForCards(rawItems),
+    findLandscapeCards(rawItems),
+  ]);
+
+  return rawItems.map((it) => {
+    const key = cardKey(it.name, it.setCode, it.collectorNumber);
+    const game = it.gameId ? gamesMeta.get(it.gameId) : undefined;
+    const marketPrice = it.cardId && it.gameId ? marketPrices.get(`${it.gameId}|${it.cardId}`) : undefined;
+
+    return {
+      key,
+      cardId: it.cardId,
+      name: it.name,
+      setCode: it.setCode,
+      collectorNumber: it.collectorNumber,
+      image: it.image,
+      type: it.type,
+      ...(landscapeCards.has(it) ? { orientation: "landscape" as const } : {}),
+      gameId: it.gameId,
+      gameName: game?.name,
+      gameSlug: game?.slug,
+      owned: countOwned ? ownedByKey.get(key) ?? 0 : it.owned,
+      ...(marketPrice ? { marketPrice } : {}),
+    };
+  });
+}
+
+/**
+ * Désignation d'une carte telle qu'une ligne de texte la porte : le nom, et ce
+ * qui la précise quand la ligne le dit (cf. `lib/trade/text.ts`).
+ */
+export type TradeCardDesignation = {
+  name: string;
+  setCode?: string;
+  collectorNumber?: string;
+};
+
+/**
+ * Une même carte existe en plusieurs impressions, et une liste recopiée ne les
+ * distingue pas toujours. La lecture va donc du plus précis au plus large, et
+ * s'arrête au premier palier qui donne quelque chose : extension et numéro,
+ * puis extension seule, puis le nom seul. Rien n'est deviné au-delà — une
+ * extension inconnue rend la carte la mieux nommée, que l'interface affiche
+ * avec son code, à charge pour le joueur de corriger.
+ */
+function pickDesignatedCard(candidates: RawTradeCard[], designation: TradeCardDesignation): RawTradeCard | null {
+  if (candidates.length === 0) return null;
+
+  const setCode = designation.setCode?.toLowerCase();
+  const number = normalizeCollectorNumber(designation.collectorNumber);
+  const inSet = setCode ? candidates.filter((card) => card.setCode.toLowerCase() === setCode) : [];
+  const exact = number ? inSet.filter((card) => normalizeCollectorNumber(card.collectorNumber) === number) : [];
+
+  const shortlist = exact.length > 0 ? exact : inSet.length > 0 ? inSet : candidates;
+
+  // À égalité de désignation, l'impression la plus utile : celle qu'on possède
+  // le plus, et à défaut celle que le catalogue connaît — une carte sans
+  // identifiant catalogue ne peut pas être demandée à un partenaire.
+  return (
+    [...shortlist].sort(
+      (a, b) =>
+        b.owned - a.owned ||
+        Number(Boolean(b.cardId)) - Number(Boolean(a.cardId)) ||
+        a.setCode.localeCompare(b.setCode) ||
+        a.collectorNumber.localeCompare(b.collectorNumber, undefined, { numeric: true })
+    )[0] ?? null
+  );
+}
+
+/** Les zéros de tête d'un numéro de collection ne le changent pas. */
+function normalizeCollectorNumber(value: string | undefined): string {
+  return (value ?? "").trim().toLowerCase().replace(/^0+(?=\d)/, "");
+}
+
+/**
+ * Nombre de documents lus pour apparier une liste. Une liste tient en cinquante
+ * cartes, mais un nom répandu peut avoir été imprimé bien des fois, dans bien
+ * des langues : la borne empêche qu'une liste de noms courants ne se transforme
+ * en lecture d'une bonne part du catalogue.
+ */
+const TRADE_TEXT_LOOKUP_LIMIT = 5000;
+
+/**
+ * Apparie des désignations lues en texte à des impressions réelles, dans la
+ * collection de l'utilisateur (« mon offre ») ou dans le catalogue (une
+ * contrepartie libre).
+ *
+ * Le rapprochement des noms se fait sans casse ni accents — une liste recopiée
+ * à la main ne porte pas toujours ses diacritiques — et le résultat suit
+ * l'ordre des désignations, `null` marquant celles qu'aucune carte ne satisfait.
+ */
+export async function resolveTradeCardDesignations({
+  userId,
+  scope,
+  designations,
+}: {
+  userId: string;
+  scope: TradeCardScope;
+  designations: TradeCardDesignation[];
+}): Promise<(TradeCard | null)[]> {
+  if (designations.length === 0) return [];
+
+  const userObjId = new ObjectId(userId);
+  const names = [...new Set(designations.map((designation) => designation.name.trim()).filter(Boolean))];
+  if (names.length === 0) return designations.map(() => null);
+
+  const pipeline: Record<string, unknown>[] =
+    scope === "collection"
+      ? [
+          { $match: { userId: userObjId, name: { $in: names } } },
+          {
+            $group: {
+              _id: {
+                name: "$name",
+                setCode: "$setCode",
+                collectorNumber: { $toString: "$collectorNumber" },
+              },
+              cardId: { $first: "$cardId" },
+              image: { $first: "$image" },
+              owned: { $sum: 1 },
+            },
+          },
+          {
+            $lookup: {
+              from: "cards",
+              localField: "cardId",
+              foreignField: "id",
+              as: "catalog",
+              pipeline: [{ $project: { _id: 0, gameId: 1, type: 1 } }],
+            },
+          },
+          { $addFields: { catalog: { $arrayElemAt: ["$catalog", 0] } } },
+          { $limit: TRADE_TEXT_LOOKUP_LIMIT },
+        ]
+      : [
+          { $match: { name: { $in: names } } },
+          { $limit: TRADE_TEXT_LOOKUP_LIMIT },
+          {
+            $project: {
+              _id: 0,
+              id: 1,
+              name: 1,
+              setCode: 1,
+              collectorNumber: 1,
+              type: 1,
+              gameId: 1,
+              image: { $ifNull: ["$image", "$poster"] },
+              // Une même impression existe en plusieurs langues : on n'en garde
+              // qu'une, en préférant l'anglais, langue pivot du catalogue.
+              langRank: { $cond: [{ $eq: ["$lang", "en"] }, 0, 1] },
+            },
+          },
+          { $sort: { langRank: 1 } },
+          {
+            $group: {
+              _id: {
+                gameId: "$gameId",
+                setCode: "$setCode",
+                collectorNumber: { $toString: "$collectorNumber" },
+              },
+              cardId: { $first: "$id" },
+              name: { $first: "$name" },
+              image: { $first: "$image" },
+              type: { $first: "$type" },
+            },
+          },
+        ];
+
+  const rows = (await db
+    .collection(scope === "collection" ? "collection-cards" : "cards")
+    // Même comparaison de noms que l'onglet « Texte » d'un deck : la collation
+    // rend l'égalité insensible à la casse et aux accents, ce que `$regex` ne
+    // sait pas faire.
+    .aggregate(pipeline, { allowDiskUse: true, collation: { locale: "fr", strength: 1 } })
+    .toArray()) as Record<string, unknown>[];
+
+  const candidatesByName = new Map<string, RawTradeCard[]>();
+  for (const row of rows) {
+    const raw = toRawTradeCard(row, scope);
+    const key = normalizeCardName(raw.name);
+    const bucket = candidatesByName.get(key) ?? [];
+    bucket.push(raw);
+    candidatesByName.set(key, bucket);
+  }
+
+  const picks = designations.map((designation) =>
+    pickDesignatedCard(candidatesByName.get(normalizeCardName(designation.name)) ?? [], designation)
+  );
+
+  // Une seule passe d'enrichissement pour toute la liste : les prix et les
+  // sens d'impression se lisent par lot, pas carte par carte.
+  const unique = [...new Set(picks.filter((pick): pick is RawTradeCard => pick !== null))];
+  const hydrated = await hydrateTradeCards(unique, { userObjId, countOwned: scope === "catalog" });
+  const byRaw = new Map(unique.map((raw, index) => [raw, hydrated[index]]));
+
+  return picks.map((pick) => (pick ? byRaw.get(pick) ?? null : null));
 }
 
 // ---------------------------------------------------------------------------
