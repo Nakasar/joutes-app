@@ -42,6 +42,25 @@ export const tradeOfferUpdateSchema = z.discriminatedUnion("target", [
   }),
 ]);
 
+/**
+ * Désignation d'une carte lue dans une liste écrite en texte : le nom, et ce
+ * qui la précise quand la ligne le dit (cf. `lib/trade/text.ts`). Le serveur en
+ * tire une impression réelle ; rien n'est enregistré à ce stade.
+ */
+export const tradeCardResolveSchema = z.strictObject({
+  scope: z.enum(["collection", "catalog"]),
+  cards: z
+    .array(
+      z.strictObject({
+        name: z.string().min(1).max(200),
+        setCode: z.string().max(100).optional(),
+        collectorNumber: z.string().max(100).optional(),
+      })
+    )
+    // Ce qui dépasse la taille d'une face ne sera de toute façon pas retenu.
+    .max(TRADE_MAX_CARDS_PER_SIDE),
+});
+
 export const tradeJoinSchema = z.strictObject({
   code: z.string().trim().min(1).max(32),
 });
@@ -56,6 +75,7 @@ export const tradeValidateSchema = z.strictObject({
 });
 
 export type TradeOfferUpdateInput = z.infer<typeof tradeOfferUpdateSchema>;
+export type TradeCardResolveInput = z.infer<typeof tradeCardResolveSchema>;
 export type TradeJoinInput = z.infer<typeof tradeJoinSchema>;
 export type TradePartnerInput = z.infer<typeof tradePartnerSchema>;
 export type TradeValidateInput = z.infer<typeof tradeValidateSchema>;

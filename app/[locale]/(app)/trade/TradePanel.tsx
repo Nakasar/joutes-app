@@ -1,11 +1,13 @@
 "use client";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import CardImage from "@/components/cards/CardImage.tsx";
 import { useLocale, useTranslations } from "next-intl";
-import { Check, ExternalLink, Loader2, Minus, Plus, RotateCcw, Search, X } from "lucide-react";
+import { toast } from "sonner";
+import { Check, Copy, ExternalLink, FileText, List, Loader2, Minus, Plus, RotateCcw, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
 import {
   Select,
   SelectContent,
@@ -18,9 +20,10 @@ import type { MarketPrice } from "@/lib/prices/display.ts";
 import type { CardOrientation } from "@/lib/types/card.ts";
 import { DEFAULT_MARKET_CURRENCY, formatCardPrice } from "@/lib/prices/display.ts";
 import { appliedUnitPrice, isNegotiatedPrice, sideTotal } from "@/lib/trade/pricing.ts";
+import { applyTradeText, parseTradeText, stringifyTradeCards } from "@/lib/trade/text.ts";
 import { CardPriceTag } from "@/components/cards/CardPriceTag.tsx";
 import { PRICE_SOURCE_LABELS, marketProductUrl } from "@/lib/prices/sources.ts";
-import { TRADE_MAX_UNIT_PRICE } from "@/lib/constants/trade.ts";
+import { TRADE_MAX_CARDS_PER_SIDE, TRADE_MAX_UNIT_PRICE } from "@/lib/constants/trade.ts";
 
 /** Une carte affichée dans un espace d'échange, avec son plafond de quantité. */
 export type TradePanelCard = {
@@ -183,10 +186,216 @@ function CardPriceLine({
   );
 }
 
+/** Les deux façons de voir une offre : carte à carte, ou en texte. */
+type TradePanelView = "cards" | "text";
+
+/**
+ * L'offre au format texte : une carte par ligne, « 2 Nom de la carte (EXT) 123 ».
+ *
+ * C'est sous cette forme qu'une liste se recopie, se colle dans un message ou
+ * s'importe d'ailleurs, et c'est aussi la façon la plus rapide de composer une
+ * grosse offre : on écrit vingt lignes plus vite qu'on ne fait vingt
+ * recherches. Un espace en lecture seule — l'offre du partenaire, un échange
+ * clos — n'en garde que la lecture et la copie.
+ *
+ * L'appariement des noms se fait côté serveur, contre la collection ou le
+ * catalogue : le navigateur n'a ni l'une ni l'autre. Rien n'est appliqué avant
+ * que le joueur ne le demande, et ce qui n'a pas été reconnu est dit plutôt que
+ * passé sous silence.
+ */
+function TradeTextView({
+  cards,
+  editable,
+  disabled,
+  scope,
+  requireCardId,
+  onApply,
+}: {
+  cards: TradePanelCard[];
+  editable: boolean;
+  disabled: boolean;
+  /** Où chercher les cartes nommées : sa propre collection, ou le catalogue. */
+  scope: TradeCardScope;
+  requireCardId: boolean;
+  onApply?: (entries: { card: TradeCard; quantity: number }[]) => void;
+}) {
+  const t = useTranslations("Trade");
+
+  const serialized = useMemo(() => stringifyTradeCards(cards), [cards]);
+  // `null` : le texte suit la liste. Dès la première frappe, c'est la saisie qui
+  // fait foi, jusqu'à ce qu'elle soit appliquée ou que la liste change.
+  const [draft, setDraft] = useState<string | null>(null);
+  const [applying, setApplying] = useState(false);
+  const [copied, setCopied] = useState(false);
+  // Ce que la dernière application a laissé de côté. Le reste est visible : ce
+  // sont les cartes de l'espace, que la liste vient de remplacer.
+  const [report, setReport] = useState<{ unmatched: string[]; dropped: number } | null>(null);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lastSerialized = useRef(serialized);
+  const text = draft ?? serialized;
+
+  // La liste peut changer ailleurs : une carte ajoutée par la recherche, l'offre
+  // relue du serveur, la liste que l'on vient d'appliquer. Le texte la reprend
+  // alors — sauf sous les doigts : une saisie en cours ne s'efface pas.
+  useEffect(() => {
+    if (lastSerialized.current === serialized) return;
+    lastSerialized.current = serialized;
+    if (document.activeElement !== textareaRef.current) setDraft(null);
+  }, [serialized]);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy the trade card list:", error);
+    }
+  };
+
+  const apply = async () => {
+    const parsed = parseTradeText(text);
+    // Ce qui dépasse la taille d'une face ne sera pas retenu : autant ne pas
+    // le faire chercher au serveur.
+    const lines = parsed.lines.slice(0, TRADE_MAX_CARDS_PER_SIDE);
+    const overflow = parsed.lines.length - lines.length;
+
+    if (lines.length === 0) {
+      // Un champ vidé vide l'offre : c'est une modification comme une autre,
+      // celle qu'on ferait en retirant chaque carte. Un texte qu'on n'a pas su
+      // lire, lui, n'est pas une liste vide — il est resté en travers, et
+      // l'effacer emporterait à la fois l'offre et la saisie qui la corrigeait.
+      if (text.trim() !== "") {
+        setReport({ unmatched: parsed.ignored, dropped: 0 });
+        toast.error(t("panel.text.failed"));
+        return;
+      }
+
+      setReport(null);
+      onApply?.([]);
+      setDraft(null);
+      toast.success(t("panel.text.applied", { count: 0 }));
+      return;
+    }
+
+    setApplying(true);
+    try {
+      const response = await fetch("/api/trades/cards/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scope,
+          cards: lines.map(({ name, setCode, collectorNumber }) => ({ name, setCode, collectorNumber })),
+        }),
+      });
+
+      if (!response.ok) {
+        toast.error(t("panel.text.failed"));
+        return;
+      }
+
+      const data: { matches?: (TradeCard | null)[] } = await response.json();
+      const matches = data.matches ?? [];
+
+      const applied = applyTradeText(lines, (_line, index) => {
+        const card = matches[index];
+        if (!card) return undefined;
+        // Une contrepartie libre demande des cartes au catalogue : une entrée de
+        // collection qu'il ne connaît pas ne peut pas être demandée.
+        if (requireCardId && !card.cardId) return undefined;
+        return card;
+      });
+
+      setReport({
+        unmatched: [...applied.unmatched, ...parsed.ignored],
+        dropped: applied.dropped + overflow,
+      });
+
+      // Même raison qu'une liste illisible : une liste dont pas une ligne n'a
+      // trouvé sa carte ne vaut pas un espace vide. Elle reste à corriger, avec
+      // sous les yeux ce qui n'a pas été reconnu.
+      if (applied.entries.length === 0) {
+        toast.error(t("panel.text.noMatch"));
+        return;
+      }
+
+      onApply?.(applied.entries);
+      setDraft(null);
+      toast.success(t("panel.text.applied", { count: applied.entries.length }));
+    } catch (error) {
+      console.error("Failed to apply the trade card list:", error);
+      toast.error(t("panel.text.failed"));
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Textarea
+        ref={textareaRef}
+        value={text}
+        readOnly={!editable}
+        disabled={disabled}
+        onChange={(event) => setDraft(event.target.value)}
+        rows={10}
+        maxLength={10000}
+        spellCheck={false}
+        aria-label={t("panel.text.label")}
+        placeholder={t("panel.text.placeholder")}
+        className="field-sizing-fixed font-mono text-[13px] leading-[22px]"
+      />
+      <p className="text-xs text-muted-foreground">{editable ? t("panel.text.hint") : t("panel.text.readOnly")}</p>
+
+      {report && report.unmatched.length > 0 ? (
+        <p className="text-xs text-amber-600 dark:text-amber-400">
+          {t("panel.text.unmatched", {
+            count: report.unmatched.length,
+            lines: report.unmatched.slice(0, 5).join(" · ") + (report.unmatched.length > 5 ? " …" : ""),
+          })}
+        </p>
+      ) : null}
+      {report && report.dropped > 0 ? (
+        <p className="text-xs text-amber-600 dark:text-amber-400">
+          {t("panel.text.dropped", { count: report.dropped, max: TRADE_MAX_CARDS_PER_SIDE })}
+        </p>
+      ) : null}
+
+      <div className="flex flex-wrap items-center gap-2">
+        {editable ? (
+          <Button
+            type="button"
+            size="sm"
+            className="gap-1.5"
+            disabled={disabled || applying}
+            onClick={() => void apply()}
+          >
+            {applying ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+            {t("panel.text.apply")}
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          disabled={!text}
+          onClick={() => void copy()}
+        >
+          {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+          {copied ? t("panel.text.copied") : t("panel.text.copy")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Un des deux espaces de l'interface d'échange : les cartes retenues et, quand
  * l'espace est modifiable, la recherche permettant d'en ajouter (dans la
- * collection ou dans tout le catalogue).
+ * collection ou dans tout le catalogue). Les mêmes cartes se lisent et se
+ * modifient au format texte, d'un bouton.
  *
  * L'offre du partenaire est affichée avec le même composant en lecture seule.
  */
@@ -208,6 +417,7 @@ export default function TradePanel({
   onQuantityChange,
   onPriceChange,
   onRemove,
+  onApplyText,
 }: {
   title: string;
   subtitle: string;
@@ -229,10 +439,13 @@ export default function TradePanel({
   onQuantityChange?: (key: string, quantity: number) => void;
   onPriceChange?: (key: string, unitPrice: number | null) => void;
   onRemove?: (key: string) => void;
+  /** Remplace le contenu de l'espace par une liste écrite au format texte. */
+  onApplyText?: (entries: { card: TradeCard; quantity: number }[]) => void;
 }) {
   const t = useTranslations("Trade");
   const locale = useLocale();
 
+  const [view, setView] = useState<TradePanelView>("cards");
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<TradeCardScope>(defaultScope);
   const [gameId, setGameId] = useState(ALL_GAMES);
@@ -315,17 +528,45 @@ export default function TradePanel({
           <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
           <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {saving ? <Loader2 className="size-4 animate-spin text-muted-foreground" /> : null}
           {badge}
           <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold tabular-nums">
             {t("panel.copies", { count: totalCopies })}
           </span>
+          {/* Les mêmes cartes, vues autrement : la liste, ou le texte. */}
+          <div className="inline-flex items-center rounded-lg border bg-muted/40 p-0.5">
+            <ViewButton
+              active={view === "cards"}
+              label={t("panel.viewCards")}
+              onClick={() => setView("cards")}
+            >
+              <List className="size-3.5" />
+            </ViewButton>
+            <ViewButton active={view === "text"} label={t("panel.viewText")} onClick={() => setView("text")}>
+              <FileText className="size-3.5" />
+            </ViewButton>
+          </div>
         </div>
       </header>
 
-      {/* Cartes retenues */}
-      <div className="flex flex-col gap-2">
+      {view === "text" ? (
+        <TradeTextView
+          cards={cards}
+          editable={editable}
+          disabled={disabled}
+          // Une offre se compose de ce que l'on possède, une contrepartie libre
+          // de ce que le catalogue connaît : la face décide où chercher, pas le
+          // filtre de la recherche.
+          scope={requireOwned ? "collection" : "catalog"}
+          requireCardId={requireCardId}
+          onApply={onApplyText}
+        />
+      ) : null}
+
+      {/* Cartes retenues. La vue texte les masque sans les démonter : la
+          recherche garde ses résultats et sa page d'un aller-retour à l'autre. */}
+      <div className={view === "cards" ? "flex flex-col gap-2" : "hidden"}>
         {cards.length === 0 ? (
           <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
             {emptyLabel}
@@ -414,7 +655,7 @@ export default function TradePanel({
 
       {/* Recherche */}
       {editable ? (
-        <div className="flex flex-col gap-2 border-t pt-4">
+        <div className={view === "cards" ? "flex flex-col gap-2 border-t pt-4" : "hidden"}>
           <div className="inline-flex w-fit items-center rounded-lg border bg-muted/40 p-0.5 text-sm">
             <button
               type="button"
@@ -546,6 +787,34 @@ export default function TradePanel({
         </div>
       ) : null}
     </section>
+  );
+}
+
+/** Un des deux boutons du sélecteur de vue, dans l'en-tête de l'espace. */
+function ViewButton({
+  active,
+  label,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      title={label}
+      aria-label={label}
+      className={`rounded-md px-2 py-1 transition-colors ${
+        active ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
