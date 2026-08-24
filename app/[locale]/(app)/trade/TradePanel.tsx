@@ -262,11 +262,20 @@ function TradeTextView({
     const overflow = parsed.lines.length - lines.length;
 
     if (lines.length === 0) {
-      // Une liste vidée est une modification comme une autre : elle vide
-      // l'offre, comme le ferait le retrait de chaque carte.
-      setReport({ unmatched: parsed.ignored, dropped: 0 });
+      // Un champ vidé vide l'offre : c'est une modification comme une autre,
+      // celle qu'on ferait en retirant chaque carte. Un texte qu'on n'a pas su
+      // lire, lui, n'est pas une liste vide — il est resté en travers, et
+      // l'effacer emporterait à la fois l'offre et la saisie qui la corrigeait.
+      if (text.trim() !== "") {
+        setReport({ unmatched: parsed.ignored, dropped: 0 });
+        toast.error(t("panel.text.failed"));
+        return;
+      }
+
+      setReport(null);
       onApply?.([]);
       setDraft(null);
+      toast.success(t("panel.text.applied", { count: 0 }));
       return;
     }
 
@@ -302,6 +311,15 @@ function TradeTextView({
         unmatched: [...applied.unmatched, ...parsed.ignored],
         dropped: applied.dropped + overflow,
       });
+
+      // Même raison qu'une liste illisible : une liste dont pas une ligne n'a
+      // trouvé sa carte ne vaut pas un espace vide. Elle reste à corriger, avec
+      // sous les yeux ce qui n'a pas été reconnu.
+      if (applied.entries.length === 0) {
+        toast.error(t("panel.text.noMatch"));
+        return;
+      }
+
       onApply?.(applied.entries);
       setDraft(null);
       toast.success(t("panel.text.applied", { count: applied.entries.length }));

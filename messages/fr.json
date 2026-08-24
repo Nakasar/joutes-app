@@ -4215,6 +4215,7 @@
         "applied": "{count, plural, =0 {Offre vidée} one {# carte appliquée} other {# cartes appliquées}}",
         "unmatched": "{count, plural, one {# ligne sans carte correspondante} other {# lignes sans carte correspondante}} : {lines}",
         "dropped": "{count, plural, one {# carte laissée de côté} other {# cartes laissées de côté}} : une offre ne porte pas plus de {max} cartes.",
+        "noMatch": "Aucune carte reconnue : l'offre n'a pas été remplacée.",
         "failed": "La liste n'a pas pu être lue."
       },
       "increase": "Ajouter un exemplaire de {name}",

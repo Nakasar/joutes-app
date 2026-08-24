@@ -446,6 +446,9 @@ export async function resolveTradeCardDesignations({
               owned: { $sum: 1 },
             },
           },
+          // La borne précède la jointure : sinon le catalogue serait rejoint
+          // pour des impressions que la limite écarte juste après.
+          { $limit: TRADE_TEXT_LOOKUP_LIMIT },
           {
             $lookup: {
               from: "cards",
@@ -456,7 +459,6 @@ export async function resolveTradeCardDesignations({
             },
           },
           { $addFields: { catalog: { $arrayElemAt: ["$catalog", 0] } } },
-          { $limit: TRADE_TEXT_LOOKUP_LIMIT },
         ]
       : [
           { $match: { name: { $in: names } } },

@@ -4215,6 +4215,7 @@
         "applied": "{count, plural, =0 {Angebot geleert} one {# Karte übernommen} other {# Karten übernommen}}",
         "unmatched": "{count, plural, one {# Zeile ohne passende Karte} other {# Zeilen ohne passende Karte}}: {lines}",
         "dropped": "{count, plural, one {# Karte ausgelassen} other {# Karten ausgelassen}}: Ein Angebot fasst höchstens {max} Karten.",
+        "noMatch": "Keine Karte erkannt: Das Angebot bleibt unverändert.",
         "failed": "Die Liste konnte nicht gelesen werden."
       },
       "increase": "Ein Exemplar von {name} hinzufügen",
