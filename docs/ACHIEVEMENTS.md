@@ -9,7 +9,7 @@ Les succès débloqués par les utilisateurs sont stockés dans une collection `
 ## Fonctionnalités principales
 
 - **Affichage des succès** : Les utilisateurs peuvent consulter les succès qu'ils ont débloqués ainsi que ceux qui sont encore à atteindre (page `/account/achievements`), et voir les succès disponibles qu'ils n'ont pas encore décrochés.
-- Les succès sont également affichés sur le profil de l'utilisateur (page `/users/[userTagLine]`).
+- Les succès sont également affichés sur le profil de l'utilisateur (page `/users/[userTagLine]`) : les trois derniers sur la vitrine, **tous les succès décrochés** sur l'onglet « Succès » (voir `docs/USER_SHOWCASE.md`).
 
 ## Statuts
 

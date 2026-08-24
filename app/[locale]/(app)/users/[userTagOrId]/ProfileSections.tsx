@@ -12,6 +12,7 @@ import { LiveBadge } from "@/components/users/LiveBadge.tsx";
 import { getDeckCardPreviews } from "@/lib/db/decks.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { readLiveEmbed } from "@/lib/media/live-embed.ts";
+import { userProfilePath } from "@/lib/users/handle.ts";
 
 import ProfileContents from "./ProfileContents.tsx";
 import PinnedDeckGrid from "./PinnedDeckGrid.tsx";
@@ -233,10 +234,26 @@ export async function PublicationsSection({ userTagOrId }: { userTagOrId: string
   );
 }
 
-/** Les succès, leur progression et leur total de points. */
-export async function AchievementsSection({ userTagOrId }: { userTagOrId: string }) {
-  const [{ unlocked, total, points }, t] = await Promise.all([
+/**
+ * Les succès, leur progression et leur total de points.
+ *
+ * Deux tailles pour un même bloc. Sur la vitrine, un aperçu de trois vignettes
+ * et une tuile qui compte le reste — un profil n'a pas à dérouler vingt succès
+ * avant de montrer ses decks. Sur l'onglet « Succès », **la liste entière**,
+ * chacun avec sa description et sa date : la tuile de l'aperçu y mène, elle ne
+ * comptait le reste que pour dire où il était.
+ */
+export async function AchievementsSection({
+  userTagOrId,
+  full = false,
+}: {
+  userTagOrId: string;
+  full?: boolean;
+}) {
+  const [{ unlocked, total, points }, subject, locale, t] = await Promise.all([
     readProfileAchievements(userTagOrId),
+    requireProfile(userTagOrId),
+    getLocale(),
     getTranslations("Users.profile.achievements"),
   ]);
 
@@ -244,7 +261,7 @@ export async function AchievementsSection({ userTagOrId }: { userTagOrId: string
     return null;
   }
 
-  const shown = unlocked.slice(0, 3);
+  const shown = full ? unlocked : unlocked.slice(0, 3);
   const remaining = unlocked.length - shown.length;
   const percent = total > 0 ? Math.round((unlocked.length / total) * 100) : 0;
 
@@ -274,31 +291,76 @@ export async function AchievementsSection({ userTagOrId }: { userTagOrId: string
         </div>
       </div>
 
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {shown.map((achievement) => (
-          <li
-            key={achievement.id}
-            className="flex flex-col items-center gap-2 rounded-[10px] border bg-card p-3 text-center"
-          >
-            <AchievementIcon
-              icon={achievement.icon}
-              iconImage={achievement.iconImage}
-              name={achievement.name}
-              size={48}
-            />
-            <span className="text-[13px] leading-tight font-medium">{achievement.name}</span>
-            <span className="font-mono text-[11px] text-muted-foreground">
-              {t("pointsShort", { points: achievement.points })}
-            </span>
-          </li>
-        ))}
+      {full ? (
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {shown.map((achievement) => (
+            <li key={achievement.id} className="flex gap-3 rounded-[10px] border bg-card p-4">
+              <AchievementIcon
+                icon={achievement.icon}
+                iconImage={achievement.iconImage}
+                name={achievement.name}
+                size={40}
+                className="shrink-0"
+              />
 
-        {remaining > 0 && (
-          <li className="flex items-center justify-center rounded-[10px] border border-dashed p-3 text-center text-[13px] text-muted-foreground">
-            {t("more", { count: remaining })}
-          </li>
-        )}
-      </ul>
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="text-[14px] leading-tight font-medium">{achievement.name}</span>
+
+                {achievement.description && (
+                  <p className="text-[13px] leading-snug text-pretty text-muted-foreground">
+                    {achievement.description}
+                  </p>
+                )}
+
+                <p className="font-mono text-[11px] text-muted-foreground">
+                  {t("pointsShort", { points: achievement.points })}
+                  {achievement.unlockedAt && (
+                    <>
+                      {" · "}
+                      {t("unlockedOn", {
+                        date: DateTime.fromJSDate(new Date(achievement.unlockedAt))
+                          .setLocale(locale)
+                          .toLocaleString(DateTime.DATE_MED),
+                      })}
+                    </>
+                  )}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {shown.map((achievement) => (
+            <li
+              key={achievement.id}
+              className="flex flex-col items-center gap-2 rounded-[10px] border bg-card p-3 text-center"
+            >
+              <AchievementIcon
+                icon={achievement.icon}
+                iconImage={achievement.iconImage}
+                name={achievement.name}
+                size={48}
+              />
+              <span className="text-[13px] leading-tight font-medium">{achievement.name}</span>
+              <span className="font-mono text-[11px] text-muted-foreground">
+                {t("pointsShort", { points: achievement.points })}
+              </span>
+            </li>
+          ))}
+
+          {remaining > 0 && (
+            <li>
+              <Link
+                href={`${userProfilePath(subject.user)}?tab=achievements`}
+                className="flex h-full items-center justify-center rounded-[10px] border border-dashed p-3 text-center text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                {t("more", { count: remaining })}
+              </Link>
+            </li>
+          )}
+        </ul>
+      )}
     </section>
   );
 }

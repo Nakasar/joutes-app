@@ -5011,7 +5011,8 @@
         "points": "{points} points",
         "pointsShort": "{points} pts",
         "progress": "{unlocked} / {total}",
-        "more": "{count, plural, one {+ # autre succès} other {+ # autres succès}}"
+        "more": "{count, plural, one {+ # autre succès} other {+ # autres succès}}",
+        "unlockedOn": "Débloqué le {date}"
       },
       "trade": {
         "title": "Souhaits & ventes",

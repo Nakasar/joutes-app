@@ -218,10 +218,25 @@ export const readProfileGroups = cache(async (userTagOrId: string): Promise<Play
   return groups.filter((group) => group.visibility === "public").slice(0, 6);
 });
 
+/**
+ * Le catalogue des succès et ceux que ce compte a décrochés.
+ *
+ * `unlocked` sort du plus récent au plus ancien : la vitrine n'en montre que
+ * les premiers, et « les trois derniers » est la seule sélection qui veuille
+ * dire quelque chose — l'ordre du catalogue, lui, n'en dit aucune.
+ */
 export const readProfileAchievements = cache(async (userTagOrId: string) => {
   const { user } = await requireProfile(userTagOrId);
   const achievements = await getAchievementsForUser(user.id);
-  const unlocked = achievements.filter((achievement) => achievement.unlockedAt);
+  // `new Date` plutôt que `.getTime()` directement : la date vient de Mongo, et
+  // un document importé par script peut la porter en chaîne — un tri qui plante
+  // emporterait la page entière.
+  const unlockedTime = (achievement: { unlockedAt?: Date }) =>
+    achievement.unlockedAt ? new Date(achievement.unlockedAt).getTime() : 0;
+
+  const unlocked = achievements
+    .filter((achievement) => achievement.unlockedAt)
+    .sort((a, b) => unlockedTime(b) - unlockedTime(a));
 
   return {
     all: achievements,
