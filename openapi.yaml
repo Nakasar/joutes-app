@@ -1567,7 +1567,7 @@ paths:
         - { name: month, in: query, schema: { type: integer, minimum: 1, maximum: 12 } }
         - { name: year, in: query, schema: { type: integer, minimum: 2000, maximum: 3000 } }
         - { name: gameId, in: query, description: "Game id, or the special value `followed`.", schema: { type: string, default: followed } }
-        - { name: lairId, in: query, schema: { type: string } }
+        - { name: lairId, in: query, description: "Scopes to one lair. The lair's privacy gate applies: a private lair is only readable by a follower, its team or an admin — anyone else gets 404, never 403.", schema: { type: string } }
         - { name: userLat, in: query, schema: { type: number } }
         - { name: userLon, in: query, schema: { type: number } }
         - { name: maxDistance, in: query, description: "Max distance in km, must be > 0.", schema: { type: number } }
@@ -1582,6 +1582,7 @@ paths:
                 type: object
                 properties: { events: { type: array, items: { $ref: "#/components/schemas/Event" } } }
         "400": { $ref: "#/components/responses/ValidationError" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
   /events/{eventId}:
@@ -2590,11 +2591,21 @@ paths:
     get:
       tags: [Lairs]
       summary: Search lairs (game stores / venues)
-      security: []
-      description: Always anonymous - private lairs are never returned by this endpoint.
+      description: >
+        Authentication is optional. Anonymously, only public lairs are returned.
+        With a session or API key, the caller also sees the private lairs they
+        **own** - following a private lair is not enough here, though it does
+        open `GET /lairs/{lairId}`.
+
+
+        `lat` and `lng` together search around a point, nearest first; `radius`
+        bounds it. Both coordinates are required - one alone names no point.
       parameters:
         - { name: gameId, in: query, schema: { type: string } }
-        - { name: search, in: query, schema: { type: string } }
+        - { name: search, in: query, description: "Case-insensitive substring of the lair name.", schema: { type: string } }
+        - { name: lat, in: query, description: "Latitude of the search centre. Requires `lng`; ignored on its own.", schema: { type: number } }
+        - { name: lng, in: query, description: "Longitude of the search centre. Requires `lat`; ignored on its own.", schema: { type: number } }
+        - { name: radius, in: query, description: "Search radius in kilometres around `lat`/`lng`. Ignored without both coordinates.", schema: { type: number, default: 50 } }
         - { name: page, in: query, schema: { type: integer, default: 1 } }
         - { name: limit, in: query, schema: { type: integer, default: 100 } }
       responses:
@@ -2610,6 +2621,71 @@ paths:
                   page: { type: integer }
                   limit: { type: integer }
                   totalPages: { type: integer }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /lairs/{lairId}:
+    parameters:
+      - { name: lairId, in: path, required: true, description: "Mongo ObjectId of the lair.", schema: { type: string } }
+    get:
+      tags: [Lairs]
+      summary: Get one lair's showcase
+      description: >
+        Authentication is optional: it opens private lairs the caller follows,
+        owns or administers, and fills in `isFollowing`.
+
+
+        A private lair the caller may not read answers **404, never 403** - a
+        403 would confirm it exists, which is exactly what its privacy promises
+        to withhold. A malformed id answers 404 for the same reason.
+
+
+        `isPro` is a boolean and nothing more: a Pro access granted by the team
+        carries a free-text reason written by staff, which never leaves the
+        admin screen.
+      responses:
+        "200":
+          description: The lair.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LairDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /lairs/{lairId}/follow:
+    parameters:
+      - { name: lairId, in: path, required: true, description: "Mongo ObjectId of the lair.", schema: { type: string } }
+    put:
+      tags: [Lairs]
+      summary: Follow a lair
+      description: >
+        Idempotent - following a lair already followed changes nothing and
+        answers the same. Following a lair is what makes a private one readable,
+        so a private lair one does not already follow (or own) answers 404 here
+        too: an invitation is needed, not a request.
+      responses:
+        "200":
+          description: The follow state after the call.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LairFollowState" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Lairs]
+      summary: Stop following a lair
+      description: >
+        Idempotent, with one assumed exception: unfollowing a **private** lair
+        closes its door, so a second `DELETE` answers 404. The state is still
+        the one asked for.
+      responses:
+        "200":
+          description: The follow state after the call.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LairFollowState" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
   # ---------------------------------------------------------------- Leagues
@@ -5223,9 +5299,129 @@ components:
         location:
           type: object
           properties: { type: { type: string, enum: [Point] }, coordinates: { type: array, items: { type: number }, minItems: 2, maxItems: 2 } }
-        options:
+        options: { $ref: "#/components/schemas/LairOptions" }
+
+    LairOptions:
+      type: object
+      description: >
+        Everything a venue configures about itself. All optional: a lair that
+        set nothing falls back to the bare page - banner, practical details,
+        games and agenda - with no empty tab and no half-filled card.
+      properties:
+        calendar: { type: object, properties: { mode: { type: string, enum: [CALENDAR, AGENDA, CONFERENCE] } } }
+        theme: { $ref: "#/components/schemas/LairTheme" }
+        sections:
+          type: array
+          description: >
+            Order and on/off state of the showcase sections. A partial list is
+            valid: a key missing from storage comes back enabled, in its default
+            position, rather than silently disappearing. `calendar` is always on.
+          items: { $ref: "#/components/schemas/LairSection" }
+        live: { $ref: "#/components/schemas/LairLiveStream" }
+        news: { type: array, items: { $ref: "#/components/schemas/LairNewsItem" } }
+        featuredEventId: { type: string, description: "Event pinned in the \"featured\" block." }
+        links: { type: array, items: { $ref: "#/components/schemas/LairLink" } }
+        contact:
           type: object
-          properties: { calendar: { type: object, properties: { mode: { type: string, enum: [CALENDAR, AGENDA, CONFERENCE] } } } }
+          properties: { phone: { type: string }, email: { type: string } }
+        openingHours: { type: array, items: { $ref: "#/components/schemas/LairOpeningHours" } }
+        about: { $ref: "#/components/schemas/LairAbout" }
+
+    LairTheme:
+      type: object
+      description: The venue's white-label settings.
+      properties:
+        logo: { type: string }
+        accentColor: { type: string, description: "Hex colour, one of a closed five-value palette checked against the dark theme." }
+        tintSurfaces: { type: boolean, description: "Tint cards and buttons, beyond headings alone." }
+
+    LairSection:
+      type: object
+      properties:
+        key: { type: string, enum: [news, featured, calendar, media, about] }
+        enabled: { type: boolean }
+
+    LairLiveStream:
+      type: object
+      description: The venue's ongoing stream, shown at the top of the news tab.
+      properties:
+        url: { type: string, description: "Twitch or YouTube." }
+        title: { type: string }
+        startedAt: { type: string, format: date-time }
+        viewers: { type: integer }
+
+    LairNewsItem:
+      type: object
+      description: An announcement published by the venue.
+      properties:
+        id: { type: string }
+        title: { type: string }
+        summary: { type: string, description: "Shown on the card; the full body is in `content`." }
+        content: { type: string, description: "Markdown." }
+        category: { type: string, description: "Free-text venue category - \"Promotion\", \"New arrival\"..." }
+        banner: { type: string }
+        publishedAt: { type: string, format: date-time }
+        pinned: { type: boolean, description: "A single pinned announcement leads; the rest follow by date." }
+        link: { type: string }
+        linkLabel: { type: string }
+
+    LairLink:
+      type: object
+      properties:
+        type: { type: string, enum: [website, instagram, facebook, discord, twitch, youtube, x, other] }
+        url: { type: string }
+        label: { type: string }
+
+    LairOpeningHours:
+      type: object
+      description: >
+        One opening range, one day of the week. `day` is ISO-numbered (1 =
+        Monday ... 7 = Sunday); the oldest records carry `0` for Sunday and
+        clients should read it as `7`. A day may carry **several** ranges - that
+        is how split hours are described, "Tuesday 10:00-12:00 then
+        14:00-19:00". A day absent from the list, or without `open`, is closed.
+      properties:
+        day: { type: integer, minimum: 0, maximum: 7 }
+        open: { type: string, example: "10:00" }
+        close: { type: string, example: "19:00" }
+
+    LairOrganizer:
+      type: object
+      properties:
+        name: { type: string }
+        role: { type: string }
+        avatar: { type: string }
+
+    LairAbout:
+      type: object
+      properties:
+        description: { type: string, description: "Markdown." }
+        category: { type: string, description: "Venue-type badge shown under the title." }
+        amenities: { type: array, items: { type: string } }
+        photos: { type: array, items: { type: string } }
+        videoUrl: { type: string }
+        transit: { type: string }
+        parking: { type: string }
+        organizers: { type: array, items: { $ref: "#/components/schemas/LairOrganizer" } }
+        rhythm:
+          type: array
+          description: "The venue's usual rhythm: \"Friday night\" -> \"Riftbound\"."
+          items: { type: object, properties: { label: { type: string }, value: { type: string } } }
+
+    LairDetail:
+      allOf:
+        - $ref: "#/components/schemas/Lair"
+        - type: object
+          properties:
+            isPro: { type: boolean, description: "Whether the lair has Joutes Pro. A boolean and nothing more - never the reason it was granted." }
+            followersCount: { type: integer }
+            isFollowing: { type: boolean, description: "False without a session." }
+
+    LairFollowState:
+      type: object
+      properties:
+        following: { type: boolean }
+        followersCount: { type: integer }
 
     LeagueRankingParticipant:
       type: object
