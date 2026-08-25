@@ -393,21 +393,51 @@ export async function isFollowingPlayGroup(playGroupId: string, userId: string):
   return !!follower;
 }
 
-/** Bascule l'abonnement à la vitrine, et renvoie l'état obtenu. */
+/**
+ * S'abonner à la vitrine. Idempotent : déjà abonné, rien ne change.
+ *
+ * `updateOne` avec `upsert` plutôt qu'un `findOne` suivi d'un `insertOne` :
+ * deux requêtes parties du même double toucher ne peuvent pas créer deux
+ * lignes, et le compteur d'abonnés ne peut donc pas compter deux fois la même
+ * personne.
+ */
+export async function followPlayGroup(playGroupId: string, userId: string): Promise<boolean> {
+  await playGroupFollowersCollection.updateOne(
+    { playGroupId, userId },
+    {
+      $setOnInsert: {
+        _id: new ObjectId(),
+        playGroupId,
+        userId,
+        createdAt: new Date().toISOString(),
+      },
+    },
+    { upsert: true },
+  );
+
+  return true;
+}
+
+/** Se désabonner. Idempotent : pas abonné, rien ne change. */
+export async function unfollowPlayGroup(playGroupId: string, userId: string): Promise<boolean> {
+  await playGroupFollowersCollection.deleteOne({ playGroupId, userId });
+  return false;
+}
+
+/**
+ * Bascule l'abonnement à la vitrine, et renvoie l'état obtenu.
+ *
+ * Écrite par-dessus les deux verbes idempotents, en gardant sa suppression
+ * d'abord : c'est elle qui rend la bascule atomique — supprimer puis, si rien
+ * n'a été supprimé, ajouter. La server action du web l'appelle telle quelle.
+ */
 export async function togglePlayGroupFollower(playGroupId: string, userId: string): Promise<boolean> {
   const deleted = await playGroupFollowersCollection.deleteOne({ playGroupId, userId });
   if (deleted.deletedCount > 0) {
     return false;
   }
 
-  await playGroupFollowersCollection.insertOne({
-    _id: new ObjectId(),
-    playGroupId,
-    userId,
-    createdAt: new Date().toISOString(),
-  });
-
-  return true;
+  return followPlayGroup(playGroupId, userId);
 }
 
 export async function addPlayGroupMember(playGroupId: string, userId: string, role: Exclude<PlayGroupMemberRole, "owner"> = "member"): Promise<boolean> {
