@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { getEventsByLairId, getEventsForUser, getEventsByLairIds } from "@/lib/db/events";
 import { Event } from "@/lib/types/Event";
 import { getLairIdsNearLocation } from "@/lib/db/lairs";
+import { findVisibleLair } from "@/lib/api/lairs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -85,9 +86,19 @@ export async function GET(request: NextRequest) {
 
     let events: Event[];
     if (lairId) {
+      // La confidentialité du lieu vaut aussi pour son agenda : `lairId` est
+      // fourni par l'appelant, et rien ici ne vérifiait qu'il avait le droit de
+      // lire ce lieu — l'agenda d'un lieu privé sortait donc à qui en
+      // devinait l'identifiant. Même porte que `GET /lairs/{lairId}`, et même
+      // réponse : 404, jamais 403.
+      const lair = await findVisibleLair(lairId, session?.user?.id ?? null);
+      if (!lair) {
+        return NextResponse.json({ error: "Lieu introuvable" }, { status: 404 });
+      }
+
       events = await getEventsByLairId(lairId, {
         year: yearNum,
-        month: monthNum, 
+        month: monthNum,
         userId: session?.user?.id,
         gameId
       });

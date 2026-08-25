@@ -42,6 +42,11 @@ export function FeaturedEventsAgenda({
               gameName
             )}&limit=50`
           );
+          // Un lieu mis en avant que le visiteur n'a pas le droit de lire — un
+          // lieu privé épinglé par l'équipe — répond 404 depuis que l'agenda
+          // passe la porte du lieu. Il sort de la liste sans emporter les
+          // autres : un `Promise.all` qui lève viderait tout le bloc.
+          if (response.status === 404) return [];
           if (!response.ok) throw new Error(t("detail.events.fetchError"));
           const data = await response.json();
           return data.events || [];
