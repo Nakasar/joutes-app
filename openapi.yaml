@@ -4049,7 +4049,7 @@ paths:
 
   /users/{userTagOrId}:
     parameters:
-      - { name: userTagOrId, in: path, required: true, description: "Mongo ObjectId, or `{displayName}{discriminator}` (no separator — the discriminator is the last 4 characters).", schema: { type: string } }
+      - { name: userTagOrId, in: path, required: true, description: "Mongo ObjectId, `{displayName}#{discriminator}` (the `#` percent-encoded), or `{displayName}{discriminator}` concatenated — in that last form the discriminator is the final 4 digits.", schema: { type: string } }
     get:
       tags: [Users]
       summary: Get a user's public profile
@@ -4072,7 +4072,7 @@ paths:
 
   /users/{userTagOrId}/follow:
     parameters:
-      - { name: userTagOrId, in: path, required: true, schema: { type: string } }
+      - { name: userTagOrId, in: path, required: true, description: "Mongo ObjectId, `{displayName}#{discriminator}` (the `#` percent-encoded), or `{displayName}{discriminator}` concatenated — in that last form the discriminator is the final 4 digits.", schema: { type: string } }
     put:
       tags: [Users]
       summary: Follow this account
@@ -4104,7 +4104,7 @@ paths:
 
   /users/{userTagOrId}/achievements:
     parameters:
-      - { name: userTagOrId, in: path, required: true, schema: { type: string } }
+      - { name: userTagOrId, in: path, required: true, description: "Mongo ObjectId, `{displayName}#{discriminator}` (the `#` percent-encoded), or `{displayName}{discriminator}` concatenated — in that last form the discriminator is the final 4 digits.", schema: { type: string } }
     get:
       tags: [Users]
       summary: A player's achievements, earned and still to earn
@@ -4135,7 +4135,7 @@ paths:
 
   /users/{userTagOrId}/contents:
     parameters:
-      - { name: userTagOrId, in: path, required: true, schema: { type: string } }
+      - { name: userTagOrId, in: path, required: true, description: "Mongo ObjectId, `{displayName}#{discriminator}` (the `#` percent-encoded), or `{displayName}{discriminator}` concatenated — in that last form the discriminator is the final 4 digits.", schema: { type: string } }
     get:
       tags: [Users]
       summary: What a player publishes
@@ -4155,7 +4155,7 @@ paths:
 
   /users/{userTagOrId}/wishlists:
     parameters:
-      - { name: userTagOrId, in: path, required: true, schema: { type: string } }
+      - { name: userTagOrId, in: path, required: true, description: "Mongo ObjectId, `{displayName}#{discriminator}` (the `#` percent-encoded), or `{displayName}{discriminator}` concatenated — in that last form the discriminator is the final 4 digits.", schema: { type: string } }
     get:
       tags: [Users]
       summary: List a user's public wishlists
@@ -4167,7 +4167,7 @@ paths:
 
   /users/{userTagOrId}/sell-list:
     parameters:
-      - { name: userTagOrId, in: path, required: true, schema: { type: string } }
+      - { name: userTagOrId, in: path, required: true, description: "Mongo ObjectId, `{displayName}#{discriminator}` (the `#` percent-encoded), or `{displayName}{discriminator}` concatenated — in that last form the discriminator is the final 4 digits.", schema: { type: string } }
     get:
       tags: [Users]
       summary: Get a user's sell list (sell lists are always public)
