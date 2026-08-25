@@ -142,9 +142,13 @@ repli.
   de le recoller dans l'onglet « Texte » pour le structurer.
 - `favoritesCount` retombe sur la longueur de `favoritedBy` tant qu'il n'a pas
   été écrit ; il se corrige de lui-même au premier passage sur l'étoile.
-- `domains`, `legendName` et `version` s'écrivent au premier enregistrement du
-  contenu depuis l'éditeur. Tant qu'ils sont absents, le deck ne remonte pas
-  dans les filtres par domaine ou par légende de la librairie.
+- `domains` et `legendName` s'écrivent au premier enregistrement du contenu
+  depuis l'éditeur. Tant qu'ils sont absents, le deck ne remonte pas dans les
+  filtres par domaine ou par légende de la librairie.
+- `version` s'incrémente à **chaque** enregistrement, contenu ou non. Elle ne
+  comptait auparavant que les enregistrements de contenu, ce qui affichait
+  « v2 — en cours » à côté d'une date de modification qui, elle, bougeait pour
+  une description ou un guide.
 
 ## Points à reprendre
 
@@ -153,3 +157,39 @@ repli.
 - **Historique des versions** : `version` s'incrémente, mais les états
   antérieurs ne sont pas conservés ; le panneau « Versions » ne montre donc que
   la version courante.
+
+## Visibilité : un défaut qui débordait
+
+`deckSchema` pose `visibility: deckVisibilitySchema.default("private")` — le bon
+défaut à la **création**. Le schéma de modification en dérivait par `.partial()`,
+or `.partial()` rend un champ facultatif *en entrée* sans retirer son défaut *en
+sortie* : tout `PATCH` qui ne mentionnait pas `visibility` repartait donc avec
+`visibility: "private"`.
+
+Autrement dit, renommer un deck public le dépubliait. Enregistrer son contenu,
+ses notes ou son guide aussi. Le `refine` censé refuser un corps vide ne voyait
+rien non plus, l'objet parsé n'étant jamais vide — il portait ce défaut, et un
+`PATCH {}` passait en rendant le deck privé.
+
+`deckUpdateSchema` retire donc explicitement le champ avant de le remettre en
+facultatif. `deckSchema` garde le sien : à la création, un deck sans mention est
+privé.
+
+## Concurrence
+
+Deux onglets ouverts sur le même deck s'écrasaient sans bruit : `version` était
+incrémentée, jamais comparée.
+
+`PATCH /decks/{deckId}` accepte désormais `expectedVersion` — la version que le
+client croyait à jour. Elle entre dans le filtre de l'écriture : si le deck a
+été enregistré entre-temps, rien ne s'applique et la réponse est un `409` de la
+forme `{ error: "conflict", deck }`, où `deck` est l'état qui a devancé. Le
+client se resynchronise donc sans second aller-retour.
+
+Le champ est **facultatif** : sans lui, l'écriture reste « le dernier gagne ».
+C'est ce qui permet aux clients qui n'ont pas encore été repris de continuer à
+fonctionner.
+
+Le motif est celui des échanges (`docs/TRADE.md`), où `revision` joue le même
+rôle depuis plus longtemps — même filtre en compare-and-swap, même `409`, même
+état frais joint au refus.

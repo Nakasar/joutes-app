@@ -50,10 +50,43 @@ export const deckSchema = z.object({
   visibility: deckVisibilitySchema.default("private"),
 });
 
-export const deckUpdateSchema = deckSchema.partial().refine(
-  (data) => Object.keys(data).length > 0,
-  "Au moins un champ doit être modifié"
-);
+/**
+ * La version que le client croyait à jour au moment d'enregistrer.
+ *
+ * Facultative : les clients qui ne la posent pas gardent l'écriture « le
+ * dernier gagne » d'avant. Quand elle est là, le serveur refuse d'écrire
+ * par-dessus un enregistrement qu'on n'a pas vu (`409 conflict`).
+ */
+export const deckExpectedVersionSchema = z.number().int().min(1);
+
+/**
+ * Le corps d'un `PATCH /decks/{deckId}`.
+ *
+ * **`visibility` y perd son défaut, et c'est une correction.** `.partial()` ne
+ * retire pas un `.default()` : il le rend seulement facultatif *en entrée*, et
+ * la valeur par défaut est toujours écrite en sortie. Tout enregistrement qui
+ * ne portait pas explicitement `visibility` repartait donc avec
+ * `visibility: "private"` — renommer un deck public le dépubliait, enregistrer
+ * son contenu aussi. Le `refine` censé refuser un corps vide ne le voyait pas
+ * non plus : l'objet parsé n'était jamais vide, il portait ce défaut.
+ *
+ * `deckSchema` garde le sien : à la création, un deck sans mention est privé,
+ * ce qui est le bon défaut. C'est à la modification qu'il n'a rien à dire.
+ */
+export const deckUpdateSchema = deckSchema
+  .omit({ visibility: true })
+  .partial()
+  .extend({
+    visibility: deckVisibilitySchema.optional(),
+    expectedVersion: deckExpectedVersionSchema.optional(),
+  })
+  .refine(
+    // `expectedVersion` ne modifie rien : un corps qui ne porterait qu'elle
+    // n'aurait rien à enregistrer, et passerait pourtant un simple décompte
+    // des clés.
+    (data) => Object.keys(data).some((key) => key !== "expectedVersion"),
+    "Au moins un champ doit être modifié"
+  );
 
 // Pour la validation d'ID MongoDB (ObjectId est un string hexadecimal de 24 caractères)
 export const deckIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du deck doit être un ObjectId MongoDB valide");

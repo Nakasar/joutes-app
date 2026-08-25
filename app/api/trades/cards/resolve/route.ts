@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   const parsed = tradeCardResolveSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid card list", details: parsed.error }, { status: 400 });
+    return NextResponse.json({ error: "Invalid card list", details: parsed.error.flatten() }, { status: 400 });
   }
 
   try {

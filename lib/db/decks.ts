@@ -3,6 +3,7 @@ import { Deck, DeckVisibility } from "@/lib/types/Deck";
 import { ObjectId, WithId, Document } from "mongodb";
 import { getUsersByIds } from "@/lib/db/users";
 import { deriveDeckDomains, getDeckCardInfos } from "@/lib/db/deck-cards";
+import { deckVersionWrite } from "@/lib/db/deck-version";
 import type { DeckCards } from "@/lib/decks/contents";
 
 const COLLECTION_NAME = "decks";
@@ -275,14 +276,42 @@ export async function createDeck(deckData: Omit<Deck, "id" | "createdAt" | "upda
   };
 }
 
-// Mettre à jour un deck
+/**
+ * L'issue d'un enregistrement de deck.
+ *
+ * Une union plutôt qu'un `Deck | null` : « ce deck n'existe pas ou n'est pas le
+ * vôtre » et « quelqu'un l'a enregistré entre-temps » sont deux réponses
+ * différentes, et les confondre en 404 disait au client de renoncer là où il
+ * fallait lui montrer l'état frais. Même forme que `TradeActionResult`, qui
+ * résout exactement ce problème pour les échanges.
+ */
+export type DeckUpdateOutcome =
+  | { ok: true; deck: Deck }
+  | { ok: false; error: "not-found" }
+  /** L'état à l'écran était périmé ; `deck` porte celui qui l'a devancé. */
+  | { ok: false; error: "conflict"; deck: Deck };
+
+/**
+ * Mettre à jour un deck.
+ *
+ * `expectedVersion` arme la **concurrence optimiste** : la version attendue
+ * entre dans le filtre de l'écriture, si bien qu'un enregistrement parti d'un
+ * état devancé ne s'applique pas. Sans elle, l'écriture reste un « le dernier
+ * gagne » — c'est ce que font les clients qui n'ont pas encore été repris, et
+ * les casser d'un coup rendrait service à personne.
+ *
+ * Le motif est celui des échanges (`lib/db/trades.ts`) : version dans le
+ * filtre, `conflict` en retour, état frais joint pour que le client se
+ * resynchronise sans second aller-retour.
+ */
 export async function updateDeck(
   deckId: string,
   playerId: string,
-  updates: Partial<Omit<Deck, "id" | "playerId" | "createdAt" | "updatedAt">>
-): Promise<Deck | null> {
+  updates: Partial<Omit<Deck, "id" | "playerId" | "createdAt" | "updatedAt">>,
+  expectedVersion?: number
+): Promise<DeckUpdateOutcome> {
   if (!ObjectId.isValid(deckId)) {
-    return null;
+    return { ok: false, error: "not-found" };
   }
 
   // Si le nom est mis à jour, vérifier l'unicité
@@ -300,11 +329,27 @@ export async function updateDeck(
 
   const existing = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(deckId), playerId });
   if (!existing) {
-    return null;
+    return { ok: false, error: "not-found" };
   }
 
   const set: Record<string, unknown> = { ...updates, updatedAt: new Date() };
-  const inc: Record<string, number> = {};
+
+  /*
+   * Tout enregistrement compte pour un. Le bump était réservé au contenu, si
+   * bien que le panneau « Versions » affichait « v2 — en cours » à côté d'une
+   * date de modification qui, elle, bougeait pour un guide ou une description.
+   * Une version qui ne compte qu'une partie des enregistrements n'en est pas
+   * une — et ne peut pas servir de garde.
+   *
+   * La garde et le bump vivent dans `deck-version.ts`, où ils se testent sans
+   * base : leurs deux cas limites — le champ absent d'un deck ancien, côté
+   * filtre comme côté incrément — ne se voient pas à la lecture.
+   */
+  const version = deckVersionWrite(existing.version, expectedVersion);
+  if (version.set !== undefined) {
+    set.version = version.set;
+  }
+  const inc = version.inc === undefined ? {} : { version: version.inc };
 
   // Le contenu change : tout ce qui s'en déduit se recalcule ici, une fois,
   // plutôt qu'à chaque lecture. Les domaines servent au filtre de la librairie,
@@ -312,7 +357,6 @@ export async function updateDeck(
   if (updates.cards) {
     const gameId: string = existing.gameId;
     set.domains = await deriveDeckDomains(gameId, updates.cards);
-    inc.version = 1;
 
     const legendCardId = updates.legendCardId ?? deriveLegendCardId(updates.cards);
     if (legendCardId) {
@@ -325,13 +369,27 @@ export async function updateDeck(
     }
   }
 
-  const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
-    { _id: new ObjectId(deckId), playerId },
-    Object.keys(inc).length > 0 ? { $set: set, $inc: inc } : { $set: set },
-    { returnDocument: "after" }
-  );
+  const result = await db
+    .collection(COLLECTION_NAME)
+    .findOneAndUpdate(
+      { _id: new ObjectId(deckId), playerId, ...version.guard },
+      Object.keys(inc).length > 0 ? { $set: set, $inc: inc } : { $set: set },
+      { returnDocument: "after" }
+    );
 
-  return result ? toDeck(result) : null;
+  if (result) {
+    return { ok: true, deck: toDeck(result) };
+  }
+
+  // Le deck existait à la pré-lecture et l'écriture n'a rien touché : c'est la
+  // garde qui a mordu. On rend l'état frais plutôt que la pré-lecture, pour que
+  // le client voie ce qui l'a devancé.
+  const fresh = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(deckId), playerId });
+  if (!fresh) {
+    return { ok: false, error: "not-found" };
+  }
+
+  return { ok: false, error: "conflict", deck: toDeck(fresh) };
 }
 
 /**
