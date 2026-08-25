@@ -3969,16 +3969,187 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /users:
+    get:
+      tags: [Users]
+      summary: The community registry
+      description: >
+        The accounts that opened their showcase. The parameters are **exactly**
+        those the web page reads, so a link pasted into a conversation and a call
+        from an application open the same page of results.
+
+
+        **`count` is a running total, not a page number.** It climbs twenty at a
+        time up to a hundred, and every call returns the list from the start -
+        that is what "load more" does on the web, and the registry's pagination
+        has never been anything else. A `page` or `offset` would misdescribe it.
+
+
+        A session is optional: it only fills in `isFollowing` on each row.
+
+
+        Two filters are expensive and know it: `live` reads the linked channels,
+        `sells` reads one sell list per candidate (up to a hundred). They are
+        resolved in that order so the second works on an already-narrowed list.
+      security: [{}, { sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: q, in: query, description: "Free text on name/username/display name, or an exact `Pseudo#1234` tag.", schema: { type: string } }
+        - { name: game, in: query, description: "Game id followed by the account.", schema: { type: string } }
+        - { name: city, in: query, description: "Only matches accounts that opted into showing their city.", schema: { type: string } }
+        - { name: sells, in: query, description: "`1` to keep only accounts with cards for sale.", schema: { type: string, enum: ["1"] } }
+        - { name: live, in: query, description: "`1` to keep only accounts streaming right now on their profile.", schema: { type: string, enum: ["1"] } }
+        - { name: sort, in: query, schema: { type: string, enum: [active, followers, name], default: active } }
+        - { name: count, in: query, description: "Running total of rows wanted. Rounded up to a multiple of 20, capped at 100.", schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        "200":
+          description: The rows, and whether more can be asked for.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries: { type: array, items: { $ref: "#/components/schemas/RegistryEntry" } }
+                  total: { type: integer, description: "Accounts matching the filters, regardless of `count`." }
+                  hasMore: { type: boolean, description: "False at the cap, even when `total` is larger - there is nothing more to load." }
+                  count: { type: integer, description: "The running total actually applied, after rounding and capping." }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /users/leaderboard:
+    get:
+      tags: [Users]
+      summary: The achievements leaderboard, and the caller's rank
+      description: >
+        **One ranking, one filter.** Private profiles are left out - appearing
+        there would mean showing up in a registry one chose to leave - and the
+        rank returned is the index in *that* ranking. Computing them separately
+        would announce a rank matching no visible place.
+
+
+        Only the top three are hydrated: it is a podium, not a directory. `rank`
+        is null without a session, and for an account that does not appear.
+      security: [{}, { sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: The podium and the caller's standing.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rows: { type: array, maxItems: 3, items: { $ref: "#/components/schemas/LeaderboardRow" } }
+                  rank:
+                    type: object
+                    nullable: true
+                    properties:
+                      rank: { type: integer }
+                      points: { type: integer }
+                      unlocked: { type: integer }
+                      total: { type: integer, description: "Size of the eligible ranking." }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /users/{userTagOrId}:
     parameters:
       - { name: userTagOrId, in: path, required: true, description: "Mongo ObjectId, or `{displayName}{discriminator}` (no separator — the discriminator is the last 4 characters).", schema: { type: string } }
     get:
       tags: [Users]
       summary: Get a user's public profile
-      description: Always returns id/username/displayName/discriminator/avatar/description/website/socialLinks. `games`/`lairs`/`achievements` are only populated if the user has enabled `isPublicProfile` (empty arrays otherwise).
-      security: []
+      description: >
+        The privacy gate is not an access gate: a private profile still resolves
+        and still answers, because a profile no one can reach is a profile no one
+        can report. Always returned - identity, avatar, banner, description,
+        links, showcase layout, badges, follower count and "member since".
+        Gated behind `isPublicProfile` - `games`, `lairs`, `achievements` and
+        `live` (empty or null otherwise).
+
+
+        `isFollowing` only means something for an identified caller; without a
+        session or API key it is `false` and nothing is read to say so.
+      security: [{}, { sessionAuth: [] }, { apiKeyAuth: [] }]
       responses:
         "200": { description: Public profile., content: { application/json: { schema: { $ref: "#/components/schemas/PublicUserProfile" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /users/{userTagOrId}/follow:
+    parameters:
+      - { name: userTagOrId, in: path, required: true, schema: { type: string } }
+    put:
+      tags: [Users]
+      summary: Follow this account
+      description: >
+        Two idempotent verbs rather than one toggle. A `POST` that flips the
+        state is an invitation to the double tap: two requests from one clumsy
+        touch would leave the follow in the opposite state to the one intended.
+        `PUT` means "let me follow", `DELETE` means "let me stop", and repeating
+        either changes nothing.
+
+
+        Following is one-way, which is what separates it from friendship - that
+        one is asked for, accepted, and opens the collection and the games.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200": { description: The state reached., content: { application/json: { schema: { type: object, properties: { following: { type: boolean }, followersCount: { type: integer } } } } } }
+        "400": { description: "Following yourself.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Users]
+      summary: Stop following this account
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200": { description: The state reached., content: { application/json: { schema: { type: object, properties: { following: { type: boolean }, followersCount: { type: integer } } } } } }
+        "400": { description: "Unfollowing yourself.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /users/{userTagOrId}/achievements:
+    parameters:
+      - { name: userTagOrId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Users]
+      summary: A player's achievements, earned and still to earn
+      description: >
+        A route of its own rather than one more field on the profile: the whole
+        catalog can run to hundreds of entries, and opening a profile header
+        should not pay for it. The profile therefore carries only the unlocked
+        ones.
+
+
+        A private profile returns nothing - the same rule `GET /users/{userTagOrId}`
+        already applies to its achievements.
+      security: []
+      responses:
+        "200":
+          description: The catalog, annotated with what this player unlocked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  achievements: { type: array, items: { $ref: "#/components/schemas/AchievementWithUnlockInfo" } }
+                  unlocked: { type: integer }
+                  total: { type: integer }
+                  points: { type: integer, description: "Points of the unlocked ones. A status achievement is worth zero." }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /users/{userTagOrId}/contents:
+    parameters:
+      - { name: userTagOrId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Users]
+      summary: What a player publishes
+      description: "Articles, videos and replays. Drafts are excluded in the query, not at render time. A private profile returns nothing."
+      security: []
+      responses:
+        "200":
+          description: Published contents, most recent first.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contents: { type: array, items: { $ref: "#/components/schemas/UserContent" } }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -4357,6 +4528,123 @@ components:
         discriminator: { type: string }
         avatar: { type: string }
 
+    UserShowcaseSection:
+      type: object
+      description: >
+        One block of a profile's showcase, in the order it is shown. The stored
+        order is a list of keys: an account that never reordered anything has
+        nothing stored and follows the platform's default, so a block added
+        later appears where it was meant to, for everyone, without a migration.
+      required: [key, enabled]
+      properties:
+        key: { type: string, enum: [live, about, decks, publications, achievements, follows, trade] }
+        enabled: { type: boolean }
+        locked: { type: boolean, description: "The account cannot switch this block off - wishes and sales decide their visibility list by list." }
+
+    UserLink:
+      type: object
+      description: "An outgoing link of a profile, recognised by its host. Anything that is not http(s) is dropped, not rendered."
+      required: [url, kind, host]
+      properties:
+        url: { type: string }
+        kind: { type: string, enum: [twitch, youtube, discord, bluesky, instagram, tiktok, x, mastodon, website] }
+        host: { type: string }
+        label: { type: string }
+
+    UserBadges:
+      type: object
+      description: >
+        Derived, never stored and never settable: the subscription tier, and the
+        achievements marked as statuses (3 at most, oldest first). A status opens
+        no right - that is what separates it from a tier.
+      properties:
+        plan: { type: string, nullable: true }
+        statuses:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              name: { type: string }
+              icon: { type: string }
+
+    StreamLinkLive:
+      type: object
+      description: "A stream running right now, as announced on this profile. The link's target list *is* the setting: a channel that only announces on a venue does not show up here."
+      required: [url, startedAt]
+      properties:
+        url: { type: string }
+        title: { type: string }
+        startedAt: { type: string, format: date-time }
+
+    AchievementWithUnlockInfo:
+      type: object
+      description: "A catalog achievement, plus when this player unlocked it. No `unlockedAt` means still to be earned."
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        icon: { type: string }
+        points: { type: number }
+        unlockedAt: { type: string, format: date-time }
+
+    UserContent:
+      type: object
+      description: "Something a player published. Drafts (`visibility: private`) never leave the author's own account."
+      required: [id, authorId, kind, title, publishedAt]
+      properties:
+        id: { type: string }
+        authorId: { type: string }
+        kind: { type: string, enum: [video, article, replay] }
+        title: { type: string }
+        summary: { type: string }
+        body: { type: string, description: "Markdown. Articles only." }
+        url: { type: string, description: "Videos and replays only." }
+        thumbnail: { type: string }
+        duration: { type: string, description: "Shown as written - the platform does not parse it." }
+        gameId: { type: string }
+        publishedAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    RegistryUser:
+      type: object
+      description: "A public account as the registry lists it. `city` only appears for accounts that opted in (`showcase.showCity`)."
+      required: [id, username, games, isPublicProfile]
+      properties:
+        id: { type: string }
+        username: { type: string }
+        displayName: { type: string }
+        discriminator: { type: string }
+        avatar: { type: string }
+        description: { type: string }
+        city: { type: string }
+        games: { type: array, items: { type: string } }
+        isPublicProfile: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    RegistryEntry:
+      type: object
+      description: "A registry row: the account, plus what does not live in its own record."
+      required: [user, badges, followers, isFollowing, isLive, games]
+      properties:
+        user: { $ref: "#/components/schemas/RegistryUser" }
+        badges: { $ref: "#/components/schemas/UserBadges" }
+        followers: { type: integer }
+        isFollowing: { type: boolean, description: "Always false without a session." }
+        isLive: { type: boolean }
+        games: { type: array, maxItems: 5, items: { $ref: "#/components/schemas/GameSummary" } }
+
+    LeaderboardRow:
+      type: object
+      required: [userId, points, unlocked]
+      properties:
+        userId: { type: string }
+        points: { type: integer }
+        unlocked: { type: integer }
+        user: { $ref: "#/components/schemas/RegistryUser" }
+        badges: { $ref: "#/components/schemas/UserBadges" }
+
     PublicUserProfile:
       type: object
       properties:
@@ -4365,13 +4653,27 @@ components:
         displayName: { type: string }
         discriminator: { type: string }
         avatar: { type: string }
+        banner: { type: string, description: "Showcase banner. Requires the `sub:profile-banner` entitlement to set, never to read." }
+        createdAt: { type: string, format: date-time, description: "The \"member since\"." }
         description: { type: string, nullable: true }
         website: { type: string, nullable: true }
         socialLinks: { type: array, items: { type: string } }
         isPublicProfile: { type: boolean }
+        showcase:
+          type: object
+          description: "How the account arranged its showcase. Always served - a private profile still has a name, links and badges."
+          properties:
+            sections: { type: array, items: { $ref: "#/components/schemas/UserShowcaseSection" } }
+            links: { type: array, maxItems: 10, items: { $ref: "#/components/schemas/UserLink" } }
+            pinnedDeckId: { type: string }
+            playStyles: { type: array, items: { type: string } }
+        badges: { $ref: "#/components/schemas/UserBadges" }
+        followersCount: { type: integer }
+        isFollowing: { type: boolean, description: "Whether the caller follows this account. Always false without a session or API key." }
+        live: { allOf: [{ $ref: "#/components/schemas/StreamLinkLive" }], nullable: true, description: "Public profiles only." }
         games: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, slug: { type: string }, icon: { type: string } } } }
         lairs: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, address: { type: string } } } }
-        achievements: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, description: { type: string }, icon: { type: string }, points: { type: number }, unlockedAt: { type: string, format: date-time } } } }
+        achievements: { type: array, description: "Unlocked ones only. The full catalog is at `/users/{userTagOrId}/achievements`.", items: { $ref: "#/components/schemas/AchievementWithUnlockInfo" } }
 
     GameSummary:
       type: object

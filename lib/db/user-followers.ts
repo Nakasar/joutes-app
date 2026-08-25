@@ -54,13 +54,20 @@ function isDuplicateKeyError(error: unknown): boolean {
  * il ne peut pas être remplacé par une lecture préalable, qui a exactement la
  * même course.
  */
-export async function toggleUserFollower(userId: string, followerId: string): Promise<boolean> {
+/**
+ * Suivre un compte. Idempotent : suivre qui l'on suit déjà ne change rien et ne
+ * fait pas d'erreur.
+ *
+ * Rend l'état obtenu, comme les autres verbes de ce module — `false` seulement
+ * quand la demande n'a pas de sens (se suivre soi-même).
+ *
+ * L'idempotence n'est pas un raffinement : c'est ce qui rend l'opération sûre
+ * pour une API REST, où deux requêtes peuvent partir d'un double toucher.
+ * L'index unique `(userId, followerId)` fait le reste, et le doublon qu'il
+ * signale est ici la preuve que l'état voulu est déjà atteint.
+ */
+export async function followUser(userId: string, followerId: string): Promise<boolean> {
   if (userId === followerId) {
-    return false;
-  }
-
-  const deleted = await userFollowersCollection.deleteOne({ userId, followerId });
-  if (deleted.deletedCount > 0) {
     return false;
   }
 
@@ -78,6 +85,37 @@ export async function toggleUserFollower(userId: string, followerId: string): Pr
   }
 
   return true;
+}
+
+/** Ne plus suivre. Idempotent lui aussi : le rendu est l'état obtenu, `false`. */
+export async function unfollowUser(userId: string, followerId: string): Promise<boolean> {
+  await userFollowersCollection.deleteOne({ userId, followerId });
+
+  return false;
+}
+
+/**
+ * Bascule le suivi et rend l'état obtenu.
+ *
+ * Écrite par-dessus les deux verbes idempotents : c'est le geste du web, où un
+ * seul bouton fait les deux, et il n'a pas à connaître son propre état avant de
+ * l'inverser. Une API REST, elle, s'adresse aux verbes — une bascule y serait
+ * une invitation au double envoi.
+ */
+export async function toggleUserFollower(userId: string, followerId: string): Promise<boolean> {
+  if (userId === followerId) {
+    return false;
+  }
+
+  // La suppression décide de la branche, et le fait en une seule opération :
+  // lire l'état puis agir laisserait entre les deux la place d'un second
+  // toucher. C'est la mécanique d'origine, conservée telle quelle.
+  const deleted = await userFollowersCollection.deleteOne({ userId, followerId });
+  if (deleted.deletedCount > 0) {
+    return false;
+  }
+
+  return await followUser(userId, followerId);
 }
 
 export async function isFollowingUser(userId: string, followerId: string): Promise<boolean> {
