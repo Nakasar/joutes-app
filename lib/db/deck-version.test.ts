@@ -81,11 +81,16 @@ test("après le premier enregistrement d'un deck ancien, la garde mord", () => {
   // Le document porte maintenant 2. Ni `{version: 1}` ni `{$exists: false}` ne
   // le décrivent : le filtre du second ne trouve rien, et c'est un conflit.
   const second = deckVersionWrite(2, 1);
+
+  // Sa garde reste celle de la première version — deux formes, dont aucune ne
+  // décrit un document portant 2. Mongo ne trouvera rien, et `updateDeck`
+  // rendra un conflit.
   assert.deepEqual(second.guard, {
     $or: [{ version: 1 }, { version: { $exists: false } }],
   });
-  const stored = 2;
-  const matches =
-    stored === 1 || stored === undefined;
-  assert.equal(matches, false, "la garde du second ne doit pas correspondre");
+
+  // Le champ existe désormais : le second passerait par l'incrément, pas par la
+  // pose — s'il avait le droit d'écrire, ce que sa garde lui refuse.
+  assert.equal(second.inc, 1);
+  assert.equal(second.set, undefined);
 });
