@@ -1317,17 +1317,47 @@ paths:
       parameters:
         - { name: playerId, in: query, schema: { type: string } }
         - { name: gameId, in: query, schema: { type: string } }
-        - { name: visibility, in: query, schema: { type: string, enum: [private, public] } }
+        - name: visibility
+          in: query
+          description: >
+            Repeatable: `?visibility=private&visibility=unlisted` is how a
+            player asks for their own work in progress. `unlisted` is only
+            accepted together with `scope=mine` - a deck reachable by link is
+            not asked for in bulk, not even by its author, who finds it among
+            their decks.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { type: string, enum: [private, unlisted, public] }
         - { name: search, in: query, description: "Regex match on name/description.", schema: { type: string } }
-        - { name: sortBy, in: query, schema: { type: string, enum: [name, createdAt, updatedAt], default: updatedAt } }
+        - { name: format, in: query, description: "Exact play format, as declared on the deck.", schema: { type: string } }
+        - { name: legendCardId, in: query, description: "Decks built around this legend. Values come from `GET /decks/legends`.", schema: { type: string } }
+        - name: domain
+          in: query
+          description: "Repeatable. A deck matches when it covers every domain asked for."
+          style: form
+          explode: true
+          schema: { type: array, items: { type: string } }
+        - { name: sortBy, in: query, schema: { type: string, enum: [name, createdAt, updatedAt, favoritesCount, views], default: updatedAt } }
         - { name: sortOrder, in: query, schema: { type: string, enum: [asc, desc], default: desc } }
         - { name: page, in: query, schema: { type: integer, default: 1 } }
         - { name: limit, in: query, schema: { type: integer, default: 20 } }
-        - { name: scope, in: query, schema: { type: string, enum: [mine, all] } }
+        - name: scope
+          in: query
+          description: >
+            `mine` for the caller's own decks whatever their visibility, `public`
+            for the library (never returns `unlisted`), `all` for everything the
+            caller may see. Without any of `scope`, `playerId` and `visibility`,
+            only public decks are returned.
+          schema: { type: string, enum: [mine, all, public] }
         - { name: favoritesOnly, in: query, schema: { type: string, enum: ["true", "false"] } }
       responses:
         "200":
-          description: Paginated decks. Requesting another user's private decks (via `playerId` + `visibility=private`) is rejected.
+          description: >
+            Paginated decks. Requesting another user's private decks (via
+            `playerId` + `visibility=private`) is rejected; asking for
+            `visibility=unlisted` outside `scope=mine` is a 400.
           content:
             application/json:
               schema:
@@ -1338,6 +1368,7 @@ paths:
                   page: { type: integer }
                   limit: { type: integer }
                   totalPages: { type: integer }
+        "400": { $ref: "#/components/responses/ValidationError" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/ServerError" }
     post:
@@ -1357,7 +1388,13 @@ paths:
                 url: { type: string, format: uri }
                 description: { type: string, maxLength: 2000 }
                 decklist: { type: string, maxLength: 20000 }
-                visibility: { type: string, enum: [private, public], default: private }
+                cards: { $ref: "#/components/schemas/DeckCards" }
+                guide: { type: array, maxItems: 20, items: { $ref: "#/components/schemas/DeckGuideSection" } }
+                matchups: { type: array, maxItems: 40, items: { $ref: "#/components/schemas/DeckMatchup" } }
+                notes: { type: string, maxLength: 4000 }
+                format: { type: string, maxLength: 80 }
+                legendCardId: { type: string, maxLength: 200 }
+                visibility: { type: string, enum: [private, unlisted, public], default: private }
       responses:
         "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Deck" } } } }
         "400": { $ref: "#/components/responses/ValidationError" }
@@ -1371,7 +1408,10 @@ paths:
       tags: [Decks]
       summary: Get a deck
       security: []
-      description: Private decks are only visible to their owner (session optional; checked if present).
+      description: >
+        Private decks are only visible to their owner (session optional;
+        checked if present). `notes` is stripped for any caller other than the
+        author.
       responses:
         "200": { description: Deck., content: { application/json: { schema: { $ref: "#/components/schemas/Deck" } } } }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1401,7 +1441,13 @@ paths:
                     url: { type: string }
                     description: { type: string, maxLength: 2000 }
                     decklist: { type: string, maxLength: 20000 }
-                    visibility: { type: string, enum: [private, public] }
+                    cards: { $ref: "#/components/schemas/DeckCards" }
+                    guide: { type: array, maxItems: 20, items: { $ref: "#/components/schemas/DeckGuideSection" } }
+                    matchups: { type: array, maxItems: 40, items: { $ref: "#/components/schemas/DeckMatchup" } }
+                    notes: { type: string, maxLength: 4000 }
+                    format: { type: string, maxLength: 80 }
+                    legendCardId: { type: string, maxLength: 200 }
+                    visibility: { type: string, enum: [private, unlisted, public] }
       responses:
         "200": { description: Updated deck., content: { application/json: { schema: { $ref: "#/components/schemas/Deck" } } } }
         "400": { $ref: "#/components/responses/ValidationError" }
@@ -1418,6 +1464,48 @@ paths:
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
+
+  /decks/{deckId}/copy:
+    parameters:
+      - { name: deckId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-fA-F]{24}$" } }
+    post:
+      tags: [Decks]
+      summary: Copy a deck into the caller's own decks
+      description: >
+        Only reachable decks can be copied: another player's private deck cannot,
+        and an unlisted one only by whoever has its link - so, by someone already
+        on its page. **The copy lands `private`**: publishing someone else's list
+        is a decision, not a side effect.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "201": { description: The new deck., content: { application/json: { schema: { $ref: "#/components/schemas/Deck" } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /decks/legends:
+    get:
+      tags: [Decks]
+      summary: Legends played by published decks
+      description: >
+        Feeds the library's legend filter. The list comes from what is actually
+        published, not from the card catalog: offering three hundred legends of
+        which none has a deck would not make a filter. Public decks only, at
+        most 200 entries, most played first.
+      security: []
+      parameters:
+        - { name: gameId, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Legends and their deck counts.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  legends: { type: array, items: { $ref: "#/components/schemas/DeckLegendFacet" } }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   # ---------------------------------------------------------------- Docs
   /docs:
@@ -1952,6 +2040,69 @@ paths:
                       erratas: { type: array, items: { $ref: "#/components/schemas/Errata" } }
                       cardIdByName: { type: object, additionalProperties: { type: string } }
                       cardsById: { type: object, additionalProperties: { $ref: "#/components/schemas/CardNameMatch" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /games/{gameId}/deck-cards:
+    parameters:
+      - { name: gameId, in: path, required: true, description: "Game slug or id.", schema: { type: string } }
+    get:
+      tags: [Decks]
+      summary: Resolve a deck's cards against the game catalog
+      description: >
+        What a deck needs to show its contents: the catalog entry behind each
+        `cardId`. `id` is repeatable and also accepts a comma-separated list;
+        at most 500 ids per call - the size of a very large deck, not of an
+        import.
+      security: []
+      parameters:
+        - name: id
+          in: query
+          style: form
+          explode: true
+          schema: { type: array, items: { type: string } }
+      responses:
+        "200":
+          description: The cards that were found. An unknown id simply has no entry.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cards: { type: array, items: { $ref: "#/components/schemas/DeckCardInfo" } }
+        "400": { description: "More than 500 ids asked for.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [Decks]
+      summary: Resolve card names against the game catalog
+      description: >
+        The other half of the same need: turning a pasted list into deck
+        contents. Names are matched without case or diacritics, since a list
+        copied by hand does not always carry them.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [names]
+              properties:
+                names: { type: array, maxItems: 1000, items: { type: string, minLength: 1, maxLength: 200 } }
+      responses:
+        "200":
+          description: >
+            Matches keyed by the name **as it was sent**, not as the card is
+            spelled in the catalog - the caller matched on its own text, and
+            the two can differ by an accent. A name with no match has no key.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    type: object
+                    additionalProperties: { $ref: "#/components/schemas/DeckCardInfo" }
+        "400": { $ref: "#/components/responses/ValidationError" }
         "404": { $ref: "#/components/responses/NotFound" }
 
   /games/{gameId}/deck-checker:
@@ -4612,8 +4763,76 @@ components:
         correctFeedback: { type: string }
         incorrectFeedback: { type: string }
 
+    DeckCardEntry:
+      type: object
+      description: "A card in a deck zone. The name is not copied along: it comes from the catalog, the only up-to-date source for a card."
+      required: [cardId, quantity]
+      properties:
+        cardId: { type: string }
+        quantity: { type: integer, minimum: 1, maximum: 99, description: "A saner-than-any-game bound. What makes a deck legal are the game's zones, not this cap." }
+
+    DeckCards:
+      type: object
+      description: >
+        Deck contents, zone by zone; a missing zone is an empty zone. Which
+        zones a deck actually shows is declared by its **game**, not by the
+        deck: Riftbound splits legend/champions/runes/battlefields, most other
+        games settle for a main deck, a sideboard and an extra zone. Cards left
+        in a zone the game does not expose are kept, but not shown.
+      properties:
+        legend: { type: array, items: { $ref: "#/components/schemas/DeckCardEntry" } }
+        champions: { type: array, items: { $ref: "#/components/schemas/DeckCardEntry" } }
+        maindeck: { type: array, items: { $ref: "#/components/schemas/DeckCardEntry" } }
+        runes: { type: array, items: { $ref: "#/components/schemas/DeckCardEntry" } }
+        battlefields: { type: array, items: { $ref: "#/components/schemas/DeckCardEntry" } }
+        sideboard: { type: array, items: { $ref: "#/components/schemas/DeckCardEntry" } }
+        extra: { type: array, items: { $ref: "#/components/schemas/DeckCardEntry" } }
+
+    DeckGuideSection:
+      type: object
+      description: "A titled passage of the deck's play guide - kept apart so one can be edited in place."
+      required: [title, body]
+      properties:
+        title: { type: string, maxLength: 120 }
+        body: { type: string, maxLength: 4000 }
+
+    DeckMatchup:
+      type: object
+      required: [name, rating]
+      properties:
+        name: { type: string, maxLength: 120 }
+        rating: { type: string, enum: [favorable, even, unfavorable] }
+
+    DeckCardInfo:
+      type: object
+      description: "What a deck needs to know of a card to show and count it - a subset of the catalog document."
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        image: { type: string }
+        type: { type: string }
+        setCode: { type: string }
+        collectorNumber: { type: string }
+        cost: { type: number, description: "Play cost. Cards without one (legends, runes) carry no value, and sit out of the cost curve." }
+        domain: { type: array, items: { type: string } }
+        orientation: { type: string, enum: [portrait, landscape] }
+
+    DeckLegendFacet:
+      type: object
+      description: "A legend actually played by published decks, with how many play it. Drives the library's legend filter."
+      required: [cardId, name, count]
+      properties:
+        cardId: { type: string }
+        name: { type: string }
+        count: { type: integer }
+
     Deck:
       type: object
+      description: >
+        A deck list tied to a game. Nothing computed is stored: size, legality,
+        cost curve and collection coverage all derive from `cards` and from the
+        game's zones, so two screens never disagree about the same deck.
       properties:
         id: { type: string }
         playerId: { type: string }
@@ -4621,10 +4840,27 @@ components:
         name: { type: string }
         url: { type: string }
         description: { type: string }
-        decklist: { type: string }
-        visibility: { type: string, enum: [private, public] }
+        decklist: { type: string, description: "Free-text list, as it existed before the editor. Still carries decks of games without a card catalog, and is rewritten on every save." }
+        cards: { $ref: "#/components/schemas/DeckCards" }
+        guide: { type: array, items: { $ref: "#/components/schemas/DeckGuideSection" } }
+        matchups: { type: array, items: { $ref: "#/components/schemas/DeckMatchup" } }
+        notes: { type: string, description: "The author's private memo. **Never served to anyone else** - the field is stripped from the response for any other caller." }
+        format: { type: string, description: "Targeted play format (\"Standard OGN\"), as the game's own record declares it." }
+        legendCardId: { type: string, description: "The card that gives the deck its identity (the legend, in Riftbound)." }
+        legendName: { type: string, description: "That card's name as of the last save, so it shows without a second read of the catalog." }
+        domains:
+          type: array
+          items: { type: string }
+          description: "Domains covered by the deck's cards. Derived, recomputed on every save of the contents, so the library filters on it without joining the catalog."
+        visibility:
+          type: string
+          enum: [private, unlisted, public]
+          description: "`unlisted` is the middle ground: reachable by link, absent from the library and from search engines."
         creatorName: { type: string }
         favoritedBy: { type: array, items: { type: string } }
+        favoritesCount: { type: integer, description: "Denormalised, to sort the library without reading the whole table." }
+        views: { type: integer, description: "Reads of the deck page by someone other than its author." }
+        version: { type: integer, description: "Bumped on every save of the contents." }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 
