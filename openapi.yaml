@@ -3121,11 +3121,20 @@ paths:
       - { name: playGroupId, in: path, required: true, schema: { type: string } }
     get:
       tags: [Play Groups]
-      summary: Get a play group (members only)
-      security: [{ sessionAuth: [] }]
+      summary: Get a play group
+      description: >
+        Authentication is optional. A member gets the whole group, hydrated
+        member list included. Anyone else gets a **lighter form** - name,
+        description, visibility, customisation, member and follower counts -
+        and never the member list: who plays with whom is not public, and a
+        private group does not hand its roster to whoever guesses its id.
+
+
+        The full showcase, with its public announcements and its contents,
+        is `GET /play-groups/{playGroupId}/showcase`.
+      security: [{}, { sessionAuth: [] }, { apiKeyAuth: [] }]
       responses:
         "200": { description: Group., content: { application/json: { schema: { type: object, properties: { group: { $ref: "#/components/schemas/PlayGroup" } } } } } }
-        "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
     patch:
@@ -3218,6 +3227,370 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+
+  /play-groups/{playGroupId}/showcase:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Play Groups]
+      summary: Get a play group's public showcase
+      description: >
+        No session needed, and **served for a private group too**: its showcase
+        stays open to whoever has the address - that is what lets you invite
+        someone to look at it - and only its place on the roll is withdrawn.
+        `indexable` is then false: a private group turning up in a search
+        would not be private.
+
+
+        Nothing private goes through: no polls, no sessions, no named activity.
+        **Announcements only appear when their scope is `public`.** Member
+        publications appear only where the member made them public.
+
+
+        A stream declared more than 24 hours ago is dropped: nothing removes
+        one automatically, and a forgotten stream would hold the showcase
+        forever.
+      security: [{}, { sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: The showcase.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  group: { $ref: "#/components/schemas/PlayGroup" }
+                  indexable: { type: boolean, description: "False for a private group - ask search engines not to index it." }
+                  followerCount: { type: integer }
+                  isFollowing: { type: boolean, description: "False without a session." }
+                  isMember: { type: boolean }
+                  games: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, icon: { type: string } } } }
+                  announcements: { type: array, items: { $ref: "#/components/schemas/PlayGroupAnnouncement" }, description: "Public scope only." }
+                  contents: { type: array, items: { $ref: "#/components/schemas/PlayGroupContent" } }
+                  memberContents: { type: array, items: { $ref: "#/components/schemas/UserContent" }, description: "Members' own public publications." }
+                  lives: { type: array, items: { $ref: "#/components/schemas/PlayGroupLive" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /play-groups/{playGroupId}/follow:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+    put:
+      tags: [Play Groups]
+      summary: Follow a play group's showcase
+      description: >
+        Idempotent, like following an account or a venue. A private group can
+        be followed too - its showcase is open to whoever has the address, and
+        following grants no access to the inside of the group.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200": { description: The state reached., content: { application/json: { schema: { $ref: "#/components/schemas/PlayGroupFollowState" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Play Groups]
+      summary: Stop following a play group's showcase
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200": { description: The state reached., content: { application/json: { schema: { $ref: "#/components/schemas/PlayGroupFollowState" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /play-groups/{playGroupId}/sessions:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Play Groups]
+      summary: List a group's sessions (members only)
+      description: >
+        Polls first, then confirmed sessions by date. Members only - a session
+        says who comes to play, where and when; that is the inside of the
+        group, not its showcase.
+
+
+        Cancelled sessions only come back when asked for: they stay readable to
+        explain a hole in the agenda without cluttering the current list.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: status, in: query, description: "Repeatable. Defaults to `poll` and `confirmed`.", schema: { type: array, items: { type: string, enum: [poll, confirmed, cancelled] } } }
+      responses:
+        "200": { description: Sessions., content: { application/json: { schema: { type: object, properties: { sessions: { type: array, items: { $ref: "#/components/schemas/PlayGroupSession" } } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    post:
+      tags: [Play Groups]
+      summary: Propose a session or a poll (members only)
+      description: >
+        One operation for both because it is one object: `startsAt` makes a
+        confirmed session, `slots` makes a poll. Open to every member -
+        proposing an evening is not an act of governance; settling the poll is.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlayGroupSessionInput" }
+      responses:
+        "201": { description: Created., content: { application/json: { schema: { type: object, properties: { session: { $ref: "#/components/schemas/PlayGroupSession" } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /play-groups/{playGroupId}/sessions/{sessionId}:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+      - { name: sessionId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Play Groups]
+      summary: Get one session (members only)
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200": { description: Session., content: { application/json: { schema: { type: object, properties: { session: { $ref: "#/components/schemas/PlayGroupSession" } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    patch:
+      tags: [Play Groups]
+      summary: Edit a session (author or manager)
+      description: >
+        Slots are not editable here - a poll is settled through `/confirm`, and
+        rewriting its slots would erase the votes already cast.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlayGroupSessionInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { type: object, properties: { session: { $ref: "#/components/schemas/PlayGroupSession" } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Play Groups]
+      summary: Cancel a session (author or manager)
+      description: >
+        Cancels rather than erases: "cancelled" reads, "gone" leaves people
+        searching. `purge=1` erases for good and is reserved to managers - for
+        a session created by mistake, which never happened at all.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: purge, in: query, description: "`1` erases instead of cancelling. Managers only.", schema: { type: string, enum: ["1"] } }
+      responses:
+        "200": { description: Cancelled, or deleted., content: { application/json: { schema: { type: object, properties: { session: { $ref: "#/components/schemas/PlayGroupSession" }, deleted: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /play-groups/{playGroupId}/sessions/{sessionId}/vote:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+      - { name: sessionId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Play Groups]
+      summary: Toggle availability on a poll slot (members only)
+      description: >
+        **A deliberate toggle**, unlike following. Saying you are available is
+        not a commitment a double request would leave in a misleading state: a
+        slot ticked twice comes back unticked, which the poll shows at once and
+        nothing is lost. Splitting it in two verbs would force the client to
+        know where it stands before speaking.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [slotId], additionalProperties: false, properties: { slotId: { type: string } } }
+      responses:
+        "200": { description: The poll after the vote., content: { application/json: { schema: { type: object, properties: { session: { $ref: "#/components/schemas/PlayGroupSession" } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /play-groups/{playGroupId}/sessions/{sessionId}/confirm:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+      - { name: sessionId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Play Groups]
+      summary: Settle a poll on one slot (owner/admin only)
+      description: >
+        The slot becomes the session's date. Whoever said they were available
+        on it is carried over as attending: having said you are free on
+        Thursday *is* an answer for Thursday.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [slotId], additionalProperties: false, properties: { slotId: { type: string } } }
+      responses:
+        "200": { description: The confirmed session., content: { application/json: { schema: { type: object, properties: { session: { $ref: "#/components/schemas/PlayGroupSession" } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /play-groups/{playGroupId}/sessions/{sessionId}/rsvp:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+      - { name: sessionId, in: path, required: true, schema: { type: string } }
+    put:
+      tags: [Play Groups]
+      summary: Answer a session (members only)
+      description: >
+        The answer replaces the previous one, and **giving the same answer
+        again cancels it**. Retracting is the same gesture as answering, on the
+        same button, with no fourth "I withdraw" state to explain.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [answer], properties: { answer: { type: string, enum: [yes, maybe, no] } } }
+      responses:
+        "200": { description: The session after the answer., content: { application/json: { schema: { type: object, properties: { session: { $ref: "#/components/schemas/PlayGroupSession" } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /play-groups/{playGroupId}/announcements:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Play Groups]
+      summary: List a group's announcements (members only)
+      description: >
+        Newest first, **all scopes**: this is the group's own board. The ones
+        scoped `public` reappear on the showcase.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200": { description: Announcements., content: { application/json: { schema: { type: object, properties: { announcements: { type: array, items: { $ref: "#/components/schemas/PlayGroupAnnouncement" } } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    post:
+      tags: [Play Groups]
+      summary: Publish an announcement (owner/admin only)
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlayGroupAnnouncementInput" }
+      responses:
+        "201": { description: Published., content: { application/json: { schema: { type: object, properties: { announcement: { $ref: "#/components/schemas/PlayGroupAnnouncement" } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /play-groups/{playGroupId}/announcements/{announcementId}:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+      - { name: announcementId, in: path, required: true, schema: { type: string } }
+    patch:
+      tags: [Play Groups]
+      summary: Rewrite an announcement (owner/admin only)
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlayGroupAnnouncementInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { type: object, properties: { announcement: { $ref: "#/components/schemas/PlayGroupAnnouncement" } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Play Groups]
+      summary: Delete an announcement (owner/admin only)
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200": { description: Deleted., content: { application/json: { schema: { type: object, properties: { deleted: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /play-groups/{playGroupId}/contents:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Play Groups]
+      summary: Publish a group content (members only)
+      description: >
+        **Open to every member**, unlike announcements: writing up a tournament
+        or dropping your video is not an act of governance. Editing and
+        deleting stay with the author and the managers.
+
+
+        Contents are read back through the showcase, which is public - that is
+        where they are meant to be read.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlayGroupContentInput" }
+      responses:
+        "201": { description: Published., content: { application/json: { schema: { type: object, properties: { content: { $ref: "#/components/schemas/PlayGroupContent" } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /play-groups/{playGroupId}/contents/{contentId}:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+      - { name: contentId, in: path, required: true, schema: { type: string } }
+    patch:
+      tags: [Play Groups]
+      summary: Edit a group content (author or manager)
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlayGroupContentInput" }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { type: object, properties: { content: { $ref: "#/components/schemas/PlayGroupContent" } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Play Groups]
+      summary: Delete a group content (author or manager)
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200": { description: Deleted., content: { application/json: { schema: { type: object, properties: { deleted: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   /play-groups/{playGroupId}/collection:
     parameters:
@@ -3469,6 +3842,53 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { description: A wishlist with this name already exists for this group., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /play-groups/explore:
+    get:
+      tags: [Play Groups]
+      summary: The roll - discover open play groups
+      description: >
+        Authentication is optional: it adds **the private groups the caller is
+        a member of**, and fills in `isFollowing` on each row. Other people's
+        private groups are excluded by the query itself, before any join - a
+        group you must not see must not leave the database.
+
+
+        Three orders. `vifs` ranks by sign of life - a stream comes before
+        everything, then a recent publication or an upcoming session, whose
+        weight decays with time rather than flipping at a threshold. `neufs` by
+        creation date. `proches` needs a point (`lat`/`lng`) and can only order
+        the groups whose default place is a Joutes venue, the only one carrying
+        geocoded coordinates; the others go to the end rather than to zero
+        kilometres, which would be a lie. **Without a point, `proches` falls
+        back to `vifs`** - the applied order comes back in `order`.
+
+
+        `q` searches the name, tagline, rhythm, place and games, accent- and
+        case-insensitively.
+      security: [{}, { sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: q, in: query, description: "Free text.", schema: { type: string } }
+        - { name: order, in: query, schema: { type: string, enum: [vifs, proches, neufs], default: vifs } }
+        - { name: lat, in: query, description: "Latitude for `proches`. Out-of-range values are ignored, falling back to `vifs`.", schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lng, in: query, description: "Longitude for `proches`. Requires `lat`.", schema: { type: number, minimum: -180, maximum: 180 } }
+        - { name: count, in: query, description: "Rows wanted.", schema: { type: integer, default: 20, minimum: 1, maximum: 100 } }
+      responses:
+        "200":
+          description: The roll.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  groups: { type: array, items: { $ref: "#/components/schemas/ExploreGroup" } }
+                  total: { type: integer, description: "Groups matching `q`, whatever `count`." }
+                  hasMore: { type: boolean }
+                  count: { type: integer }
+                  order: { type: string, enum: [vifs, proches, neufs], description: "The order actually applied." }
+                  lives: { type: array, items: { $ref: "#/components/schemas/PlayGroupLive" }, description: "Ongoing streams across all groups, most watched first." }
+                  posts: { type: array, items: { $ref: "#/components/schemas/PlayGroupContent" }, description: "At most 3 recent publications across all groups." }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   /play-groups/invitations:
     get:
@@ -5462,15 +5882,241 @@ components:
 
     PlayGroup:
       type: object
+      description: >
+        A play group. `members` is only present for a member of the group -
+        who plays with whom is not public. A non-member gets the lighter form
+        instead: everything below except `members` and `ownerId`, plus
+        `memberCount`, `followerCount` and `isMember: false`.
       properties:
         id: { type: string }
         name: { type: string }
         description: { type: string }
         ownerId: { type: string }
+        visibility: { type: string, enum: [public, private], description: "A private group leaves the roll for everyone but its members. Its showcase stays open to whoever has the address." }
         enabledGameIds: { type: array, items: { type: string }, nullable: true }
+        options: { $ref: "#/components/schemas/PlayGroupOptions" }
+        memberCount: { type: integer }
+        followerCount: { type: integer }
+        isMember: { type: boolean }
+        role: { type: string, enum: [owner, admin, member], description: "The caller's role. Absent for a non-member." }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
-        members: { type: array, items: { $ref: "#/components/schemas/PlayGroupMember" } }
+        members: { type: array, items: { $ref: "#/components/schemas/PlayGroupMember" }, description: "Members only." }
+
+    PlayGroupOptions:
+      type: object
+      description: >
+        The group's own settings. For a non-member only `theme`, `links` and
+        `rhythm` are returned - announcements, contents and streams belong to
+        the showcase, which has its own operation.
+      properties:
+        theme: { $ref: "#/components/schemas/PlayGroupTheme" }
+        links: { type: array, items: { $ref: "#/components/schemas/PlayGroupLink" } }
+        rhythm: { $ref: "#/components/schemas/PlayGroupRhythm" }
+        announcements: { type: array, items: { $ref: "#/components/schemas/PlayGroupAnnouncement" } }
+        contents: { type: array, items: { $ref: "#/components/schemas/PlayGroupContent" } }
+        lives: { type: array, items: { $ref: "#/components/schemas/PlayGroupLive" }, description: "At most 3." }
+
+    PlayGroupTheme:
+      type: object
+      properties:
+        logo: { type: string }
+        banner: { type: string }
+        accentColor: { type: string, description: "One of a closed five-value palette." }
+        tagline: { type: string, description: "The line under the name on the showcase." }
+
+    PlayGroupLink:
+      type: object
+      properties:
+        type: { type: string, enum: [website, twitch, youtube, discord, instagram, facebook, x, other] }
+        url: { type: string }
+        label: { type: string }
+
+    PlayGroupPlace:
+      type: object
+      description: >
+        Where a session happens. A Joutes venue inherits its record - address,
+        opening hours, directions - so only its id is needed; a free-form place
+        is just a name and maybe a detail.
+      properties:
+        kind: { type: string, enum: [joutes, free, member] }
+        lairId: { type: string, description: "Set for `kind: joutes` only." }
+        label: { type: string }
+        detail: { type: string }
+
+    PlayGroupRhythm:
+      type: object
+      properties:
+        label: { type: string, description: "Free text - \"Every Thursday at 19:30\"." }
+        defaultPlace: { $ref: "#/components/schemas/PlayGroupPlace" }
+
+    PlayGroupAnnouncement:
+      type: object
+      description: >
+        Scope decides everything: `group` never leaves the group's own board,
+        `public` is repeated on the showcase. There is no third state - a
+        badly-scoped announcement is fixed by changing its scope.
+      properties:
+        id: { type: string }
+        title: { type: string }
+        body: { type: string }
+        scope: { type: string, enum: [group, public] }
+        authorId: { type: string }
+        publishedAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    PlayGroupContent:
+      type: object
+      description: >
+        An article carries its markdown body; a video or a replay carries a
+        Twitch or YouTube url. One without the other is refused at write time.
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [video, article, replay] }
+        title: { type: string }
+        summary: { type: string }
+        body: { type: string, description: "Markdown - articles only." }
+        url: { type: string }
+        thumbnail: { type: string }
+        duration: { type: string, description: "Shown as written - \"12 min\", \"1 h 04\"." }
+        gameId: { type: string }
+        authorId: { type: string }
+        publishedAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    PlayGroupLive:
+      type: object
+      description: >
+        A member's ongoing stream. Nothing removes one automatically, so a
+        stream declared more than 24 hours ago is dropped on read rather than
+        pinning its group forever.
+      properties:
+        id: { type: string }
+        title: { type: string }
+        streamer: { type: string, description: "The member's display name - never their email." }
+        gameName: { type: string, nullable: true }
+        viewers: { type: integer, nullable: true }
+        startedAt: { type: string, format: date-time }
+        channelUrl: { type: string }
+        platform: { type: string, enum: [twitch, youtube] }
+
+    PlayGroupSessionSlot:
+      type: object
+      properties:
+        id: { type: string }
+        startsAt: { type: string, format: date-time }
+        voterIds: { type: array, items: { type: string } }
+
+    PlayGroupRsvp:
+      type: object
+      properties:
+        userId: { type: string }
+        answer: { type: string, enum: [yes, maybe, no] }
+        respondedAt: { type: string, format: date-time }
+
+    PlayGroupSession:
+      type: object
+      description: >
+        A poll and a confirmed session are the same object: a poll that gets
+        settled *becomes* the session, keeping its identity and the
+        availabilities already given. `slots` and `pollClosesAt` only exist
+        while `status` is `poll`; `startsAt` only once confirmed.
+      properties:
+        id: { type: string }
+        playGroupId: { type: string }
+        title: { type: string }
+        gameId: { type: string }
+        status: { type: string, enum: [poll, confirmed, cancelled] }
+        place: { $ref: "#/components/schemas/PlayGroupPlace" }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        slots: { type: array, items: { $ref: "#/components/schemas/PlayGroupSessionSlot" } }
+        pollClosesAt: { type: string, format: date-time }
+        rsvps: { type: array, items: { $ref: "#/components/schemas/PlayGroupRsvp" } }
+        eventId: { type: string }
+        createdById: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    PlayGroupSessionInput:
+      type: object
+      required: [title]
+      description: >
+        A session needs either a date (`startsAt`) or slots to poll - one of
+        the two, or the request is refused.
+      properties:
+        title: { type: string, maxLength: 140 }
+        gameId: { type: string }
+        place: { $ref: "#/components/schemas/PlayGroupPlace" }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        slots:
+          type: array
+          maxItems: 8
+          items: { type: object, required: [startsAt], properties: { startsAt: { type: string, format: date-time } } }
+        pollClosesAt: { type: string, format: date-time }
+
+    PlayGroupAnnouncementInput:
+      type: object
+      required: [title, scope]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 140 }
+        body: { type: string, maxLength: 2000 }
+        scope: { type: string, enum: [group, public] }
+
+    PlayGroupContentInput:
+      type: object
+      required: [kind, title]
+      properties:
+        kind: { type: string, enum: [video, article, replay] }
+        title: { type: string, minLength: 1, maxLength: 140 }
+        summary: { type: string, maxLength: 300 }
+        body: { type: string, maxLength: 20000, description: "Required for `article`." }
+        url: { type: string, maxLength: 2048, description: "Required for `video` and `replay`." }
+        thumbnail: { type: string }
+        duration: { type: string, maxLength: 20 }
+        gameId: { type: string }
+
+    PlayGroupFollowState:
+      type: object
+      properties:
+        following: { type: boolean }
+        followerCount: { type: integer }
+
+    ExploreGroup:
+      type: object
+      description: One row of the roll, with everything the card shows.
+      properties:
+        id: { type: string }
+        name: { type: string }
+        initials: { type: string, description: "Two letters at most, small words skipped." }
+        visibility: { type: string, enum: [public, private] }
+        tagline: { type: string, nullable: true }
+        accentColor: { type: string, nullable: true }
+        logo: { type: string, nullable: true }
+        rhythmLabel: { type: string, nullable: true }
+        place: { $ref: "#/components/schemas/PlayGroupPlace" }
+        placeCoordinates:
+          type: object
+          nullable: true
+          description: "Only a Joutes venue carries geocoded coordinates."
+          properties: { longitude: { type: number }, latitude: { type: number } }
+        gameNames: { type: array, items: { type: string } }
+        memberCount: { type: integer }
+        followerCount: { type: integer }
+        publishedCount: { type: integer }
+        lives: { type: array, items: { $ref: "#/components/schemas/PlayGroupLive" } }
+        lastDeed:
+          type: object
+          nullable: true
+          description: "The latest sign of life other than a stream."
+          properties:
+            kind: { type: string, enum: [content, session, announcement] }
+            at: { type: string, format: date-time }
+            label: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        activityRank: { type: number }
+        isFollowing: { type: boolean }
 
     PlayGroupInvitation:
       type: object
