@@ -50,6 +50,14 @@ tags:
     description: Quizzes, optionally linked to a game.
   - name: Sell Lists
     description: Cards a user or play group is offering for sale.
+  - name: Trades
+    description: >
+      Card trades between two users. Only the card-list helper below is
+      contractual so far; composing, joining and validating a trade are served
+      by routes under `/trades` that this document does not yet describe.
+      Unlike most of the API, **no `/trades` route accepts an API key**: they
+      resolve the session directly, so a personal `jts_...` key is rejected
+      there.
   - name: Upload
     description: Generic admin file upload to blob storage.
   - name: Users
@@ -3651,6 +3659,75 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { description: Card already for sale., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
 
+  # ---------------------------------------------------------------- Trades
+  /trades/cards/resolve:
+    post:
+      tags: [Trades]
+      summary: Match a written card list to real printings
+      description: >
+        Turns the lines of a list written by hand ("2 Card name (SET) 123") into
+        the printings a trade offer can hold. Matching happens here because it
+        needs the caller's collection or the card catalog, which a client has
+        neither of; nothing is written to the trade at this stage.
+
+
+        Matching goes from the most precise designation to the widest: set code
+        and collector number, then set code alone, then the name alone. Names
+        are compared without case or diacritics - a list copied by hand does not
+        always carry them.
+
+
+        Session cookie only: like every `/trades` route, this one does not
+        accept an API key.
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scope, cards]
+              properties:
+                scope:
+                  type: string
+                  enum: [collection, catalog]
+                  description: >
+                    Where to look: the caller's own collection (their side of
+                    the trade) or the whole catalog (what they ask for).
+                cards:
+                  type: array
+                  maxItems: 50
+                  description: "Designations, in the order of the list. At most one side's worth of cards."
+                  items:
+                    type: object
+                    required: [name]
+                    properties:
+                      name: { type: string, minLength: 1, maxLength: 200 }
+                      setCode: { type: string, maxLength: 100 }
+                      collectorNumber: { type: string, maxLength: 100 }
+      responses:
+        "200":
+          description: >
+            Matches, in the same order and of the same length as `cards`: entry
+            `i` answers designation `i`, and is `null` when no card satisfies
+            it. The caller reports those rather than dropping them silently - a
+            list pasted crooked must not replace an offer halfway without
+            saying so.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    type: array
+                    items:
+                      oneOf:
+                        - $ref: "#/components/schemas/TradeCard"
+                        - type: "null"
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   # ---------------------------------------------------------------- Upload
   /upload:
     post:
@@ -4267,6 +4344,29 @@ components:
           description: "Marketplace the amount was read from."
         updatedAt: { type: string, format: date-time, description: "Date of the marketplace reading, not of the response." }
         productId: { type: integer, description: "Product the amount comes from, in `source`'s catalogue, to link back to it." }
+
+    TradeCard:
+      type: object
+      description: >
+        A printing a trade offer can hold. `key` identifies the printing across
+        the whole exchange — it is what tells two versions of the same card in
+        the same set apart, so two entries that differ only by their collector
+        number do not collapse into one.
+      required: [key, name, setCode, collectorNumber, image, owned]
+      properties:
+        key: { type: string, description: "Stable printing key: `name|setCode|collectorNumber`." }
+        cardId: { type: string, description: "Catalog id. Absent on a few historic collection entries the catalog no longer knows; such a card cannot be asked for as a counterparty." }
+        name: { type: string }
+        setCode: { type: string }
+        collectorNumber: { type: string }
+        image: { type: string }
+        type: { type: string }
+        orientation: { type: string, enum: [portrait, landscape], description: "Absent means `portrait`; a landscape card is shown rotated a quarter turn." }
+        gameId: { type: string }
+        gameName: { type: string }
+        gameSlug: { type: string }
+        owned: { type: integer, description: "Copies of this printing the caller owns. Caps what they may offer." }
+        marketPrice: { $ref: "#/components/schemas/MarketPrice" }
 
     CardPrinting:
       type: object
