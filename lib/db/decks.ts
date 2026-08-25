@@ -3,6 +3,7 @@ import { Deck, DeckVisibility } from "@/lib/types/Deck";
 import { ObjectId, WithId, Document } from "mongodb";
 import { getUsersByIds } from "@/lib/db/users";
 import { deriveDeckDomains, getDeckCardInfos } from "@/lib/db/deck-cards";
+import { deckVersionWrite } from "@/lib/db/deck-version";
 import type { DeckCards } from "@/lib/decks/contents";
 
 const COLLECTION_NAME = "decks";
@@ -333,12 +334,22 @@ export async function updateDeck(
 
   const set: Record<string, unknown> = { ...updates, updatedAt: new Date() };
 
-  // Tout enregistrement compte pour un. Le bump était réservé au contenu, si
-  // bien que le panneau « Versions » affichait « v2 — en cours » à côté d'une
-  // date de modification qui, elle, bougeait pour un guide ou une description.
-  // Une version qui ne compte qu'une partie des enregistrements n'en est pas
-  // une — et ne peut pas servir de garde.
-  const inc: Record<string, number> = { version: 1 };
+  /*
+   * Tout enregistrement compte pour un. Le bump était réservé au contenu, si
+   * bien que le panneau « Versions » affichait « v2 — en cours » à côté d'une
+   * date de modification qui, elle, bougeait pour un guide ou une description.
+   * Une version qui ne compte qu'une partie des enregistrements n'en est pas
+   * une — et ne peut pas servir de garde.
+   *
+   * La garde et le bump vivent dans `deck-version.ts`, où ils se testent sans
+   * base : leurs deux cas limites — le champ absent d'un deck ancien, côté
+   * filtre comme côté incrément — ne se voient pas à la lecture.
+   */
+  const version = deckVersionWrite(existing.version, expectedVersion);
+  if (version.set !== undefined) {
+    set.version = version.set;
+  }
+  const inc = version.inc === undefined ? {} : { version: version.inc };
 
   // Le contenu change : tout ce qui s'en déduit se recalcule ici, une fois,
   // plutôt qu'à chaque lecture. Les domaines servent au filtre de la librairie,
@@ -358,22 +369,13 @@ export async function updateDeck(
     }
   }
 
-  // La version attendue entre dans le filtre : l'écriture ne s'applique que si
-  // le deck est encore celui qu'on croyait. `version` est absent des documents
-  // écrits avant son introduction, d'où le repli de `toDeck` sur 1 — et donc la
-  // clause qui accepte l'absence quand on attend cette première version.
-  const guard =
-    expectedVersion === undefined
-      ? {}
-      : expectedVersion === 1
-        ? { $or: [{ version: 1 }, { version: { $exists: false } }] }
-        : { version: expectedVersion };
-
   const result = await db
     .collection(COLLECTION_NAME)
-    .findOneAndUpdate({ _id: new ObjectId(deckId), playerId, ...guard }, { $set: set, $inc: inc }, {
-      returnDocument: "after",
-    });
+    .findOneAndUpdate(
+      { _id: new ObjectId(deckId), playerId, ...version.guard },
+      Object.keys(inc).length > 0 ? { $set: set, $inc: inc } : { $set: set },
+      { returnDocument: "after" }
+    );
 
   if (result) {
     return { ok: true, deck: toDeck(result) };

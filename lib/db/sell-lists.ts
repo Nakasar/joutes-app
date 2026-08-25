@@ -92,8 +92,9 @@ export async function getSellListForOwner(owner: SellListOwner): Promise<SellLis
  * qui répond « laquelle a au moins un article » sans en compter aucun. Le
  * registre ne demande qu'un booléen, et le compte exact coûte le scan.
  *
- * Les deux requêtes sont couvertes par les index déclarés dans
- * `createSellListIndexes` — `{ownerType, ownerId}` et `{sellListId}`.
+ * Les deux requêtes sont couvertes par les index que pose
+ * `scripts/ensure-indexes-for-sell-lists.ts` — `{ownerType, ownerId}` et
+ * `{sellListId}`.
  *
  * L'ordre des candidats est rendu tel quel : le registre croise ce résultat
  * avec un tri qu'il repose ensuite, mais rien ne gagne à le brouiller ici.
@@ -519,13 +520,6 @@ export async function getForSaleInfoForEntries(collectionEntryIds: ObjectId[]): 
       { itemId: doc._id.toString(), sellListId: doc.sellListId.toString(), price: doc.price, currency: doc.currency, note: doc.note },
     ])
   );
-}
-
-export async function createSellListIndexes() {
-  await db.collection(SELL_LISTS_COLLECTION).createIndex({ ownerType: 1, ownerId: 1 }, { unique: true });
-  await db.collection(SELL_LIST_ITEMS_COLLECTION).createIndex({ collectionEntryId: 1 }, { unique: true });
-  await db.collection(SELL_LIST_ITEMS_COLLECTION).createIndex({ sellListId: 1 });
-  await db.collection(SELL_LIST_ITEMS_COLLECTION).createIndex({ sellListId: 1, gameId: 1 });
 }
 
 /** Suppression d'une liste de vente sans contrôle du propriétaire (modération). */
