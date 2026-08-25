@@ -31,7 +31,8 @@ function readNumber(value: string | null): number | undefined {
  * et le tri par distance existaient déjà en base, sans rien pour les demander.
  * Le rayon est en kilomètres — c'est ce qu'un utilisateur choisit — et converti
  * en mètres pour Mongo. Il faut les deux coordonnées : une seule ne désigne
- * aucun point, et la retenir à moitié filtrerait sur un méridien.
+ * aucun point, et la retenir à moitié filtrerait sur un méridien. Hors du
+ * globe, ou avec un rayon nul, la demande rend 400.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -44,6 +45,22 @@ export async function GET(request: NextRequest) {
     const latitude = readNumber(searchParams.get("lat"));
     const longitude = readNumber(searchParams.get("lng"));
     const radius = readNumber(searchParams.get("radius"));
+    const near = latitude !== undefined && longitude !== undefined;
+
+    // Mongo lève sur une coordonnée hors du globe, et un rayon nul ou négatif
+    // ne décrit aucun disque : sans ces bornes, une demande fautive rendrait
+    // 500, c'est-à-dire « le serveur est en panne » là où c'est la question qui
+    // n'a pas de sens.
+    if (
+      near &&
+      (latitude < -90 ||
+        latitude > 90 ||
+        longitude < -180 ||
+        longitude > 180 ||
+        (radius !== undefined && radius <= 0))
+    ) {
+      return NextResponse.json({ error: "Coordonnées invalides" }, { status: 400 });
+    }
 
     const viewer = await authenticateApiRequest(request);
 
@@ -51,14 +68,13 @@ export async function GET(request: NextRequest) {
       userId: viewer?.userId,
       gameIds: gameId ? [gameId] : undefined,
       search: search || undefined,
-      nearLocation:
-        latitude !== undefined && longitude !== undefined
-          ? {
-              latitude,
-              longitude,
-              maxDistanceMeters: Math.round((radius ?? DEFAULT_RADIUS_KM) * 1000),
-            }
-          : undefined,
+      nearLocation: near
+        ? {
+            latitude,
+            longitude,
+            maxDistanceMeters: Math.round((radius ?? DEFAULT_RADIUS_KM) * 1000),
+          }
+        : undefined,
       page,
       limit,
     });

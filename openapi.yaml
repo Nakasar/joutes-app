@@ -2591,6 +2591,7 @@ paths:
     get:
       tags: [Lairs]
       summary: Search lairs (game stores / venues)
+      security: [{}, { sessionAuth: [] }, { apiKeyAuth: [] }]
       description: >
         Authentication is optional. Anonymously, only public lairs are returned.
         With a session or API key, the caller also sees the private lairs they
@@ -2603,9 +2604,9 @@ paths:
       parameters:
         - { name: gameId, in: query, schema: { type: string } }
         - { name: search, in: query, description: "Case-insensitive substring of the lair name.", schema: { type: string } }
-        - { name: lat, in: query, description: "Latitude of the search centre. Requires `lng`; ignored on its own.", schema: { type: number } }
-        - { name: lng, in: query, description: "Longitude of the search centre. Requires `lat`; ignored on its own.", schema: { type: number } }
-        - { name: radius, in: query, description: "Search radius in kilometres around `lat`/`lng`. Ignored without both coordinates.", schema: { type: number, default: 50 } }
+        - { name: lat, in: query, description: "Latitude of the search centre, -90 to 90. Requires `lng`; ignored on its own. Out of range answers 400.", schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lng, in: query, description: "Longitude of the search centre, -180 to 180. Requires `lat`; ignored on its own. Out of range answers 400.", schema: { type: number, minimum: -180, maximum: 180 } }
+        - { name: radius, in: query, description: "Search radius in kilometres around `lat`/`lng`. Must be greater than 0. Ignored without both coordinates.", schema: { type: number, default: 50, exclusiveMinimum: 0 } }
         - { name: page, in: query, schema: { type: integer, default: 1 } }
         - { name: limit, in: query, schema: { type: integer, default: 100 } }
       responses:
@@ -2621,6 +2622,7 @@ paths:
                   page: { type: integer }
                   limit: { type: integer }
                   totalPages: { type: integer }
+        "400": { $ref: "#/components/responses/ValidationError" }
         "500": { $ref: "#/components/responses/ServerError" }
 
   /lairs/{lairId}:
@@ -2629,6 +2631,7 @@ paths:
     get:
       tags: [Lairs]
       summary: Get one lair's showcase
+      security: [{}, { sessionAuth: [] }, { apiKeyAuth: [] }]
       description: >
         Authentication is optional: it opens private lairs the caller follows,
         owns or administers, and fills in `isFollowing`.
@@ -2657,6 +2660,7 @@ paths:
     put:
       tags: [Lairs]
       summary: Follow a lair
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
       description: >
         Idempotent - following a lair already followed changes nothing and
         answers the same. Following a lair is what makes a private one readable,
@@ -2674,6 +2678,7 @@ paths:
     delete:
       tags: [Lairs]
       summary: Stop following a lair
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
       description: >
         Idempotent, with one assumed exception: unfollowing a **private** lair
         closes its door, so a second `DELETE` answers 404. The state is still
