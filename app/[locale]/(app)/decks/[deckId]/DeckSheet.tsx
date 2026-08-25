@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DateTime } from "luxon";
 import { Hammer, Share2, Star } from "lucide-react";
 import { toast } from "sonner";
@@ -80,6 +80,13 @@ export function DeckSheet({
     .join(" · ");
 
   /**
+   * Version serveur à jour : renvoyée à chaque enregistrement pour que le
+   * serveur refuse d'écrire par-dessus celui d'un autre onglet. Une ref, le
+   * prop ne revenant qu'au `router.refresh()`.
+   */
+  const versionRef = useRef(deck.version ?? 1);
+
+  /**
    * Une seule porte pour tout ce qui s'enregistre depuis la fiche : chaque
    * section n'a pas à savoir comment on parle à l'API, ni comment on annonce un
    * échec.
@@ -89,15 +96,31 @@ export function DeckSheet({
       const response = await fetch(`/api/decks/${deck.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, expectedVersion: versionRef.current }),
       });
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
+
+        // Un autre onglet a enregistré depuis. Rien n'a été écrit ; la version
+        // fraîche est adoptée pour qu'un second essai, lui, s'applique.
+        if (response.status === 409 && data?.deck) {
+          versionRef.current = data.deck.version ?? versionRef.current;
+          toast.warning("Ce deck a été enregistré ailleurs", {
+            description: "Réessayez pour imposer votre version, ou rechargez la page.",
+          });
+          return false;
+        }
+
         toast.error("Enregistrement impossible", {
           description: data?.error ?? "Le deck n'a pas pu être mis à jour.",
         });
         return false;
+      }
+
+      const saved = await response.json().catch(() => null);
+      if (typeof saved?.version === "number") {
+        versionRef.current = saved.version;
       }
 
       router.refresh();

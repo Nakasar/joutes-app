@@ -1424,6 +1424,15 @@ paths:
         Two modes based on body shape: send `{ "favorite": boolean }` to toggle the
         caller's favorite on the deck, or any subset of the deck fields to update
         the deck itself (only the owner may do either).
+
+
+        **Optimistic concurrency.** Every save bumps the deck's `version`. Send
+        `expectedVersion` alongside the fields you are saving and the write only
+        applies while the deck is still the one you read: if someone saved in
+        between, nothing is written and the answer is `409` with `error:
+        "conflict"` and the deck that got there first, so the client can
+        resynchronise without a second round trip. Omit `expectedVersion` and the
+        write is last-one-wins, as it has always been.
       requestBody:
         required: true
         content:
@@ -1448,13 +1457,32 @@ paths:
                     format: { type: string, maxLength: 80 }
                     legendCardId: { type: string, maxLength: 200 }
                     visibility: { type: string, enum: [private, unlisted, public] }
+                    expectedVersion:
+                      type: integer
+                      minimum: 1
+                      description: >
+                        The `version` the caller last read. Guards the write
+                        against a concurrent save; it is never stored, and does
+                        not on its own count as a field to update.
       responses:
         "200": { description: Updated deck., content: { application/json: { schema: { $ref: "#/components/schemas/Deck" } } } }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "409": { description: "Name collides with an existing deck of the same player.", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "409":
+          description: >
+            Either the name collides with an existing deck of the same player,
+            or `expectedVersion` was stale. The stale-version answer carries
+            `error: "conflict"` and `deck`, the state that got there first.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Error"
+                  - type: object
+                    properties:
+                      deck: { $ref: "#/components/schemas/Deck" }
     delete:
       tags: [Decks]
       summary: Delete a deck (owner only)
@@ -5663,7 +5691,7 @@ components:
         favoritedBy: { type: array, items: { type: string } }
         favoritesCount: { type: integer, description: "Denormalised, to sort the library without reading the whole table." }
         views: { type: integer, description: "Reads of the deck page by someone other than its author." }
-        version: { type: integer, description: "Bumped on every save of the contents." }
+        version: { type: integer, readOnly: true, description: "Bumped on every save. Send it back as `expectedVersion` on PATCH to guard against a concurrent save." }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 

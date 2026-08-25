@@ -80,7 +80,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Params }
     const parsed = playGroupSessionSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Données invalides", details: parsed.error },
+        { error: "Données invalides", details: parsed.error.flatten() },
         { status: 400 },
       );
     }

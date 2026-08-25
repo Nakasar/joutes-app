@@ -77,6 +77,59 @@ export async function getSellListForOwner(owner: SellListOwner): Promise<SellLis
   return toSellList(doc, await countItems(doc._id));
 }
 
+/**
+ * Parmi ces propriétaires, ceux dont la liste de vente n'est pas vide.
+ *
+ * **Deux requêtes, quel que soit le nombre de candidats** — là où appeler
+ * `getSellListForOwner` en boucle en fait deux *par* candidat : un `findOne`
+ * puis un `countDocuments`. Le registre communautaire en passe jusqu'à cent
+ * d'un coup, sur une route que personne n'a besoin d'être connecté pour
+ * appeler ; deux cents allers-retours y étaient déclenchables par un simple
+ * `GET /users?sells=1`.
+ *
+ * Même motif que `getUserWishlistObjectIds` dans le module jumeau : une
+ * projection sur `_id` plutôt qu'un `itemsCount` calculé, puis un `distinct`
+ * qui répond « laquelle a au moins un article » sans en compter aucun. Le
+ * registre ne demande qu'un booléen, et le compte exact coûte le scan.
+ *
+ * Les deux requêtes sont couvertes par les index déclarés dans
+ * `createSellListIndexes` — `{ownerType, ownerId}` et `{sellListId}`.
+ *
+ * L'ordre des candidats est rendu tel quel : le registre croise ce résultat
+ * avec un tri qu'il repose ensuite, mais rien ne gagne à le brouiller ici.
+ */
+export async function filterOwnerIdsWithSellItems(
+  ownerType: SellListOwnerType,
+  ownerIds: string[],
+): Promise<string[]> {
+  if (ownerIds.length === 0) {
+    return [];
+  }
+
+  const lists = (await db
+    .collection(SELL_LISTS_COLLECTION)
+    .find({ ownerType, ownerId: { $in: ownerIds } }, { projection: { _id: 1, ownerId: 1 } })
+    .toArray()) as WithId<Document>[];
+
+  if (lists.length === 0) {
+    return [];
+  }
+
+  const stocked = new Set(
+    (
+      await db
+        .collection(SELL_LIST_ITEMS_COLLECTION)
+        .distinct("sellListId", { sellListId: { $in: lists.map((list) => list._id) } })
+    ).map((id) => String(id)),
+  );
+
+  const sellers = new Set(
+    lists.filter((list) => stocked.has(String(list._id))).map((list) => String(list.ownerId)),
+  );
+
+  return ownerIds.filter((id) => sellers.has(id));
+}
+
 /** Fetches the owner's sell list, creating an empty one if it doesn't exist yet. */
 export async function getOrCreateSellListForOwner(owner: SellListOwner): Promise<SellList> {
   const existing = await getSellListForOwner(owner);

@@ -15,7 +15,7 @@ import {
   readRegistryUsersByIds,
   searchPublicUsers,
 } from "@/lib/db/users.ts";
-import { getSellListForOwner } from "@/lib/db/sell-lists.ts";
+import { filterOwnerIdsWithSellItems } from "@/lib/db/sell-lists.ts";
 import type { Game } from "@/lib/types/Game";
 import {
   REGISTRY_MAX_COUNT,
@@ -91,18 +91,14 @@ export async function listLiveShowcases() {
  * donc à part, et se croise ensuite. C'est aussi pour cela que
  * `RegistryUserFilter.userIds` existe.
  *
- * Une lecture par candidat, jusqu'à cent : c'est le filtre le plus cher du
- * registre, et la raison pour laquelle il est résolu en dernier.
+ * Deux requêtes pour toute la liste, quel que soit le nombre de candidats.
+ * C'était une lecture par candidat — en réalité deux, `getSellListForOwner`
+ * enchaînant un `findOne` et un `countDocuments` —, soit jusqu'à deux cents
+ * allers-retours pour un `?sells=1` que personne n'a besoin d'être connecté
+ * pour demander. Le registre ne veut qu'un booléen ; il l'obtient sans compter.
  */
 async function readSellerIds(candidateIds: string[]): Promise<string[]> {
-  const lists = await Promise.all(
-    candidateIds.map(async (id) => ({
-      id,
-      list: await getSellListForOwner({ type: "user", id }),
-    })),
-  );
-
-  return lists.filter((entry) => (entry.list?.itemsCount ?? 0) > 0).map((entry) => entry.id);
+  return filterOwnerIdsWithSellItems("user", candidateIds);
 }
 
 /**

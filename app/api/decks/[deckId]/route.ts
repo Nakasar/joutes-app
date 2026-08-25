@@ -110,9 +110,19 @@ export async function PATCH(
       );
     }
 
-    const deck = await updateDeck(deckId, session.user.id, validationResult.data);
+    const { expectedVersion, ...updates } = validationResult.data;
+    const outcome = await updateDeck(deckId, session.user.id, updates, expectedVersion);
 
-    if (!deck) {
+    if (!outcome.ok) {
+      if (outcome.error === "conflict") {
+        // L'état frais accompagne le refus : le client se resynchronise sans
+        // second aller-retour, comme sur un conflit de révision d'échange.
+        return NextResponse.json(
+          { error: "conflict", deck: outcome.deck },
+          { status: 409 }
+        );
+      }
+
       return NextResponse.json(
         { error: "Deck non trouvé ou vous n'avez pas l'autorisation de le modifier" },
         { status: 404 }
@@ -122,7 +132,7 @@ export async function PATCH(
     revalidatePath("/decks");
     revalidatePath(`/decks/${deckId}`);
     revalidatePath(`/decks/${deckId}/edit`);
-    return NextResponse.json(deck);
+    return NextResponse.json(outcome.deck);
   } catch (error) {
     console.error("Error updating deck:", error);
     if (error instanceof Error && error.message.includes("existe déjà")) {

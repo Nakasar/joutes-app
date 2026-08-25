@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, { params }: { params: Params })
     const parsed = voteSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Données invalides", details: parsed.error },
+        { error: "Données invalides", details: parsed.error.flatten() },
         { status: 400 },
       );
     }

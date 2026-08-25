@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DateTime } from "luxon";
 import { LayoutGrid, List, Loader2, Share2 } from "lucide-react";
 import { toast } from "sonner";
@@ -129,6 +129,16 @@ export function DeckEditor({
     [changeQuantity, learnCards, zone]
   );
 
+  /**
+   * Version serveur à jour, y compris juste après un enregistrement.
+   *
+   * Une ref et non un état : elle ne redessine rien, et le prop `deck.version`
+   * ne suffit pas — il ne revient qu'au `router.refresh()`, bien après le
+   * second enregistrement possible. Même mécanique que le `revisionRef` de
+   * l'éditeur d'échange.
+   */
+  const versionRef = useRef(deck.version ?? 1);
+
   const save = async () => {
     setSaving(true);
     try {
@@ -142,15 +152,34 @@ export function DeckEditor({
           // La liste texte suit le contenu structuré : c'est elle que lisent
           // les écrans et les exports qui ne connaissent pas encore les zones.
           decklist: stringifyDeckText(cards, zones, (id) => catalog.get(id)?.name),
+          expectedVersion: versionRef.current,
         }),
       });
 
       const data = await response.json().catch(() => null);
+
+      // Un autre onglet — ou le téléphone — a enregistré depuis l'ouverture de
+      // celui-ci. Rien n'a été écrit : le travail en cours reste à l'écran, et
+      // c'est à son auteur de décider. La version fraîche est adoptée, si bien
+      // qu'un second clic écrase — délibérément, cette fois.
+      if (response.status === 409 && data?.deck) {
+        versionRef.current = data.deck.version ?? versionRef.current;
+        toast.warning("Ce deck a été enregistré ailleurs", {
+          description:
+            "Vos modifications n'ont pas été écrasées. Enregistrez à nouveau pour imposer votre version, ou rechargez la page pour repartir de la sienne.",
+        });
+        return;
+      }
+
       if (!response.ok) {
         toast.error("Enregistrement impossible", {
           description: data?.error ?? "Le deck n'a pas pu être enregistré.",
         });
         return;
+      }
+
+      if (typeof data?.version === "number") {
+        versionRef.current = data.version;
       }
 
       setDirty(false);
