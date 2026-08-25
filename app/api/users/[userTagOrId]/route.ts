@@ -1,31 +1,37 @@
 import { NextResponse } from "next/server";
-import { getUserByTagOrId, toPublicUserProfile } from "@/lib/db/users";
+import { toPublicUserProfile } from "@/lib/db/users";
 import { getAllGames } from "@/lib/db/games";
 import { getLairsByIds } from "@/lib/db/lairs";
 import { getAchievementsForUser } from "@/lib/db/achievements";
+import { getBadgesForUser } from "@/lib/db/user-badges";
+import { countUserFollowers, isFollowingUser } from "@/lib/db/user-followers";
+import { getStreamLinksForUser } from "@/lib/db/stream-links";
+import { authenticateApiRequest } from "@/lib/api/authenticate";
+import { findUserByParam } from "@/lib/api/users";
+import { readUserLinks } from "@/lib/users/links";
+import { readUserShowcaseSections } from "@/lib/users/showcase";
 
 type Params = Promise<{ userTagOrId: string }>;
 
 /**
- * L'URL ne peut pas porter un `#` littéral (délimiteur de fragment), donc les
- * liens vers un profil utilisent `${displayName}${discriminator}` sans
- * séparateur (voir `getSellListOwnerInfo`). On reconstruit le tag ici avant de
- * le passer à `getUserByTagOrId`, qui attend `displayName#discriminator`.
+ * Le profil public d'un compte, dans la forme que sa vitrine demande.
+ *
+ * Ce qui est **toujours** rendu, profil privé compris : le pseudonyme, l'avatar,
+ * la description, les liens, les badges, l'ancienneté et le nombre d'abonnés.
+ * La porte de confidentialité n'est pas une porte d'accès — un profil
+ * inatteignable serait un profil insignalable.
+ *
+ * Ce qui demande `isPublicProfile` : les jeux et lieux suivis, les succès, le
+ * direct en cours. C'était déjà la règle de cette route, elle ne bouge pas.
+ *
+ * `isFollowing` n'a de sens que pour un appelant identifié ; sans session ni
+ * clé d'API, il vaut `false` sans qu'aucune lecture soit faite.
  */
-function resolveUserTagOrId(raw: string): string {
-  if (raw.includes("#") || /^[0-9a-fA-F]{24}$/.test(raw)) {
-    return raw;
-  }
-  const discriminator = raw.slice(-4);
-  const displayName = raw.slice(0, -4);
-  return `${displayName}#${discriminator}`;
-}
-
 export async function GET(request: Request, { params }: { params: Params }) {
   const { userTagOrId } = await params;
 
   try {
-    const user = await getUserByTagOrId(resolveUserTagOrId(decodeURIComponent(userTagOrId)));
+    const user = await findUserByParam(userTagOrId);
     if (!user) {
       return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
     }
@@ -33,7 +39,9 @@ export async function GET(request: Request, { params }: { params: Params }) {
     const profile = toPublicUserProfile(user);
     const isPublic = user.isPublicProfile ?? false;
 
-    const [games, lairs, achievements] = isPublic
+    const viewer = await authenticateApiRequest(request);
+
+    const [games, lairs, achievements, live] = isPublic
       ? await Promise.all([
           getAllGames().then((all) =>
             all
@@ -55,10 +63,44 @@ export async function GET(request: Request, { params }: { params: Params }) {
                 unlockedAt: a.unlockedAt,
               }))
           ),
+          // La destination *est* le réglage : une chaîne liée n'annonce son
+          // direct sur ce profil que si elle le vise explicitement.
+          getStreamLinksForUser(user.id).then(
+            (links) =>
+              links.find(
+                (link) =>
+                  link.live && link.targets.some((t) => t.kind === "user" && t.id === user.id)
+              )?.live ?? null
+          ),
         ])
-      : [[], [], []];
+      : [[], [], [], null];
 
-    return NextResponse.json({ ...profile, games, lairs, achievements });
+    const [badges, followersCount, isFollowing] = await Promise.all([
+      getBadgesForUser(user.id),
+      countUserFollowers(user.id),
+      viewer && viewer.userId !== user.id
+        ? isFollowingUser(user.id, viewer.userId)
+        : Promise.resolve(false),
+    ]);
+
+    return NextResponse.json({
+      ...profile,
+      createdAt: user.createdAt,
+      banner: user.showcase?.banner,
+      showcase: {
+        sections: readUserShowcaseSections(user),
+        links: readUserLinks(user),
+        pinnedDeckId: user.showcase?.pinnedDeckId,
+        playStyles: user.showcase?.playStyles ?? [],
+      },
+      badges,
+      followersCount,
+      isFollowing,
+      live,
+      games,
+      lairs,
+      achievements,
+    });
   } catch (error) {
     console.error("Error fetching user profile:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
