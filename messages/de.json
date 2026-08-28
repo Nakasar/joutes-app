@@ -1151,8 +1151,11 @@
       "errors": {
         "notAuthenticated": "Melden Sie sich an, um einen Ort zu erstellen.",
         "nameRequired": "Der Name des Ortes ist erforderlich.",
+        "nameTooLong": "Der Name des Ortes ist zu lang (höchstens 200 Zeichen).",
         "addressRequired": "Ein öffentlicher Ort muss seine Adresse angeben.",
+        "addressTooLong": "Die Adresse ist zu lang (höchstens 500 Zeichen).",
         "locationRequired": "Wählen Sie die Stadt des Ortes aus den Vorschlägen.",
+        "locationInvalid": "Die Koordinaten dieses Ortes sind ungültig.",
         "websiteInvalid": "Die Website-Adresse ist ungültig.",
         "invalid": "Einige Felder sind ungültig.",
         "tooMany": "Sie haben bereits {max} öffentliche Orte erstellt. Schreiben Sie uns, um einen weiteren zu eröffnen.",

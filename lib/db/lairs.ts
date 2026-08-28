@@ -39,6 +39,7 @@ function toLair(doc: WithId<Document>): Lair {
     banner: doc.banner,
     games: doc.games || [],
     owners: doc.owners || [],
+    createdBy: doc.createdBy,
     eventsSourceUrls: doc.eventsSourceUrls || [],
     eventsSourceInstructions: doc.eventsSourceInstructions,
     location: doc.location,
@@ -59,6 +60,7 @@ function toDocument(lair: Omit<Lair, "id">): Omit<LairDocument, "_id"> {
     banner: lair.banner,
     games: lair.games,
     owners: lair.owners,
+    createdBy: lair.createdBy,
     eventsSourceUrls: lair.eventsSourceUrls || [],
     eventsSourceInstructions: lair.eventsSourceInstructions,
     location: lair.location,
@@ -431,17 +433,24 @@ export async function getLairsOwnedByUser(userId: string): Promise<Lair[]> {
 }
 
 /**
- * Combien de lieux **publics** ce compte possède-t-il ?
+ * Combien de lieux **publics** ce compte a-t-il ouverts ?
  *
  * Sert le plafond de création (`MAX_PUBLIC_LAIRS_PER_OWNER`) : un compte
- * n'ouvre pas l'annuaire à la chaîne. Les lieux privés n'y entrent pas — ils ne
- * paraissent nulle part et ne coûtent rien à personne — et un décompte plutôt
- * qu'une lecture des lieux évite de rapatrier des vitrines entières pour n'en
- * garder que la taille.
+ * n'ouvre pas l'annuaire à la chaîne.
+ *
+ * Le décompte porte sur `createdBy`, et non sur `owners`. La différence n'est
+ * pas cosmétique : compter les lieux **possédés** ferait payer à un gérant les
+ * fiches dont l'équipe lui a confié la gestion — trois boutiques reprises, et
+ * il ne peut plus déclarer la sienne. Ce que le plafond veut borner, c'est
+ * l'ouverture de fiches, pas la charge de travail de quelqu'un.
+ *
+ * Les lieux privés n'y entrent pas — ils ne paraissent nulle part et ne coûtent
+ * rien à personne — et un décompte plutôt qu'une lecture des lieux évite de
+ * rapatrier des vitrines entières pour n'en garder que la taille.
  */
-export async function countPublicLairsOwnedBy(userId: string): Promise<number> {
+export async function countPublicLairsCreatedBy(userId: string): Promise<number> {
   return db.collection(COLLECTION_NAME).countDocuments({
-    owners: userId,
+    createdBy: userId,
     isPrivate: { $ne: true },
   });
 }

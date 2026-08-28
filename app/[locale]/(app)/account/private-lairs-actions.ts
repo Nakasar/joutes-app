@@ -46,8 +46,11 @@ import { generateInvitationCode, isValidInvitationCode } from "@/lib/utils/invit
  */
 const CREATE_ERRORS: Record<CreateLairError | "DUPLICATE", string> = {
   NAME_REQUIRED: "Le nom du lieu est requis",
+  NAME_TOO_LONG: "Le nom du lieu est trop long",
   ADDRESS_REQUIRED: "L'adresse est requise",
+  ADDRESS_TOO_LONG: "L'adresse est trop longue",
   LOCATION_REQUIRED: "La localisation est requise",
+  LOCATION_INVALID: "Les coordonnées sont invalides",
   WEBSITE_INVALID: "L'URL du site web doit être valide",
   INVALID: "Données invalides",
   TOO_MANY: "Vous avez atteint le nombre maximal de lieux publics",

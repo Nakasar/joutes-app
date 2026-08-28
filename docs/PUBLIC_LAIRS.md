@@ -44,9 +44,15 @@ concurrence aucune fiche.
 ### Le plafond par compte
 
 `MAX_PUBLIC_LAIRS_PER_OWNER` (3, dans `lib/lairs/creation.ts`) borne le nombre
-de lieux publics qu'un même compte **possède**. Recevoir la gestion d'un lieu
-existant n'y entre pas — le décompte porte sur `owners`, et un gérant à qui
-l'équipe confie une fiche de plus n'est pas bloqué par ce qu'il a créé.
+de lieux publics qu'un même compte **a ouverts**. Le décompte porte sur
+`createdBy` — le compte qui a créé la fiche —, et non sur `owners`, qui dit qui
+la gère aujourd'hui : compter les lieux possédés ferait payer à un gérant les
+fiches dont l'équipe lui a confié la gestion, et trois boutiques reprises
+l'empêcheraient de déclarer la sienne. Ce que le plafond borne, c'est
+l'ouverture de fiches, pas la charge de travail de quelqu'un.
+
+`createdBy` est absent des lieux créés par l'administration : ils ne se comptent
+contre personne.
 
 ### Le doublon
 
@@ -84,7 +90,12 @@ une simple requête de création.
 - **`lib/lairs/creation.ts`** — les règles, sans base ni session : plafond,
   rayon du doublon, réduction d'un nom (`normalizeLairName`), distance de
   haversine (`distanceKm`), reconnaissance d'un doublon (`findDuplicateLair`),
-  et la conversion en GeoJSON (`toLairLocation`, longitude d'abord).
+  la conversion en GeoJSON (`toLairLocation`, longitude d'abord) et la
+  validation de la charge (`validateLairCreation`). Cette dernière distingue un
+  champ **absent** d'un champ **fautif** — `NAME_REQUIRED` contre
+  `NAME_TOO_LONG`, `LOCATION_REQUIRED` contre `LOCATION_INVALID` — parce
+  qu'annoncer « le nom est requis » à qui vient d'en saisir un de trois cents
+  caractères ne lui dit pas ce qu'il doit corriger.
 - **`lib/lairs/creation.test.ts`** — leurs cas (`npm run test`).
 - **`lib/lairs/create.ts`** — `createLairForUser`, le cœur partagé de la
   création : validation, gardes, écriture, abonnement du créateur. Hors d'un
@@ -93,14 +104,19 @@ une simple requête de création.
   session, délégation, purge des pages. Rend des **codes** de refus, l'annuaire
   étant traduit en quatre langues.
 - **`app/[locale]/(app)/lairs/CreateLairButton.tsx`** — le dialogue, qui
-  remplace `CreatePrivateLairButton`.
+  remplace `CreatePrivateLairButton`. Le choix de visibilité est un vrai
+  `radiogroup` : un seul de ses deux boutons est atteint par la tabulation, et
+  les flèches y circulent en emportant la sélection.
 
 ### Modifiés
 
 - **`lib/schemas/lair.schema.ts`** — `lairCreationSchema` : ce qu'un joueur
   envoie, et lui seul ; l'adresse et la localisation exigées pour un lieu
   public.
-- **`lib/db/lairs.ts`** — `countPublicLairsOwnedBy`, `findPublicLairsByName`.
+- **`lib/db/lairs.ts`** — `countPublicLairsCreatedBy`, `findPublicLairsByName`,
+  et `createdBy` porté par `toLair` / `toDocument`.
+- **`lib/types/Lair.ts`** — `createdBy`, la trace du compte qui a ouvert la
+  fiche.
 - **`app/[locale]/(app)/lairs/page.tsx`** — le bouton « Ajouter un lieu ».
 - **`app/[locale]/(app)/account/private-lairs-actions.ts`** —
   `createPrivateLair` délègue désormais à `createLairForUser` : une seule

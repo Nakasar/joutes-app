@@ -7,6 +7,7 @@ import {
   isSameLairName,
   normalizeLairName,
   toLairLocation,
+  validateLairCreation,
 } from "./creation";
 import type { GeoJSONPoint } from "@/lib/types/Lair";
 
@@ -101,6 +102,85 @@ describe("toLairLocation", () => {
 
   it("rend undefined quand le formulaire n'a pas situé le lieu", () => {
     assert.equal(toLairLocation(undefined), undefined);
+  });
+});
+
+describe("validateLairCreation", () => {
+  const publicInput = {
+    name: "L'Antre-Temps",
+    visibility: "public" as const,
+    address: "12 rue de la Joute, 69001 Lyon",
+    location: { latitude: 45.764, longitude: 4.8357 },
+  };
+
+  it("accepte un lieu public complet", () => {
+    const result = validateLairCreation(publicInput);
+
+    assert.equal(result.success, true);
+    assert.equal(result.success && result.data.name, "L'Antre-Temps");
+  });
+
+  it("accepte un lieu privé réduit à son nom", () => {
+    assert.equal(validateLairCreation({ name: "Chez moi", visibility: "private" }).success, true);
+  });
+
+  it("exige du public une adresse et un point sur la carte", () => {
+    assert.deepEqual(validateLairCreation({ ...publicInput, address: "  " }), {
+      success: false,
+      error: "ADDRESS_REQUIRED",
+    });
+    assert.deepEqual(validateLairCreation({ ...publicInput, location: undefined }), {
+      success: false,
+      error: "LOCATION_REQUIRED",
+    });
+  });
+
+  it("distingue un champ absent d'un champ fautif", () => {
+    // Le grief de Copilot : « nom requis » sur un nom bien présent mais trop
+    // long n'apprend rien à qui vient de le saisir.
+    assert.deepEqual(validateLairCreation({ ...publicInput, name: "" }), {
+      success: false,
+      error: "NAME_REQUIRED",
+    });
+    assert.deepEqual(validateLairCreation({ ...publicInput, name: "x".repeat(201) }), {
+      success: false,
+      error: "NAME_TOO_LONG",
+    });
+    assert.deepEqual(validateLairCreation({ ...publicInput, address: "x".repeat(501) }), {
+      success: false,
+      error: "ADDRESS_TOO_LONG",
+    });
+  });
+
+  it("sépare un point absent d'une coordonnée hors du globe", () => {
+    assert.deepEqual(
+      validateLairCreation({ ...publicInput, location: { latitude: 91, longitude: 4.8357 } }),
+      { success: false, error: "LOCATION_INVALID" }
+    );
+    assert.deepEqual(
+      validateLairCreation({ ...publicInput, location: { latitude: 45.764, longitude: 181 } }),
+      { success: false, error: "LOCATION_INVALID" }
+    );
+  });
+
+  it("refuse une URL de site web qui n'en est pas une", () => {
+    assert.deepEqual(validateLairCreation({ ...publicInput, website: "pas une url" }), {
+      success: false,
+      error: "WEBSITE_INVALID",
+    });
+  });
+
+  it("refuse une visibilité inconnue sans prétendre nommer un champ", () => {
+    assert.deepEqual(validateLairCreation({ name: "Ailleurs", visibility: "secret" }), {
+      success: false,
+      error: "INVALID",
+    });
+  });
+
+  it("rogne le nom et l'adresse plutôt que de les prendre tels quels", () => {
+    const result = validateLairCreation({ ...publicInput, name: "  Le Repaire  " });
+
+    assert.equal(result.success && result.data.name, "Le Repaire");
   });
 });
 

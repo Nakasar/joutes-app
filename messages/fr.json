@@ -1151,8 +1151,11 @@
       "errors": {
         "notAuthenticated": "Connectez-vous pour créer un lieu.",
         "nameRequired": "Le nom du lieu est requis.",
+        "nameTooLong": "Le nom du lieu est trop long (200 caractères au plus).",
         "addressRequired": "Un lieu public doit indiquer son adresse.",
+        "addressTooLong": "L'adresse est trop longue (500 caractères au plus).",
         "locationRequired": "Choisissez la ville du lieu dans la liste des propositions.",
+        "locationInvalid": "Les coordonnées de cette localité sont invalides.",
         "websiteInvalid": "L'adresse du site web est invalide.",
         "invalid": "Certains champs sont invalides.",
         "tooMany": "Vous avez déjà créé {max} lieux publics. Écrivez-nous pour en ouvrir un de plus.",

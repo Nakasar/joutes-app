@@ -1151,8 +1151,11 @@
       "errors": {
         "notAuthenticated": "Accedi per creare un luogo.",
         "nameRequired": "Il nome del luogo è obbligatorio.",
+        "nameTooLong": "Il nome del luogo è troppo lungo (massimo 200 caratteri).",
         "addressRequired": "Un luogo pubblico deve indicare il proprio indirizzo.",
+        "addressTooLong": "L'indirizzo è troppo lungo (massimo 500 caratteri).",
         "locationRequired": "Scegli la città del luogo tra i suggerimenti.",
+        "locationInvalid": "Le coordinate di questa località non sono valide.",
         "websiteInvalid": "L'indirizzo del sito web non è valido.",
         "invalid": "Alcuni campi non sono validi.",
         "tooMany": "Hai già creato {max} luoghi pubblici. Scrivici per aprirne un altro.",

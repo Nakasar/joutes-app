@@ -1,3 +1,4 @@
+import { lairCreationSchema, type LairCreationInput } from "@/lib/schemas/lair.schema";
 import type { GeoJSONPoint, Lair } from "@/lib/types/Lair";
 
 /**
@@ -104,6 +105,70 @@ export function toLairLocation(
   }
 
   return { type: "Point", coordinates: [coordinates.longitude, coordinates.latitude] };
+}
+
+/**
+ * Ce que la validation d'une création peut refuser, en codes.
+ *
+ * Un champ **absent** et un champ **fautif** ne portent pas le même code, et
+ * c'est tout l'objet de cette liste : annoncer « le nom du lieu est requis » à
+ * qui vient d'en saisir un de trois cents caractères ne lui dit rien de ce
+ * qu'il doit corriger, et il le retapera à l'identique.
+ */
+export type LairCreationIssue =
+  | "NAME_REQUIRED"
+  | "NAME_TOO_LONG"
+  | "ADDRESS_REQUIRED"
+  | "ADDRESS_TOO_LONG"
+  | "LOCATION_REQUIRED"
+  | "LOCATION_INVALID"
+  | "WEBSITE_INVALID"
+  | "INVALID";
+
+/** Le premier grief de Zod, traduit en code de refus. */
+function toIssueCode(issue: { path: PropertyKey[]; code: string }): LairCreationIssue {
+  const [field] = issue.path;
+
+  switch (field) {
+    case "name":
+      return issue.code === "too_big" ? "NAME_TOO_LONG" : "NAME_REQUIRED";
+    case "address":
+      return issue.code === "too_big" ? "ADDRESS_TOO_LONG" : "ADDRESS_REQUIRED";
+    case "location":
+      // Le `superRefine` du schéma — et lui seul — signale l'absence de point,
+      // par un grief `custom` posé sur `location`. Tout le reste désigne un
+      // point bien présent mais faux : une latitude hors du globe, une charge
+      // malformée, et le chemin porte alors la sous-clé fautive.
+      return issue.code === "custom" ? "LOCATION_REQUIRED" : "LOCATION_INVALID";
+    case "website":
+      return "WEBSITE_INVALID";
+    default:
+      return "INVALID";
+  }
+}
+
+/**
+ * La charge d'une création, validée — ou le premier champ qui cloche.
+ *
+ * Ici plutôt que dans `lib/lairs/create.ts` pour que ces cas se testent : le
+ * cœur de création ouvre la base dès son import, quand cette fonction-ci ne
+ * dépend que du schéma.
+ */
+export function validateLairCreation(
+  input: unknown
+): { success: true; data: LairCreationInput } | { success: false; error: LairCreationIssue } {
+  const parsed = lairCreationSchema.safeParse(input);
+
+  if (parsed.success) {
+    return { success: true, data: parsed.data };
+  }
+
+  const issue = parsed.error.issues[0];
+
+  return {
+    success: false,
+    error: issue ? toIssueCode(issue) : "INVALID",
+  };
 }
 
 /** Le lieu candidat, réduit à ce dont la comparaison a besoin. */

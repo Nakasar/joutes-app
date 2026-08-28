@@ -1151,8 +1151,11 @@
       "errors": {
         "notAuthenticated": "Sign in to create a venue.",
         "nameRequired": "The venue name is required.",
+        "nameTooLong": "The venue name is too long (200 characters at most).",
         "addressRequired": "A public venue must state its address.",
+        "addressTooLong": "The address is too long (500 characters at most).",
         "locationRequired": "Pick the venue's city from the suggestions.",
+        "locationInvalid": "This location's coordinates are invalid.",
         "websiteInvalid": "The website address is invalid.",
         "invalid": "Some fields are invalid.",
         "tooMany": "You have already created {max} public venues. Write to us to open one more.",

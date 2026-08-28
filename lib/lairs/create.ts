@@ -1,13 +1,18 @@
 import {
-  countPublicLairsOwnedBy,
+  countPublicLairsCreatedBy,
   createLair as insertLair,
   findPublicLairsByName,
 } from "@/lib/db/lairs";
 import { addLairToUser } from "@/lib/db/users";
-import { lairCreationSchema } from "@/lib/schemas/lair.schema";
 import type { Lair } from "@/lib/types/Lair";
 import { generateInvitationCode } from "@/lib/utils/invitation-codes";
-import { MAX_PUBLIC_LAIRS_PER_OWNER, findDuplicateLair, toLairLocation } from "./creation";
+import {
+  MAX_PUBLIC_LAIRS_PER_OWNER,
+  findDuplicateLair,
+  toLairLocation,
+  validateLairCreation,
+  type LairCreationIssue,
+} from "./creation";
 
 /**
  * L'ouverture d'un lieu par un joueur — publique ou privée.
@@ -26,15 +31,14 @@ import { MAX_PUBLIC_LAIRS_PER_OWNER, findDuplicateLair, toLairLocation } from ".
  * rendre écrivables par la seule requête de création, avant tout contrôle.
  */
 
-/** Les refus de la création, en codes — l'écran les traduit. */
-export type CreateLairError =
-  | "NAME_REQUIRED"
-  | "ADDRESS_REQUIRED"
-  | "LOCATION_REQUIRED"
-  | "WEBSITE_INVALID"
-  | "INVALID"
-  | "TOO_MANY"
-  | "FAILED";
+/**
+ * Les refus de la création, en codes — l'écran les traduit.
+ *
+ * Les griefs de validation viennent tels quels de `validateLairCreation`, qui
+ * distingue un champ absent d'un champ fautif ; s'y ajoutent les deux refus que
+ * seule la base peut prononcer, et la panne.
+ */
+export type CreateLairError = LairCreationIssue | "TOO_MANY" | "FAILED";
 
 export type CreateLairResult =
   | { success: true; lair: Lair }
@@ -54,30 +58,14 @@ export type CreateLairInput = {
   location?: { latitude: number; longitude: number };
 };
 
-/** Le champ que la validation a refusé, traduit en code de refus. */
-function toValidationError(path: PropertyKey | undefined): CreateLairError {
-  switch (path) {
-    case "name":
-      return "NAME_REQUIRED";
-    case "address":
-      return "ADDRESS_REQUIRED";
-    case "location":
-      return "LOCATION_REQUIRED";
-    case "website":
-      return "WEBSITE_INVALID";
-    default:
-      return "INVALID";
-  }
-}
-
 export async function createLairForUser(
   userId: string,
   input: CreateLairInput
 ): Promise<CreateLairResult> {
-  const parsed = lairCreationSchema.safeParse(input);
+  const parsed = validateLairCreation(input);
 
   if (!parsed.success) {
-    return { success: false, error: toValidationError(parsed.error.issues[0]?.path[0]) };
+    return { success: false, error: parsed.error };
   }
 
   const data = parsed.data;
@@ -89,8 +77,8 @@ export async function createLairForUser(
       // Les deux gardes ne valent que pour l'annuaire : un lieu privé ne paraît
       // nulle part, ne concurrence aucune fiche et n'a donc ni plafond ni
       // doublon à craindre.
-      const owned = await countPublicLairsOwnedBy(userId);
-      if (owned >= MAX_PUBLIC_LAIRS_PER_OWNER) {
+      const created = await countPublicLairsCreatedBy(userId);
+      if (created >= MAX_PUBLIC_LAIRS_PER_OWNER) {
         return { success: false, error: "TOO_MANY" };
       }
 
@@ -121,6 +109,10 @@ export async function createLairForUser(
       games: [],
       eventsSourceUrls: [],
       owners: [userId],
+      // Qui a ouvert la fiche, et non pas seulement qui la gère aujourd'hui :
+      // c'est sur cette trace que porte le plafond, de sorte que recevoir la
+      // gestion d'un lieu existant n'entame pas le droit d'en ouvrir un.
+      createdBy: userId,
     });
 
     // Le créateur suit son propre lieu : c'est ce qui fait remonter ses

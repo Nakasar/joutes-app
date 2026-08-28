@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Link, useRouter } from "@/i18n/navigation.ts";
 import { createLairAction, type CreateLairActionResult } from "./create-actions.ts";
 import { MAX_PUBLIC_LAIRS_PER_OWNER } from "@/lib/lairs/creation.ts";
@@ -37,7 +37,14 @@ import { cn } from "@/lib/utils.ts";
  * seul endroit qui connaisse la langue de la page.
  */
 
-type Visibility = "public" | "private";
+/**
+ * Les deux choix, dans l'ordre où le clavier les parcourt. Une liste, et non
+ * deux `if` : c'est elle qui donne au `radiogroup` son voisin suivant et son
+ * voisin précédent.
+ */
+const VISIBILITIES = ["public", "private"] as const;
+
+type Visibility = (typeof VISIBILITIES)[number];
 
 /** Les refus de l'action, et la clé qui les dit dans la langue de la page. */
 const ERROR_KEYS: Record<
@@ -46,8 +53,11 @@ const ERROR_KEYS: Record<
 > = {
   NOT_AUTHENTICATED: "errors.notAuthenticated",
   NAME_REQUIRED: "errors.nameRequired",
+  NAME_TOO_LONG: "errors.nameTooLong",
   ADDRESS_REQUIRED: "errors.addressRequired",
+  ADDRESS_TOO_LONG: "errors.addressTooLong",
   LOCATION_REQUIRED: "errors.locationRequired",
+  LOCATION_INVALID: "errors.locationInvalid",
   WEBSITE_INVALID: "errors.websiteInvalid",
   INVALID: "errors.invalid",
   TOO_MANY: "errors.tooMany",
@@ -62,6 +72,12 @@ export default function CreateLairButton() {
   const [isOpen, setIsOpen] = useState(false);
 
   const [visibility, setVisibility] = useState<Visibility>("public");
+  /**
+   * Les deux boutons du choix de visibilité, pour que les flèches y déplacent
+   * réellement le focus : un `radiogroup` dont on ne peut pas changer d'option
+   * au clavier annonce aux lecteurs d'écran une navigation qui n'existe pas.
+   */
+  const visibilityRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [website, setWebsite] = useState("");
@@ -87,6 +103,30 @@ export default function CreateLairButton() {
     setLocation(null);
     setError(null);
     setDuplicate(null);
+  };
+
+  const selectVisibility = (value: Visibility) => {
+    setVisibility(value);
+    setError(null);
+    setDuplicate(null);
+  };
+
+  /**
+   * Les flèches circulent d'une option à l'autre, comme dans tout groupe de
+   * boutons radio : la sélection suit le focus, et le parcours boucle.
+   */
+  const handleVisibilityKeyDown = (event: React.KeyboardEvent, index: number) => {
+    const forward = event.key === "ArrowRight" || event.key === "ArrowDown";
+    const backward = event.key === "ArrowLeft" || event.key === "ArrowUp";
+
+    if (!forward && !backward) {
+      return;
+    }
+
+    event.preventDefault();
+    const next = (index + (forward ? 1 : -1) + VISIBILITIES.length) % VISIBILITIES.length;
+    selectVisibility(VISIBILITIES[next]);
+    visibilityRefs.current[next]?.focus();
   };
 
   const handlePlaceSelect = (place: Place) => {
@@ -196,22 +236,27 @@ export default function CreateLairButton() {
                 libre côte à côte doivent pouvoir passer l'une sous l'autre sur
                 un téléphone plutôt qu'élargir le dialogue. */}
             <div role="radiogroup" aria-label={t("visibility.label")} className="grid gap-3 sm:grid-cols-2">
-              {(["public", "private"] as const).map((value) => {
+              {VISIBILITIES.map((value, index) => {
                 const selected = visibility === value;
                 const Icon = value === "public" ? Globe : Lock;
 
                 return (
                   <button
                     key={value}
+                    ref={(node) => {
+                      visibilityRefs.current[index] = node;
+                    }}
                     type="button"
                     role="radio"
                     aria-checked={selected}
+                    // Un seul des deux boutons est atteint par la tabulation —
+                    // celui qui est choisi. C'est ce qui fait qu'un groupe radio
+                    // compte pour un arrêt, et non pour autant d'arrêts que
+                    // d'options.
+                    tabIndex={selected ? 0 : -1}
                     disabled={isPending}
-                    onClick={() => {
-                      setVisibility(value);
-                      setError(null);
-                      setDuplicate(null);
-                    }}
+                    onKeyDown={(event) => handleVisibilityKeyDown(event, index)}
+                    onClick={() => selectVisibility(value)}
                     className={cn(
                       "rounded-lg border p-3 text-left transition-colors",
                       "disabled:cursor-not-allowed disabled:opacity-60",

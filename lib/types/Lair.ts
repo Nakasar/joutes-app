@@ -182,6 +182,20 @@ export type Lair = {
   games: Game['id'][];
 
   owners: User['id'][];
+
+  /**
+   * Le compte qui a ouvert la fiche, quand elle vient de l'application.
+   *
+   * Distinct de `owners`, qui dit qui la gère **aujourd'hui** : c'est sur cette
+   * trace que porte le plafond de lieux publics, de sorte que recevoir la
+   * gestion d'un lieu existant n'entame pas le droit d'en ouvrir un. Absent des
+   * lieux créés par l'administration, qui ne se comptent contre personne.
+   *
+   * Sort avec le lieu comme `owners`, dont le créateur fait partie : rien n'y
+   * est divulgué que la liste des propriétaires ne dise déjà.
+   */
+  createdBy?: User['id'];
+
   
   eventsSourceUrls?: EventSource[];
   
