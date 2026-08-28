@@ -1117,19 +1117,51 @@
       "title": "Luoghi di gioco",
       "description": "Scopri tutti i luoghi di gioco e i loro prossimi eventi"
     },
-    "createPrivate": {
-      "trigger": "Crea un luogo privato",
-      "title": "Crea un luogo privato",
-      "description": "I luoghi privati sono visibili solo agli utenti che inviti tramite un codice QR unico.",
-      "nameLabel": "Nome del luogo *",
-      "namePlaceholder": "Il mio luogo di gioco",
-      "addressLabel": "Indirizzo (facoltativo)",
-      "addressPlaceholder": "123 Via Roma",
+    "create": {
+      "trigger": "Aggiungi un luogo",
+      "title": "Aggiungi un luogo di gioco",
+      "description": "Crea la scheda del luogo in cui giochi: un negozio, un'associazione, un club — o un tavolo tra amici.",
+      "visibility": {
+        "label": "Tipo di luogo",
+        "public": {
+          "title": "Luogo pubblico",
+          "description": "Visibile a tutti nell'elenco, con la sua pagina e il suo calendario."
+        },
+        "private": {
+          "title": "Luogo privato",
+          "description": "Visibile solo ai giocatori che inviti tramite un codice QR."
+        }
+      },
+      "publicNotice": "Diventi il gestore di questo luogo: orari, giochi, calendario e annunci si impostano poi dalla pagina di gestione. Crea solo luoghi reali, e uno solo per indirizzo.",
+      "fields": {
+        "name": "Nome del luogo",
+        "address": "Indirizzo",
+        "addressOptional": "Indirizzo (facoltativo)",
+        "city": "Città",
+        "cityHint": "Colloca il luogo sulla mappa: è ciò che lo fa comparire nella ricerca nei dintorni.",
+        "website": "Sito web (facoltativo)"
+      },
+      "placeholders": {
+        "name": "La Tana del Drago",
+        "address": "Via Roma 12, 20121 Milano",
+        "website": "https://esempio.it"
+      },
       "cancel": "Annulla",
-      "create": "Crea",
-      "nameRequired": "Il nome del luogo è obbligatorio",
+      "submit": "Crea il luogo",
       "errors": {
-        "createFailed": "Si è verificato un errore durante la creazione del luogo"
+        "notAuthenticated": "Accedi per creare un luogo.",
+        "nameRequired": "Il nome del luogo è obbligatorio.",
+        "nameTooLong": "Il nome del luogo è troppo lungo (massimo 200 caratteri).",
+        "addressRequired": "Un luogo pubblico deve indicare il proprio indirizzo.",
+        "addressTooLong": "L'indirizzo è troppo lungo (massimo 500 caratteri).",
+        "locationRequired": "Scegli la città del luogo tra i suggerimenti.",
+        "locationInvalid": "Le coordinate di questa località non sono valide.",
+        "websiteInvalid": "L'indirizzo del sito web non è valido.",
+        "invalid": "Alcuni campi non sono validi.",
+        "tooMany": "Hai già creato {max} luoghi pubblici. Scrivici per aprirne un altro.",
+        "duplicate": "«{name}» esiste già in questo posto. Se è il tuo luogo, chiedi al team la sua gestione.",
+        "duplicateAction": "Vedi questo luogo",
+        "failed": "Creazione non riuscita. Riprova tra un istante."
       }
     },
     "filters": {

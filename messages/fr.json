@@ -1117,19 +1117,51 @@
       "title": "Lieux de jeu",
       "description": "Découvrez tous les lieux de jeu et leurs événements à venir"
     },
-    "createPrivate": {
-      "trigger": "Créer un lieu privé",
-      "title": "Créer un lieu privé",
-      "description": "Les lieux privés ne sont visibles que par les utilisateurs que vous invitez via un code QR unique.",
-      "nameLabel": "Nom du lieu *",
-      "namePlaceholder": "Mon lieu de jeu",
-      "addressLabel": "Adresse (optionnelle)",
-      "addressPlaceholder": "123 rue de la Paix",
+    "create": {
+      "trigger": "Ajouter un lieu",
+      "title": "Ajouter un lieu de jeu",
+      "description": "Créez la fiche du lieu où vous jouez : une boutique, une association, un club — ou une table entre amis.",
+      "visibility": {
+        "label": "Type de lieu",
+        "public": {
+          "title": "Lieu public",
+          "description": "Visible par tout le monde dans l'annuaire, avec sa page et son agenda."
+        },
+        "private": {
+          "title": "Lieu privé",
+          "description": "Visible seulement par les joueurs que vous invitez avec un QR code."
+        }
+      },
+      "publicNotice": "Vous devenez le gérant de ce lieu : horaires, jeux, agenda et annonces se règlent ensuite depuis sa page de gestion. Ne créez que des lieux réels, et un seul par endroit.",
+      "fields": {
+        "name": "Nom du lieu",
+        "address": "Adresse",
+        "addressOptional": "Adresse (optionnelle)",
+        "city": "Ville",
+        "cityHint": "Situe le lieu sur la carte : c'est ce qui le fait apparaître dans la recherche autour de soi.",
+        "website": "Site web (optionnel)"
+      },
+      "placeholders": {
+        "name": "L'Antre-Temps",
+        "address": "12 rue de la Joute, 69001 Lyon",
+        "website": "https://exemple.com"
+      },
       "cancel": "Annuler",
-      "create": "Créer",
-      "nameRequired": "Le nom du lieu est requis",
+      "submit": "Créer le lieu",
       "errors": {
-        "createFailed": "Une erreur est survenue lors de la création du lieu"
+        "notAuthenticated": "Connectez-vous pour créer un lieu.",
+        "nameRequired": "Le nom du lieu est requis.",
+        "nameTooLong": "Le nom du lieu est trop long (200 caractères au plus).",
+        "addressRequired": "Un lieu public doit indiquer son adresse.",
+        "addressTooLong": "L'adresse est trop longue (500 caractères au plus).",
+        "locationRequired": "Choisissez la ville du lieu dans la liste des propositions.",
+        "locationInvalid": "Les coordonnées de cette localité sont invalides.",
+        "websiteInvalid": "L'adresse du site web est invalide.",
+        "invalid": "Certains champs sont invalides.",
+        "tooMany": "Vous avez déjà créé {max} lieux publics. Écrivez-nous pour en ouvrir un de plus.",
+        "duplicate": "« {name} » existe déjà à cet endroit. Si c'est votre lieu, demandez-en la gestion à l'équipe.",
+        "duplicateAction": "Voir ce lieu",
+        "failed": "La création a échoué. Réessayez dans un instant."
       }
     },
     "filters": {

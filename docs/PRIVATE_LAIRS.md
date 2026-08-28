@@ -10,7 +10,7 @@ Les utilisateurs peuvent maintenant créer leurs propres lairs privés avec des 
 
 ### Création de lairs privés
 
-Les utilisateurs peuvent créer des lairs privés depuis **la page `/lairs`** via le bouton "Créer un lieu privé" visible uniquement pour les utilisateurs connectés.
+Les utilisateurs peuvent créer des lairs privés depuis **la page `/lairs`** via le bouton "Ajouter un lieu", visible uniquement pour les utilisateurs connectés. Le dialogue sert les deux sortes de lieux : le choix « Lieu privé » ouvre le formulaire décrit ici, « Lieu public » celui de [PUBLIC_LAIRS.md](./PUBLIC_LAIRS.md).
 
 #### Caractéristiques de création :
 - **Nom du lieu** (requis)
@@ -158,8 +158,8 @@ lairSchema.superRefine((data, ctx) => {
    - `regenerateInvitationCodeAction()` : Régénérer le code d'invitation
    - `acceptInvitationAction()` : Accepter une invitation
 
-3. **`app/lairs/CreatePrivateLairButton.tsx`**
-   - Composant client pour le bouton et dialogue de création
+3. **`app/lairs/CreateLairButton.tsx`** (anciennement `CreatePrivateLairButton.tsx`)
+   - Composant client pour le bouton et dialogue de création, privé ou public
    - Interface de création avec formulaire
    - Redirection vers le lair créé après succès
 

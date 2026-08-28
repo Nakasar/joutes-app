@@ -123,3 +123,55 @@ export const lairDetailsSchema = z.object({
 export const lairIdSchema = objectIdSchema;
 
 export type LairInput = z.infer<typeof lairSchema>;
+
+/**
+ * Ce qu'un joueur envoie pour ouvrir un lieu, public ou privé.
+ *
+ * Un schéma à part de `lairSchema`, qui décrit ce que l'administration écrit :
+ * la création par un compte ordinaire ne touche ni aux sources d'événements, ni
+ * à la bannière, ni aux jeux — ce sont des champs de l'écran de gestion, et les
+ * accepter ici les rendrait écrivables par la seule requête de création.
+ *
+ * La localisation arrive en latitude / longitude, dans l'ordre où le champ de
+ * recherche de localité la rend ; c'est `toLairLocation` qui la retourne en
+ * GeoJSON. Faire porter l'inversion au client aurait mis l'erreur la plus facile
+ * à commettre du côté que le serveur ne contrôle pas.
+ *
+ * Les deux exigences propres au public — une adresse et un point sur la carte —
+ * ne sont pas de la paperasse : sans elles, le lieu n'est trouvable ni dans
+ * l'annuaire, ni par la recherche autour de soi, c'est-à-dire nulle part.
+ */
+export const lairCreationSchema = z.object({
+  name: z.string().trim().min(1, "Le nom du lieu est requis").max(200, "Le nom est trop long"),
+  visibility: z.enum(["public", "private"]),
+  address: z.string().trim().max(500, "L'adresse est trop longue").optional(),
+  website: z.url("L'URL du site web doit être valide").optional(),
+  location: z
+    .object({
+      latitude: z.number().min(-90, "La latitude doit être entre -90 et 90").max(90, "La latitude doit être entre -90 et 90"),
+      longitude: z.number().min(-180, "La longitude doit être entre -180 et 180").max(180, "La longitude doit être entre -180 et 180"),
+    })
+    .optional(),
+}).superRefine((data, ctx) => {
+  if (data.visibility !== "public") {
+    return;
+  }
+
+  if (!data.address) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Un lieu public doit indiquer son adresse",
+      path: ["address"],
+    });
+  }
+
+  if (!data.location) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Un lieu public doit être situé sur la carte",
+      path: ["location"],
+    });
+  }
+});
+
+export type LairCreationInput = z.infer<typeof lairCreationSchema>;

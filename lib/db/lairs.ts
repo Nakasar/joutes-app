@@ -39,6 +39,7 @@ function toLair(doc: WithId<Document>): Lair {
     banner: doc.banner,
     games: doc.games || [],
     owners: doc.owners || [],
+    createdBy: doc.createdBy,
     eventsSourceUrls: doc.eventsSourceUrls || [],
     eventsSourceInstructions: doc.eventsSourceInstructions,
     location: doc.location,
@@ -59,6 +60,7 @@ function toDocument(lair: Omit<Lair, "id">): Omit<LairDocument, "_id"> {
     banner: lair.banner,
     games: lair.games,
     owners: lair.owners,
+    createdBy: lair.createdBy,
     eventsSourceUrls: lair.eventsSourceUrls || [],
     eventsSourceInstructions: lair.eventsSourceInstructions,
     location: lair.location,
@@ -427,6 +429,54 @@ export async function getLairIdsNearLocation(
 export async function getLairsOwnedByUser(userId: string): Promise<Lair[]> {
   
   const lairs = await db.collection(COLLECTION_NAME).find({ owners: userId }).toArray();
+  return lairs.map(toLair);
+}
+
+/**
+ * Combien de lieux **publics** ce compte a-t-il ouverts ?
+ *
+ * Sert le plafond de création (`MAX_PUBLIC_LAIRS_PER_OWNER`) : un compte
+ * n'ouvre pas l'annuaire à la chaîne.
+ *
+ * Le décompte porte sur `createdBy`, et non sur `owners`. La différence n'est
+ * pas cosmétique : compter les lieux **possédés** ferait payer à un gérant les
+ * fiches dont l'équipe lui a confié la gestion — trois boutiques reprises, et
+ * il ne peut plus déclarer la sienne. Ce que le plafond veut borner, c'est
+ * l'ouverture de fiches, pas la charge de travail de quelqu'un.
+ *
+ * Les lieux privés n'y entrent pas — ils ne paraissent nulle part et ne coûtent
+ * rien à personne — et un décompte plutôt qu'une lecture des lieux évite de
+ * rapatrier des vitrines entières pour n'en garder que la taille.
+ */
+export async function countPublicLairsCreatedBy(userId: string): Promise<number> {
+  return db.collection(COLLECTION_NAME).countDocuments({
+    createdBy: userId,
+    isPrivate: { $ne: true },
+  });
+}
+
+/**
+ * Les lieux publics qui portent déjà ce nom, à la casse et aux accents près.
+ *
+ * La collation de force 1 fait le gros du travail côté base — « L'ANTRE » et
+ * « l'antre » y sont le même mot —, `alternate: "shifted"` écarte en plus la
+ * ponctuation et les espaces. Ce que la base rend est un **candidat**, pas un
+ * verdict : `findDuplicateLair` tranche ensuite sur le nom réduit et sur la
+ * distance, deux enseignes homonymes à 500 km n'étant pas un doublon.
+ *
+ * L'index par défaut de la collection n'a pas cette collation : la requête
+ * balaie donc les lieux. C'est assumé — l'annuaire compte quelques centaines
+ * d'entrées, et cette lecture n'a lieu qu'à la création d'un lieu public.
+ */
+export async function findPublicLairsByName(name: string): Promise<Lair[]> {
+  const lairs = await db
+    .collection(COLLECTION_NAME)
+    .find(
+      { name, isPrivate: { $ne: true } },
+      { collation: { locale: "fr", strength: 1, alternate: "shifted" } }
+    )
+    .toArray();
+
   return lairs.map(toLair);
 }
 
