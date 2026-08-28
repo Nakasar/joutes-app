@@ -6,7 +6,7 @@ import { connection } from "next/server";
 import { Metadata } from "next";
 import { Suspense } from "react";
 import { MapPin } from "lucide-react";
-import CreatePrivateLairButton from "./CreatePrivateLairButton.tsx";
+import CreateLairButton from "./CreateLairButton.tsx";
 import LairsClient from "./LairsClient.tsx";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ContentListSkeleton } from "@/components/ContentListSkeleton.tsx";
@@ -60,7 +60,7 @@ export default async function LairsPage({
           {/* Pas de silhouette : ce bouton ne s'affiche qu'aux comptes
               connectés, et lui réserver sa place la ferait sauter aux autres. */}
           <Suspense fallback={null}>
-            <PrivateLairButton />
+            <AddLairButton />
           </Suspense>
         </div>
 
@@ -72,11 +72,15 @@ export default async function LairsPage({
   );
 }
 
-async function PrivateLairButton() {
+/**
+ * Ouvrir un lieu — public ou privé — demande un compte : le créateur en devient
+ * le gérant, et un lieu sans personne à qui répondre n'a pas de gérant du tout.
+ */
+async function AddLairButton() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) return null;
 
-  return <CreatePrivateLairButton />;
+  return <CreateLairButton />;
 }
 
 async function LairsList({ searchParams }: { searchParams: SearchParams }) {

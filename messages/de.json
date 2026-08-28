@@ -1117,19 +1117,48 @@
       "title": "Spielorte",
       "description": "Entdecke alle Spielorte und ihre kommenden Veranstaltungen"
     },
-    "createPrivate": {
-      "trigger": "Einen privaten Ort erstellen",
-      "title": "Einen privaten Ort erstellen",
-      "description": "Private Orte sind nur für Benutzer sichtbar, die Sie über einen eindeutigen QR-Code einladen.",
-      "nameLabel": "Name des Ortes *",
-      "namePlaceholder": "Mein Spielort",
-      "addressLabel": "Adresse (optional)",
-      "addressPlaceholder": "123 Musterstraße",
+    "create": {
+      "trigger": "Ort hinzufügen",
+      "title": "Einen Spielort hinzufügen",
+      "description": "Erstellen Sie die Seite des Ortes, an dem Sie spielen: ein Laden, ein Verein, ein Club — oder ein Tisch unter Freunden.",
+      "visibility": {
+        "label": "Art des Ortes",
+        "public": {
+          "title": "Öffentlicher Ort",
+          "description": "Für alle im Verzeichnis sichtbar, mit eigener Seite und eigenem Kalender."
+        },
+        "private": {
+          "title": "Privater Ort",
+          "description": "Nur für die Spieler sichtbar, die Sie über einen QR-Code einladen."
+        }
+      },
+      "publicNotice": "Sie werden zum Verwalter dieses Ortes: Öffnungszeiten, Spiele, Kalender und Ankündigungen werden anschließend über die Verwaltungsseite gepflegt. Legen Sie nur echte Orte an, und nur einen pro Adresse.",
+      "fields": {
+        "name": "Name des Ortes",
+        "address": "Adresse",
+        "addressOptional": "Adresse (optional)",
+        "city": "Stadt",
+        "cityHint": "Verortet den Ort auf der Karte: nur so erscheint er in der Umkreissuche.",
+        "website": "Website (optional)"
+      },
+      "placeholders": {
+        "name": "Die Drachenhöhle",
+        "address": "Musterstraße 12, 10115 Berlin",
+        "website": "https://beispiel.de"
+      },
       "cancel": "Abbrechen",
-      "create": "Erstellen",
-      "nameRequired": "Der Name des Ortes ist erforderlich",
+      "submit": "Ort erstellen",
       "errors": {
-        "createFailed": "Beim Erstellen des Ortes ist ein Fehler aufgetreten"
+        "notAuthenticated": "Melden Sie sich an, um einen Ort zu erstellen.",
+        "nameRequired": "Der Name des Ortes ist erforderlich.",
+        "addressRequired": "Ein öffentlicher Ort muss seine Adresse angeben.",
+        "locationRequired": "Wählen Sie die Stadt des Ortes aus den Vorschlägen.",
+        "websiteInvalid": "Die Website-Adresse ist ungültig.",
+        "invalid": "Einige Felder sind ungültig.",
+        "tooMany": "Sie haben bereits {max} öffentliche Orte erstellt. Schreiben Sie uns, um einen weiteren zu eröffnen.",
+        "duplicate": "„{name}“ gibt es an diesem Ort bereits. Wenn es Ihr Ort ist, fragen Sie das Team nach der Verwaltung.",
+        "duplicateAction": "Diesen Ort ansehen",
+        "failed": "Die Erstellung ist fehlgeschlagen. Versuchen Sie es gleich noch einmal."
       }
     },
     "filters": {

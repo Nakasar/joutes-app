@@ -1117,19 +1117,48 @@
       "title": "Game venues",
       "description": "Discover all game venues and their upcoming events"
     },
-    "createPrivate": {
-      "trigger": "Create a private venue",
-      "title": "Create a private venue",
-      "description": "Private venues are only visible to users you invite through a unique QR code.",
-      "nameLabel": "Venue name *",
-      "namePlaceholder": "My game venue",
-      "addressLabel": "Address (optional)",
-      "addressPlaceholder": "123 rue de la Paix",
+    "create": {
+      "trigger": "Add a venue",
+      "title": "Add a game venue",
+      "description": "Create the page of the place where you play: a shop, a club, an association — or a table among friends.",
+      "visibility": {
+        "label": "Venue type",
+        "public": {
+          "title": "Public venue",
+          "description": "Visible to everyone in the directory, with its own page and calendar."
+        },
+        "private": {
+          "title": "Private venue",
+          "description": "Only visible to the players you invite through a QR code."
+        }
+      },
+      "publicNotice": "You become the manager of this venue: opening hours, games, calendar and news are then set from its management page. Only create real venues, and one per place.",
+      "fields": {
+        "name": "Venue name",
+        "address": "Address",
+        "addressOptional": "Address (optional)",
+        "city": "City",
+        "cityHint": "Places the venue on the map: this is what makes it show up in nearby searches.",
+        "website": "Website (optional)"
+      },
+      "placeholders": {
+        "name": "The Dragon's Lair",
+        "address": "12 rue de la Joute, 69001 Lyon",
+        "website": "https://example.com"
+      },
       "cancel": "Cancel",
-      "create": "Create",
-      "nameRequired": "The venue name is required",
+      "submit": "Create venue",
       "errors": {
-        "createFailed": "An error occurred while creating the venue"
+        "notAuthenticated": "Sign in to create a venue.",
+        "nameRequired": "The venue name is required.",
+        "addressRequired": "A public venue must state its address.",
+        "locationRequired": "Pick the venue's city from the suggestions.",
+        "websiteInvalid": "The website address is invalid.",
+        "invalid": "Some fields are invalid.",
+        "tooMany": "You have already created {max} public venues. Write to us to open one more.",
+        "duplicate": "“{name}” already exists at this location. If it is your venue, ask the team for its management.",
+        "duplicateAction": "View this venue",
+        "failed": "Creation failed. Try again in a moment."
       }
     },
     "filters": {

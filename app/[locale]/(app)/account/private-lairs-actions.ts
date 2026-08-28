@@ -4,7 +4,6 @@ import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import {
-  createLair,
   updateLair,
   deleteLair,
   getLairById,
@@ -13,7 +12,7 @@ import {
   addOwnerToLair,
 } from "@/lib/db/lairs.ts";
 import { addLairToUser, removeLairFromUser } from "@/lib/db/users.ts";
-import { lairSchema } from "@/lib/schemas/lair.schema.ts";
+import { createLairForUser, type CreateLairError } from "@/lib/lairs/create.ts";
 
 /**
  * Les échecs des deux actions que la gestion d'un lieu appelle, en codes.
@@ -36,70 +35,54 @@ export type PrivateLairError =
   | "FAILED";
 import { generateInvitationCode, isValidInvitationCode } from "@/lib/utils/invitation-codes.ts";
 
+/**
+ * Crée un lieu privé pour le compte connecté.
+ *
+ * Ne décide plus rien elle-même : la création — validation, code d'invitation,
+ * abonnement du créateur à son propre lieu — vit dans `createLairForUser`,
+ * partagée avec l'annuaire, qui ouvre aussi les lieux publics. Cet écran-ci
+ * n'étant pas traduit, les codes de refus sont remis en phrases françaises,
+ * exactement celles qu'il affichait auparavant.
+ */
+const CREATE_ERRORS: Record<CreateLairError | "DUPLICATE", string> = {
+  NAME_REQUIRED: "Le nom du lieu est requis",
+  ADDRESS_REQUIRED: "L'adresse est requise",
+  LOCATION_REQUIRED: "La localisation est requise",
+  WEBSITE_INVALID: "L'URL du site web doit être valide",
+  INVALID: "Données invalides",
+  TOO_MANY: "Vous avez atteint le nombre maximal de lieux publics",
+  DUPLICATE: "Un lieu portant ce nom existe déjà à cet endroit",
+  FAILED: "Erreur serveur",
+};
+
 export async function createPrivateLair(
   name: string,
   address?: string,
   location?: { latitude: number; longitude: number }
 ): Promise<{ success: boolean; error?: string; lairId?: string }> {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-    if (!session?.user?.id) {
-      return { success: false, error: "Non authentifié" };
-    }
-
-    // Créer le GeoJSON point si location est fourni
-    const geoLocation = location
-      ? {
-          type: "Point" as const,
-          coordinates: [location.longitude, location.latitude] as [number, number],
-        }
-      : undefined;
-
-    // Générer un code d'invitation unique
-    const invitationCode = generateInvitationCode();
-
-    // Valider les données
-    const validationResult = lairSchema.safeParse({
-      name,
-      address,
-      location: geoLocation,
-      isPrivate: true,
-      invitationCode,
-      eventsSourceUrls: [],
-      games: [],
-    });
-
-    if (!validationResult.success) {
-      const errorMessage = validationResult.error.issues[0]?.message || "Données invalides";
-      return { success: false, error: errorMessage };
-    }
-
-    // Créer le lair
-    const lair = await createLair({
-      name: validationResult.data.name,
-      address: validationResult.data.address,
-      location: validationResult.data.location,
-      isPrivate: true,
-      invitationCode,
-      eventsSourceUrls: [],
-      games: [],
-      owners: [session.user.id],
-    });
-
-    // Ajouter le lair à la liste des lairs suivis par l'utilisateur
-    await addLairToUser(session.user.id, lair.id);
-
-    revalidatePath("/account");
-    revalidatePath("/lairs");
-
-    return { success: true, lairId: lair.id };
-  } catch (error) {
-    console.error("Erreur lors de la création du lair privé:", error);
-    return { success: false, error: "Erreur serveur" };
+  if (!session?.user?.id) {
+    return { success: false, error: "Non authentifié" };
   }
+
+  const result = await createLairForUser(session.user.id, {
+    name,
+    visibility: "private",
+    address,
+    location,
+  });
+
+  if (!result.success) {
+    return { success: false, error: CREATE_ERRORS[result.error] };
+  }
+
+  revalidatePath("/account");
+  revalidatePath("/lairs");
+
+  return { success: true, lairId: result.lair.id };
 }
 
 export async function updatePrivateLairAction(
