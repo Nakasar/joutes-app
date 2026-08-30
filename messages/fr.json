@@ -2302,6 +2302,8 @@
       "export": {
         "trigger": "Exporter en texte",
         "title": "Exporter la liste de souhaits",
+        "description": "Une ligne par carte, au format « Nom de la carte 829 (EXT) ».",
+        "empty": "Aucune carte à exporter.",
         "copy": "Copier",
         "copied": "Copié dans le presse-papier"
       }

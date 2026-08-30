@@ -1744,6 +1744,8 @@
       "export": {
         "trigger": "Als Text exportieren",
         "title": "Wunschliste exportieren",
+        "description": "Eine Zeile pro Karte, im Format „Kartenname 829 (SET)“.",
+        "empty": "Keine Karte zum Exportieren.",
         "copy": "Kopieren",
         "copied": "In die Zwischenablage kopiert"
       }

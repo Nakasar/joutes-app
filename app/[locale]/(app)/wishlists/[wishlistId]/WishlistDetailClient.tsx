@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import { formatWishlistLine } from "@/lib/wishlists/export.ts";
 import {
   Select,
   SelectContent,
@@ -36,6 +37,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -472,7 +474,7 @@ function ExportWishlistDialog({ wishlistId }: { wishlistId: string }) {
   async function loadText() {
     setLoading(true);
     try {
-      const names: string[] = [];
+      const lines: string[] = [];
       let page = 1;
       let totalPages = 1;
       do {
@@ -480,12 +482,12 @@ function ExportWishlistDialog({ wishlistId }: { wishlistId: string }) {
         if (!res.ok) break;
         const data: PaginatedWishlistItems = await res.json();
         for (const item of data.items) {
-          names.push(item.quantity > 1 ? `${item.name} x${item.quantity}` : item.name);
+          lines.push(formatWishlistLine(item));
         }
         totalPages = data.totalPages;
         page += 1;
       } while (page <= totalPages);
-      setText(names.join("\n"));
+      setText(lines.join("\n"));
       setLoaded(true);
     } finally {
       setLoading(false);
@@ -512,11 +514,15 @@ function ExportWishlistDialog({ wishlistId }: { wishlistId: string }) {
           {t("export.trigger")}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      {/* Bornée à l'écran : la liste fait la taille des souhaits, et la zone de
+          texte suivrait sa hauteur sans limite — la modale débordait alors par
+          le haut et par le bas, hors d'atteinte. */}
+      <DialogContent className="flex max-h-[85dvh] flex-col">
         <DialogHeader>
           <DialogTitle>{t("export.title")}</DialogTitle>
+          <DialogDescription>{t("export.description")}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 pt-2">
+        <div className="flex min-h-0 flex-col gap-3 pt-2">
           {loading ? (
             <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
@@ -524,7 +530,14 @@ function ExportWishlistDialog({ wishlistId }: { wishlistId: string }) {
             </div>
           ) : (
             <>
-              <Textarea readOnly value={text} rows={12} className="font-mono text-sm" onFocus={(e) => e.target.select()} />
+              <Textarea
+                readOnly
+                value={text}
+                rows={12}
+                placeholder={t("export.empty")}
+                className="field-sizing-fixed max-h-[55dvh] min-h-0 font-mono text-sm"
+                onFocus={(e) => e.target.select()}
+              />
               <div className="flex justify-end">
                 <Button onClick={handleCopy} disabled={!text} className="gap-1.5">
                   {copied ? <Check className="size-4" /> : <Clipboard className="size-4" />}
