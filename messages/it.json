@@ -2302,6 +2302,10 @@
       "export": {
         "trigger": "Esporta come testo",
         "title": "Esporta lista dei desideri",
+        "description": "Una riga per carta, nel formato «Nome della carta 829 (EST)».",
+        "empty": "Nessuna carta da esportare.",
+        "error": "L'esportazione non è riuscita.",
+        "retry": "Riprova",
         "copy": "Copia",
         "copied": "Copiato negli appunti"
       }

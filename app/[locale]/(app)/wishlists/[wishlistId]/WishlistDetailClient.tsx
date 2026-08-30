@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import { formatWishlistLine } from "@/lib/wishlists/export.ts";
 import {
   Select,
   SelectContent,
@@ -36,6 +37,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -467,26 +469,39 @@ function ExportWishlistDialog({ wishlistId }: { wishlistId: string }) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [text, setText] = useState("");
+  const [failed, setFailed] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  /**
+   * La liste se lit page à page. Une page manquante emporte tout l'export :
+   * s'arrêter là où la lecture a échoué rendrait une liste tronquée qui a
+   * l'air complète, et c'est celle-là qu'on copierait. Rien n'est retenu non
+   * plus (`loaded`), pour que rouvrir la modale réessaie.
+   */
   async function loadText() {
     setLoading(true);
+    setFailed(false);
     try {
-      const names: string[] = [];
+      const lines: string[] = [];
       let page = 1;
       let totalPages = 1;
       do {
         const res = await fetch(`/api/wishlists/${wishlistId}/items?page=${page}&limit=96`);
-        if (!res.ok) break;
+        if (!res.ok) throw new Error(`La liste a répondu ${res.status}`);
         const data: PaginatedWishlistItems = await res.json();
         for (const item of data.items) {
-          names.push(item.quantity > 1 ? `${item.name} x${item.quantity}` : item.name);
+          lines.push(formatWishlistLine(item));
         }
         totalPages = data.totalPages;
         page += 1;
       } while (page <= totalPages);
-      setText(names.join("\n"));
+      setText(lines.join("\n"));
       setLoaded(true);
+    } catch (error) {
+      console.error("Failed to load the wishlist export:", error);
+      setText("");
+      setFailed(true);
+      toast.error(t("export.error"));
     } finally {
       setLoading(false);
     }
@@ -512,19 +527,39 @@ function ExportWishlistDialog({ wishlistId }: { wishlistId: string }) {
           {t("export.trigger")}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      {/* Bornée à l'écran : la liste fait la taille des souhaits, et la zone de
+          texte suivrait sa hauteur sans limite — la modale débordait alors par
+          le haut et par le bas, hors d'atteinte. */}
+      <DialogContent className="flex max-h-[85dvh] flex-col">
         <DialogHeader>
           <DialogTitle>{t("export.title")}</DialogTitle>
+          <DialogDescription>{t("export.description")}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 pt-2">
+        <div className="flex min-h-0 flex-col gap-3 pt-2">
           {loading ? (
             <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
               {t("addToWishlist.loading")}
             </div>
+          ) : failed ? (
+            /* Une liste vide et une liste qu'on n'a pas pu lire ne se
+               ressemblent que sur l'écran qui les confond. */
+            <div className="flex flex-col items-center gap-3 p-8 text-center">
+              <p className="text-sm text-muted-foreground">{t("export.error")}</p>
+              <Button variant="outline" size="sm" onClick={() => void loadText()}>
+                {t("export.retry")}
+              </Button>
+            </div>
           ) : (
             <>
-              <Textarea readOnly value={text} rows={12} className="font-mono text-sm" onFocus={(e) => e.target.select()} />
+              <Textarea
+                readOnly
+                value={text}
+                rows={12}
+                placeholder={t("export.empty")}
+                className="field-sizing-fixed max-h-[55dvh] min-h-0 font-mono text-sm"
+                onFocus={(e) => e.target.select()}
+              />
               <div className="flex justify-end">
                 <Button onClick={handleCopy} disabled={!text} className="gap-1.5">
                   {copied ? <Check className="size-4" /> : <Clipboard className="size-4" />}

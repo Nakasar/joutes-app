@@ -2302,6 +2302,10 @@
       "export": {
         "trigger": "Export as text",
         "title": "Export wishlist",
+        "description": "One line per card, formatted as “Card name 829 (SET)”.",
+        "empty": "No card to export.",
+        "error": "The export failed.",
+        "retry": "Try again",
         "copy": "Copy",
         "copied": "Copied to clipboard"
       }
