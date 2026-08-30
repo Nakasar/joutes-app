@@ -19,6 +19,9 @@ import {
   type GameCardSummary,
 } from "@/lib/db/cards.ts";
 import { parseCardIdList } from "@/lib/cards/bulk-printings.ts";
+// Même correspondance d'identifiant que les scripts d'import : les deux
+// chemins écrivent dans le même index.
+import { searchDocumentId } from "@/lib/cards/import-search.ts";
 import { getGameById } from "@/lib/db/games.ts";
 import { cardPrintingSchema, cardSchema } from "@/lib/schemas/card.schema.ts";
 import { gameIdSchema } from "@/lib/schemas/game.schema.ts";
@@ -70,16 +73,6 @@ function toCoreCardFields(card: z.infer<typeof cardSchema>) {
     foil: card.foil ? true : undefined,
     printings: printings.length > 0 ? printings : undefined,
   };
-}
-
-/**
- * L'identifiant d'un document Meilisearch n'accepte pas `*` (utilisé par
- * certaines variantes de numéro de collection), là où l'identifiant en base le
- * garde : on reprend la correspondance des scripts d'import, qui conservent
- * l'identifiant réel dans `cardId`.
- */
-function searchDocumentId(cardId: string): string {
-  return cardId.replaceAll("*", "s");
 }
 
 /**

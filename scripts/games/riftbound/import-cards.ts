@@ -5,8 +5,12 @@ import {ObjectId} from "mongodb";
 import {dirname} from 'path';
 import {fileURLToPath} from 'url';
 import meilisearch, {indexes} from "../../../lib/meilisearch.ts";
+import {importedCardSearchDocument} from "../../../lib/cards/import-search.ts";
+import type {CardPrinting} from "../../../lib/types/card.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const RIFTBOUND_GAME_ID = new ObjectId('69009afea722eab4fa0e55c4');
 
 type WebSiteValue = { label: string; value?: { id: string | number; label: string } };
 type WebSiteValues = { label: string; values?: { id: string; label: string }[] };
@@ -84,6 +88,28 @@ async function getCardsFromJson(): Promise<WebSiteCard[]> {
   return JSON.parse(await cards);
 }
 
+/**
+ * Variantes d'impression déjà enregistrées pour ces cartes, par identifiant.
+ *
+ * Elles sont saisies depuis l'administration et n'existent nulle part chez la
+ * source : la base les garde d'un import à l'autre (on n'y écrit que les champs
+ * importés), il faut les relire pour les remettre dans le document de recherche,
+ * qui est réécrit en entier.
+ */
+async function readStoredPrintings(ids: string[]): Promise<Map<string, CardPrinting[]>> {
+  const docs = await db.collection('cards')
+    .find({ gameId: RIFTBOUND_GAME_ID, id: { $in: ids } }, { projection: { _id: 0, id: 1, printings: 1 } })
+    .toArray();
+
+  return new Map(
+    docs.flatMap((doc) =>
+      typeof doc.id === 'string' && Array.isArray(doc.printings) && doc.printings.length > 0
+        ? [[doc.id, doc.printings as CardPrinting[]] as const]
+        : []
+    )
+  );
+}
+
 async function main() {
   const cardsRaw = await fetchCardsFromWebsite();
 
@@ -124,18 +150,12 @@ async function main() {
       // Distingue les cartes importées de celles ajoutées à la main depuis
       // l'administration (`source: 'manual'`).
       source: 'import',
-      gameId: new ObjectId('69009afea722eab4fa0e55c4'),
+      gameId: RIFTBOUND_GAME_ID,
     };
   });
 
-  const cardsIndex = meilisearch.index(indexes.riftbound.name);
-  await cardsIndex.deleteAllDocuments();
-
-  await cardsIndex.addDocuments(cards.map(c => ({
-    ...c,
-    id: c.id.replaceAll("*", "s"),
-    cardId: c.id,
-  })));
+  // La base d'abord : c'est elle qui fait foi, et c'est en la relisant qu'on
+  // retrouve ce que la source ignore (les variantes d'impression).
   for (const card of cards) {
     // Une propriété absente de la source (une carte sans énergie, sans domaine…)
     // ne doit pas être écrite en `null` sur le document existant.
@@ -143,11 +163,22 @@ async function main() {
 
     await db.collection('cards').updateOne({
       id: card.id,
-      gameId: new ObjectId('69009afea722eab4fa0e55c4'),
+      gameId: RIFTBOUND_GAME_ID,
     }, {
       $set: fields,
     }, { upsert: true });
   }
+
+  const storedPrintings = await readStoredPrintings(cards.map((card) => card.id));
+
+  // L'index n'est **pas** vidé : il porte aussi les cartes ajoutées à la main
+  // depuis l'administration, que la source ne republiera jamais. Chaque carte
+  // importée est réécrite par son identifiant, les autres sont laissées en
+  // place.
+  const cardsIndex = meilisearch.index(indexes.riftbound.name);
+  await cardsIndex.addDocuments(
+    cards.map((card) => importedCardSearchDocument(card, storedPrintings.get(card.id)))
+  );
 }
 
 main().then(() => {
