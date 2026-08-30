@@ -1746,6 +1746,8 @@
         "title": "Wunschliste exportieren",
         "description": "Eine Zeile pro Karte, im Format „Kartenname 829 (SET)“.",
         "empty": "Keine Karte zum Exportieren.",
+        "error": "Der Export ist fehlgeschlagen.",
+        "retry": "Erneut versuchen",
         "copy": "Kopieren",
         "copied": "In die Zwischenablage kopiert"
       }
