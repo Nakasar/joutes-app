@@ -65,6 +65,13 @@ export const indexes: { [gameSlug: string]: CardIndexConfig } = {
       set: 'setCode',
       collectorNumber: 'collectorNumber',
     },
+  },
+  cp: {
+    name: 'cp-cards',
+    keys: {
+      set: 'setCode',
+      collectorNumber: 'collectorNumber',
+    },
   }
 };
 

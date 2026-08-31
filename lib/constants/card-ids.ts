@@ -13,6 +13,9 @@ const CARD_ID_SEPARATOR_BY_GAME: Record<string, string> = {
   // Sorcery n'imprime pas de numéro de collection : le sien est le slug de la
   // carte (`GOT-abaddon-succubus`), que le tiret sépare du code d'extension.
   sorcery: "-",
+  // Cyberpunk numérote ses cartes `005a`, `012b` : collés au code d'extension,
+  // `WNC005a` se lirait mal, et `WNCB005a` ne dirait plus où finit l'extension.
+  cp: "-",
 };
 
 export function cardIdSeparator(gameSlug?: string): string {
