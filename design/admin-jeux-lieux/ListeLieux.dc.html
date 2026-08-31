@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .app {
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --border: oklch(0.922 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --lien: #2563eb;
+      font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100%;
+    }
+
+    .app.sombre {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --border: oklch(1 0 0 / 10%);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --lien: #60a5fa;
+    }
+
+    .page { background: color-mix(in oklab, var(--muted) 50%, var(--background)); padding: 32px; }
+    .conteneur { max-width: 1152px; margin: 0 auto; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 8px; font-size: 14px; line-height: 20px; font-weight: 500; white-space: nowrap; border: 1px solid transparent; cursor: pointer; font-family: inherit; }
+    .btn-primaire { background: var(--primary); color: var(--primary-foreground); }
+    .btn-sm { height: 32px; padding: 0 12px; gap: 6px; }
+    .btn-fantome { background: transparent; }
+
+    .tableau { width: 100%; border-collapse: collapse; }
+    .tableau thead { background: color-mix(in oklab, var(--muted) 50%, var(--card)); }
+    .tableau th { padding: 12px 24px; text-align: left; font-size: 12px; line-height: 16px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+    .tableau td { padding: 16px 24px; border-top: 1px solid var(--border); font-size: 14px; line-height: 20px; }
+    .pastille { display: inline-flex; align-items: center; border-radius: 9999px; padding: 4px 8px; font-size: 12px; line-height: 16px; font-weight: 600; background: rgba(16, 185, 129, .15); color: #065f46; }
+    .sombre .pastille { color: #6ee7b7; }
+    .mono { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+    .lien-nom { font-weight: 500; }
+    .lien-nom:hover { color: var(--lien); }
+  </style>
+</helmet>
+
+<div class="app {{themeClasse}}">
+  <div class="page">
+    <div class="conteneur">
+
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 32px;">
+        <h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 700;">Gestion des Lieux de Jeu</h1>
+        <button type="button" class="btn btn-primaire">Ajouter un lieu</button>
+      </div>
+
+      <div style="background: var(--card); border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1); overflow: hidden;">
+        <table class="tableau">
+          <thead>
+            <tr>
+              <th style="width: 128px;">Bannière</th>
+              <th>Nom</th>
+              <th>Jeux supportés</th>
+              <th style="width: 160px;">Sources</th>
+              <th style="width: 260px; text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div style="width: 96px; height: 64px; border-radius: 8px; background: var(--muted);"></div></td>
+              <td>
+                <a class="lien-nom" href="#">L’Antre-Temps</a>
+                <div style="font-size: 12px; color: var(--muted-foreground); margin-top: 2px;">Paris 11e</div>
+              </td>
+              <td><div style="display: flex; flex-wrap: wrap; gap: 4px;"><span class="pastille">Riftbound</span><span class="pastille">Lorcana</span></div></td>
+              <td style="color: var(--muted-foreground);">2 sources · il y a 40 min</td>
+              <td style="text-align: right;">
+                <button type="button" class="btn btn-fantome btn-sm" style="color: var(--lien);">Rafraîchir</button>
+                <a class="btn btn-fantome btn-sm" href="#" style="color: var(--lien);">Gérer</a>
+                <button type="button" class="btn btn-fantome btn-sm" style="color: var(--destructive);">Supprimer</button>
+              </td>
+            </tr>
+            <tr>
+              <td><div style="width: 96px; height: 64px; border-radius: 8px; background: var(--muted);"></div></td>
+              <td>
+                <a class="lien-nom" href="#">La Guilde des Joueurs</a>
+                <div style="font-size: 12px; color: var(--muted-foreground); margin-top: 2px;">Lyon 7e</div>
+              </td>
+              <td><div style="display: flex; flex-wrap: wrap; gap: 4px;"><span class="pastille">Riftbound</span><span class="pastille">Magic</span><span class="pastille">Pokémon</span></div></td>
+              <td style="color: var(--muted-foreground);">1 source · il y a 3 h</td>
+              <td style="text-align: right;">
+                <button type="button" class="btn btn-fantome btn-sm" style="color: var(--lien);">Rafraîchir</button>
+                <a class="btn btn-fantome btn-sm" href="#" style="color: var(--lien);">Gérer</a>
+                <button type="button" class="btn btn-fantome btn-sm" style="color: var(--destructive);">Supprimer</button>
+              </td>
+            </tr>
+            <tr>
+              <td><div style="width: 96px; height: 64px; border-radius: 8px; background: var(--muted); display: flex; align-items: center; justify-content: center; color: var(--muted-foreground); font-weight: 600;">C</div></td>
+              <td>
+                <a class="lien-nom" href="#">Le Comptoir des Cartes</a>
+                <div style="font-size: 12px; color: var(--muted-foreground); margin-top: 2px;">Nantes</div>
+              </td>
+              <td><div style="display: flex; flex-wrap: wrap; gap: 4px;"><span class="pastille">Lorcana</span></div></td>
+              <td style="color: var(--muted-foreground);">aucune source</td>
+              <td style="text-align: right;">
+                <a class="btn btn-fantome btn-sm" href="#" style="color: var(--lien);">Gérer</a>
+                <button type="button" class="btn btn-fantome btn-sm" style="color: var(--destructive);">Supprimer</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="margin: 16px 0 0; font-size: 14px; line-height: 20px; color: var(--muted-foreground);">
+        La colonne « Sources » remplace le seul bouton de rafraîchissement : elle dit ce qu’il y a à rafraîchir,
+        et depuis quand.
+      </p>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"theme":{"editor":"enum","options":["clair","sombre"],"default":"clair"},"$preview":{"width":1240,"height":520}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { themeClasse: this.props.theme === "sombre" ? "sombre" : "" };
+  }
+}
+</script>
+</body>
+</html>
