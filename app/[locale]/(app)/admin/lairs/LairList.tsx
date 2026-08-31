@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Lair } from "@/lib/types/Lair.ts";
 import { Game } from "@/lib/types/Game.ts";
 import { deleteLair, refreshEvents } from "./actions.ts";
-import { LairForm } from "./LairForm.tsx";
+import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 
 export function LairList({
@@ -108,9 +108,17 @@ export function LairList({
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-foreground">
+                  <Link
+                    href={`/admin/lairs/${lair.id}`}
+                    className="text-sm font-medium text-foreground hover:text-blue-600 dark:hover:text-blue-400"
+                  >
                     {lair.name}
-                  </div>
+                  </Link>
+                  {lair.address && (
+                    <div className="text-xs text-muted-foreground mt-0.5 max-w-xs truncate">
+                      {lair.address}
+                    </div>
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex flex-wrap gap-1">
@@ -140,19 +148,14 @@ export function LairList({
                         🔄 Rafraîchir
                       </button>
                     )}
-                    <LairForm
-                      games={games}
-                      lair={lair}
-                      trigger={
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                        >
-                          Modifier
-                        </Button>
-                      }
-                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      asChild
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                    >
+                      <Link href={`/admin/lairs/${lair.id}`}>Gérer</Link>
+                    </Button>
                     <button
                       onClick={() => handleDelete(lair.id)}
                       disabled={isPending}

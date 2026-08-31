@@ -1,0 +1,186 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .app {
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: color-mix(in oklab, var(--muted) 50%, var(--background));
+      color: var(--foreground);
+      -webkit-font-smoothing: antialiased;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .app.sombre {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --border: oklch(1 0 0 / 10%);
+      --input: oklch(1 0 0 / 15%);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+    }
+
+    /* La barre d’administration défile dans sa propre boîte : c’est déjà ce que
+       fait `admin/layout.tsx`, et ce qui empêche la page entière de se décaler. */
+    .chrome { background: var(--card); border-bottom: 1px solid var(--border); height: 56px; display: flex; align-items: center; padding: 0 16px; gap: 24px; overflow: hidden; }
+    .chrome-tab { font-size: 14px; font-weight: 500; white-space: nowrap; border-bottom: 2px solid transparent; padding-bottom: 2px; }
+    .chrome-tab.actif { border-bottom-color: #3b82f6; }
+
+    .carte { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1); }
+    .champ { height: 44px; width: 100%; border: 1px solid var(--input); border-radius: 8px; background: transparent; padding: 0 12px; font-size: 16px; color: var(--foreground); font-family: inherit; box-sizing: border-box; }
+    .champ-nb { text-align: center; padding: 0 4px; }
+    .etiquette-xs { display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground); margin-bottom: 4px; }
+    .pastille { display: inline-flex; align-items: center; border-radius: 9999px; border: 1px solid var(--border); padding: 2px 8px; font-size: 12px; line-height: 16px; color: var(--muted-foreground); white-space: nowrap; }
+    .mono { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+
+    .onglets { display: flex; gap: 4px; border-bottom: 1px solid var(--border); overflow: hidden; }
+    .onglet { flex: none; border: 0; border-bottom: 2px solid transparent; background: transparent; padding: 10px 12px; font-size: 14px; color: var(--muted-foreground); white-space: nowrap; font-family: inherit; }
+    .onglet.actif { border-bottom-color: var(--primary); font-weight: 500; color: var(--foreground); }
+
+    .interrupteur { position: relative; display: inline-flex; width: 44px; height: 26px; border-radius: 9999px; background: var(--input); border: 0; padding: 0; flex: none; }
+    .interrupteur.on { background: var(--primary); }
+    .interrupteur > span { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 9999px; background: var(--background); }
+    .interrupteur.on > span { transform: translateX(18px); background: var(--card); }
+  </style>
+</helmet>
+
+<div class="app {{themeClasse}}">
+
+  <div class="chrome">
+    <span class="chrome-tab">Tableau de bord</span>
+    <span class="chrome-tab actif">Jeux</span>
+    <span class="chrome-tab">Utilisateurs</span>
+    <span class="chrome-tab">Tourn</span>
+  </div>
+
+  <div style="padding: 16px;">
+
+    <a href="#" style="font-size: 14px; color: var(--muted-foreground);">← Jeux</a>
+
+    <div style="display: flex; align-items: center; gap: 12px; margin: 8px 0 12px;">
+      <div style="width: 40px; height: 40px; border-radius: 8px; background: var(--muted); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--muted-foreground); flex: none;">R</div>
+      <h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 700;">Riftbound</h1>
+    </div>
+
+    <div class="onglets" style="margin-bottom: 16px;">
+      <span class="onglet">Identité</span>
+      <span class="onglet">Fonctions</span>
+      <span class="onglet actif">Deck builder</span>
+      <span class="onglet">Lieux</span>
+    </div>
+
+    <p style="margin: 0 0 12px; font-size: 14px; line-height: 20px; color: var(--muted-foreground);">
+      Sections du deck — une carte par section, les bornes côte à côte.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <sc-for list="{{zones}}" as="zone" hint-placeholder-count="4">
+        <div class="carte" style="padding: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+            <span class="pastille mono">{{zone.key}}</span>
+            <span style="flex: 1; min-width: 0; font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{zone.label}}</span>
+            <button type="button" class="interrupteur {{zone.classeActive}}" onClick="{{zone.bascule}}" aria-label="Activer la section"><span></span></button>
+          </div>
+          <div style="display: flex; align-items: flex-end; gap: 8px;">
+            <div style="width: 76px; flex: none;">
+              <label class="etiquette-xs">Min</label>
+              <input class="champ champ-nb" value="{{zone.min}}" onChange="{{zone.majMin}}" placeholder="—" aria-label="Minimum">
+            </div>
+            <div style="width: 76px; flex: none;">
+              <label class="etiquette-xs">Max</label>
+              <input class="champ champ-nb" value="{{zone.max}}" onChange="{{zone.majMax}}" placeholder="—" aria-label="Maximum">
+            </div>
+            <div style="flex: 1; min-width: 0; padding-bottom: 12px;">
+              <div style="font-size: 13px; line-height: 18px; color: var(--muted-foreground);">{{zone.regle}}</div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"theme":{"editor":"enum","options":["clair","sombre"],"default":"clair"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      zones: [
+        { key: "legend", label: "Légende", min: "1", max: "1", enabled: true },
+        { key: "champions", label: "Champions", min: "1", max: "3", enabled: true },
+        { key: "maindeck", label: "Deck principal", min: "40", max: "", enabled: true },
+        { key: "runes", label: "Runes", min: "12", max: "12", enabled: true }
+      ]
+    };
+  }
+
+  nombre(valeur) {
+    const propre = String(valeur).trim();
+    if (propre === "") return undefined;
+    const n = parseInt(propre, 10);
+    return isNaN(n) ? undefined : n;
+  }
+
+  regle(zone) {
+    const min = this.nombre(zone.min);
+    const max = this.nombre(zone.max);
+    if (min !== undefined && max !== undefined) {
+      return min === max ? min + " exactement" : min + " à " + max;
+    }
+    if (min !== undefined) return min + " minimum";
+    if (max !== undefined) return "jusqu à " + max;
+    return "aucune contrainte";
+  }
+
+  majZone(key, champ, valeur) {
+    this.setState({
+      zones: this.state.zones.map((zone) => (zone.key === key ? { ...zone, [champ]: valeur } : zone))
+    });
+  }
+
+  renderVals() {
+    return {
+      themeClasse: this.props.theme === "sombre" ? "sombre" : "",
+      zones: this.state.zones.map((zone) => ({
+        key: zone.key,
+        label: zone.label,
+        min: zone.min,
+        max: zone.max,
+        regle: this.regle(zone),
+        classeActive: zone.enabled ? "on" : "",
+        majMin: (e) => this.majZone(zone.key, "min", e.target.value),
+        majMax: (e) => this.majZone(zone.key, "max", e.target.value),
+        bascule: () => this.majZone(zone.key, "enabled", !zone.enabled)
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

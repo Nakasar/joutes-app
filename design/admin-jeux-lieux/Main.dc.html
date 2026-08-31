@@ -1,0 +1,711 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /*
+     * Les jetons de `app/globals.css`, recopiés tels quels. L'écran
+     * n'introduit aucune couleur à lui : le bleu est celui que porte déjà la
+     * barre d'administration, l'ambre celui de l'avertissement des réglages de
+     * tournoi.
+     */
+    .app {
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --lien: #2563eb;
+      --ok: #047857;
+      --ok-fond: rgba(16, 185, 129, 0.12);
+      --alerte: #b45309;
+      --alerte-fond: rgba(245, 158, 11, 0.1);
+      --alerte-bord: rgba(245, 158, 11, 0.4);
+      font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100%;
+    }
+
+    .app.sombre {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --border: oklch(1 0 0 / 10%);
+      --input: oklch(1 0 0 / 15%);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --lien: #60a5fa;
+      --ok: #6ee7b7;
+      --alerte: #fbbf24;
+    }
+
+    /* La barre d'administration : `admin/layout.tsx`, à l'identique. */
+    .chrome { background: var(--card); border-bottom: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1); }
+    .chrome-inner { max-width: 1280px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .chrome-tabs { display: flex; gap: 32px; min-width: 0; overflow: hidden; }
+    .chrome-tab { font-size: 14px; line-height: 20px; font-weight: 500; padding: 4px 4px 0; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .chrome-tab.actif { border-bottom-color: #3b82f6; }
+
+    .page { background: color-mix(in oklab, var(--muted) 50%, var(--background)); padding: 32px; }
+    .conteneur { max-width: 1152px; margin: 0 auto; }
+
+    .carte { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1); }
+    .carte-tete { padding: 24px 24px 0; }
+    .carte-titre { font-size: 16px; line-height: 20px; font-weight: 600; }
+    .carte-desc { font-size: 14px; line-height: 20px; color: var(--muted-foreground); margin-top: 6px; }
+    .carte-corps { padding: 24px; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 8px; font-size: 14px; line-height: 20px; font-weight: 500; white-space: nowrap; border: 1px solid transparent; cursor: pointer; }
+    .btn-primaire { background: var(--primary); color: var(--primary-foreground); }
+    .btn-contour { background: var(--background); border-color: var(--border); color: var(--foreground); box-shadow: 0 1px 2px 0 rgba(0,0,0,.05); }
+    .btn-fantome { background: transparent; color: var(--foreground); }
+    .btn-sm { height: 32px; padding: 0 12px; gap: 6px; }
+
+    .champ { height: 36px; width: 100%; border: 1px solid var(--input); border-radius: 8px; background: transparent; padding: 0 12px; font-size: 14px; line-height: 20px; color: var(--foreground); font-family: inherit; box-shadow: 0 1px 2px 0 rgba(0,0,0,.05); box-sizing: border-box; }
+    .champ:focus { outline: none; border-color: oklch(0.708 0 0); box-shadow: 0 0 0 3px color-mix(in oklab, oklch(0.708 0 0) 50%, transparent); }
+    .champ-nb { text-align: center; padding: 0 6px; }
+    .etiquette { display: block; font-size: 14px; line-height: 20px; font-weight: 500; margin-bottom: 6px; }
+    .aide { font-size: 12px; line-height: 16px; color: var(--muted-foreground); margin: 6px 0 0; }
+
+    .pastille { display: inline-flex; align-items: center; gap: 4px; border-radius: 9999px; border: 1px solid transparent; padding: 2px 8px; font-size: 12px; line-height: 16px; font-weight: 500; white-space: nowrap; }
+    .pastille-bleue { background: rgba(59, 130, 246, .15); color: #1e40af; }
+    .sombre .pastille-bleue { color: #93c5fd; }
+    .pastille-contour { border-color: var(--border); color: var(--muted-foreground); }
+    .mono { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+
+    /* Les onglets de gestion : `lairs/[lairId]/manage/ManageTabsBar.tsx`. */
+    .onglets { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .onglet { flex: none; border: 0; border-bottom: 2px solid transparent; background: transparent; padding: 10px 12px; font-size: 14px; line-height: 20px; color: var(--muted-foreground); cursor: pointer; font-family: inherit; }
+    .onglet.actif { border-bottom-color: var(--primary); font-weight: 500; color: var(--foreground); }
+
+    .entete-zones { display: grid; grid-template-columns: 20px 96px 1fr 104px 64px 64px 60px 60px; gap: 8px; align-items: center; padding: 0 12px 8px; font-size: 12px; line-height: 16px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+    .ligne-zone { display: grid; grid-template-columns: 20px 96px 1fr 104px 64px 64px 60px 60px; gap: 8px; align-items: center; border: 1px solid var(--border); border-radius: 10px; background: var(--card); padding: 10px 12px; }
+    .ligne-zone.eteinte { opacity: .55; }
+    .ico-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 0; background: transparent; border-radius: 6px; color: var(--muted-foreground); cursor: pointer; }
+    .ico-btn:hover { color: var(--foreground); }
+    .ico-btn:disabled { opacity: .3; cursor: default; }
+
+    .apercu-zone { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in oklab, var(--muted) 50%, var(--card)); }
+    .compteur { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 14px; font-weight: 500; }
+
+    .interrupteur { position: relative; display: inline-flex; width: 32px; height: 18px; border-radius: 9999px; background: var(--input); border: 0; padding: 0; cursor: pointer; }
+    .interrupteur.on { background: var(--primary); }
+    .interrupteur > span { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 9999px; background: var(--background); transition: transform .15s ease; }
+    .interrupteur.on > span { transform: translateX(14px); background: var(--card); }
+
+    .case { display: flex; align-items: flex-start; gap: 8px; border: 1px solid var(--input); border-radius: 10px; padding: 10px; cursor: pointer; }
+    .case:hover { border-color: #3b82f6; }
+  </style>
+</helmet>
+
+<div class="app {{themeClasse}}">
+
+  <!-- La barre d'administration, inchangée. -->
+  <div class="chrome">
+    <div class="chrome-inner">
+      <div class="chrome-tabs">
+        <a class="chrome-tab" href="#">Tableau de bord</a>
+        <a class="chrome-tab actif" href="#">Jeux</a>
+        <a class="chrome-tab" href="#">Utilisateurs</a>
+        <a class="chrome-tab" href="#">Tournois</a>
+        <a class="chrome-tab" href="#">Cartes</a>
+        <a class="chrome-tab" href="#">Produits</a>
+        <a class="chrome-tab" href="#">Lieux</a>
+        <a class="chrome-tab" href="#">Succès</a>
+        <a class="chrome-tab" href="#">Exports</a>
+        <a class="chrome-tab" href="#">Signalements</a>
+        <a class="chrome-tab" href="#">Réglages</a>
+      </div>
+      <span style="font-size: 14px; color: var(--muted-foreground); white-space: nowrap;">Espace Admin</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="conteneur">
+
+      <!-- En-tête de la fiche : le retour et le titre suivent
+           `/admin/tournaments/[gameId]`, déjà en place. -->
+      <a href="#" style="font-size: 14px; line-height: 20px; color: var(--muted-foreground);">← Jeux</a>
+
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; margin: 8px 0 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; min-width: 0;">
+          <div style="width: 56px; height: 56px; border-radius: 10px; background: var(--muted); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 600; color: var(--muted-foreground); flex: none;">R</div>
+          <div style="min-width: 0;">
+            <h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -0.01em;">Riftbound</h1>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px;">
+              <span class="pastille pastille-bleue">TCG</span>
+              <span class="pastille pastille-contour mono">riftbound</span>
+              <span style="font-size: 14px; color: var(--muted-foreground);">8 fonctionnalités actives</span>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <button class="btn btn-contour" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
+            Voir la fiche publique
+          </button>
+          <button class="btn btn-primaire" type="button">Enregistrer</button>
+        </div>
+      </div>
+
+      <!-- Les onglets de la fiche. -->
+      <div class="onglets">
+        <button type="button" class="onglet {{actif.identite}}" onClick="{{allerIdentite}}">Identité</button>
+        <button type="button" class="onglet {{actif.fonctions}}" onClick="{{allerFonctions}}">Fonctionnalités</button>
+        <button type="button" class="onglet {{actif.deck}}" onClick="{{allerDeck}}">Deck builder</button>
+        <button type="button" class="onglet {{actif.lieux}}" onClick="{{allerLieux}}">Lieux mis en avant</button>
+        <button type="button" class="onglet {{actif.tournois}}" onClick="{{allerTournois}}">Tournois</button>
+      </div>
+
+      <!-- ONGLET : DECK BUILDER -->
+      <sc-if value="{{estDeck}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; align-items: flex-start; gap: 24px;">
+
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px;">
+
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Sections du deck</div>
+              <p class="carte-desc">
+                Le découpage suit le jeu, pas le deck : deux decks de Riftbound se rangent de la même façon.
+                Une section décochée reste en base — les cartes qu&apos;elle porte réapparaissent si elle est réactivée.
+              </p>
+            </div>
+            <div class="carte-corps">
+              <div class="entete-zones">
+                <span></span>
+                <span>Clé</span>
+                <span>Libellé</span>
+                <span>Court</span>
+                <span>Min</span>
+                <span>Max</span>
+                <span>Courbe</span>
+                <span></span>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <sc-for list="{{zones}}" as="zone" hint-placeholder-count="6">
+                  <div class="ligne-zone {{zone.classeEteinte}}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted-foreground); cursor: grab;" aria-hidden="true"><circle cx="9" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>
+
+                    <span class="pastille pastille-contour mono" style="justify-self: start;">{{zone.key}}</span>
+
+                    <input class="champ" value="{{zone.label}}" onChange="{{zone.majLibelle}}" aria-label="Libellé de la section">
+
+                    <input class="champ" value="{{zone.short}}" onChange="{{zone.majCourt}}" aria-label="Libellé court">
+
+                    <input class="champ champ-nb" value="{{zone.min}}" onChange="{{zone.majMin}}" placeholder="—" aria-label="Minimum de cartes">
+
+                    <input class="champ champ-nb" value="{{zone.max}}" onChange="{{zone.majMax}}" placeholder="—" aria-label="Maximum de cartes">
+
+                    <div style="display: flex; justify-content: center;">
+                      <input type="checkbox" defaultChecked="{{zone.curve}}" style="width: 16px; height: 16px; accent-color: #2563eb;" aria-label="Compte dans la courbe de coûts">
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 2px;">
+                      <button type="button" class="interrupteur {{zone.classeActive}}" onClick="{{zone.bascule}}" aria-label="Activer la section"><span></span></button>
+                      <button type="button" class="ico-btn" onClick="{{zone.retirer}}" aria-label="Retirer la section">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                      </button>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px;">
+                <span style="font-size: 14px; color: var(--muted-foreground);">Ajouter une section :</span>
+                <sc-for list="{{restantes}}" as="reste" hint-placeholder-count="1">
+                  <button type="button" class="btn btn-contour btn-sm" onClick="{{reste.ajouter}}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+                    {{reste.label}}
+                  </button>
+                </sc-for>
+                <sc-if value="{{aucuneRestante}}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: 14px; color: var(--muted-foreground);">toutes les clés connues sont posées.</span>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Règles du deck</div>
+              <p class="carte-desc">
+                Ce qui vaut pour le deck entier, quelle que soit la section. Un champ laissé vide ne contraint rien.
+              </p>
+            </div>
+            <div class="carte-corps" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+              <div>
+                <label class="etiquette" for="copies">Exemplaires par carte</label>
+                <input class="champ" id="copies" value="{{copies}}" onChange="{{majCopies}}" placeholder="—">
+                <p class="aide">3 pour Riftbound, 4 pour la plupart des TCG.</p>
+              </div>
+              <div>
+                <label class="etiquette" for="total-min">Taille totale — min</label>
+                <input class="champ" id="total-min" value="{{totalMin}}" onChange="{{majTotalMin}}" placeholder="—">
+                <p class="aide">Somme des sections actives.</p>
+              </div>
+              <div>
+                <label class="etiquette" for="total-max">Taille totale — max</label>
+                <input class="champ" id="total-max" value="{{totalMax}}" onChange="{{majTotalMax}}" placeholder="—">
+                <p class="aide">Vide : pas de plafond.</p>
+              </div>
+              <div style="grid-column: span 3;">
+                <label class="etiquette" for="hors-limite">Cartes hors limite</label>
+                <input class="champ" id="hors-limite" placeholder="Types ou mots-clés exemptés du plafond d’exemplaires — « Rune », « Terrain de base »…">
+                <p class="aide">Une par ligne à la saisie ; les runes de base échappent au plafond de 3.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- La conséquence, à droite : ce que le joueur lira dans l’éditeur. -->
+        <div style="width: 344px; flex: none; display: flex; flex-direction: column; gap: 24px;">
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Aperçu du deck builder</div>
+              <p class="carte-desc">Les en-têtes de zone tels que le joueur les verra, sur un deck de démonstration.</p>
+            </div>
+            <div class="carte-corps" style="display: flex; flex-direction: column; gap: 8px;">
+              <sc-for list="{{apercu}}" as="ligne" hint-placeholder-count="6">
+                <div class="apercu-zone">
+                  <div style="min-width: 0;">
+                    <div style="font-size: 14px; line-height: 20px; font-weight: 500;">{{ligne.label}}</div>
+                    <div style="font-size: 12px; line-height: 16px; color: var(--muted-foreground); margin-top: 2px;">{{ligne.regle}}</div>
+                  </div>
+                  <span class="compteur" style="color: {{ligne.couleur}};">{{ligne.compteur}}</span>
+                </div>
+              </sc-for>
+
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border); margin-top: 8px; padding-top: 12px;">
+                <span style="font-size: 14px; font-weight: 500;">Total</span>
+                <span class="compteur">{{total}}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="border: 1px solid var(--alerte-bord); background: var(--alerte-fond); border-radius: 10px; padding: 12px;">
+            <p style="margin: 0; font-size: 14px; line-height: 20px;">
+              Le vérificateur de deck est activé pour ce jeu : ces bornes servent aussi au contrôle de légalité
+              des listes déposées en tournoi.
+            </p>
+          </div>
+        </div>
+
+      </div>
+      </sc-if>
+
+      <!-- ONGLET : IDENTITÉ -->
+      <sc-if value="{{estIdentite}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; align-items: flex-start; gap: 24px;">
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px;">
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Identité</div>
+              <p class="carte-desc">Ce que la fiche du jeu affiche, et ce sur quoi les URL sont bâties.</p>
+            </div>
+            <div class="carte-corps" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px;">
+              <div>
+                <label class="etiquette" for="nom">Nom du jeu</label>
+                <input class="champ" id="nom" defaultValue="Riftbound">
+              </div>
+              <div>
+                <label class="etiquette" for="slug">ID du jeu</label>
+                <input class="champ mono" id="slug" defaultValue="riftbound">
+                <p class="aide">Sert d’adresse : /games/riftbound. Le changer casse les liens existants.</p>
+              </div>
+              <div>
+                <label class="etiquette" for="type">Type de jeu</label>
+                <select class="champ" id="type">
+                  <option>TCG</option>
+                  <option>Jeu de Plateau</option>
+                  <option>Jeu Vidéo</option>
+                  <option>Jeu de Figurines</option>
+                  <option>Autre</option>
+                </select>
+              </div>
+              <div>
+                <label class="etiquette" for="editeur">Éditeur</label>
+                <input class="champ" id="editeur" defaultValue="Riot Games">
+              </div>
+              <div style="grid-column: span 2;">
+                <label class="etiquette" for="desc">Description</label>
+                <textarea class="champ" id="desc" rows="3" style="height: auto; padding: 8px 12px; resize: vertical;" defaultValue="Le jeu de cartes à collectionner de League of Legends."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Images</div>
+              <p class="carte-desc">Icône carrée et bannière large ; les deux se téléversent, rien n’est écrasé sans remplacement.</p>
+            </div>
+            <div class="carte-corps" style="display: flex; flex-wrap: wrap; gap: 24px;">
+              <div>
+                <span class="etiquette">Icône</span>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 64px; height: 64px; border-radius: 10px; background: var(--muted); display: flex; align-items: center; justify-content: center; color: var(--muted-foreground); font-size: 24px; font-weight: 600;">R</div>
+                  <button type="button" class="btn btn-contour btn-sm">Remplacer</button>
+                </div>
+              </div>
+              <div style="flex: 1; min-width: 240px;">
+                <span class="etiquette">Bannière</span>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="flex: 1; height: 64px; border-radius: 10px; background: var(--muted); border: 1px dashed var(--border);"></div>
+                  <button type="button" class="btn btn-contour btn-sm">Remplacer</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="width: 344px; flex: none;">
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Liens</div>
+              <p class="carte-desc">Affichés sur la fiche publique du jeu.</p>
+            </div>
+            <div class="carte-corps" style="display: flex; flex-direction: column; gap: 12px;">
+              <div>
+                <label class="etiquette" for="site">Site officiel</label>
+                <input class="champ" id="site" defaultValue="https://riftbound.leagueoflegends.com">
+              </div>
+              <div>
+                <label class="etiquette" for="discord">Discord</label>
+                <input class="champ" id="discord" placeholder="https://discord.gg/…">
+              </div>
+              <div>
+                <label class="etiquette" for="youtube">YouTube</label>
+                <input class="champ" id="youtube" placeholder="https://youtube.com/@…">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ONGLET : FONCTIONNALITÉS -->
+      <sc-if value="{{estFonctions}}" hint-placeholder-val="{{ false }}">
+      <div class="carte">
+        <div class="carte-tete">
+          <div class="carte-titre">Fonctionnalités</div>
+          <p class="carte-desc">
+            Ce que le jeu expose aux joueurs : onglets de la barre d&apos;outils, tuiles de sa fiche et routes
+            d&apos;API. Une fonctionnalité décochée devient invisible, mais rien n&apos;est supprimé.
+          </p>
+        </div>
+        <div class="carte-corps" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+          <label class="case">
+            <input type="checkbox" defaultChecked="{{ true }}" style="margin-top: 2px; width: 16px; height: 16px; flex: none; accent-color: #2563eb;">
+            <span style="min-width: 0;">
+              <span style="display: block; font-size: 14px; line-height: 20px;">Cartes</span>
+              <span style="display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground);">Galerie des cartes, loupe et scanner. Commande aussi l’onglet « collection » de la barre d’outils.</span>
+            </span>
+          </label>
+          <label class="case">
+            <input type="checkbox" defaultChecked="{{ true }}" style="margin-top: 2px; width: 16px; height: 16px; flex: none; accent-color: #2563eb;">
+            <span style="min-width: 0;">
+              <span style="display: block; font-size: 14px; line-height: 20px;">Collection</span>
+              <span style="display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground);">Tuile « ma collection » sur la fiche du jeu.</span>
+            </span>
+          </label>
+          <label class="case">
+            <input type="checkbox" style="margin-top: 2px; width: 16px; height: 16px; flex: none; accent-color: #2563eb;">
+            <span style="min-width: 0;">
+              <span style="display: block; font-size: 14px; line-height: 20px;">Produits</span>
+              <span style="display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground);">Catalogue de boîtes et de figurines, et la collection qui va avec. Pour les jeux sans cartes.</span>
+            </span>
+          </label>
+          <label class="case">
+            <input type="checkbox" defaultChecked="{{ true }}" style="margin-top: 2px; width: 16px; height: 16px; flex: none; accent-color: #2563eb;">
+            <span style="min-width: 0;">
+              <span style="display: block; font-size: 14px; line-height: 20px;">Règles</span>
+              <span style="display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground);">Corpus de règles consultable et recherchable.</span>
+            </span>
+          </label>
+          <label class="case">
+            <input type="checkbox" defaultChecked="{{ true }}" style="margin-top: 2px; width: 16px; height: 16px; flex: none; accent-color: #2563eb;">
+            <span style="min-width: 0;">
+              <span style="display: block; font-size: 14px; line-height: 20px;">Politiques</span>
+              <span style="display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground);">Documents de politique de jeu, soumis au vote de la communauté.</span>
+            </span>
+          </label>
+          <label class="case">
+            <input type="checkbox" defaultChecked="{{ true }}" style="margin-top: 2px; width: 16px; height: 16px; flex: none; accent-color: #2563eb;">
+            <span style="min-width: 0;">
+              <span style="display: block; font-size: 14px; line-height: 20px;">Tournois</span>
+              <span style="display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground);">Tuile « tournois » sur la fiche du jeu.</span>
+            </span>
+          </label>
+          <label class="case" style="border-color: #3b82f6;">
+            <input type="checkbox" defaultChecked="{{ true }}" style="margin-top: 2px; width: 16px; height: 16px; flex: none; accent-color: #2563eb;">
+            <span style="min-width: 0;">
+              <span style="display: block; font-size: 14px; line-height: 20px;">Vérificateur de deck</span>
+              <span style="display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground);">Contrôle de légalité d’une liste au regard des formats du jeu. Se règle dans l’onglet Deck builder.</span>
+            </span>
+          </label>
+          <label class="case">
+            <input type="checkbox" defaultChecked="{{ true }}" style="margin-top: 2px; width: 16px; height: 16px; flex: none; accent-color: #2563eb;">
+            <span style="min-width: 0;">
+              <span style="display: block; font-size: 14px; line-height: 20px;">Cubes</span>
+              <span style="display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground);">Création et draft de cubes.</span>
+            </span>
+          </label>
+          <label class="case">
+            <input type="checkbox" style="margin-top: 2px; width: 16px; height: 16px; flex: none; accent-color: #2563eb;">
+            <span style="min-width: 0;">
+              <span style="display: block; font-size: 14px; line-height: 20px;">Rapports de bataille</span>
+              <span style="display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground);">Les parties de ce jeu se saisissent en rapport de bataille : listes d’armée, scénario et notes.</span>
+            </span>
+          </label>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ONGLET : LIEUX MIS EN AVANT -->
+      <sc-if value="{{estLieux}}" hint-placeholder-val="{{ false }}">
+      <div class="carte">
+        <div class="carte-tete">
+          <div class="carte-titre">Lieux mis en avant</div>
+          <p class="carte-desc">
+            Les lieux poussés en tête de la fiche du jeu. La recherche ne propose que des lieux qui déclarent ce jeu.
+          </p>
+        </div>
+        <div class="carte-corps">
+          <input class="champ" placeholder="Rechercher un lieu…" style="max-width: 420px;">
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted-foreground); cursor: grab;" aria-hidden="true"><circle cx="9" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>
+              <div style="width: 40px; height: 28px; border-radius: 6px; background: var(--muted); flex: none;"></div>
+              <span style="flex: 1; min-width: 0; font-size: 14px; font-weight: 500;">L’Antre-Temps</span>
+              <span style="font-size: 14px; color: var(--muted-foreground);">Paris 11e</span>
+              <button type="button" class="btn btn-fantome btn-sm" style="color: var(--destructive);">Retirer</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted-foreground); cursor: grab;" aria-hidden="true"><circle cx="9" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>
+              <div style="width: 40px; height: 28px; border-radius: 6px; background: var(--muted); flex: none;"></div>
+              <span style="flex: 1; min-width: 0; font-size: 14px; font-weight: 500;">La Guilde des Joueurs</span>
+              <span style="font-size: 14px; color: var(--muted-foreground);">Lyon 7e</span>
+              <button type="button" class="btn btn-fantome btn-sm" style="color: var(--destructive);">Retirer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ONGLET : TOURNOIS -->
+      <sc-if value="{{estTournois}}" hint-placeholder-val="{{ false }}">
+      <div class="carte">
+        <div class="carte-tete">
+          <div class="carte-titre">Réglages de tournoi</div>
+          <p class="carte-desc">
+            Ce dont part une nouvelle phase de tournoi pour ce jeu : preset de statistiques, départages, barème.
+          </p>
+        </div>
+        <div class="carte-corps" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px;">
+          <div>
+            <label class="etiquette" for="preset">Preset de statistiques</label>
+            <select class="champ" id="preset">
+              <option>Suivre le jeu (Riftbound)</option>
+              <option>Générique</option>
+            </select>
+          </div>
+          <div>
+            <label class="etiquette" for="bestof">Format des rondes</label>
+            <select class="champ" id="bestof">
+              <option>Bo3</option>
+              <option>Bo1</option>
+            </select>
+          </div>
+          <div style="grid-column: span 2;">
+            <p class="aide" style="margin: 0;">
+              L’écran complet vit déjà sous /admin/tournaments/riftbound ; cet onglet en reprend les deux réglages
+              les plus consultés et renvoie au reste.
+            </p>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"theme":{"editor":"enum","options":["clair","sombre"],"default":"clair"},"$preview":{"width":1440,"height":1420}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+
+    /*
+     * Les zones de Riftbound telles que `lib/decks/zones.ts` les code
+     * aujourd hui, traduites dans le couple min / max que propose cette
+     * maquette : `bound: exact, target: 12` devient min 12 et max 12.
+     */
+    this.state = {
+      tab: "deck",
+      copies: "3",
+      totalMin: "",
+      totalMax: "",
+      zones: [
+        { key: "legend", label: "Légende", short: "Légende", min: "1", max: "1", curve: false, enabled: true, compte: 1 },
+        { key: "champions", label: "Champions", short: "Champions", min: "1", max: "3", curve: false, enabled: true, compte: 3 },
+        { key: "maindeck", label: "Deck principal", short: "Principal", min: "40", max: "", curve: true, enabled: true, compte: 41 },
+        { key: "runes", label: "Runes", short: "Runes", min: "12", max: "12", curve: false, enabled: true, compte: 12 },
+        { key: "battlefields", label: "Battlefields", short: "Battlefields", min: "3", max: "3", curve: false, enabled: true, compte: 3 },
+        { key: "sideboard", label: "Réserve", short: "Réserve", min: "", max: "10", curve: false, enabled: true, compte: 8 }
+      ]
+    };
+  }
+
+  toutesLesCles() {
+    return [
+      { key: "legend", label: "Légende", short: "Légende" },
+      { key: "champions", label: "Champions", short: "Champions" },
+      { key: "maindeck", label: "Deck principal", short: "Principal" },
+      { key: "runes", label: "Runes", short: "Runes" },
+      { key: "battlefields", label: "Battlefields", short: "Battlefields" },
+      { key: "sideboard", label: "Réserve", short: "Réserve" },
+      { key: "extra", label: "Zone extra", short: "Extra" }
+    ];
+  }
+
+  nombre(valeur) {
+    const propre = String(valeur).trim();
+    if (propre === "") return undefined;
+    const n = parseInt(propre, 10);
+    return isNaN(n) ? undefined : n;
+  }
+
+  /**
+   * La phrase de règle, dérivée des deux bornes plutôt que saisie à la main :
+   * c est elle que le joueur lit sous l en-tête de zone.
+   */
+  regle(zone) {
+    const min = this.nombre(zone.min);
+    const max = this.nombre(zone.max);
+
+    if (min !== undefined && max !== undefined) {
+      return min === max ? min + " exactement" : min + " à " + max;
+    }
+    if (min !== undefined) return min + " minimum";
+    if (max !== undefined) return "jusqu à " + max;
+    return "aucune contrainte";
+  }
+
+  /** « 12 / 12 » quand il y a un plafond, le seul nombre sinon. */
+  compteur(zone) {
+    const max = this.nombre(zone.max);
+    return max === undefined ? String(zone.compte) : zone.compte + " / " + max;
+  }
+
+  conforme(zone) {
+    const min = this.nombre(zone.min);
+    const max = this.nombre(zone.max);
+    if (min !== undefined && zone.compte < min) return false;
+    if (max !== undefined && zone.compte > max) return false;
+    return true;
+  }
+
+  majZone(key, champ, valeur) {
+    this.setState({
+      zones: this.state.zones.map((zone) => (zone.key === key ? { ...zone, [champ]: valeur } : zone))
+    });
+  }
+
+  renderVals() {
+    const tab = this.state.tab;
+    const vide = { identite: "", fonctions: "", deck: "", lieux: "", tournois: "" };
+    const actif = { ...vide, [tab]: "actif" };
+
+    const posees = this.state.zones.map((zone) => zone.key);
+    const restantes = this.toutesLesCles()
+      .filter((cle) => posees.indexOf(cle.key) === -1)
+      .map((cle) => ({
+        label: cle.label,
+        ajouter: () =>
+          this.setState({
+            zones: [...this.state.zones, { ...cle, min: "", max: "", curve: false, enabled: true, compte: 0 }]
+          })
+      }));
+
+    const actives = this.state.zones.filter((zone) => zone.enabled);
+
+    return {
+      themeClasse: this.props.theme === "sombre" ? "sombre" : "",
+
+      actif,
+      estIdentite: tab === "identite",
+      estFonctions: tab === "fonctions",
+      estDeck: tab === "deck",
+      estLieux: tab === "lieux",
+      estTournois: tab === "tournois",
+      allerIdentite: () => this.setState({ tab: "identite" }),
+      allerFonctions: () => this.setState({ tab: "fonctions" }),
+      allerDeck: () => this.setState({ tab: "deck" }),
+      allerLieux: () => this.setState({ tab: "lieux" }),
+      allerTournois: () => this.setState({ tab: "tournois" }),
+
+      copies: this.state.copies,
+      totalMin: this.state.totalMin,
+      totalMax: this.state.totalMax,
+      majCopies: (e) => this.setState({ copies: e.target.value }),
+      majTotalMin: (e) => this.setState({ totalMin: e.target.value }),
+      majTotalMax: (e) => this.setState({ totalMax: e.target.value }),
+
+      zones: this.state.zones.map((zone) => ({
+        key: zone.key,
+        label: zone.label,
+        short: zone.short,
+        min: zone.min,
+        max: zone.max,
+        curve: zone.curve,
+        classeEteinte: zone.enabled ? "" : "eteinte",
+        classeActive: zone.enabled ? "on" : "",
+        majLibelle: (e) => this.majZone(zone.key, "label", e.target.value),
+        majCourt: (e) => this.majZone(zone.key, "short", e.target.value),
+        majMin: (e) => this.majZone(zone.key, "min", e.target.value),
+        majMax: (e) => this.majZone(zone.key, "max", e.target.value),
+        bascule: () => this.majZone(zone.key, "enabled", !zone.enabled),
+        retirer: () => this.setState({ zones: this.state.zones.filter((autre) => autre.key !== zone.key) })
+      })),
+
+      restantes,
+      aucuneRestante: restantes.length === 0,
+
+      apercu: actives.map((zone) => ({
+        label: zone.label,
+        regle: this.regle(zone),
+        compteur: this.compteur(zone),
+        couleur: this.conforme(zone) ? "var(--ok)" : "var(--alerte)"
+      })),
+
+      total: String(actives.reduce((somme, zone) => somme + zone.compte, 0))
+    };
+  }
+}
+</script>
+</body>
+</html>

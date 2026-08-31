@@ -1,0 +1,617 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .app {
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --ok: #047857;
+      --ok-fond: rgba(16, 185, 129, 0.12);
+      font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100%;
+    }
+
+    .app.sombre {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --border: oklch(1 0 0 / 10%);
+      --input: oklch(1 0 0 / 15%);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --ok: #6ee7b7;
+    }
+
+    .chrome { background: var(--card); border-bottom: 1px solid var(--border); box-shadow: 0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1); }
+    .chrome-inner { max-width: 1280px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .chrome-tabs { display: flex; gap: 32px; min-width: 0; overflow: hidden; }
+    .chrome-tab { font-size: 14px; line-height: 20px; font-weight: 500; padding: 4px 4px 0; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .chrome-tab.actif { border-bottom-color: #3b82f6; }
+
+    .page { background: color-mix(in oklab, var(--muted) 50%, var(--background)); padding: 32px; }
+    .conteneur { max-width: 1152px; margin: 0 auto; }
+
+    .carte { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1); }
+    .carte-tete { padding: 24px 24px 0; }
+    .carte-titre { font-size: 16px; line-height: 20px; font-weight: 600; }
+    .carte-desc { font-size: 14px; line-height: 20px; color: var(--muted-foreground); margin-top: 6px; }
+    .carte-corps { padding: 24px; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 8px; font-size: 14px; line-height: 20px; font-weight: 500; white-space: nowrap; border: 1px solid transparent; cursor: pointer; font-family: inherit; }
+    .btn-primaire { background: var(--primary); color: var(--primary-foreground); }
+    .btn-contour { background: var(--background); border-color: var(--border); color: var(--foreground); box-shadow: 0 1px 2px 0 rgba(0,0,0,.05); }
+    .btn-fantome { background: transparent; color: var(--foreground); }
+    .btn-sm { height: 32px; padding: 0 12px; gap: 6px; }
+
+    .champ { height: 36px; width: 100%; border: 1px solid var(--input); border-radius: 8px; background: transparent; padding: 0 12px; font-size: 14px; line-height: 20px; color: var(--foreground); font-family: inherit; box-shadow: 0 1px 2px 0 rgba(0,0,0,.05); box-sizing: border-box; }
+    .champ:focus { outline: none; border-color: oklch(0.708 0 0); box-shadow: 0 0 0 3px color-mix(in oklab, oklch(0.708 0 0) 50%, transparent); }
+    .champ-xs { height: 32px; font-size: 12px; padding: 0 8px; }
+    .etiquette { display: block; font-size: 14px; line-height: 20px; font-weight: 500; margin-bottom: 6px; }
+    .etiquette-xs { display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground); margin-bottom: 4px; }
+    .aide { font-size: 12px; line-height: 16px; color: var(--muted-foreground); margin: 6px 0 0; }
+
+    .pastille { display: inline-flex; align-items: center; gap: 4px; border-radius: 9999px; border: 1px solid transparent; padding: 2px 8px; font-size: 12px; line-height: 16px; font-weight: 500; white-space: nowrap; }
+    .pastille-verte { background: rgba(16, 185, 129, .15); color: #065f46; }
+    .sombre .pastille-verte { color: #6ee7b7; }
+    .pastille-contour { border-color: var(--border); color: var(--muted-foreground); }
+    .mono { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+
+    .onglets { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .onglet { flex: none; border: 0; border-bottom: 2px solid transparent; background: transparent; padding: 10px 12px; font-size: 14px; line-height: 20px; color: var(--muted-foreground); cursor: pointer; font-family: inherit; }
+    .onglet.actif { border-bottom-color: var(--primary); font-weight: 500; color: var(--foreground); }
+
+    /* Le segment de type de source : les trois boutons du sélecteur de vue de
+       calendrier, déjà en place dans `CalendarModeSwitch`. */
+    .segment { display: inline-flex; gap: 8px; }
+    .source { border: 1px solid var(--border); border-radius: 10px; padding: 16px; background: color-mix(in oklab, var(--muted) 40%, var(--card)); }
+    .grille-champs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+  </style>
+</helmet>
+
+<div class="app {{themeClasse}}">
+
+  <div class="chrome">
+    <div class="chrome-inner">
+      <div class="chrome-tabs">
+        <a class="chrome-tab" href="#">Tableau de bord</a>
+        <a class="chrome-tab" href="#">Jeux</a>
+        <a class="chrome-tab" href="#">Utilisateurs</a>
+        <a class="chrome-tab" href="#">Tournois</a>
+        <a class="chrome-tab" href="#">Cartes</a>
+        <a class="chrome-tab" href="#">Produits</a>
+        <a class="chrome-tab actif" href="#">Lieux</a>
+        <a class="chrome-tab" href="#">Succès</a>
+        <a class="chrome-tab" href="#">Exports</a>
+        <a class="chrome-tab" href="#">Signalements</a>
+        <a class="chrome-tab" href="#">Réglages</a>
+      </div>
+      <span style="font-size: 14px; color: var(--muted-foreground); white-space: nowrap;">Espace Admin</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="conteneur">
+
+      <a href="#" style="font-size: 14px; line-height: 20px; color: var(--muted-foreground);">← Lieux</a>
+
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; margin: 8px 0 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; min-width: 0;">
+          <div style="width: 84px; height: 56px; border-radius: 10px; background: var(--muted); flex: none;"></div>
+          <div style="min-width: 0;">
+            <h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -0.01em;">L’Antre-Temps</h1>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px;">
+              <span class="pastille pastille-verte">Riftbound</span>
+              <span class="pastille pastille-verte">Lorcana</span>
+              <span class="pastille pastille-contour">Joutes Pro — offert</span>
+              <span style="font-size: 14px; color: var(--muted-foreground);">Paris 11e · 2 sources d’événements</span>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <button class="btn btn-contour" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
+            Voir la vitrine
+          </button>
+          <button class="btn btn-primaire" type="button">Enregistrer</button>
+        </div>
+      </div>
+
+      <div class="onglets">
+        <button type="button" class="onglet {{actif.identite}}" onClick="{{allerIdentite}}">Identité</button>
+        <button type="button" class="onglet {{actif.jeux}}" onClick="{{allerJeux}}">Jeux</button>
+        <button type="button" class="onglet {{actif.sources}}" onClick="{{allerSources}}">Sources d’événements</button>
+        <button type="button" class="onglet {{actif.vitrine}}" onClick="{{allerVitrine}}">Vitrine</button>
+        <button type="button" class="onglet {{actif.acces}}" onClick="{{allerAcces}}">Accès</button>
+      </div>
+
+      <!-- ONGLET : SOURCES D’ÉVÉNEMENTS -->
+      <sc-if value="{{estSources}}" hint-placeholder-val="{{ true }}">
+      <div class="carte">
+        <div class="carte-tete" style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;">
+          <div>
+            <div class="carte-titre">Sources d’événements</div>
+            <p class="carte-desc">
+              D’où viennent les événements du lieu. Une source lue par l’IA n’a besoin que d’une URL ;
+              une source en correspondance décrit un JSON champ par champ.
+            </p>
+          </div>
+          <button type="button" class="btn btn-contour" onClick="{{ajouterSource}}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+            Ajouter une source
+          </button>
+        </div>
+        <div class="carte-corps" style="display: flex; flex-direction: column; gap: 16px;">
+
+          <sc-for list="{{sources}}" as="source" hint-placeholder-count="2">
+            <div class="source">
+
+              <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                  <span style="font-size: 14px; font-weight: 600;">{{source.titre}}</span>
+                  <span style="font-size: 12px; color: var(--muted-foreground);">{{source.dernier}}</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
+                  <div class="segment">
+                    <button type="button" class="btn btn-sm {{source.classeIA}}" onClick="{{source.choisirIA}}">IA</button>
+                    <button type="button" class="btn btn-sm {{source.classeMapping}}" onClick="{{source.choisirMapping}}">Correspondance</button>
+                  </div>
+                  <button type="button" class="btn btn-contour btn-sm">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+                    Rafraîchir
+                  </button>
+                  <button type="button" class="btn btn-fantome btn-sm" style="color: var(--destructive);" onClick="{{source.retirer}}">Retirer</button>
+                </div>
+              </div>
+
+              <div style="margin-bottom: 16px;">
+                <label class="etiquette-xs">URL de la source</label>
+                <input class="champ mono" value="{{source.url}}" onChange="{{source.majUrl}}" placeholder="https://exemple.com/evenements">
+              </div>
+
+              <sc-if value="{{source.estIA}}" hint-placeholder-val="{{ true }}">
+                <div>
+                  <label class="etiquette-xs">Consignes pour l’IA (optionnel)</label>
+                  <textarea class="champ" rows="3" style="height: auto; padding: 8px 12px; resize: vertical;" defaultValue="{{source.instructions}}"></textarea>
+                  <p class="aide">Ce que la page a de particulier : où sont les dates, quels blocs ignorer, quel fuseau.</p>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{source.estMapping}}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div class="grille-champs" style="margin-bottom: 20px;">
+                    <div>
+                      <label class="etiquette-xs">Chemin vers les événements (JSONPath)</label>
+                      <input class="champ mono" defaultValue="data.items">
+                    </div>
+                    <div>
+                      <label class="etiquette-xs">Préfixe de base d’URL (optionnel)</label>
+                      <input class="champ mono" defaultValue="https://www.helloasso.com">
+                    </div>
+                  </div>
+
+                  <!-- Les deux tableaux côte à côte : c’est précisément ce que la
+                       modale ne pouvait pas tenir. -->
+                  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px;">
+
+                    <div>
+                      <p style="margin: 0 0 12px; font-size: 14px; font-weight: 500;">Correspondance des champs</p>
+                      <div class="grille-champs">
+                        <div><label class="etiquette-xs mono">id</label><input class="champ champ-xs mono" defaultValue="uuid"></div>
+                        <div><label class="etiquette-xs mono">name</label><input class="champ champ-xs mono" defaultValue="title"></div>
+                        <div><label class="etiquette-xs mono">startDateTime</label><input class="champ champ-xs mono" defaultValue="startsAt"></div>
+                        <div><label class="etiquette-xs mono">endDateTime</label><input class="champ champ-xs mono" defaultValue="endsAt"></div>
+                        <div><label class="etiquette-xs mono">gameName</label><input class="champ champ-xs mono" placeholder="—"></div>
+                        <div><label class="etiquette-xs mono">price</label><input class="champ champ-xs mono" defaultValue="tier.amount"></div>
+                        <div><label class="etiquette-xs mono">status</label><input class="champ champ-xs mono" defaultValue="state"></div>
+                        <div><label class="etiquette-xs mono">url</label><input class="champ champ-xs mono" defaultValue="slug"></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p style="margin: 0 0 12px; font-size: 14px; font-weight: 500;">Valeurs par défaut</p>
+                      <div class="grille-champs">
+                        <div><label class="etiquette-xs mono">name</label><input class="champ champ-xs" placeholder="Nom par défaut"></div>
+                        <div><label class="etiquette-xs mono">gameName</label><input class="champ champ-xs" defaultValue="Riftbound"></div>
+                        <div><label class="etiquette-xs mono">startDateTime</label><input class="champ champ-xs" placeholder="Date/heure début"></div>
+                        <div><label class="etiquette-xs mono">endDateTime</label><input class="champ champ-xs" placeholder="Date/heure fin"></div>
+                        <div><label class="etiquette-xs mono">price</label><input class="champ champ-xs" placeholder="Prix par défaut"></div>
+                        <div>
+                          <label class="etiquette-xs mono">status</label>
+                          <select class="champ champ-xs">
+                            <option>-- Aucun --</option>
+                            <option>available</option>
+                            <option>sold-out</option>
+                            <option>cancelled</option>
+                          </select>
+                        </div>
+                        <div style="grid-column: span 2;"><label class="etiquette-xs mono">url</label><input class="champ champ-xs" placeholder="URL par défaut"></div>
+                      </div>
+                      <p class="aide">Ces valeurs remplacent celles issues de la correspondance.</p>
+                    </div>
+
+                  </div>
+                </div>
+              </sc-if>
+
+            </div>
+          </sc-for>
+
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ONGLET : IDENTITÉ -->
+      <sc-if value="{{estIdentite}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; align-items: flex-start; gap: 24px;">
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px;">
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Identité</div>
+              <p class="carte-desc">Le nom, la bannière et la façon de vous trouver.</p>
+            </div>
+            <div class="carte-corps" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px;">
+              <div style="grid-column: span 2;">
+                <label class="etiquette" for="nom-lieu">Nom du lieu</label>
+                <input class="champ" id="nom-lieu" defaultValue="L’Antre-Temps">
+              </div>
+              <div style="grid-column: span 2;">
+                <label class="etiquette" for="adresse">Adresse</label>
+                <input class="champ" id="adresse" defaultValue="14 rue de la Roquette, 75011 Paris">
+              </div>
+              <div>
+                <label class="etiquette" for="gps">Coordonnées GPS</label>
+                <input class="champ mono" id="gps" defaultValue="48.8547, 2.3736">
+                <p class="aide">Format : latitude, longitude.</p>
+              </div>
+              <div>
+                <label class="etiquette" for="site-lieu">Site web</label>
+                <input class="champ" id="site-lieu" defaultValue="https://antre-temps.fr">
+              </div>
+            </div>
+          </div>
+
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Bannière</div>
+              <p class="carte-desc">Affichée en tête de la vitrine du lieu.</p>
+            </div>
+            <div class="carte-corps" style="display: flex; align-items: center; gap: 16px;">
+              <div style="flex: 1; height: 96px; border-radius: 10px; background: var(--muted); border: 1px dashed var(--border);"></div>
+              <button type="button" class="btn btn-contour btn-sm">Remplacer</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="width: 344px; flex: none;">
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Contact</div>
+              <p class="carte-desc">Visible sur la vitrine.</p>
+            </div>
+            <div class="carte-corps" style="display: flex; flex-direction: column; gap: 12px;">
+              <div>
+                <label class="etiquette" for="tel">Téléphone</label>
+                <input class="champ" id="tel" defaultValue="01 43 55 12 90">
+              </div>
+              <div>
+                <label class="etiquette" for="mail">E-mail</label>
+                <input class="champ" id="mail" defaultValue="contact@antre-temps.fr">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ONGLET : JEUX -->
+      <sc-if value="{{estJeux}}" hint-placeholder-val="{{ false }}">
+      <div class="carte">
+        <div class="carte-tete">
+          <div class="carte-titre">Jeux supportés</div>
+          <p class="carte-desc">
+            Ce que le lieu déclare jouer. Un jeu coché fait apparaître le lieu dans la recherche de ce jeu,
+            et le rend éligible à sa mise en avant.
+          </p>
+        </div>
+        <div class="carte-corps">
+          <input class="champ" placeholder="Filtrer les jeux…" style="max-width: 360px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; border: 1px solid var(--input); border-radius: 10px; padding: 10px 12px; cursor: pointer;">
+              <input type="checkbox" defaultChecked="{{ true }}" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              <span style="font-size: 14px;">Riftbound</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; border: 1px solid var(--input); border-radius: 10px; padding: 10px 12px; cursor: pointer;">
+              <input type="checkbox" defaultChecked="{{ true }}" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              <span style="font-size: 14px;">Lorcana</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; border: 1px solid var(--input); border-radius: 10px; padding: 10px 12px; cursor: pointer;">
+              <input type="checkbox" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              <span style="font-size: 14px;">Magic</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; border: 1px solid var(--input); border-radius: 10px; padding: 10px 12px; cursor: pointer;">
+              <input type="checkbox" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              <span style="font-size: 14px;">One Piece</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; border: 1px solid var(--input); border-radius: 10px; padding: 10px 12px; cursor: pointer;">
+              <input type="checkbox" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              <span style="font-size: 14px;">Star Wars Unlimited</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; border: 1px solid var(--input); border-radius: 10px; padding: 10px 12px; cursor: pointer;">
+              <input type="checkbox" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              <span style="font-size: 14px;">Pokémon</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; border: 1px solid var(--input); border-radius: 10px; padding: 10px 12px; cursor: pointer;">
+              <input type="checkbox" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              <span style="font-size: 14px;">Warhammer 40k</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; border: 1px solid var(--input); border-radius: 10px; padding: 10px 12px; cursor: pointer;">
+              <input type="checkbox" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              <span style="font-size: 14px;">Altered</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ONGLET : VITRINE -->
+      <sc-if value="{{estVitrine}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; align-items: flex-start; gap: 24px;">
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px;">
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Vue du calendrier</div>
+              <p class="carte-desc">Comment l’agenda du lieu se présente aux visiteurs.</p>
+            </div>
+            <div class="carte-corps" style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-primaire" style="flex: 1;">Calendrier</button>
+              <button type="button" class="btn btn-contour" style="flex: 1;">Agenda</button>
+              <button type="button" class="btn btn-contour" style="flex: 1;">Conférence</button>
+            </div>
+          </div>
+
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Sections de la vitrine</div>
+              <p class="carte-desc">Leur ordre et leur activation. Le calendrier est toujours affiché.</p>
+            </div>
+            <div class="carte-corps" style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted-foreground);" aria-hidden="true"><circle cx="9" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>
+                <span style="flex: 1; font-size: 14px;">Actualités</span>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted-foreground);" aria-hidden="true"><circle cx="9" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>
+                <span style="flex: 1; font-size: 14px;">À la une</span>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted-foreground);" aria-hidden="true"><circle cx="9" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>
+                <span style="flex: 1; font-size: 14px;">Calendrier</span>
+                <span class="mono" style="font-size: 11px; color: var(--muted-foreground);">toujours affiché</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted-foreground);" aria-hidden="true"><circle cx="9" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>
+                <span style="flex: 1; font-size: 14px;">Médias</span>
+                <input type="checkbox" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted-foreground);" aria-hidden="true"><circle cx="9" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>
+                <span style="flex: 1; font-size: 14px;">À propos</span>
+                <input type="checkbox" defaultChecked="{{ true }}" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="width: 344px; flex: none;">
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Marque blanche</div>
+              <p class="carte-desc">Réservée aux lieux Pro.</p>
+            </div>
+            <div class="carte-corps" style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <span class="etiquette">Accent</span>
+                <div style="display: flex; gap: 8px;">
+                  <span style="width: 32px; height: 32px; border-radius: 8px; background: #7c3aed; outline: 2px solid var(--foreground); outline-offset: 2px;"></span>
+                  <span style="width: 32px; height: 32px; border-radius: 8px; background: #0891b2;"></span>
+                  <span style="width: 32px; height: 32px; border-radius: 8px; background: #059669;"></span>
+                  <span style="width: 32px; height: 32px; border-radius: 8px; background: #d97706;"></span>
+                  <span style="width: 32px; height: 32px; border-radius: 8px; background: #dc2626;"></span>
+                </div>
+              </div>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" defaultChecked="{{ true }}" style="width: 16px; height: 16px; accent-color: #2563eb;">
+                <span style="font-size: 14px;">Teinter les cartes et les boutons</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ONGLET : ACCÈS -->
+      <sc-if value="{{estAcces}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; align-items: flex-start; gap: 24px;">
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px;">
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Gérants</div>
+              <p class="carte-desc">Les comptes qui peuvent gérer le lieu depuis l’application.</p>
+            </div>
+            <div class="carte-corps" style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;">
+                <div style="width: 32px; height: 32px; border-radius: 9999px; background: var(--muted); flex: none;"></div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 14px; font-weight: 500;">Camille R.</div>
+                  <div class="mono" style="font-size: 12px; color: var(--muted-foreground);">@camille</div>
+                </div>
+                <span class="pastille pastille-contour">créatrice de la fiche</span>
+                <button type="button" class="btn btn-fantome btn-sm" style="color: var(--destructive);">Retirer</button>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;">
+                <div style="width: 32px; height: 32px; border-radius: 9999px; background: var(--muted); flex: none;"></div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 14px; font-weight: 500;">Yanis B.</div>
+                  <div class="mono" style="font-size: 12px; color: var(--muted-foreground);">@yanis</div>
+                </div>
+                <button type="button" class="btn btn-fantome btn-sm" style="color: var(--destructive);">Retirer</button>
+              </div>
+              <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <input class="champ" placeholder="Ajouter un gérant par identifiant…" style="max-width: 360px;">
+                <button type="button" class="btn btn-contour">Ajouter</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Lieu privé</div>
+              <p class="carte-desc">Un lieu privé ne se trouve pas dans la recherche : on y entre par invitation.</p>
+            </div>
+            <div class="carte-corps" style="display: flex; align-items: center; gap: 12px;">
+              <input type="checkbox" style="width: 16px; height: 16px; accent-color: #2563eb;">
+              <span style="font-size: 14px;">Rendre ce lieu privé</span>
+              <span style="flex: 1;"></span>
+              <span class="mono" style="font-size: 12px; color: var(--muted-foreground);">code d’invitation : —</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="width: 344px; flex: none;">
+          <div class="carte">
+            <div class="carte-tete">
+              <div class="carte-titre">Joutes Pro</div>
+              <p class="carte-desc">Accès offert par l’équipe, indépendant de tout abonnement.</p>
+            </div>
+            <div class="carte-corps" style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="pastille" style="background: var(--ok-fond); color: var(--ok);">Actif depuis le 12 mars 2026</span>
+              </div>
+              <div>
+                <label class="etiquette-xs">Motif</label>
+                <input class="champ" defaultValue="Boutique partenaire — lieu pilote agenda">
+              </div>
+              <button type="button" class="btn btn-contour btn-sm" style="color: var(--destructive); align-self: flex-start;">Retirer l’accès</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"theme":{"editor":"enum","options":["clair","sombre"],"default":"clair"},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      tab: "sources",
+      sources: [
+        {
+          id: 1,
+          titre: "Source #1",
+          dernier: "14 événements — rafraîchie il y a 2 h",
+          url: "https://antre-temps.fr/agenda",
+          type: "IA",
+          instructions: "Les tournois sont dans la colonne de droite. Ignorer les anniversaires et les locations de salle."
+        },
+        {
+          id: 2,
+          titre: "Source #2",
+          dernier: "31 événements — rafraîchie il y a 40 min",
+          url: "https://api.helloasso.com/v5/organizations/antre-temps/events",
+          type: "MAPPING",
+          instructions: ""
+        }
+      ]
+    };
+  }
+
+  majSource(id, champ, valeur) {
+    this.setState({
+      sources: this.state.sources.map((source) => (source.id === id ? { ...source, [champ]: valeur } : source))
+    });
+  }
+
+  renderVals() {
+    const tab = this.state.tab;
+    const vide = { identite: "", jeux: "", sources: "", vitrine: "", acces: "" };
+    const actif = { ...vide, [tab]: "actif" };
+
+    return {
+      themeClasse: this.props.theme === "sombre" ? "sombre" : "",
+
+      actif,
+      estIdentite: tab === "identite",
+      estJeux: tab === "jeux",
+      estSources: tab === "sources",
+      estVitrine: tab === "vitrine",
+      estAcces: tab === "acces",
+      allerIdentite: () => this.setState({ tab: "identite" }),
+      allerJeux: () => this.setState({ tab: "jeux" }),
+      allerSources: () => this.setState({ tab: "sources" }),
+      allerVitrine: () => this.setState({ tab: "vitrine" }),
+      allerAcces: () => this.setState({ tab: "acces" }),
+
+      sources: this.state.sources.map((source) => ({
+        titre: source.titre,
+        dernier: source.dernier,
+        url: source.url,
+        instructions: source.instructions,
+        estIA: source.type === "IA",
+        estMapping: source.type === "MAPPING",
+        classeIA: source.type === "IA" ? "btn-primaire" : "btn-contour",
+        classeMapping: source.type === "MAPPING" ? "btn-primaire" : "btn-contour",
+        choisirIA: () => this.majSource(source.id, "type", "IA"),
+        choisirMapping: () => this.majSource(source.id, "type", "MAPPING"),
+        majUrl: (e) => this.majSource(source.id, "url", e.target.value),
+        retirer: () => this.setState({ sources: this.state.sources.filter((autre) => autre.id !== source.id) })
+      })),
+
+      ajouterSource: () => {
+        const suivant = this.state.sources.length + 1;
+        this.setState({
+          sources: [
+            ...this.state.sources,
+            { id: Date.now(), titre: "Source #" + suivant, dernier: "jamais rafraîchie", url: "", type: "IA", instructions: "" }
+          ]
+        });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

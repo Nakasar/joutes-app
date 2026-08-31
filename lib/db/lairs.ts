@@ -233,6 +233,27 @@ export async function updateLair(id: string, lair: Partial<Omit<Lair, "id">>): P
 }
 
 /**
+ * Vue du calendrier d'un lieu.
+ *
+ * Écriture sur le seul chemin `options.calendar.mode`, et c'est tout l'objet de
+ * cette fonction : `updateLair({ options: { calendar: { mode } } })` remplace
+ * `options` **en entier**, ce que fait `$set` d'un sous-document. Changer la vue
+ * du calendrier effaçait donc au passage le thème du lieu, l'ordre de ses
+ * sections, ses annonces, ses liens, ses horaires et sa page « À propos ».
+ */
+export async function setLairCalendarMode(
+  id: string,
+  mode: 'CALENDAR' | 'AGENDA' | 'CONFERENCE'
+): Promise<boolean> {
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { "options.calendar.mode": mode } }
+  );
+
+  return result.matchedCount > 0;
+}
+
+/**
  * Offre l'accès Pro à un lieu, ou en réécrit le motif.
  *
  * Écriture ciblée sur `proGrant` seul : passer par `updateLair` aurait exigé de

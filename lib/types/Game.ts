@@ -2,6 +2,7 @@ import { GameTypeKey } from "@/lib/constants/game-types";
 import { GameFeatureKey } from "@/lib/constants/game-features";
 import { Lair } from "@/lib/types/Lair";
 import type { GameTournamentDefaults } from "@/lib/tournaments/game-defaults";
+import type { GameDeckBuilder } from "@/lib/decks/zones";
 
 export type Game = {
   id: string;
@@ -60,6 +61,12 @@ export type Game = {
    * livrés avec la plateforme.
    */
   tournamentDefaults?: GameTournamentDefaults;
+  /**
+   * Réglages du deck builder : les sections d'un deck, leurs bornes, et ce qui
+   * vaut pour le deck entier. Décrits et résolus dans `lib/decks/zones.ts`.
+   * Absent = le jeu suit les zones livrées avec la plateforme.
+   */
+  deckBuilder?: GameDeckBuilder;
   /**
    * Édition du jeu en cours, pour les gammes qui en traversent plusieurs — la
    * valeur que porte l'attribut `edition` des produits qui se jouent

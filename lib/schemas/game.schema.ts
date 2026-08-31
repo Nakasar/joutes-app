@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { GAME_FEATURE_KEYS } from "@/lib/constants/game-features";
+import { DECK_ZONE_KEYS } from "@/lib/decks/zones";
 import {
   tournamentResultModeSchema,
   tournamentScenarioSchema,
@@ -54,6 +55,76 @@ export const gameTournamentDefaultsSchema = z.object({
 });
 
 export type GameTournamentDefaultsInput = z.infer<typeof gameTournamentDefaultsSchema>;
+
+/**
+ * Réglages du deck builder d'un jeu (administration).
+ *
+ * Les clés de zone sont **choisies, pas inventées** : elles sont écrites dans
+ * les documents de deck et relues par `parseDeckText` / le vérificateur de
+ * liste. Un `z.enum` sur `DECK_ZONE_KEYS` est donc ce qui tient la promesse du
+ * commentaire de `lib/decks/zones.ts`.
+ *
+ * Les deux bornes sont facultatives et se valident l'une par l'autre : un
+ * plancher au-dessus du plafond décrit une zone qu'aucun deck ne peut remplir,
+ * et le formulaire l'aurait laissé passer sans que rien ne le signale avant la
+ * première liste refusée.
+ */
+export const deckZoneBoundsSchema = z
+  .object({
+    key: z.enum(DECK_ZONE_KEYS),
+    label: z.string().trim().min(1, "Le libellé de la section est requis").max(40, "Le libellé est trop long"),
+    short: z.string().trim().min(1, "Le libellé court est requis").max(20, "Le libellé court est trop long"),
+    min: z.number().int().min(0).max(999).optional(),
+    max: z.number().int().min(0).max(999).optional(),
+    curve: z.boolean().optional(),
+  })
+  .superRefine((zone, ctx) => {
+    if (zone.min !== undefined && zone.max !== undefined && zone.min > zone.max) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `« ${zone.label} » : le minimum dépasse le maximum`,
+        path: ["min"],
+      });
+    }
+  });
+
+export const gameDeckBuilderSchema = z
+  .object({
+    zones: z.array(deckZoneBoundsSchema).max(DECK_ZONE_KEYS.length),
+    maxCopies: z.number().int().min(1).max(99).optional(),
+    totalMin: z.number().int().min(0).max(9999).optional(),
+    totalMax: z.number().int().min(0).max(9999).optional(),
+    unlimitedTypes: z.array(z.string().trim().min(1).max(60)).max(20).optional(),
+  })
+  .superRefine((settings, ctx) => {
+    // Une clé en double ferait deux sections que rien ne distingue en base :
+    // les cartes de l'une iraient dans l'autre au premier enregistrement.
+    const seen = new Set<string>();
+    for (const zone of settings.zones) {
+      if (seen.has(zone.key)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `La section « ${zone.key} » est déclarée deux fois`,
+          path: ["zones"],
+        });
+      }
+      seen.add(zone.key);
+    }
+
+    if (
+      settings.totalMin !== undefined &&
+      settings.totalMax !== undefined &&
+      settings.totalMin > settings.totalMax
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La taille totale minimale dépasse la maximale",
+        path: ["totalMin"],
+      });
+    }
+  });
+
+export type GameDeckBuilderInput = z.infer<typeof gameDeckBuilderSchema>;
 
 /**
  * Édition du jeu en cours — la valeur que porte l'attribut `edition` des

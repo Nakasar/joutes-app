@@ -1,0 +1,40 @@
+{
+  "artboards": [
+    { "file": "ListeJeux.dc.html", "title": "Liste des jeux — le point d entrée", "x": 0, "y": 0, "w": 1240, "h": 560 },
+    { "file": "ListeLieux.dc.html", "title": "Liste des lieux — le point d entrée", "x": 1360, "y": 0, "w": 1240, "h": 520 },
+    { "file": "Main.dc.html", "title": "/admin/games/:gameSlug", "x": 0, "y": 700, "w": 1440, "h": 1420, "is_interactive": true },
+    { "file": "Lieu.dc.html", "title": "/admin/lairs/:lairId", "x": 1560, "y": 700, "w": 1440, "h": 1240, "is_interactive": true },
+    { "file": "Mobile.dc.html", "title": "Le deck builder sur téléphone", "x": 3120, "y": 700, "w": 390, "h": 844, "is_interactive": true }
+  ],
+  "annotations": [
+    {
+      "id": "demande",
+      "x": 0,
+      "y": -520,
+      "w": 600,
+      "text": "La demande.\n\nLes deux modales d administration débordent : LairForm fait 752 lignes dans une boîte à max-w-2xl, GameForm 377, et les deux se terminent en défilement interne. Chacune devient une page.\n\n/admin/games/:gameSlug et /admin/lairs/:lairId, sur le modèle de /admin/tournaments/[gameId] qui existe déjà : retour, titre, onglets, et le formulaire à plat dans la largeur.\n\nLes deux listes ne changent presque pas : « Modifier » cesse d ouvrir une modale et mène à la fiche. La modale de création, elle, reste — un jeu neuf n a que trois champs à remplir.\n\nLes trois planches du bas répondent au clic : onglets, bornes des sections, bascule IA / correspondance."
+    },
+    {
+      "id": "deck",
+      "x": 700,
+      "y": -520,
+      "w": 620,
+      "text": "Le deck builder, et le modèle qu il demande.\n\nAujourd hui les zones sont écrites en dur dans lib/decks/zones.ts : deux tables (RIFTBOUND_ZONES, GENERIC_ZONES) et un getDeckZones qui teste game.slug === riftbound. Les rendre saisissables veut dire les poser sur le jeu, et faire retomber getDeckZones sur ces tables quand le jeu ne dit rien.\n\nUn changement de forme au passage : bound (exact / min / max / none) + target devient le couple min / max. « 12 exactement » est min 12 et max 12, « 40 minimum » est min 40 sans max. C est ce que la demande appelle littéralement min et max, et cela supprime le champ rule saisi à la main — la phrase se dérive des deux bornes, comme le compteur « 12 / 12 » que zoneCounterLabel produit déjà.\n\nCe qui ne bouge pas : DECK_ZONE_KEYS reste une liste fermée. Ces clés sont écrites en base et relues par parseDeckList / stringifyDeckList ; on choisit parmi elles, on n en invente pas."
+    },
+    {
+      "id": "code",
+      "x": 1400,
+      "y": -520,
+      "w": 600,
+      "text": "Ce que ça touche, côté code.\n\nDeux routes à créer, app/[locale]/(app)/admin/games/[gameSlug]/page.tsx et .../lairs/[lairId]/page.tsx. getGameBySlugOrId existe déjà ; getLairById aussi.\n\nGameForm et LairForm perdent leur mode édition et gardent la création. FeaturedLairsManager et CalendarModeSwitch deviennent des sections de page plutôt que des blocs de modale.\n\nSur le jeu : un champ deckBuilder (zones + règles du deck), lu par getDeckZones, isZoneCompliant et zoneCounterLabel. Le vérificateur de deck et le contrôle des listes de tournoi y puisent les mêmes bornes.\n\nSur le lieu : rien de nouveau en base — la page ne fait que déplier eventsSourceUrls, options.calendar, options.sections et le LairProGrant qui, lui, ne se lit que côté administration."
+    },
+    {
+      "id": "trancher",
+      "x": 2100,
+      "y": -520,
+      "w": 620,
+      "text": "À trancher.\n\n— Les bornes par format. Le jeu porte formats: { name }[] et le vérificateur valide contre un format. Les sections, elles, sont proposées au niveau du jeu : un Standard et un Legacy qui ne comptent pas pareil demanderaient des surcharges par format. Proposé : le jeu maintenant, les surcharges si un second format arrive.\n\n— Le fanion « courbe ». Une seule section peut-elle le porter ? defaultDeckZone prend la première qui l a ; plusieurs ne casseraient rien mais la courbe de coûts mélangerait deux zones.\n\n— La fiche lieu d administration recouvre en partie /lairs/[lairId]/manage, écrit pour le gérant. Reste à décider ce qui est propre à l administration (sources, accès Pro, gérants) et ce qui se partage.\n\n— Le p-8 des pages d administration vaut 32 px sur un téléphone. La planche mobile passe à 16 px ; à confirmer, c est un changement qui touche toute la zone."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

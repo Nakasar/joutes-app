@@ -3,7 +3,12 @@
 import { requireAdmin } from "@/lib/middleware/admin.ts";
 import { Game } from "@/lib/types/Game.ts";
 import { revalidatePath, updateTag } from "next/cache";
-import { gameSchema, gameIdSchema } from "@/lib/schemas/game.schema.ts";
+import {
+  gameSchema,
+  gameIdSchema,
+  gameFeaturesSchema,
+  gameDeckBuilderSchema,
+} from "@/lib/schemas/game.schema.ts";
 import { z } from "zod";
 import * as gamesDb from "@/lib/db/games.ts";
 import { GAMES_CACHE_TAG } from "@/lib/db/games-cached.ts";
@@ -99,11 +104,15 @@ export async function updateGame(id: string, data: GameFormData) {
     // une édition n'y apparaîtrait qu'à l'expiration de `cacheLife`.
     updateTag(GAMES_CACHE_TAG);
     revalidatePath("/admin/games");
+    // La fiche d'administration est adressée par le slug : changer celui-ci
+    // laisse l'ancienne adresse en cache, la nouvelle n'ayant jamais été rendue.
+    revalidatePath(`/admin/games/${game.slug ?? game.id}`);
+    revalidatePath(`/admin/games/${validatedData.slug ?? game.id}`);
     revalidatePath("/admin/lairs");
     revalidatePath(`/games`);
     revalidatePath(`/games/${game.slug ?? game.id}`);
     revalidatePath(`/games/${validatedData.slug ?? game.id}`);
-    
+
     return { success: true };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -154,6 +163,96 @@ export async function deleteGame(id: string) {
     }
     console.error("Erreur lors de la suppression du jeu:", error);
     return { success: false, error: "Erreur lors de la suppression du jeu" };
+  }
+}
+
+/**
+ * Les seuls fanions de fonctionnalités, sans le reste de la fiche.
+ *
+ * Un onglet qui n'affiche que les cases à cocher ne doit pas avoir à renvoyer
+ * le nom et la description du jeu pour satisfaire `gameSchema` : il les
+ * réécrirait à l'identique, et une modification faite entre-temps depuis un
+ * autre onglet serait perdue.
+ */
+export async function updateGameFeatures(
+  id: string,
+  features: Partial<Record<GameFeatureKey, boolean>>
+) {
+  try {
+    await requireAdmin();
+
+    const validatedId = gameIdSchema.parse(id);
+    const validatedFeatures = gameFeaturesSchema.parse(features);
+
+    const game = await gamesDb.getGameById(validatedId);
+
+    if (!game) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    await gamesDb.updateGame(validatedId, {
+      features: mergeGameFeatures(validatedFeatures, game.features),
+    });
+
+    updateTag(GAMES_CACHE_TAG);
+    revalidatePath("/admin/games");
+    revalidatePath(`/admin/games/${game.slug ?? game.id}`);
+    revalidatePath(`/games`);
+    revalidatePath(`/games/${game.slug ?? game.id}`);
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message || "Données invalides" };
+    }
+    console.error("Erreur lors de la mise à jour des fonctionnalités:", error);
+    return { success: false, error: "Erreur lors de la mise à jour des fonctionnalités" };
+  }
+}
+
+/**
+ * Réglages du deck builder.
+ *
+ * Une liste de zones vide vaut retrait du champ : c'est le seul moyen de rendre
+ * un jeu aux zones livrées avec la plateforme après les avoir réglées, et un
+ * `deckBuilder: { zones: [] }` laissé en base donnerait un éditeur sans aucune
+ * zone où poser une carte.
+ */
+export async function setGameDeckBuilder(id: string, deckBuilder: unknown) {
+  try {
+    await requireAdmin();
+
+    const validatedId = gameIdSchema.parse(id);
+    const validated = gameDeckBuilderSchema.parse(deckBuilder);
+
+    const game = await gamesDb.getGameById(validatedId);
+
+    if (!game) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    const updated = await gamesDb.setGameDeckBuilder(
+      validatedId,
+      validated.zones.length > 0 ? validated : null
+    );
+
+    if (!updated) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    updateTag(GAMES_CACHE_TAG);
+    revalidatePath("/admin/games");
+    revalidatePath(`/admin/games/${game.slug ?? game.id}`);
+    // Les decks affichent leurs zones : la fiche et l'éditeur les relisent.
+    revalidatePath("/decks");
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message || "Réglages invalides" };
+    }
+    console.error("Erreur lors de la mise à jour du deck builder:", error);
+    return { success: false, error: "Erreur lors de la mise à jour du deck builder" };
   }
 }
 

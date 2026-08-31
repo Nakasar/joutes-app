@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
-import { GameType, Game } from "@/lib/types/Game.ts";
+import { useState, useTransition } from "react";
+import { useRouter } from "@/i18n/navigation.ts";
+import { GameType } from "@/lib/types/Game.ts";
 import { GAME_TYPE_OPTIONS } from "@/lib/constants/game-types.ts";
-import { GAME_FEATURE_OPTIONS, type GameFeatureKey } from "@/lib/constants/game-features.ts";
-import { createGame, updateGame } from "./actions.ts";
+import { createGame } from "./actions.ts";
 import {
   Dialog,
   DialogContent,
@@ -14,203 +14,117 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { FeaturedLairsManager } from "./FeaturedLairsManager.tsx";
 
-export function GameForm({
-  game,
-  trigger,
-}: {
-  game?: Game;
-  trigger?: React.ReactNode;
-}) {
+const FIELD_CLASS =
+  "w-full px-4 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent";
+
+const EMPTY = {
+  name: "",
+  slug: "",
+  description: "",
+  type: "TCG" as GameType,
+};
+
+/**
+ * Création d'un jeu.
+ *
+ * Trois champs, et rien d'autre : images, fonctionnalités, lieux mis en avant
+ * et deck builder se règlent sur la fiche du jeu, où la place ne manque pas.
+ * La boîte mène droit à cette fiche une fois le jeu créé, plutôt que de laisser
+ * l'administrateur le retrouver dans la liste.
+ */
+export function GameForm({ trigger }: { trigger?: React.ReactNode }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
-    icon: "",
-    banner: "",
-    description: "",
-    type: "TCG" as GameType,
-  });
-  const [features, setFeatures] = useState<Partial<Record<GameFeatureKey, boolean>>>({});
-  const [uploading, setUploading] = useState<{
-    icon: boolean;
-    banner: boolean;
-  }>({
-    icon: false,
-    banner: false,
-  });
+  const [formData, setFormData] = useState(EMPTY);
 
-  // Initialiser ou réinitialiser le formulaire avec les données du jeu
-  useEffect(() => {
-    if (open) {
-      if (game) {
-        setFormData({
-          slug: game.slug || "",
-          name: game.name,
-          icon: game.icon || "",
-          banner: game.banner || "",
-          description: game.description,
-          type: game.type,
-        });
-        setFeatures(game.features ?? {});
-      } else {
-        setFormData({
-          slug: "",
-          name: "",
-          icon: "",
-          banner: "",
-          description: "",
-          type: "TCG",
-        });
-        setFeatures({});
-      }
-      setError(null);
-    }
-  }, [open, game]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     startTransition(async () => {
-      const data = {
+      const result = await createGame({
         slug: formData.slug.length > 0 ? formData.slug : undefined,
         name: formData.name,
-        icon: formData.icon.length > 0 ? formData.icon : undefined,
-        banner: formData.banner.length > 0 ? formData.banner : undefined,
         description: formData.description,
         type: formData.type,
-        features,
-      };
+      });
 
-      const result = game
-        ? await updateGame(game.id, data)
-        : await createGame(data);
-
-      if (result.success) {
-        setFormData({
-          slug: "",
-          name: "",
-          icon: "",
-          banner: "",
-          description: "",
-          type: "TCG",
-        });
-        setFeatures({});
+      if (result.success && result.game) {
+        setFormData(EMPTY);
         setOpen(false);
+        router.push(`/admin/games/${result.game.slug ?? result.game.id}`);
       } else {
-        setError(result.error || `Erreur lors de ${game ? "la modification" : "l'ajout"} du jeu`);
+        setError(result.error || "Erreur lors de l'ajout du jeu");
       }
     });
   };
 
-  const handleFileUpload = async (
-    file: File,
-    type: "icon" | "banner"
-  ) => {
-    setUploading((prev) => ({ ...prev, [type]: true }));
-    setError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Erreur lors de l'upload");
-      }
-
-      const data = await response.json();
-      setFormData((prev) => ({ ...prev, [type]: data.url }));
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erreur lors de l'upload du fichier"
-      );
-    } finally {
-      setUploading((prev) => ({ ...prev, [type]: false }));
-    }
-  };
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button>
-            Ajouter un jeu
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) {
+          setFormData(EMPTY);
+          setError(null);
+        }
+      }}
+    >
+      <DialogTrigger asChild>{trigger || <Button>Ajouter un jeu</Button>}</DialogTrigger>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            {game ? "Modifier le jeu" : "Nouveau jeu"}
-          </DialogTitle>
+          <DialogTitle>Nouveau jeu</DialogTitle>
           <DialogDescription>
-            {game
-              ? "Modifiez les informations du jeu."
-              : "Ajoutez un nouveau jeu avec ses informations."}
+            De quoi le nommer et l&apos;adresser. Le reste se règle sur sa fiche.
           </DialogDescription>
         </DialogHeader>
 
         {error && (
-          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
+          <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
+            <label htmlFor="new-game-name" className="block text-sm font-medium text-foreground mb-1">
               Nom du jeu
             </label>
             <input
+              id="new-game-name"
               type="text"
               required
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className={FIELD_CLASS}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
+            <label htmlFor="new-game-slug" className="block text-sm font-medium text-foreground mb-1">
               ID du jeu
             </label>
             <input
+              id="new-game-slug"
               type="text"
               value={formData.slug}
-              onChange={(e) =>
-                setFormData({ ...formData, slug: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
+              onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+              className={`${FIELD_CLASS} font-mono`}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
+            <label htmlFor="new-game-type" className="block text-sm font-medium text-foreground mb-1">
               Type de jeu
             </label>
             <select
+              id="new-game-type"
               value={formData.type}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  type: e.target.value as GameType,
-                })
-              }
-              className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as GameType })}
+              className={FIELD_CLASS}
             >
               {GAME_TYPE_OPTIONS.map(({ value, label }) => (
                 <option key={value} value={value}>
@@ -221,136 +135,23 @@ export function GameForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Icône du jeu
-            </label>
-            <div className="space-y-2">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file, "icon");
-                }}
-                disabled={uploading.icon}
-                className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
-              />
-              {uploading.icon && (
-                <p className="text-sm text-muted-foreground">Upload en cours...</p>
-              )}
-              {formData.icon && !uploading.icon && (
-                <div className="flex items-center gap-2">
-                  <img
-                    src={formData.icon}
-                    alt="Icône"
-                    className="w-16 h-16 object-cover rounded"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, icon: "" })
-                    }
-                    className="text-sm text-destructive hover:text-destructive/80"
-                  >
-                    Supprimer
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Bannière du jeu
-            </label>
-            <div className="space-y-2">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file, "banner");
-                }}
-                disabled={uploading.banner}
-                className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
-              />
-              {uploading.banner && (
-                <p className="text-sm text-muted-foreground">Upload en cours...</p>
-              )}
-              {formData.banner && !uploading.banner && (
-                <div className="flex items-center gap-2">
-                  <img
-                    src={formData.banner}
-                    alt="Bannière"
-                    className="w-32 h-16 object-cover rounded"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, banner: "" })
-                    }
-                    className="text-sm text-destructive hover:text-destructive/80"
-                  >
-                    Supprimer
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
+            <label
+              htmlFor="new-game-description"
+              className="block text-sm font-medium text-foreground mb-1"
+            >
               Description
             </label>
             <textarea
+              id="new-game-description"
               required
-              rows={4}
+              rows={3}
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className={FIELD_CLASS}
             />
           </div>
 
-          <div className="pt-4 border-t space-y-3">
-            <div>
-              <p className="text-sm font-medium text-foreground">Fonctionnalités</p>
-              <p className="text-xs text-muted-foreground">
-                Ce que le jeu expose aux joueurs : onglets de la barre d&apos;outils, tuiles de sa fiche et routes
-                d&apos;API. Une fonctionnalité décochée devient invisible, mais rien n&apos;est supprimé.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {GAME_FEATURE_OPTIONS.map(({ value, label, description }) => (
-                <label
-                  key={value}
-                  className="flex items-start gap-2 rounded-lg border border-input p-2 cursor-pointer hover:border-blue-500"
-                >
-                  <input
-                    type="checkbox"
-                    checked={features[value] === true}
-                    onChange={(e) =>
-                      setFeatures((prev) => ({ ...prev, [value]: e.target.checked }))
-                    }
-                    className="mt-0.5 size-4 shrink-0"
-                  />
-                  <span className="min-w-0">
-                    <span className="block text-sm text-foreground">{label}</span>
-                    <span className="block text-xs text-muted-foreground">{description}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {game && (
-            <div className="pt-4 border-t">
-              <FeaturedLairsManager game={game} />
-            </div>
-          )}
-
-          <div className="flex gap-2 pt-4">
+          <div className="flex flex-wrap gap-2 pt-4">
             <Button
               type="button"
               variant="outline"
@@ -360,14 +161,8 @@ export function GameForm({
             >
               Annuler
             </Button>
-            <Button
-              type="submit"
-              disabled={isPending || uploading.icon || uploading.banner}
-              className="flex-1"
-            >
-              {isPending
-                ? (game ? "Modification en cours..." : "Ajout en cours...")
-                : (game ? "Modifier" : "Ajouter")}
+            <Button type="submit" disabled={isPending} className="flex-1">
+              {isPending ? "Ajout en cours..." : "Ajouter"}
             </Button>
           </div>
         </form>

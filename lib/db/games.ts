@@ -32,6 +32,7 @@ function toGame(doc: WithId<Document>): Game {
     },
     features: doc.features || {},
     tournamentDefaults: doc.tournamentDefaults,
+    deckBuilder: doc.deckBuilder,
     currentProductEdition: doc.currentProductEdition,
   };
 }
@@ -57,6 +58,7 @@ function toDocument(game: Omit<Game, "id">): Omit<GameDocument, "_id"> {
     stats: game.stats,
     features: game.features,
     tournamentDefaults: game.tournamentDefaults,
+    deckBuilder: game.deckBuilder,
     currentProductEdition: game.currentProductEdition,
   };
 }
@@ -186,6 +188,29 @@ export async function setGameTournamentDefaults(
     defaults === null
       ? { $unset: { tournamentDefaults: "" } }
       : { $set: { tournamentDefaults: defaults } }
+  );
+
+  return result.matchedCount > 0;
+}
+
+/**
+ * Réglages du deck builder d'un jeu. Même contrat que les réglages de tournoi
+ * au-dessus, et pour la même raison : `null` retire le champ plutôt que d'y
+ * laisser une liste de zones vide, qui se lirait « ce jeu n'a aucune zone » là
+ * où l'on veut dire « ce jeu suit les zones livrées ».
+ *
+ * Rend vrai dès que le jeu existe : réenregistrer les mêmes valeurs ne modifie
+ * aucun document, et ce n'est pas un échec.
+ */
+export async function setGameDeckBuilder(
+  id: string,
+  deckBuilder: Game["deckBuilder"] | null
+): Promise<boolean> {
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(id) },
+    deckBuilder === null
+      ? { $unset: { deckBuilder: "" } }
+      : { $set: { deckBuilder } }
   );
 
   return result.matchedCount > 0;

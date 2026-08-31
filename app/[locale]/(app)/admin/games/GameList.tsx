@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Game } from "@/lib/types/Game.ts";
 import { deleteGame } from "./actions.ts";
-import { GameForm } from "./GameForm.tsx";
+import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {GAME_TYPES} from "@/lib/constants/game-types.ts";
 
@@ -81,9 +81,17 @@ export function GameList({ games }: { games: Game[] }) {
                   
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-foreground">
+                  <Link
+                    href={`/admin/games/${game.slug ?? game.id}`}
+                    className="text-sm font-medium text-foreground hover:text-blue-600 dark:hover:text-blue-400"
+                  >
                     {game.name}
-                  </div>
+                  </Link>
+                  {game.slug && (
+                    <div className="font-mono text-xs text-muted-foreground mt-0.5">
+                      {game.slug}
+                    </div>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-500/15 text-blue-800 dark:text-blue-300">
@@ -96,19 +104,15 @@ export function GameList({ games }: { games: Game[] }) {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex gap-2 justify-end">
-                    <GameForm
-                      game={game}
-                      trigger={
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                        >
-                          Modifier
-                        </Button>
-                      }
-                    />
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      asChild
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                    >
+                      <Link href={`/admin/games/${game.slug ?? game.id}`}>Gérer</Link>
+                    </Button>
                     <button
                       onClick={() => handleDelete(game.id)}
                       disabled={isPending}
