@@ -55,7 +55,13 @@
  *   qui n'ont pas de total de vie — c'est celui des avatars, recopié. Une
  *   valeur constante ne filtrerait rien et tromperait là où elle est fausse ;
  * - `tcgplayer_id` : identique pour Alpha et Beta, il ne désigne donc pas
- *   l'impression et ne servirait pas à rapprocher un prix.
+ *   l'impression et ne servirait pas à rapprocher un prix ;
+ * - `flavor_text` : la fiche de carte n'affiche que les attributs de
+ *   `CARD_ATTRIBUTE_KEYS`, dont il ne fait pas partie — il n'apparaîtrait donc
+ *   nulle part, sinon en filtre : les facettes sont déduites des attributs
+ *   portés par les cartes, et vingt-deux textes d'ambiance assez courts pour
+ *   tenir dans une case à cocher garnissaient la barre latérale de la galerie
+ *   de citations à cocher. Le texte est de toute façon sur l'illustration.
  */
 import { readFile, writeFile } from "node:fs/promises";
 import path, { dirname } from "node:path";
@@ -63,7 +69,8 @@ import { fileURLToPath } from "node:url";
 import { ObjectId } from "mongodb";
 import { parse } from "node-html-parser";
 import db from "../../../lib/mongodb.ts";
-import meilisearch, { indexes } from "../../../lib/meilisearch.ts";
+import meilisearch, { cardIndexSettings, ensureCardIndex, indexes } from "../../../lib/meilisearch.ts";
+import { getGameCardFilterFacets } from "../../../lib/db/cards.ts";
 import { importedCardSearchDocument } from "../../../lib/cards/import-search.ts";
 import { buildCardId, withUniquePrintingIds } from "../../../lib/constants/card-ids.ts";
 import { MAX_CARD_PRINTINGS } from "../../../lib/schemas/card.schema.ts";
@@ -155,8 +162,7 @@ export type SorceryCard = {
   subTypes?: string[];
   elements?: string[];
   rarity?: string;
-  artist?: string;
-  flavorText?: string;
+  illustrator?: string[];
   typeLine?: string;
   cost?: number;
   power?: number;
@@ -413,8 +419,9 @@ function toCard(card: ApiCard, setName: string): SorceryCard | undefined {
     subTypes: subTypesOf(card),
     elements: elementsOf(card.elements),
     rarity: text(card.rarity),
-    artist: text(base.artist),
-    flavorText: text(base.flavor_text),
+    // `illustrator` plutôt qu'`artist` : c'est la clé que porte
+    // `CARD_ATTRIBUTE_KEYS`, la seule que la fiche de carte affiche.
+    illustrator: nonEmpty([base.artist]),
     typeLine: text(base.type_text),
     cost: card.cost ?? undefined,
     // Les deux faces d'une même puissance : la première sert à frapper, la
@@ -589,12 +596,40 @@ async function writeCards(cards: SorceryCard[]): Promise<void> {
     console.info(`Base : ${Math.min(index + BATCH, complete.length)}/${complete.length}`);
   }
 
-  // L'index n'est **pas** vidé : il porte aussi les cartes ajoutées à la main
-  // depuis l'administration, que la source ne republiera jamais.
-  const index = meilisearch.index(indexes[GAME].name);
-  for (let offset = 0; offset < complete.length; offset += 1000) {
-    await index.addDocuments(complete.slice(offset, offset + 1000).map((card) => importedCardSearchDocument(card)));
-    console.info(`Index : ${Math.min(offset + 1000, complete.length)}/${complete.length}`);
+  await writeSearchIndex(complete, gameId);
+}
+
+/**
+ * Pousse les cartes dans l'index de recherche, en le créant au besoin.
+ *
+ * L'index n'est **pas** vidé : il porte aussi les cartes ajoutées à la main
+ * depuis l'administration, que la source ne republiera jamais.
+ *
+ * Ses réglages sont posés au passage, d'après les attributs que portent
+ * réellement les cartes du jeu — c'est ce que fait « Mettre à jour l'index » de
+ * l'administration, et sans quoi Meilisearch refuse les filtres et les tris de
+ * la galerie (cf. docs/CARD_EXPLORER_FILTERS.md). Ils sont relus de la base,
+ * qui vient d'être écrite : un premier import laisse donc un index utilisable
+ * sans autre geste.
+ */
+async function writeSearchIndex(cards: (SorceryCard & { printings?: CardPrinting[] })[], gameId: ObjectId): Promise<void> {
+  const indexConfig = indexes[GAME];
+
+  await ensureCardIndex(indexConfig.name);
+
+  const facets = await getGameCardFilterFacets(gameId);
+  await meilisearch.index(indexConfig.name).updateSettings(
+    cardIndexSettings(indexConfig, {
+      facetKeys: facets.map((facet) => facet.key),
+      numericKeys: facets.flatMap((facet) => (facet.type === "number" ? [facet.key] : [])),
+    })
+  );
+  console.info(`Index « ${indexConfig.name} » réglé sur ${facets.length} attributs.`);
+
+  const index = meilisearch.index(indexConfig.name);
+  for (let offset = 0; offset < cards.length; offset += 1000) {
+    await index.addDocuments(cards.slice(offset, offset + 1000).map((card) => importedCardSearchDocument(card)));
+    console.info(`Index : ${Math.min(offset + 1000, cards.length)}/${cards.length}`);
   }
 }
 

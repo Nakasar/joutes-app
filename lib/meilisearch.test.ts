@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { MeilisearchApiError } from "meilisearch";
-import { cardIndexSettings, isUndeclaredCriteriaError } from "./meilisearch";
+import { cardIndexSettings, isIndexNotFoundError, isUndeclaredCriteriaError } from "./meilisearch";
 
 /**
  * Ce qui compte ici : l'exploration des cartes ne doit se replier sur une
@@ -47,6 +47,30 @@ describe("isUndeclaredCriteriaError", () => {
       isUndeclaredCriteriaError(new MeilisearchApiError(new Response(null, { status: 502 }))),
       false
     );
+  });
+});
+
+/**
+ * `ensureCardIndex` crée l'index quand il n'existe pas encore, et ne doit le
+ * faire que sur ce refus-là : prendre une clé refusée ou une panne pour un
+ * index absent tenterait une création qui échouerait à son tour, en masquant
+ * la vraie cause.
+ */
+describe("isIndexNotFoundError", () => {
+  it("reconnaît un index absent", () => {
+    assert.equal(isIndexNotFoundError(apiError("index_not_found")), true);
+  });
+
+  it("laisse remonter une clé refusée", () => {
+    assert.equal(isIndexNotFoundError(apiError("invalid_api_key")), false);
+  });
+
+  it("laisse remonter une panne réseau", () => {
+    assert.equal(isIndexNotFoundError(new TypeError("fetch failed")), false);
+  });
+
+  it("laisse remonter une erreur d'API sans corps exploitable", () => {
+    assert.equal(isIndexNotFoundError(new MeilisearchApiError(new Response(null, { status: 502 }))), false);
   });
 });
 
