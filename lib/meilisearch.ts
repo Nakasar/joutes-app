@@ -84,6 +84,53 @@ export function hasCardIndex(gameSlug?: string): boolean {
 }
 
 /**
+ * Clé primaire des index de cartes : l'identifiant du document.
+ *
+ * Meilisearch la déduit du premier envoi quand l'index n'en déclare pas, mais
+ * refuse de choisir dès que le document porte plusieurs champs terminant par
+ * `id` — ceux des cartes en ont deux, `id` (l'identifiant assaini qui sert de
+ * clé) et `cardId` (l'identifiant réel de la carte, cf.
+ * `lib/cards/import-search.ts`). Les index créés avant l'ajout de `cardId`
+ * avaient déjà déduit `id` et ne posent pas la question ; un index neuf, lui,
+ * rejette son premier envoi tant que la clé n'est pas déclarée. Elle l'est
+ * donc, une fois pour toutes, à la création de l'index.
+ */
+export const CARD_INDEX_PRIMARY_KEY = "id";
+
+/** Code que rend Meilisearch quand l'index n'existe pas encore. */
+export function isIndexNotFoundError(error: unknown): boolean {
+  return error instanceof MeilisearchApiError && error.cause?.code === "index_not_found";
+}
+
+/**
+ * Garantit qu'un index de cartes existe et déclare sa clé primaire, avant tout
+ * envoi de documents.
+ *
+ * Idempotent, et sans effet sur un index qui déclare déjà une clé — y compris
+ * une autre que la nôtre : c'est une décision prise à sa création, que
+ * Meilisearch ne laisse pas défaire tant qu'il porte des documents.
+ */
+export async function ensureCardIndex(indexName: string): Promise<void> {
+  try {
+    const { primaryKey } = await meilisearch.index(indexName).getRawInfo();
+
+    if (!primaryKey) {
+      await meilisearch.index(indexName).update({ primaryKey: CARD_INDEX_PRIMARY_KEY }).waitTask();
+    }
+
+    return;
+  } catch (error) {
+    if (!isIndexNotFoundError(error)) {
+      throw error;
+    }
+  }
+
+  // L'attente n'est pas décorative : les documents partent juste après, et un
+  // index créé sans clé primaire les refuserait.
+  await meilisearch.createIndex(indexName, { primaryKey: CARD_INDEX_PRIMARY_KEY }).waitTask();
+}
+
+/**
  * Réglages d'index nécessaires aux filtres et au tri de l'exploration des
  * cartes.
  *

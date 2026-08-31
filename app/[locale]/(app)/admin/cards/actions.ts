@@ -26,7 +26,12 @@ import { getGameById } from "@/lib/db/games.ts";
 import { cardPrintingSchema, cardSchema } from "@/lib/schemas/card.schema.ts";
 import { gameIdSchema } from "@/lib/schemas/game.schema.ts";
 import { withUniquePrintingIds } from "@/lib/constants/card-ids.ts";
-import meilisearch, { cardIndexFor, cardIndexSettings, type CardIndexConfig } from "@/lib/meilisearch.ts";
+import meilisearch, {
+  cardIndexFor,
+  cardIndexSettings,
+  ensureCardIndex,
+  type CardIndexConfig,
+} from "@/lib/meilisearch.ts";
 
 export type SaveCardResult = {
   success: boolean;
@@ -136,6 +141,11 @@ async function indexCard(
   }
 
   try {
+    // La toute première carte d'un jeu crée son index : il lui faut sa clé
+    // primaire, que Meilisearch ne sait pas déduire d'un document portant à la
+    // fois `id` et `cardId`.
+    await ensureCardIndex(indexConfig.name);
+
     const index = meilisearch.index(indexConfig.name);
     if (previousCardId && previousCardId !== card.id) {
       await index.deleteDocument(searchDocumentId(previousCardId));
@@ -234,6 +244,11 @@ export async function reindexGameCards(gameId: string): Promise<ReindexResult> {
     if (!indexConfig) {
       return { success: false, error: "Ce jeu n'a pas d'index de recherche : il n'y a rien à mettre à jour." };
     }
+
+    // Un jeu dont l'index n'a jamais reçu de document n'en a pas encore : il
+    // est créé ici, avec sa clé primaire, faute de quoi Meilisearch refuserait
+    // le premier envoi sans savoir laquelle des deux clés en `id` choisir.
+    await ensureCardIndex(indexConfig.name);
 
     const index = meilisearch.index(indexConfig.name);
 
