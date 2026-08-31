@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Plus, RefreshCw, X } from "lucide-react";
 import { EventSource, Lair } from "@/lib/types/Lair.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -26,6 +26,18 @@ function emptyMapping(source: EventSource) {
 }
 
 /**
+ * Une source en cours de saisie, et la clé qui la suit.
+ *
+ * Les sources n'ont pas d'identifiant en base — c'est un tableau, et il le
+ * reste. Mais leur rang ne fait pas une clé React : retirer la première ferait
+ * hériter la deuxième du DOM de la première, et le curseur d'un champ en train
+ * d'être saisi resterait sur place, à écrire dans une autre source que celle
+ * qu'on éditait. La clé vit donc le temps du formulaire, et ne part pas au
+ * serveur.
+ */
+type SourceDraft = { key: string; source: EventSource };
+
+/**
  * Sources d'événements d'un lieu.
  *
  * C'est le formulaire qui ne tenait pas dans la modale : une source en
@@ -38,18 +50,25 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
   const [isPending, startTransition] = useTransition();
   const [refreshing, startRefreshing] = useTransition();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
-  const [sources, setSources] = useState<EventSource[]>(lair.eventsSourceUrls ?? []);
+  const [drafts, setDrafts] = useState<SourceDraft[]>(() =>
+    (lair.eventsSourceUrls ?? []).map((source, index) => ({ key: `source-${index}`, source })),
+  );
+  // Les clés des sources ajoutées ici : un compteur, pour qu'aucune ne reprenne
+  // celle d'une source retirée.
+  const nextKey = useRef(0);
 
-  const patch = (index: number, next: EventSource) => {
-    setSources((previous) => previous.map((source, i) => (i === index ? next : source)));
+  const patch = (key: string, next: EventSource) => {
+    setDrafts((previous) =>
+      previous.map((draft) => (draft.key === key ? { ...draft, source: next } : draft)),
+    );
   };
 
   const patchMapping = (
-    index: number,
+    key: string,
     source: EventSource,
     next: Partial<NonNullable<EventSource["mappingConfig"]>>,
   ) => {
-    patch(index, { ...source, mappingConfig: { ...emptyMapping(source), ...next } });
+    patch(key, { ...source, mappingConfig: { ...emptyMapping(source), ...next } });
   };
 
   const submit = () => {
@@ -58,7 +77,7 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
     startTransition(async () => {
       const result = await updateLairEventSources(
         lair.id,
-        sources.filter((source) => source.url.trim() !== ""),
+        drafts.map((draft) => draft.source).filter((source) => source.url.trim() !== ""),
       );
 
       setMessage(
@@ -115,7 +134,7 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {sources.length > 0 && (
+            {drafts.length > 0 && (
               <Button type="button" variant="outline" onClick={refresh} disabled={refreshing}>
                 <RefreshCw className="size-4" aria-hidden />
                 {refreshing ? "Rafraîchissement…" : "Rafraîchir"}
@@ -124,7 +143,15 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setSources([...sources, { url: "", type: "IA", instructions: "" }])}
+              onClick={() =>
+                setDrafts([
+                  ...drafts,
+                  {
+                    key: `ajoutee-${(nextKey.current += 1)}`,
+                    source: { url: "", type: "IA", instructions: "" },
+                  },
+                ])
+              }
             >
               <Plus className="size-4" aria-hidden />
               Ajouter une source
@@ -132,14 +159,14 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
           </div>
         </div>
 
-        {sources.length === 0 ? (
+        {drafts.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Aucune source : les événements de ce lieu ne peuvent être saisis qu&apos;à la main.
           </p>
         ) : (
           <div className="space-y-4">
-            {sources.map((source, index) => (
-              <div key={index} className="rounded-lg border border-border bg-muted/30 p-4 space-y-4">
+            {drafts.map(({ key, source }, index) => (
+              <div key={key} className="rounded-lg border border-border bg-muted/30 p-4 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-sm font-semibold text-foreground">Source #{index + 1}</span>
                   <div className="flex flex-wrap items-center gap-2">
@@ -149,7 +176,7 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
                         size="sm"
                         variant={source.type === "IA" ? "default" : "outline"}
                         onClick={() =>
-                          patch(index, {
+                          patch(key, {
                             url: source.url,
                             type: "IA",
                             instructions: source.instructions ?? "",
@@ -163,7 +190,7 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
                         size="sm"
                         variant={source.type === "MAPPING" ? "default" : "outline"}
                         onClick={() =>
-                          patch(index, {
+                          patch(key, {
                             url: source.url,
                             type: "MAPPING",
                             mappingConfig: emptyMapping(source),
@@ -175,7 +202,7 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setSources(sources.filter((_, i) => i !== index))}
+                      onClick={() => setDrafts(drafts.filter((draft) => draft.key !== key))}
                       aria-label={`Retirer la source ${index + 1}`}
                       className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
                     >
@@ -186,16 +213,16 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
 
                 <div>
                   <label
-                    htmlFor={`source-url-${index}`}
+                    htmlFor={`source-url-${key}`}
                     className="block text-xs font-medium text-muted-foreground mb-1"
                   >
                     URL de la source
                   </label>
                   <input
-                    id={`source-url-${index}`}
+                    id={`source-url-${key}`}
                     type="url"
                     value={source.url}
-                    onChange={(e) => patch(index, { ...source, url: e.target.value })}
+                    onChange={(e) => patch(key, { ...source, url: e.target.value })}
                     placeholder="https://exemple.com/evenements"
                     className={`${FIELD_CLASS} font-mono`}
                   />
@@ -204,16 +231,16 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
                 {source.type === "IA" && (
                   <div>
                     <label
-                      htmlFor={`source-instructions-${index}`}
+                      htmlFor={`source-instructions-${key}`}
                       className="block text-xs font-medium text-muted-foreground mb-1"
                     >
                       Consignes pour l&apos;IA (optionnel)
                     </label>
                     <textarea
-                      id={`source-instructions-${index}`}
+                      id={`source-instructions-${key}`}
                       rows={3}
                       value={source.instructions ?? ""}
-                      onChange={(e) => patch(index, { ...source, instructions: e.target.value })}
+                      onChange={(e) => patch(key, { ...source, instructions: e.target.value })}
                       placeholder="Ce que la page a de particulier : où sont les dates, quels blocs ignorer…"
                       className={FIELD_CLASS}
                     />
@@ -225,17 +252,17 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
                         <label
-                          htmlFor={`source-path-${index}`}
+                          htmlFor={`source-path-${key}`}
                           className="block text-xs font-medium text-muted-foreground mb-1"
                         >
                           Chemin vers les événements (JSONPath)
                         </label>
                         <input
-                          id={`source-path-${index}`}
+                          id={`source-path-${key}`}
                           type="text"
                           value={source.mappingConfig?.eventsPath ?? ""}
                           onChange={(e) =>
-                            patchMapping(index, source, { eventsPath: e.target.value })
+                            patchMapping(key, source, { eventsPath: e.target.value })
                           }
                           placeholder="events.data"
                           className={`${FIELD_CLASS} font-mono`}
@@ -243,17 +270,17 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
                       </div>
                       <div>
                         <label
-                          htmlFor={`source-base-${index}`}
+                          htmlFor={`source-base-${key}`}
                           className="block text-xs font-medium text-muted-foreground mb-1"
                         >
                           Préfixe de base d&apos;URL (optionnel)
                         </label>
                         <input
-                          id={`source-base-${index}`}
+                          id={`source-base-${key}`}
                           type="text"
                           value={source.mappingConfig?.eventsBaseUrl ?? ""}
                           onChange={(e) =>
-                            patchMapping(index, source, { eventsBaseUrl: e.target.value })
+                            patchMapping(key, source, { eventsBaseUrl: e.target.value })
                           }
                           placeholder="https://joutes.app/events/"
                           className={`${FIELD_CLASS} font-mono`}
@@ -273,17 +300,17 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
                           {MAPPED_FIELDS.map((field) => (
                             <div key={field}>
                               <label
-                                htmlFor={`map-${field}-${index}`}
+                                htmlFor={`map-${field}-${key}`}
                                 className="block font-mono text-xs text-muted-foreground mb-1"
                               >
                                 {field}
                               </label>
                               <input
-                                id={`map-${field}-${index}`}
+                                id={`map-${field}-${key}`}
                                 type="text"
                                 value={source.mappingConfig?.eventsFieldsMapping?.[field] ?? ""}
                                 onChange={(e) =>
-                                  patchMapping(index, source, {
+                                  patchMapping(key, source, {
                                     eventsFieldsMapping: {
                                       ...source.mappingConfig?.eventsFieldsMapping,
                                       [field]: e.target.value,
@@ -307,17 +334,17 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
                             (field) => (
                               <div key={field}>
                                 <label
-                                  htmlFor={`value-${field}-${index}`}
+                                  htmlFor={`value-${field}-${key}`}
                                   className="block font-mono text-xs text-muted-foreground mb-1"
                                 >
                                   {field}
                                 </label>
                                 <input
-                                  id={`value-${field}-${index}`}
+                                  id={`value-${field}-${key}`}
                                   type="text"
                                   value={source.mappingConfig?.eventsFieldsValues?.[field] ?? ""}
                                   onChange={(e) =>
-                                    patchMapping(index, source, {
+                                    patchMapping(key, source, {
                                       eventsFieldsValues: {
                                         ...source.mappingConfig?.eventsFieldsValues,
                                         [field]: e.target.value || undefined,
@@ -332,18 +359,18 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
 
                           <div>
                             <label
-                              htmlFor={`value-price-${index}`}
+                              htmlFor={`value-price-${key}`}
                               className="block font-mono text-xs text-muted-foreground mb-1"
                             >
                               price
                             </label>
                             <input
-                              id={`value-price-${index}`}
+                              id={`value-price-${key}`}
                               type="number"
                               step="0.01"
                               value={source.mappingConfig?.eventsFieldsValues?.price ?? ""}
                               onChange={(e) =>
-                                patchMapping(index, source, {
+                                patchMapping(key, source, {
                                   eventsFieldsValues: {
                                     ...source.mappingConfig?.eventsFieldsValues,
                                     price: e.target.value
@@ -358,16 +385,16 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
 
                           <div>
                             <label
-                              htmlFor={`value-status-${index}`}
+                              htmlFor={`value-status-${key}`}
                               className="block font-mono text-xs text-muted-foreground mb-1"
                             >
                               status
                             </label>
                             <select
-                              id={`value-status-${index}`}
+                              id={`value-status-${key}`}
                               value={source.mappingConfig?.eventsFieldsValues?.status ?? ""}
                               onChange={(e) =>
-                                patchMapping(index, source, {
+                                patchMapping(key, source, {
                                   eventsFieldsValues: {
                                     ...source.mappingConfig?.eventsFieldsValues,
                                     status: e.target.value
@@ -387,17 +414,17 @@ export function LairEventSourcesForm({ lair }: { lair: Lair }) {
 
                           <div className="col-span-2">
                             <label
-                              htmlFor={`value-url-${index}`}
+                              htmlFor={`value-url-${key}`}
                               className="block font-mono text-xs text-muted-foreground mb-1"
                             >
                               url
                             </label>
                             <input
-                              id={`value-url-${index}`}
+                              id={`value-url-${key}`}
                               type="text"
                               value={source.mappingConfig?.eventsFieldsValues?.url ?? ""}
                               onChange={(e) =>
-                                patchMapping(index, source, {
+                                patchMapping(key, source, {
                                   eventsFieldsValues: {
                                     ...source.mappingConfig?.eventsFieldsValues,
                                     url: e.target.value || undefined,
