@@ -50,3 +50,6 @@ next-env.d.ts
 
 # cache de téléchargement de l'import Flesh and Blood (≈ 10 Mo, régénérable)
 /scripts/games/fab/cards.json
+
+# cache de téléchargement de l'import Sorcery (régénérable)
+/scripts/games/sorcery/cards.json
