@@ -1,25 +1,18 @@
 /**
- * Silhouettes de la liste des quizz.
+ * Silhouette de la liste des quizz.
  *
  * Deux zones distinctes, deux frontières : l'en-tête ne dépend que du jeu, la
  * liste dépend en plus de la page demandée. Les séparer évite qu'un changement
- * de page fasse clignoter le titre.
+ * de page fasse clignoter le titre. L'en-tête, lui, partage désormais la
+ * silhouette des autres outils de jeu (`GameToolHeaderSkeleton`), la page
+ * portant la même barre d'outils qu'eux.
  *
- * Les hauteurs sont relevées sur l'écran réel : bouton de retour de 36 px,
- * titre en `text-3xl`, cartes bâties sur la `Card` de l'interface.
+ * Les hauteurs sont relevées sur l'écran réel : cartes bâties sur la `Card` de
+ * l'interface.
  *
  * Aucun `Link` localisé dedans : il rebloquerait la navigation que la frontière
  * vient de rendre instantanée (voir `components/HeaderFallback.tsx`).
  */
-
-export function QuizzHeaderSkeleton() {
-  return (
-    <div className="flex animate-pulse flex-row flex-wrap items-center gap-4" aria-hidden>
-      <div className="h-9 w-28 rounded-md bg-muted" />
-      <div className="h-9 w-72 max-w-full rounded bg-muted" />
-    </div>
-  );
-}
 
 export function QuizzListSkeleton({ cards = 6 }: { cards?: number }) {
   return (

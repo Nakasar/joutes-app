@@ -11,7 +11,7 @@ import { getDeckLegendFacets, getFeaturedDecks, searchDecks } from "@/lib/db/dec
 import { getAllGames } from "@/lib/db/games.ts";
 import { getDeckCardInfos } from "@/lib/db/deck-cards.ts";
 import { librarySortOptions, parseLibraryParams } from "@/lib/decks/library-filters.ts";
-import { DeckLibraryClient } from "./DeckLibraryClient.tsx";
+import { DeckLibraryClient } from "@/components/decks/DeckLibraryClient.tsx";
 import { FeaturedDecks } from "./FeaturedDecks.tsx";
 
 export const metadata: Metadata = {

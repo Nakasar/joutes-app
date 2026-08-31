@@ -81,7 +81,10 @@ export type GameToolKey =
   | "rules"
   | "policies"
   | "cubes"
-  | "deckChecker";
+  | "deckChecker"
+  | "decks"
+  | "news"
+  | "quizz";
 
 export type GameToolLink = {
   key: GameToolKey;
@@ -113,6 +116,9 @@ export function gameToolLinks(game: NavGame): GameToolLink[] {
   if (features.policies) tools.push({ key: "policies", href: `/games/${path}/policies` });
   if (features.cubes) tools.push({ key: "cubes", href: `/games/${path}/cubes` });
   if (features.deckChecker) tools.push({ key: "deckChecker", href: `/games/${path}/deck-checker` });
+  if (features.decks) tools.push({ key: "decks", href: `/games/${path}/decks` });
+  if (features.news) tools.push({ key: "news", href: `/games/${path}/news` });
+  if (features.quizz) tools.push({ key: "quizz", href: `/games/${path}/quizz` });
 
   return tools;
 }

@@ -7,12 +7,31 @@ import { Button } from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { GameToolsNavBar } from "@/components/games/GameToolsNavBar.tsx";
+import { GameToolHeaderSkeleton } from "@/components/games/GameToolSkeletons.tsx";
 import QuizCard from "./QuizCard.tsx";
-import { QuizzHeaderSkeleton, QuizzListSkeleton } from "./QuizzSkeletons.tsx";
+import { QuizzListSkeleton } from "./QuizzSkeletons.tsx";
 
 const PAGE_SIZE = 9;
 
 type GameParams = Promise<{ gameSlugOrId: string }>;
+
+/**
+ * Le jeu, à condition qu'il ouvre ses quizz.
+ *
+ * Le fanion se pose depuis l'administration, et un jeu qui ne l'a pas n'a pas
+ * de page de quizz : la refermer ici plutôt que de la rendre vide évite qu'une
+ * adresse partagée survive à la fonctionnalité qu'on vient d'éteindre.
+ */
+async function requireGameWithQuizz(gameSlugOrId: string) {
+  const game = await readGameBySlugOrId(gameSlugOrId);
+
+  if (!game?.features?.quizz) {
+    notFound();
+  }
+
+  return game;
+}
 
 interface GameQuizzPageProps {
   params: GameParams;
@@ -27,7 +46,7 @@ export async function generateMetadata({ params }: GameQuizzPageProps): Promise<
     getTranslations("Quizz.metadata"),
   ]);
 
-  if (!game) {
+  if (!game?.features?.quizz) {
     return { title: t("metadata.notFoundTitle") };
   }
 
@@ -61,7 +80,7 @@ export async function generateMetadata({ params }: GameQuizzPageProps): Promise<
 export default function GameQuizzPage({ params, searchParams }: GameQuizzPageProps) {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6">
-      <Suspense fallback={<QuizzHeaderSkeleton />}>
+      <Suspense fallback={<GameToolHeaderSkeleton />}>
         <QuizzHeader params={params} />
       </Suspense>
 
@@ -74,34 +93,29 @@ export default function GameQuizzPage({ params, searchParams }: GameQuizzPagePro
 
 async function QuizzHeader({ params }: { params: GameParams }) {
   const { gameSlugOrId } = await params;
-  const game = await readGameBySlugOrId(gameSlugOrId);
-
-  if (!game) {
-    notFound();
-  }
+  const game = await requireGameWithQuizz(gameSlugOrId);
 
   const t = await getTranslations("Games.quizz");
 
   return (
-    <div className="flex flex-row flex-wrap items-center gap-4">
-      <Button asChild variant="outline">
-        <Link href={`/games/${game.slug ?? gameSlugOrId}`}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t("back")}
-        </Link>
-      </Button>
-      <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
+    <div className="flex flex-row flex-wrap justify-between gap-4">
+      <div className="flex flex-row flex-wrap items-center gap-4">
+        <Button asChild variant="outline">
+          <Link href={`/games/${game.slug ?? gameSlugOrId}`}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {t("back")}
+          </Link>
+        </Button>
+        <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
+      </div>
+      <GameToolsNavBar gameSlug={game.slug ?? game.id} currentTab="quizz" />
     </div>
   );
 }
 
 async function QuizzList({ params, searchParams }: GameQuizzPageProps) {
   const { gameSlugOrId } = await params;
-  const game = await readGameBySlugOrId(gameSlugOrId);
-
-  if (!game) {
-    notFound();
-  }
+  const game = await requireGameWithQuizz(gameSlugOrId);
 
   const { page: pageParam } = await searchParams;
   const currentPage = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);

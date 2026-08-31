@@ -59,6 +59,27 @@ export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string
             </Link>
           </Button>
         }
+        {game.features?.decks && currentTab !== 'decks' &&
+          <Button variant="secondary" asChild>
+            <Link href={`/games/${gameSlug}/decks`} className="hover:underline">
+              {t("decks")}
+            </Link>
+          </Button>
+        }
+        {game.features?.news && currentTab !== 'news' &&
+          <Button variant="secondary" asChild>
+            <Link href={`/games/${gameSlug}/news`} className="hover:underline">
+              {t("news")}
+            </Link>
+          </Button>
+        }
+        {game.features?.quizz && currentTab !== 'quizz' &&
+          <Button variant="secondary" asChild>
+            <Link href={`/games/${gameSlug}/quizz`} className="hover:underline">
+              {t("quizz")}
+            </Link>
+          </Button>
+        }
         {game.features?.cards && currentTab !== 'loop' &&
           <Button variant="secondary" asChild>
             <Link href={`/games/${gameSlug}/loop`} className="hover:underline">
@@ -129,6 +150,27 @@ export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string
               <DropdownMenuItem asChild>
                 <Link href={`/games/${gameSlug}/cubes`}>
                   {t("cubes")}
+                </Link>
+              </DropdownMenuItem>
+            }
+            {game.features?.decks &&
+              <DropdownMenuItem asChild>
+                <Link href={`/games/${gameSlug}/decks`}>
+                  {t("decks")}
+                </Link>
+              </DropdownMenuItem>
+            }
+            {game.features?.news &&
+              <DropdownMenuItem asChild>
+                <Link href={`/games/${gameSlug}/news`}>
+                  {t("news")}
+                </Link>
+              </DropdownMenuItem>
+            }
+            {game.features?.quizz &&
+              <DropdownMenuItem asChild>
+                <Link href={`/games/${gameSlug}/quizz`}>
+                  {t("quizz")}
                 </Link>
               </DropdownMenuItem>
             }

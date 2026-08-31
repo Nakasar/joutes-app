@@ -107,11 +107,12 @@ export default async function AdminGamePage({
 
         {active === "deck" && (
           <div className="space-y-6">
-            {game.features?.deckChecker !== true && (
+            {game.features?.deckChecker !== true && game.features?.decks !== true && (
               <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-foreground">
-                Le vérificateur de deck n&apos;est pas activé pour ce jeu : ces réglages sont
-                enregistrés, mais ne serviront au contrôle des listes qu&apos;une fois la
-                fonctionnalité activée depuis l&apos;onglet « Fonctionnalités ».
+                Ni les decks ni le vérificateur ne sont activés pour ce jeu : ces réglages sont
+                enregistrés, mais ne serviront à construire ni à contrôler de liste tant que
+                l&apos;une des deux fonctionnalités n&apos;est pas activée depuis l&apos;onglet
+                « Fonctionnalités ».
               </p>
             )}
             <DeckBuilderForm

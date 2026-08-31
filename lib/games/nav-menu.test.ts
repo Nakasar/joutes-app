@@ -25,7 +25,7 @@ const magic: NavGame = {
   id: "aaaaaaaaaaaaaaaaaaaaaaa2",
   name: "Magic: The Gathering",
   slug: "mtg",
-  features: { cards: true, collection: true, deckChecker: true },
+  features: { cards: true, collection: true, deckChecker: true, decks: true },
 };
 const defaults: NavGame[] = [
   { id: "d1", name: "Riftbound", slug: "riftbound" },
@@ -116,7 +116,26 @@ describe("gameToolLinks", () => {
   it("n'ouvre que les outils activés par le jeu", () => {
     assert.deepEqual(
       gameToolLinks(magic).map((tool) => tool.key),
-      ["hub", "cards", "collection", "deckChecker"],
+      ["hub", "cards", "collection", "deckChecker", "decks"],
+    );
+  });
+
+  it("ouvre decks, actualités et quizz sous leurs propres fanions", () => {
+    const game: NavGame = {
+      id: "abc",
+      name: "Shatterpoint",
+      slug: "shatterpoint",
+      features: { decks: true, news: true, quizz: true },
+    };
+
+    assert.deepEqual(
+      gameToolLinks(game).map((tool) => tool.href),
+      [
+        "/games/shatterpoint",
+        "/games/shatterpoint/decks",
+        "/games/shatterpoint/news",
+        "/games/shatterpoint/quizz",
+      ],
     );
   });
 

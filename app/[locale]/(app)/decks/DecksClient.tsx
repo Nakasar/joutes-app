@@ -21,7 +21,7 @@ import { getDeckZones } from "@/lib/decks/zones.ts";
 import type { PaginatedDecksResult } from "@/lib/db/decks.ts";
 import type { Deck, DeckVisibility } from "@/lib/types/Deck.ts";
 import type { Game } from "@/lib/types/Game.ts";
-import CreateDeckDialog from "./CreateDeckDialog.tsx";
+import CreateDeckDialog from "@/components/decks/CreateDeckDialog.tsx";
 
 /** Onglets de tri de la page : ce que l'on cherche dans ses propres decks. */
 type DecksTab = "all" | "draft" | "published" | "favorites";

@@ -22,14 +22,21 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { Loader2 } from "lucide-react";
-import { DECK_VISIBILITIES, DECK_VISIBILITY_LABELS, type DeckVisibility } from "@/lib/types/Deck.ts";
+import { DECK_VISIBILITIES, DECK_VISIBILITY_LABELS, type Deck, type DeckVisibility } from "@/lib/types/Deck.ts";
 import { toast } from "sonner";
 
 type CreateDeckDialogProps = {
   games: Game[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  /** Le deck créé est passé à l'appelant : c'est ce qui permet d'ouvrir son éditeur. */
+  onSuccess: (deck?: Deck) => void;
+  /**
+   * Jeu imposé, quand la fenêtre s'ouvre depuis la page d'un jeu : le champ
+   * disparaît plutôt que de proposer un choix déjà fait. La liste `games` n'a
+   * alors qu'à contenir ce jeu.
+   */
+  lockedGameId?: string;
 };
 
 export default function CreateDeckDialog({
@@ -37,16 +44,18 @@ export default function CreateDeckDialog({
   open,
   onOpenChange,
   onSuccess,
+  lockedGameId,
 }: CreateDeckDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const emptyForm = {
     name: "",
-    gameId: "",
+    gameId: lockedGameId ?? "",
     url: "",
     description: "",
     decklist: "",
     visibility: "private" as DeckVisibility,
-  });
+  };
+  const [formData, setFormData] = useState(emptyForm);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,18 +69,12 @@ export default function CreateDeckDialog({
       });
 
       if (response.ok) {
+        const deck: Deck = await response.json();
         toast.success("Deck créé", {
           description: "Votre deck a été créé avec succès.",
         });
-        setFormData({
-          name: "",
-          gameId: "",
-          url: "",
-          description: "",
-          decklist: "",
-          visibility: "private",
-        });
-        onSuccess();
+        setFormData(emptyForm);
+        onSuccess(deck);
       } else {
         const data = await response.json();
         toast.error("Erreur", {
@@ -119,28 +122,34 @@ export default function CreateDeckDialog({
             </div>
 
             {/* Game */}
-            <div className="space-y-2">
-              <Label htmlFor="gameId">
-                Jeu <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={formData.gameId}
-                onValueChange={(value) => setFormData({ ...formData, gameId: value })}
-                required
-                disabled={isLoading}
-              >
-                <SelectTrigger id="gameId">
-                  <SelectValue placeholder="Sélectionnez un jeu" />
-                </SelectTrigger>
-                <SelectContent>
-                  {games.map((game) => (
-                    <SelectItem key={game.id} value={game.id}>
-                      {game.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Le champ n'est pas seulement masqué quand le jeu est imposé : un
+                champ requis rendu invisible fait échouer la validation native
+                du navigateur sur un contrôle qu'il ne peut pas mettre au
+                point. */}
+            {!lockedGameId && (
+              <div className="space-y-2">
+                <Label htmlFor="gameId">
+                  Jeu <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={formData.gameId}
+                  onValueChange={(value) => setFormData({ ...formData, gameId: value })}
+                  required
+                  disabled={isLoading}
+                >
+                  <SelectTrigger id="gameId">
+                    <SelectValue placeholder="Sélectionnez un jeu" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {games.map((game) => (
+                      <SelectItem key={game.id} value={game.id}>
+                        {game.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* URL */}
             <div className="space-y-2">
