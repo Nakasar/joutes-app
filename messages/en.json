@@ -48,7 +48,10 @@
         "rules": "Game rules",
         "policies": "Policies",
         "cubes": "Cubes",
-        "deckChecker": "Deck checker"
+        "deckChecker": "Deck checker",
+        "decks": "Decks",
+        "news": "News",
+        "quizz": "Quizzes"
       },
       "ForOrganizers": "For organizers"
     }
@@ -277,6 +280,9 @@
       "loop": "Magnifier",
       "collection": "My Collection",
       "scanner": "Scanner",
+      "decks": "Decks",
+      "news": "News",
+      "quizz": "Quizzes",
       "cubes": "Cubes"
     },
     "explorer": {
@@ -380,6 +386,14 @@
         "notFoundTitle": "Game not found - Joutes",
         "title": "{gameName} - Joutes",
         "ogDescription": "Follow the {gameName} events around you!"
+      },
+      "toolsDecks": {
+        "title": "Decks",
+        "description": "Browse the lists published by the community and build your own"
+      },
+      "toolsQuizz": {
+        "title": "Quizzes",
+        "description": "Test your knowledge of the game's rules, rulings and policies"
       },
       "toolsCubes": {
         "title": "Cubes",
@@ -739,6 +753,18 @@
           "submitting": "Saving..."
         }
       }
+    },
+    "decks": {
+      "metadata": {
+        "notFoundTitle": "Game not found",
+        "title": "{gameName} decks — the community's lists",
+        "description": "Browse the {gameName} decks published by the community: filter by format, legend and domains, then build your own."
+      },
+      "title": "Decks — {gameName}",
+      "back": "Back to game",
+      "description": "The lists published by the community for {gameName}.",
+      "create": "Create a deck",
+      "signInToCreate": "Sign in to create a deck"
     },
     "news": {
       "metadata": {

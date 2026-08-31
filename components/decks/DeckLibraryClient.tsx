@@ -56,6 +56,11 @@ const SORTS: { value: LibrarySort; label: string }[] = [
  * Les filtres vivent dans l'URL : un lien vers « les decks Fureur en Standard,
  * triés par popularité » doit s'envoyer et se remettre en favori comme
  * n'importe quelle page.
+ *
+ * `lockedGameId` la rend réutilisable sous un jeu (`/games/:slug/decks`) : le
+ * jeu cesse alors d'être un filtre — il est déjà dit par l'adresse. Le sélecteur
+ * et la pastille disparaissent, et le paramètre sort de l'URL, qui ne
+ * répéterait sinon en question ce que le chemin affirme.
  */
 export function DeckLibraryClient({
   initialData,
@@ -64,6 +69,7 @@ export function DeckLibraryClient({
   legends: initialLegends,
   domainValues,
   currentUserId,
+  lockedGameId,
 }: {
   initialData: PaginatedDecksResult;
   initialFilters: LibraryFilters;
@@ -71,6 +77,7 @@ export function DeckLibraryClient({
   legends: DeckLegendFacet[];
   domainValues: string[];
   currentUserId?: string;
+  lockedGameId?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -146,12 +153,16 @@ export function DeckLibraryClient({
     const timer = window.setTimeout(() => {
       setPage(1);
       void fetchDecks(filters, 1);
-      const query = buildLibraryParams(filters).toString();
+      const params = buildLibraryParams(filters);
+      // Le jeu imposé est déjà dans le chemin : le répéter en paramètre ferait
+      // une adresse plus longue qui ne dit rien de plus.
+      if (lockedGameId) params.delete("gameId");
+      const query = params.toString();
       router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     }, FILTER_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [filters, fetchDecks, pathname, router]);
+  }, [filters, fetchDecks, pathname, router, lockedGameId]);
 
   // La liste des légendes dépend du jeu retenu : garder celles d'un autre jeu
   // proposerait des filtres qui ne rendent jamais rien.
@@ -176,7 +187,7 @@ export function DeckLibraryClient({
   const selectedLegend = legends.find((legend) => legend.cardId === filters.legendCardId);
 
   const activeChips = [
-    filters.gameId !== "all" && {
+    !lockedGameId && filters.gameId !== "all" && {
       label: games.find((game) => game.id === filters.gameId)?.name ?? "Jeu",
       clear: () => update({ gameId: "all", format: "all", legendCardId: "" }),
     },
@@ -203,32 +214,36 @@ export function DeckLibraryClient({
             size="sm"
             onClick={() => {
               setSearch("");
-              setFilters(EMPTY_LIBRARY_FILTERS);
+              // Le jeu imposé n'est pas un filtre : une remise à zéro qui le
+              // retirerait ouvrirait la page d'un jeu sur les decks de tous.
+              setFilters({ ...EMPTY_LIBRARY_FILTERS, gameId: lockedGameId ?? "all" });
             }}
           >
             Réinitialiser
           </Button>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="library-game">Jeu</Label>
-          <Select
-            value={filters.gameId}
-            onValueChange={(value) => update({ gameId: value, format: "all", legendCardId: "" })}
-          >
-            <SelectTrigger id="library-game">
-              <SelectValue placeholder="Tous les jeux" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les jeux</SelectItem>
-              {games.map((game) => (
-                <SelectItem key={game.id} value={game.id}>
-                  {game.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!lockedGameId && (
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="library-game">Jeu</Label>
+            <Select
+              value={filters.gameId}
+              onValueChange={(value) => update({ gameId: value, format: "all", legendCardId: "" })}
+            >
+              <SelectTrigger id="library-game">
+                <SelectValue placeholder="Tous les jeux" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les jeux</SelectItem>
+                {games.map((game) => (
+                  <SelectItem key={game.id} value={game.id}>
+                    {game.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {formats.length > 0 && (
           <div className="flex flex-col gap-2">

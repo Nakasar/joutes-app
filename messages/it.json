@@ -48,7 +48,10 @@
         "rules": "Regole del gioco",
         "policies": "Politiche",
         "cubes": "Cubi",
-        "deckChecker": "Controllo del mazzo"
+        "deckChecker": "Controllo del mazzo",
+        "decks": "Mazzi",
+        "news": "Notizie",
+        "quizz": "Quiz"
       },
       "ForOrganizers": "Per gli organizzatori"
     }
@@ -277,6 +280,9 @@
       "loop": "Lente",
       "collection": "Collezione",
       "scanner": "Scanner",
+      "decks": "Mazzi",
+      "news": "Notizie",
+      "quizz": "Quiz",
       "cubes": "Cubi"
     },
     "explorer": {
@@ -380,6 +386,14 @@
         "notFoundTitle": "Gioco non trovato - Joutes",
         "title": "{gameName} - Joutes",
         "ogDescription": "Segui gli eventi di {gameName} intorno a te!"
+      },
+      "toolsDecks": {
+        "title": "Mazzi",
+        "description": "Sfoglia le liste pubblicate dalla community e componi le tue"
+      },
+      "toolsQuizz": {
+        "title": "Quiz",
+        "description": "Metti alla prova le tue conoscenze su regole, ruling e politiche del gioco"
       },
       "toolsCubes": {
         "title": "Cubi",
@@ -739,6 +753,18 @@
           "submitting": "Salvataggio in corso..."
         }
       }
+    },
+    "decks": {
+      "metadata": {
+        "notFoundTitle": "Gioco non trovato",
+        "title": "Mazzi di {gameName} — le liste della community",
+        "description": "Sfoglia i mazzi di {gameName} pubblicati dalla community: filtra per formato, leggenda e domini, poi componi il tuo."
+      },
+      "title": "Mazzi — {gameName}",
+      "back": "Torna al gioco",
+      "description": "Le liste pubblicate dalla community per {gameName}.",
+      "create": "Crea un mazzo",
+      "signInToCreate": "Accedi per creare un mazzo"
     },
     "news": {
       "metadata": {

@@ -6,8 +6,7 @@ import type { GameFeatureKey } from "@/lib/constants/game-features";
  * Le sitemap ne listait que les cartes, et une poignée de pages de riftbound
  * écrites à la main. Tout le reste — les outils qu'un jeu ouvre selon ses
  * fonctionnalités — n'était déclaré nulle part : un moteur ne les trouvait que
- * s'il suivait un lien depuis la fiche du jeu, et jamais pour les pages
- * qu'aucune barre d'outils ne pointe (les quiz, l'actualité).
+ * s'il suivait un lien depuis la fiche du jeu.
  *
  * Deux règles tiennent cette liste :
  *
@@ -59,6 +58,7 @@ const GAME_TOOLS: { segment: string; feature: GameFeatureKey; priority: number }
   { segment: "loop", feature: "cards", priority: 0.3 },
   { segment: "scanner", feature: "cards", priority: 0.3 },
   { segment: "products", feature: "products", priority: 0.5 },
+  { segment: "decks", feature: "decks", priority: 0.5 },
 ];
 
 /**
@@ -96,13 +96,14 @@ export function gameSitemapUrls(game: SitemapGame): SitemapUrl[] {
     }
   }
 
-  // Ni quiz ni actualité ne dépendent d'un fanion : ces pages s'ouvrent pour
-  // tout jeu, et ne valent d'être annoncées que si elles ont du contenu. Une
-  // page vide déclarée au sitemap est un rendez-vous manqué pour le moteur.
-  if (game.hasQuizzes) {
+  // Quiz et actualité demandent **deux** conditions plutôt qu'une : le fanion,
+  // sans lequel la page répond 404, et du contenu, faute de quoi elle s'ouvre
+  // sur un message vide. Une page fermée comme une page vide déclarée au
+  // sitemap est un rendez-vous manqué pour le moteur.
+  if (features.quizz && game.hasQuizzes) {
     urls.push({ path: `${base}/quizz`, changeFrequency: "weekly", priority: 0.4 });
   }
-  if (game.hasNews) {
+  if (features.news && game.hasNews) {
     urls.push({ path: `${base}/news`, changeFrequency: "daily", priority: 0.5 });
   }
 

@@ -48,7 +48,10 @@
         "rules": "Spielregeln",
         "policies": "Richtlinien",
         "cubes": "Cubes",
-        "deckChecker": "Deck-Checker"
+        "deckChecker": "Deck-Checker",
+        "decks": "Decks",
+        "news": "Neuigkeiten",
+        "quizz": "Quiz"
       },
       "ForOrganizers": "Für Veranstalter"
     }
@@ -277,6 +280,9 @@
       "loop": "Lupe",
       "collection": "Sammlung",
       "scanner": "Scanner",
+      "decks": "Decks",
+      "news": "Neuigkeiten",
+      "quizz": "Quiz",
       "cubes": "Cubes"
     },
     "explorer": {
@@ -380,6 +386,14 @@
         "notFoundTitle": "Spiel nicht gefunden - Joutes",
         "title": "{gameName} - Joutes",
         "ogDescription": "Verfolge {gameName} Events in deiner Nähe!"
+      },
+      "toolsDecks": {
+        "title": "Decks",
+        "description": "Durchstöbere die von der Community veröffentlichten Listen und baue deine eigenen"
+      },
+      "toolsQuizz": {
+        "title": "Quiz",
+        "description": "Teste dein Wissen über Regeln, Rulings und Richtlinien des Spiels"
       },
       "toolsCubes": {
         "title": "Cubes",
@@ -739,6 +753,18 @@
           "submitting": "Wird gespeichert..."
         }
       }
+    },
+    "decks": {
+      "metadata": {
+        "notFoundTitle": "Spiel nicht gefunden",
+        "title": "{gameName}-Decks — die Listen der Community",
+        "description": "Durchstöbere die von der Community veröffentlichten {gameName}-Decks: filtere nach Format, Legende und Domänen und baue dann dein eigenes."
+      },
+      "title": "Decks — {gameName}",
+      "back": "Zurück zum Spiel",
+      "description": "Die von der Community für {gameName} veröffentlichten Listen.",
+      "create": "Deck erstellen",
+      "signInToCreate": "Zum Erstellen eines Decks anmelden"
     },
     "news": {
       "metadata": {

@@ -37,6 +37,19 @@ export const GAME_FEATURES = {
     label: "Vérificateur de deck",
     description: "Contrôle de légalité d'une liste au regard des formats du jeu.",
   },
+  decks: {
+    label: "Decks",
+    description:
+      "Explorateur des decks publiés du jeu, et l'entrée dans l'éditeur qui va avec. Ne ferme pas la création d'un deck depuis « Mes decks », qui reste ouverte à tous les jeux.",
+  },
+  news: {
+    label: "Actualités",
+    description: "Fil d'actualités du jeu, sur sa fiche et sur sa propre page.",
+  },
+  quizz: {
+    label: "Quizz",
+    description: "Quizz de la communauté sur les règles, les rulings et les politiques du jeu.",
+  },
   cubes: {
     label: "Cubes",
     description: "Création et draft de cubes.",

@@ -9,12 +9,33 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
-import { GameToolGridSkeleton } from "@/components/games/GameToolSkeletons.tsx";
+import { GameToolsNavBar } from "@/components/games/GameToolsNavBar.tsx";
+import {
+  GameToolGridSkeleton,
+  GameToolHeaderSkeleton,
+} from "@/components/games/GameToolSkeletons.tsx";
 import NewsCard from "./NewsCard.tsx";
 
 const PAGE_SIZE = 9;
 
 type GameParams = Promise<{ gameSlugOrId: string }>;
+
+/**
+ * Le jeu, à condition qu'il ouvre ses actualités.
+ *
+ * Le fanion se pose depuis l'administration, et un jeu qui ne l'a pas n'a pas
+ * de page d'actualités : la refermer ici plutôt que de la rendre vide évite
+ * qu'une adresse partagée survive à la fonctionnalité qu'on vient d'éteindre.
+ */
+async function requireGameWithNews(gameSlugOrId: string) {
+  const game = await readGameBySlugOrId(gameSlugOrId);
+
+  if (!game?.features?.news) {
+    notFound();
+  }
+
+  return game;
+}
 
 interface GameNewsPageProps {
   params: GameParams;
@@ -26,7 +47,7 @@ export async function generateMetadata({ params }: GameNewsPageProps): Promise<M
   const game = await readGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games.news");
 
-  if (!game) {
+  if (!game?.features?.news) {
     return {
       title: t("metadata.notFoundTitle"),
     };
@@ -52,7 +73,7 @@ export async function generateMetadata({ params }: GameNewsPageProps): Promise<M
 export default function GameNewsPage({ params, searchParams }: GameNewsPageProps) {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6">
-      <Suspense fallback={<NewsHeaderSkeleton />}>
+      <Suspense fallback={<GameToolHeaderSkeleton />}>
         <NewsHeader params={params} />
       </Suspense>
 
@@ -63,45 +84,31 @@ export default function GameNewsPage({ params, searchParams }: GameNewsPageProps
   );
 }
 
-function NewsHeaderSkeleton() {
-  return (
-    <div className="flex animate-pulse flex-row flex-wrap items-center gap-4" aria-hidden>
-      <div className="h-9 w-28 rounded-md bg-muted" />
-      <div className="h-9 w-72 max-w-full rounded bg-muted" />
-    </div>
-  );
-}
-
 async function NewsHeader({ params }: { params: GameParams }) {
   const { gameSlugOrId } = await params;
-  const game = await readGameBySlugOrId(gameSlugOrId);
-
-  if (!game) {
-    notFound();
-  }
+  const game = await requireGameWithNews(gameSlugOrId);
 
   const t = await getTranslations("Games.news");
 
   return (
-    <div className="flex flex-row flex-wrap items-center gap-4">
-      <Button asChild variant="outline">
-        <Link href={`/games/${game.slug ?? gameSlugOrId}`}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t("back")}
-        </Link>
-      </Button>
-      <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
+    <div className="flex flex-row flex-wrap justify-between gap-4">
+      <div className="flex flex-row flex-wrap items-center gap-4">
+        <Button asChild variant="outline">
+          <Link href={`/games/${game.slug ?? gameSlugOrId}`}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {t("back")}
+          </Link>
+        </Button>
+        <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
+      </div>
+      <GameToolsNavBar gameSlug={game.slug ?? game.id} currentTab="news" />
     </div>
   );
 }
 
 async function NewsList({ params, searchParams }: GameNewsPageProps) {
   const { gameSlugOrId } = await params;
-  const game = await readGameBySlugOrId(gameSlugOrId);
-
-  if (!game) {
-    notFound();
-  }
+  const game = await requireGameWithNews(gameSlugOrId);
 
   const { page: pageParam } = await searchParams;
   const currentPage = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);

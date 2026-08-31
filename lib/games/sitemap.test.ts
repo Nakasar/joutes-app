@@ -44,18 +44,35 @@ describe("gameSitemapUrls", () => {
     ]);
   });
 
-  it("n'annonce quiz et actualité que s'ils ont du contenu", () => {
-    // Ces deux pages ne dépendent d'aucun fanion : elles s'ouvrent pour tout
-    // jeu, et une page vide déclarée au sitemap est un rendez-vous manqué.
-    assert.deepEqual(paths({ id: "1", slug: "shatterpoint", hasQuizzes: true }), [
+  it("n'annonce quiz et actualité qu'ouverts et remplis", () => {
+    // Deux conditions : le fanion, sans lequel la page répond 404, et du
+    // contenu — une page vide déclarée au sitemap est un rendez-vous manqué.
+    assert.deepEqual(
+      paths({ id: "1", slug: "shatterpoint", features: { quizz: true }, hasQuizzes: true }),
+      ["/games/shatterpoint", "/games/shatterpoint/quizz"]
+    );
+    assert.deepEqual(
+      paths({ id: "1", slug: "shatterpoint", features: { news: true }, hasNews: true }),
+      ["/games/shatterpoint", "/games/shatterpoint/news"]
+    );
+
+    // Le contenu sans le fanion : la page est fermée.
+    assert.deepEqual(paths({ id: "1", slug: "shatterpoint", hasQuizzes: true, hasNews: true }), [
       "/games/shatterpoint",
-      "/games/shatterpoint/quizz",
     ]);
-    assert.deepEqual(paths({ id: "1", slug: "shatterpoint", hasNews: true }), [
+    // Le fanion sans le contenu : la page est vide.
+    assert.deepEqual(paths({ id: "1", slug: "shatterpoint", features: { quizz: true, news: true } }), [
       "/games/shatterpoint",
-      "/games/shatterpoint/news",
     ]);
-    assert.deepEqual(paths({ id: "1", slug: "shatterpoint" }), ["/games/shatterpoint"]);
+  });
+
+  it("annonce l'explorateur de decks sur son seul fanion", () => {
+    // À la différence des quiz, ce que la page montre vient de la communauté
+    // entière : elle se remplit sans qu'on ait rien à écrire pour ce jeu.
+    assert.deepEqual(paths({ id: "1", slug: "swu", features: { decks: true } }), [
+      "/games/swu",
+      "/games/swu/decks",
+    ]);
   });
 
   it("laisse la collection en dehors : elle est personnelle", () => {
@@ -89,7 +106,7 @@ describe("gamesSitemapUrls", () => {
   it("suit l'ordre des jeux donnés", () => {
     const urls = gamesSitemapUrls([
       { id: "1", slug: "swu", features: { policies: true } },
-      { id: "2", slug: "shatterpoint", hasQuizzes: true },
+      { id: "2", slug: "shatterpoint", features: { quizz: true }, hasQuizzes: true },
     ]);
 
     assert.deepEqual(

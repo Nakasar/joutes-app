@@ -335,6 +335,24 @@ async function GameTools({ params }: GameDetailPageProps) {
             </Link>
           )}
 
+          {game.features?.decks && (
+            <Link href={`/games/${game.slug ?? game.id}/decks`} className="group">
+              <div className="bg-gradient-to-br from-indigo-900/30 to-indigo-800/20 backdrop-blur-sm rounded-xl border border-indigo-500/20 p-8 hover:border-indigo-500/50 transition-all hover:scale-105">
+                <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsDecks.title")}</h3>
+                <p className="text-gray-300">{t("detail.toolsDecks.description")}</p>
+              </div>
+            </Link>
+          )}
+
+          {game.features?.quizz && (
+            <Link href={`/games/${game.slug ?? game.id}/quizz`} className="group">
+              <div className="bg-gradient-to-br from-pink-900/30 to-pink-800/20 backdrop-blur-sm rounded-xl border border-pink-500/20 p-8 hover:border-pink-500/50 transition-all hover:scale-105">
+                <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsQuizz.title")}</h3>
+                <p className="text-gray-300">{t("detail.toolsQuizz.description")}</p>
+              </div>
+            </Link>
+          )}
+
           {game.features?.deckChecker && (
             <Link href={`/games/${game.slug}/deck-checker`} className="group">
               <div className="bg-gradient-to-br from-cyan-900/30 to-cyan-800/20 backdrop-blur-sm rounded-xl border border-cyan-500/20 p-8 hover:border-cyan-500/50 transition-all hover:scale-105">
@@ -369,6 +387,12 @@ async function GameTools({ params }: GameDetailPageProps) {
 async function GameNews({ params }: GameDetailPageProps) {
   const { gameSlugOrId } = await params;
   const game = await requireGame(gameSlugOrId);
+
+  // Le fanion se lit avant la base : un jeu qui n'expose pas ses actualités
+  // n'a pas à les faire lire, et la section disparaît sans requête.
+  if (!game.features?.news) {
+    return null;
+  }
 
   // Le pilote Mongo touche à l'horloge en lisant les actualités, ce qu'un
   // prérendu ne sait pas figer, et aucune frontière n'y change rien.
