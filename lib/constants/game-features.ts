@@ -40,7 +40,7 @@ export const GAME_FEATURES = {
   decks: {
     label: "Decks",
     description:
-      "Explorateur des decks publiés du jeu, et éditeur de liste. Sans ce fanion, le jeu ne se propose pas à la création d'un deck.",
+      "Explorateur des decks publiés du jeu, et l'entrée dans l'éditeur qui va avec. Ne ferme pas la création d'un deck depuis « Mes decks », qui reste ouverte à tous les jeux.",
   },
   news: {
     label: "Actualités",
