@@ -27,12 +27,18 @@ export function FeaturedLairsManager({ game }: { game: Game }) {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  // Charger les lieux disponibles
+  /*
+   * Les lieux se chargent à l'affichage, et non à l'ouverture de la boîte.
+   *
+   * Les pastilles sous le bouton nomment les lieux mis en avant : tant que la
+   * liste n'était chargée qu'à l'ouverture, elles annonçaient « aucun lieu mis
+   * en avant » sur un jeu qui en avait — il fallait ouvrir la boîte une fois
+   * pour que la fiche dise vrai. Invisible dans une modale qu'on n'ouvrait que
+   * pour éditer, faux d'emblée sur une page qui se contente d'afficher.
+   */
   useEffect(() => {
-    if (open) {
-      loadLairs();
-    }
-  }, [open]);
+    loadLairs();
+  }, []);
 
   const loadLairs = async () => {
     setLoading(true);
@@ -78,9 +84,10 @@ export function FeaturedLairsManager({ game }: { game: Game }) {
     }
   };
 
-  const featuredLairsData = lairs.filter((lair) =>
-    (game.featuredLairs || []).includes(lair.id)
-  );
+  // La sélection en cours, et non ce que porte le jeu : après un enregistrement,
+  // les pastilles doivent dire ce qui vient d'être choisi sans attendre que la
+  // page soit rendue à nouveau.
+  const featuredLairsData = lairs.filter((lair) => selectedLairs.includes(lair.id));
 
   const filteredLairs = lairs.filter((lair) =>
     lair.name.toLowerCase().includes(search.toLowerCase())

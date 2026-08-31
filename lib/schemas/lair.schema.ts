@@ -120,6 +120,28 @@ export const lairDetailsSchema = z.object({
   website: z.url("L'URL du site web doit être valide").optional().or(z.literal("")),
 });
 
+/**
+ * Les seuls jeux déclarés par un lieu, et rien d'autre.
+ *
+ * Même raison d'être que `lairDetailsSchema` : l'onglet « Jeux » de la fiche
+ * d'administration n'envoie que cette liste, et ne doit donc réécrire qu'elle.
+ */
+export const lairGamesSchema = z.object({
+  games: z.array(objectIdSchema).default([]),
+});
+
+/**
+ * Les seules sources d'événements.
+ *
+ * `eventSourceSchema` est repris tel quel — c'est lui qui exige une
+ * `mappingConfig` sur une source en correspondance. L'interdiction faite aux
+ * lieux privés reste portée par `lairSchema` et par l'action, qui relit le lieu
+ * : un schéma qui ne reçoit pas `isPrivate` ne peut pas la vérifier lui-même.
+ */
+export const lairEventSourcesSchema = z.object({
+  eventsSourceUrls: z.array(eventSourceSchema).max(20, "Trop de sources pour un seul lieu").default([]),
+});
+
 export const lairIdSchema = objectIdSchema;
 
 export type LairInput = z.infer<typeof lairSchema>;

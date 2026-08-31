@@ -3,7 +3,13 @@
 import { requireAdmin } from "@/lib/middleware/admin.ts";
 import { Lair, EventSource } from "@/lib/types/Lair.ts";
 import { revalidatePath } from "next/cache";
-import { lairSchema, lairIdSchema } from "@/lib/schemas/lair.schema.ts";
+import {
+  lairSchema,
+  lairIdSchema,
+  lairDetailsSchema,
+  lairGamesSchema,
+  lairEventSourcesSchema,
+} from "@/lib/schemas/lair.schema.ts";
 import { z } from "zod";
 import * as lairsDb from "@/lib/db/lairs.ts";
 import { refreshEvents as refreshEventsService } from "@/lib/services/refresh-events.ts";
@@ -96,6 +102,130 @@ export async function updateLair(id: string, data: {
   }
 }
 
+/** Les chemins que touche une écriture sur un lieu. */
+function revalidateLair(id: string) {
+  revalidatePath("/admin/lairs");
+  revalidatePath(`/admin/lairs/${id}`);
+  revalidatePath("/lairs");
+  revalidatePath(`/lairs/${id}`);
+}
+
+/**
+ * Identité d'un lieu : nom, bannière, adresse, point sur la carte, site.
+ *
+ * `lairDetailsSchema` plutôt que `lairSchema`, et c'est ce qui compte ici : le
+ * second ramènerait ses valeurs par défaut dans la charge écrite — `isPrivate`
+ * à `false`, un lieu privé redevenu public en enregistrant son nom, et
+ * `eventsSourceUrls` à `[]`, ses sources effacées. Ce que l'onglet n'envoie pas
+ * ne doit pas être réécrit.
+ */
+export async function updateLairIdentity(
+  id: string,
+  data: {
+    name: string;
+    banner?: string;
+    location?: { type: "Point"; coordinates: [number, number] };
+    address?: string;
+    website?: string;
+  }
+) {
+  try {
+    await requireAdmin();
+
+    const validatedId = lairIdSchema.parse(id);
+    const validated = lairDetailsSchema.omit({ games: true }).parse(data);
+
+    const updated = await lairsDb.updateLair(validatedId, validated);
+
+    if (!updated) {
+      return { success: false, error: "Lieu non trouvé" };
+    }
+
+    revalidateLair(validatedId);
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message || "Données invalides" };
+    }
+    console.error("Erreur lors de la mise à jour du lieu:", error);
+    return { success: false, error: "Erreur lors de la mise à jour du lieu" };
+  }
+}
+
+/** Les jeux déclarés par un lieu. */
+export async function updateLairGames(id: string, games: string[]) {
+  try {
+    await requireAdmin();
+
+    const validatedId = lairIdSchema.parse(id);
+    const validated = lairGamesSchema.parse({ games });
+
+    const updated = await lairsDb.updateLair(validatedId, validated);
+
+    if (!updated) {
+      return { success: false, error: "Lieu non trouvé" };
+    }
+
+    revalidateLair(validatedId);
+    // La fiche d'un jeu liste ses lieux : elle change avec cette déclaration.
+    revalidatePath("/games");
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message || "Données invalides" };
+    }
+    console.error("Erreur lors de la mise à jour des jeux du lieu:", error);
+    return { success: false, error: "Erreur lors de la mise à jour des jeux du lieu" };
+  }
+}
+
+/**
+ * Sources d'événements d'un lieu.
+ *
+ * L'interdiction faite aux lieux privés est vérifiée ici plutôt que dans le
+ * schéma : celui-ci ne reçoit pas `isPrivate`, et le lire depuis la charge du
+ * client reviendrait à laisser celui-ci décider s'il a le droit d'écrire.
+ */
+export async function updateLairEventSources(id: string, eventsSourceUrls: unknown) {
+  try {
+    await requireAdmin();
+
+    const validatedId = lairIdSchema.parse(id);
+    const validated = lairEventSourcesSchema.parse({ eventsSourceUrls });
+
+    const lair = await lairsDb.getLairById(validatedId);
+
+    if (!lair) {
+      return { success: false, error: "Lieu non trouvé" };
+    }
+
+    if (lair.isPrivate && validated.eventsSourceUrls.length > 0) {
+      return {
+        success: false,
+        error: "Les lieux privés ne peuvent pas avoir d'URL de scraping d'événements",
+      };
+    }
+
+    const updated = await lairsDb.updateLair(validatedId, validated);
+
+    if (!updated) {
+      return { success: false, error: "Lieu non trouvé" };
+    }
+
+    revalidateLair(validatedId);
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message || "Données invalides" };
+    }
+    console.error("Erreur lors de la mise à jour des sources d'événements:", error);
+    return { success: false, error: "Erreur lors de la mise à jour des sources d'événements" };
+  }
+}
+
 export async function deleteLair(id: string) {
   try {
     await requireAdmin();
@@ -152,25 +282,18 @@ export async function updateCalendarMode(lairId: string, mode: 'CALENDAR' | 'AGE
     
     // Valider l'ID
     const validatedId = lairIdSchema.parse(lairId);
-    
-    // Mettre à jour le mode du calendrier
-    const updatedLair = await lairsDb.updateLair(validatedId, {
-      options: {
-        calendar: {
-          mode
-        }
-      }
-    });
 
-    if (!updatedLair) {
+    // Écriture ciblée : le reste de `options` — thème, sections, annonces,
+    // horaires — n'a pas à disparaître parce qu'on change la vue du calendrier.
+    const updated = await lairsDb.setLairCalendarMode(validatedId, mode);
+
+    if (!updated) {
       return { success: false, error: "Lieu non trouvé" };
     }
 
-    revalidatePath("/admin/lairs");
-    revalidatePath("/lairs");
-    revalidatePath(`/lairs/${validatedId}`);
-    
-    return { success: true, lair: updatedLair };
+    revalidateLair(validatedId);
+
+    return { success: true };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { 
