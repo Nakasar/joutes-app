@@ -19,6 +19,8 @@ describe("buildCardId", () => {
     assert.equal(buildCardId("swu", "sor", "001"), "SOR-001");
     // Sorcery n'a pas de numéro de collection : c'est le slug de la carte.
     assert.equal(buildCardId("sorcery", "got", "abaddon-succubus"), "GOT-abaddon-succubus");
+    // Cyberpunk suffixe ses numéros d'une lettre : le tiret dit où finit l'extension.
+    assert.equal(buildCardId("cp", "wncb", "005a"), "WNCB-005a");
   });
 
   it("ne rend rien tant que l'extension ou le numéro manque", () => {
