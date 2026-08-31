@@ -8,9 +8,21 @@ import {getUserById, getUserByTagOrId, updateUserDisplayName} from "@/lib/db/use
 import { nanoid } from 'nanoid';
 import { Event, RegistrationStatus } from "@/lib/types/Event.ts";
 import { revalidatePath } from "next/cache";
-import { DateTime } from "luxon";
 import { notifyEventAll } from "@/lib/services/notifications.ts";
-import { isUserOrganizer } from "@/lib/utils/permissions.ts";
+import {
+  canAddParticipant,
+  canCancelEvent,
+  canCompleteEvent,
+  canDeleteEvent,
+  canJoinEvent,
+  canRegisterParticipant,
+  canStartEvent,
+  canUpdateEventDetails,
+  canUpdateRegistrationStatus,
+  checkEventSchedule,
+  isEventOrganizer,
+  resolveJoinRegistrationStatus,
+} from "@/lib/events/rules.ts";
 import {generateDiscriminator, generateUserNamme} from "@/lib/utils.ts";
 
 type CreateEventInput = {
@@ -58,11 +70,9 @@ export async function createEventAction(input: CreateEventInput) {
     }
 
     // Valider les dates
-    const startDate = new Date(input.startDateTime);
-    const endDate = new Date(input.endDateTime);
-    
-    if (startDate >= endDate) {
-      return { success: false, error: "La date de fin doit être après la date de début" };
+    const schedule = checkEventSchedule(input.startDateTime, input.endDateTime);
+    if (!schedule.ok) {
+      return { success: false, error: schedule.error };
     }
 
     // Créer l'événement
@@ -115,37 +125,9 @@ export async function updateEventDetailsAction(input: UpdateEventDetailsInput) {
       return { success: false, error: "Événement introuvable" };
     }
 
-    if (!isUserOrganizer(event, session.user.id)) {
-      return { success: false, error: "Seuls les organisateurs de l'événement peuvent modifier ces informations" };
-    }
-
-    const startDate = DateTime.fromISO(input.startDateTime);
-    const endDate = DateTime.fromISO(input.endDateTime);
-
-    if (!startDate.isValid || !endDate.isValid) {
-      return { success: false, error: "Les dates saisies ne sont pas valides" };
-    }
-
-    if (startDate >= endDate) {
-      return { success: false, error: "La date de fin doit être après la date de début" };
-    }
-
-    if (input.price !== undefined && input.price < 0) {
-      return { success: false, error: "Le prix doit être supérieur ou égal à 0" };
-    }
-
-    if (input.maxParticipants !== undefined && input.maxParticipants < 1) {
-      return { success: false, error: "Le nombre de participants doit être supérieur ou égal à 1" };
-    }
-
-    if (
-      input.maxParticipants !== undefined
-      && (event.registeredParticipantsCount ?? 0) > input.maxParticipants
-    ) {
-      return {
-        success: false,
-        error: "Le nombre max ne peut pas être inférieur au nombre de participants déjà inscrits",
-      };
+    const allowed = canUpdateEventDetails(event, session.user.id, input);
+    if (!allowed.ok) {
+      return { success: false, error: allowed.error };
     }
 
     const updated = await updateEvent(input.eventId, {
@@ -192,23 +174,10 @@ export async function joinEventAction(eventId: string) {
       return { success: false, error: "Événement introuvable" };
     }
 
-    if (!event.allowJoin) {
-      return { success: false, error: "Les inscriptions à cet événement sont fermées" };
-    }
-
-    // Vérifier si l'événement est commencé ou terminé
-    if (event.runningState && event.runningState !== 'not-started') {
-      return { success: false, error: "Impossible de rejoindre un événement déjà commencé ou terminé" };
-    }
-
-    // Vérifier si l'événement est complet (ne compter que les REGISTERED)
-    if (event.maxParticipants && (event.registeredParticipantsCount ?? 0) >= event.maxParticipants) {
-      return { success: false, error: "Cet événement est complet" };
-    }
-
-    // Vérifier si l'utilisateur est déjà inscrit
-    if (event.participants?.includes(session.user.id)) {
-      return { success: false, error: "Vous êtes déjà inscrit à cet événement" };
+    // Inscriptions ouvertes, événement à venir, place libre, pas déjà inscrit
+    const allowed = canJoinEvent(event, session.user.id);
+    if (!allowed.ok) {
+      return { success: false, error: allowed.error };
     }
 
     const user = await getUserById(session.user.id);
@@ -220,7 +189,7 @@ export async function joinEventAction(eventId: string) {
     }
 
     // Déterminer le statut d'inscription
-    const registrationStatus: RegistrationStatus = event.preRegistration ? 'PRE_REGISTERED' : 'REGISTERED';
+    const registrationStatus = resolveJoinRegistrationStatus(event);
 
     // Ajouter le participant
     const added = await addParticipantToEvent(eventId, session.user.id, registrationStatus);
@@ -284,7 +253,7 @@ export async function removeParticipantAction(eventId: string, userId: string) {
     }
 
     // Vérifier que l'utilisateur connecté est un organisateur de l'événement
-    if (!isUserOrganizer(event, session.user.id)) {
+    if (!isEventOrganizer(event, session.user.id)) {
       return { success: false, error: "Seuls les organisateurs de l'événement peuvent retirer des participants" };
     }
 
@@ -322,14 +291,10 @@ export async function addParticipantByTagAction(eventId: string, userTag: string
       return { success: false, error: "Événement introuvable" };
     }
 
-    // Vérifier que l'utilisateur connecté est un organisateur de l'événement
-    if (!isUserOrganizer(event, session.user.id)) {
-      return { success: false, error: "Seuls les organisateurs de l'événement peuvent ajouter des participants" };
-    }
-
-    // Vérifier si l'événement est commencé ou terminé
-    if (event.runningState && event.runningState !== 'not-started') {
-      return { success: false, error: "Impossible d'ajouter des participants à un événement déjà commencé ou terminé" };
+    // Droit d'ajouter, et événement pas encore commencé
+    const allowed = canAddParticipant(event, session.user.id);
+    if (!allowed.ok) {
+      return { success: false, error: allowed.error };
     }
 
     // Rechercher l'utilisateur par son tag
@@ -339,14 +304,10 @@ export async function addParticipantByTagAction(eventId: string, userTag: string
       return { success: false, error: "Utilisateur introuvable" };
     }
 
-    // Vérifier si l'événement est complet (ne compter que les REGISTERED)
-    if (event.maxParticipants && (event.registeredParticipantsCount ?? 0) >= event.maxParticipants) {
-      return { success: false, error: "Cet événement est complet" };
-    }
-
-    // Vérifier si l'utilisateur est déjà inscrit
-    if (event.participants?.includes(user.id)) {
-      return { success: false, error: "Cet utilisateur est déjà inscrit à l'événement" };
+    // Place libre, et compte pas déjà dans la liste
+    const registrable = canRegisterParticipant(event, user.id);
+    if (!registrable.ok) {
+      return { success: false, error: registrable.error };
     }
 
     // Déterminer le statut d'inscription (le créateur ajoute directement en REGISTERED)
@@ -431,7 +392,7 @@ export async function toggleAllowJoinAction(eventId: string, allowJoin: boolean)
     }
 
     // Vérifier que l'utilisateur est un organisateur de l'événement
-    if (!isUserOrganizer(event, session.user.id)) {
+    if (!isEventOrganizer(event, session.user.id)) {
       return { success: false, error: "Seuls les organisateurs de l'événement peuvent modifier ce paramètre" };
     }
 
@@ -470,18 +431,9 @@ export async function startEventAction(eventId: string) {
       return { success: false, error: "Événement introuvable" };
     }
 
-    // Vérifier que l'utilisateur est le créateur de l'événement
-    if (!isUserOrganizer(event, session.user.id)) {
-      return { success: false, error: "Seuls les organisateurs de l'événement peuvent démarrer l'événement" };
-    }
-
-    // Vérifier que l'événement n'est pas déjà commencé ou terminé
-    if (event.runningState === 'ongoing') {
-      return { success: false, error: "L'événement est déjà en cours" };
-    }
-
-    if (event.runningState === 'completed') {
-      return { success: false, error: "L'événement est déjà terminé" };
+    const allowed = canStartEvent(event, session.user.id);
+    if (!allowed.ok) {
+      return { success: false, error: allowed.error };
     }
 
     // Mettre à jour le runningState
@@ -518,14 +470,9 @@ export async function completeEventAction(eventId: string) {
       return { success: false, error: "Événement introuvable" };
     }
 
-    // Vérifier que l'utilisateur est le créateur de l'événement
-    if (!isUserOrganizer(event, session.user.id)) {
-      return { success: false, error: "Seuls les organisateurs de l'événement peuvent terminer l'événement" };
-    }
-
-    // Vérifier que l'événement n'est pas déjà terminé
-    if (event.runningState === 'completed') {
-      return { success: false, error: "L'événement est déjà terminé" };
+    const allowed = canCompleteEvent(event, session.user.id);
+    if (!allowed.ok) {
+      return { success: false, error: allowed.error };
     }
 
     // Mettre à jour le runningState
@@ -562,18 +509,9 @@ export async function cancelEventAction(eventId: string, reason?: string) {
       return { success: false, error: "Événement introuvable" };
     }
 
-    // Vérifier que l'utilisateur est le créateur de l'événement
-    if (!isUserOrganizer(event, session.user.id)) {
-      return { success: false, error: "Seuls les organisateurs de l'événement peuvent annuler l'événement" };
-    }
-
-    // Vérifier que l'événement n'est pas déjà annulé ou terminé
-    if (event.status === 'cancelled') {
-      return { success: false, error: "L'événement est déjà annulé" };
-    }
-
-    if (event.runningState === 'completed') {
-      return { success: false, error: "Impossible d'annuler un événement terminé" };
+    const allowed = canCancelEvent(event, session.user.id);
+    if (!allowed.ok) {
+      return { success: false, error: allowed.error };
     }
 
     // Mettre à jour le statut
@@ -627,9 +565,9 @@ export async function deleteEventAction(eventId: string) {
       return { success: false, error: "Événement introuvable" };
     }
 
-    // Vérifier que l'utilisateur est le créateur de l'événement
-    if (!isUserOrganizer(event, session.user.id)) {
-      return { success: false, error: "Seuls les organisateurs de l'événement peuvent supprimer l'événement" };
+    const allowed = canDeleteEvent(event, session.user.id);
+    if (!allowed.ok) {
+      return { success: false, error: allowed.error };
     }
 
     // Envoyer une notification à tous les participants et au créateur AVANT de supprimer
@@ -681,23 +619,9 @@ export async function updateParticipantRegistrationStatusAction(
       return { success: false, error: "Événement introuvable" };
     }
 
-    if (!isUserOrganizer(event, session.user.id)) {
-      return { success: false, error: "Seuls les organisateurs de l'événement peuvent modifier le statut d'inscription" };
-    }
-
-    // Vérifier que l'utilisateur est bien participant
-    if (!event.participants?.includes(userId)) {
-      return { success: false, error: "Cet utilisateur n'est pas participant à l'événement" };
-    }
-
-    // Si on passe à REGISTERED, vérifier que le max n'est pas atteint
-    if (status === 'REGISTERED' && event.maxParticipants) {
-      const registeredCount = event.registeredParticipantsCount ?? 0;
-      const currentStatus = event.participantRegistrations?.[userId];
-      // Ne vérifier que si le participant n'est pas déjà REGISTERED
-      if (currentStatus !== 'REGISTERED' && registeredCount >= event.maxParticipants) {
-        return { success: false, error: "Le nombre maximum de participants inscrits est atteint" };
-      }
+    const allowed = canUpdateRegistrationStatus(event, session.user.id, userId, status);
+    if (!allowed.ok) {
+      return { success: false, error: allowed.error };
     }
 
     const updated = await updateParticipantRegistrationStatus(eventId, userId, status);
@@ -732,7 +656,7 @@ export async function togglePreRegistrationAction(eventId: string, preRegistrati
       return { success: false, error: "Événement introuvable" };
     }
 
-    if (!isUserOrganizer(event, session.user.id)) {
+    if (!isEventOrganizer(event, session.user.id)) {
       return { success: false, error: "Seuls les organisateurs de l'événement peuvent modifier la pré-inscription" };
     }
 
