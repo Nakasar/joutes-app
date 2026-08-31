@@ -770,12 +770,17 @@ async function main() {
     ? JSON.parse(await readFile(CARDS_FILE, "utf-8"))
     : await fetchCatalog(refreshImages);
 
-  assertUniqueIds(cards);
-
   if (!fromFile) {
     await writeFile(CARDS_FILE, JSON.stringify(cards, null, 2));
     console.info(`${cards.length} cartes écrites dans ${CARDS_FILE}.`);
   }
+
+  // Après `cards.json`, et non avant : une collision d'identifiants se répare
+  // en choisissant des codes d'extension, et c'est le fichier qui montre
+  // lesquels. S'arrêter avant de l'écrire emporterait la seule pièce du
+  // diagnostic — et le téléchargement entier avec elle. La garantie tient : la
+  // vérification reste avant toute écriture en base.
+  assertUniqueIds(cards);
 
   if (fetchOnly) {
     return;
