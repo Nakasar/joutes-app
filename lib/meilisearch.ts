@@ -59,6 +59,13 @@ export const indexes: { [gameSlug: string]: CardIndexConfig } = {
       collectorNumber: 'collectorNumber',
     },
   },
+  neuro: {
+    name: 'neuro-cards',
+    keys: {
+      set: 'setCode',
+      collectorNumber: 'collectorNumber',
+    },
+  },
   cp: {
     name: 'cp-cards',
     keys: {
