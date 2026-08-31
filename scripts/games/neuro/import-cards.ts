@@ -82,6 +82,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path, { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ObjectId } from "mongodb";
+import type { EnqueuedTaskPromise } from "meilisearch";
 import db from "../../../lib/mongodb.ts";
 import meilisearch, { cardIndexSettings, ensureCardIndex, indexes } from "../../../lib/meilisearch.ts";
 import { getGameCardFilterFacets } from "../../../lib/db/cards.ts";
@@ -99,8 +100,32 @@ const GAME = "neuro";
 /** Slug du jeu en base. Surchargeable si le jeu a été créé sous un autre slug. */
 const GAME_SLUG = process.env.NEURO_GAME_SLUG ?? GAME;
 
-/** NeuroScape chez carde.io, qui numérote les jeux qu'il héberge. */
-const CARDEIO_GAME_ID = Number(process.env.NEURO_CARDEIO_GAME_ID ?? 134);
+/** NeuroScape chez carde.io, tel que le numérote la plateforme. */
+const DEFAULT_CARDEIO_GAME_ID = 134;
+
+/**
+ * Le jeu chez carde.io. La surcharge est relue plutôt que convertie à
+ * l'aveugle : `Number("")` vaut zéro et `Number("neuroscape")` vaut `NaN`, que
+ * `JSON.stringify` écrit `null` — la requête partirait alors sans jeu, et
+ * l'erreur de l'API ne dirait pas d'où elle vient.
+ */
+function cardeioGameId(): number {
+  const raw = process.env.NEURO_CARDEIO_GAME_ID?.trim();
+
+  if (!raw) {
+    return DEFAULT_CARDEIO_GAME_ID;
+  }
+
+  const id = Number(raw);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error(`NEURO_CARDEIO_GAME_ID est l'entier qui désigne le jeu chez carde.io, pas « ${raw} ».`);
+  }
+
+  return id;
+}
+
+const CARDEIO_GAME_ID = cardeioGameId();
 
 /** Le catalogue n'est publié qu'en anglais, et les cartes portent `EN` en pied. */
 const LANGUAGE = "en";
@@ -170,6 +195,14 @@ export type NeuroScapeCard = {
 // --- Accès HTTP ----------------------------------------------------------
 
 /**
+ * Requête que l'API refuse : un jeu qu'elle ne connaît pas, une tranche trop
+ * large, une route déplacée. Elle la refusera autant à la cinquième tentative,
+ * et la reprendre ne ferait que retarder l'erreur — qui dit, elle, ce qui ne va
+ * pas.
+ */
+class RefusedRequest extends Error {}
+
+/**
  * Une page du catalogue. Un échec isolé — l'API répond ponctuellement en 5xx —
  * ne doit pas coûter tout l'import : la requête est reprise quelques fois avant
  * d'abandonner.
@@ -185,12 +218,17 @@ async function fetchPage(offset: number, attempt = 1): Promise<ApiPage> {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status} sur ${SEARCH_API} (offset ${offset})`);
+      // Le corps d'un refus porte le motif (« Form is invalid », et le champ en
+      // cause) : sans lui, il ne reste qu'un code de statut à interpréter.
+      const detail = (await response.text().catch(() => "")).trim().slice(0, 300);
+      const message = `HTTP ${response.status} sur ${SEARCH_API} (offset ${offset})${detail ? ` : ${detail}` : ""}`;
+
+      throw response.status < 500 ? new RefusedRequest(message) : new Error(message);
     }
 
     return (await response.json()) as ApiPage;
   } catch (error) {
-    if (attempt >= MAX_ATTEMPTS) {
+    if (error instanceof RefusedRequest || attempt >= MAX_ATTEMPTS) {
       throw error;
     }
     await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** (attempt - 1)));
@@ -432,6 +470,31 @@ async function writeCards(cards: NeuroScapeCard[]): Promise<void> {
 }
 
 /**
+ * Délai laissé à une tâche Meilisearch. Le client attend cinq secondes par
+ * défaut : une tranche de mille documents met plus longtemps que ça à
+ * s'indexer sur un serveur chargé, et l'import échouerait alors qu'il n'a rien
+ * de cassé.
+ */
+const TASK_TIMEOUT_MS = 120_000;
+
+/**
+ * Attend la fin d'une tâche Meilisearch, et fait de son échec une erreur.
+ *
+ * Régler l'index et y envoyer des documents sont des tâches asynchrones : la
+ * requête rend la main dès qu'elles sont mises en file. Sans attente, le script
+ * annoncerait un import terminé alors que rien n'est encore indexé, et un refus
+ * — un document rejeté, une clé primaire qui ne correspond pas — ne se lirait
+ * nulle part : `waitTask` rend la tâche échouée, il ne lève pas.
+ */
+async function runTask(enqueued: EnqueuedTaskPromise, what: string): Promise<void> {
+  const task = await enqueued.waitTask({ timeout: TASK_TIMEOUT_MS });
+
+  if (task.status !== "succeeded") {
+    throw new Error(`${what} : tâche Meilisearch ${task.status} — ${task.error?.message ?? "sans motif"}.`);
+  }
+}
+
+/**
  * Pousse les cartes dans l'index de recherche, en le créant au besoin.
  *
  * L'index n'est **pas** vidé : il porte aussi les cartes ajoutées à la main
@@ -450,11 +513,14 @@ async function writeSearchIndex(cards: NeuroScapeCard[], gameId: ObjectId): Prom
   await ensureCardIndex(indexConfig.name);
 
   const facets = await getGameCardFilterFacets(gameId);
-  await meilisearch.index(indexConfig.name).updateSettings(
-    cardIndexSettings(indexConfig, {
-      facetKeys: facets.map((facet) => facet.key),
-      numericKeys: facets.flatMap((facet) => (facet.type === "number" ? [facet.key] : [])),
-    })
+  await runTask(
+    meilisearch.index(indexConfig.name).updateSettings(
+      cardIndexSettings(indexConfig, {
+        facetKeys: facets.map((facet) => facet.key),
+        numericKeys: facets.flatMap((facet) => (facet.type === "number" ? [facet.key] : [])),
+      })
+    ),
+    `Réglage de l'index « ${indexConfig.name} »`
   );
   console.info(`Index « ${indexConfig.name} » réglé sur ${facets.length} attributs.`);
 
@@ -469,12 +535,17 @@ async function writeSearchIndex(cards: NeuroScapeCard[], gameId: ObjectId): Prom
 
   const index = meilisearch.index(indexConfig.name);
   for (let offset = 0; offset < cards.length; offset += 1000) {
-    await index.addDocuments(
-      cards
-        .slice(offset, offset + 1000)
-        .map((card) => importedCardSearchDocument(card, storedPrintings.get(card.id)))
+    const last = Math.min(offset + 1000, cards.length);
+
+    await runTask(
+      index.addDocuments(
+        cards
+          .slice(offset, offset + 1000)
+          .map((card) => importedCardSearchDocument(card, storedPrintings.get(card.id)))
+      ),
+      `Envoi des cartes ${offset + 1} à ${last}`
     );
-    console.info(`Index : ${Math.min(offset + 1000, cards.length)}/${cards.length}`);
+    console.info(`Index : ${last}/${cards.length}`);
   }
 }
 
@@ -485,7 +556,21 @@ async function main() {
   const fromFile = args.includes("--from-file");
   const fetchOnly = args.includes("--fetch-only");
 
+  // Les deux options s'excluent : l'une télécharge sans écrire, l'autre écrit
+  // sans télécharger. Ensemble, elles ne feraient rien du tout, en ayant l'air
+  // d'avoir travaillé.
+  if (fromFile && fetchOnly) {
+    throw new Error("--fetch-only télécharge sans rien écrire, --from-file écrit sans télécharger : choisissez.");
+  }
+
   const cards: NeuroScapeCard[] = fromFile ? JSON.parse(await readFile(CARDS_FILE, "utf-8")) : await fetchCatalog();
+
+  // Avant d'écrire quoi que ce soit, fichier compris : l'API rend une page vide
+  // et un total nul — sans erreur — pour un jeu qu'elle ne connaît pas, et un
+  // `game_id` erroné écraserait alors le cache par un catalogue vide.
+  if (cards.length === 0) {
+    throw new Error(`Catalogue vide pour le jeu ${CARDEIO_GAME_ID} chez carde.io : rien n'est écrit.`);
+  }
 
   if (!fromFile) {
     await writeFile(CARDS_FILE, JSON.stringify(cards, null, 2));
@@ -494,10 +579,6 @@ async function main() {
 
   if (fetchOnly) {
     return;
-  }
-
-  if (cards.length === 0) {
-    throw new Error("Catalogue vide : rien n'est écrit en base.");
   }
 
   await writeCards(cards);
