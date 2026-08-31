@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildPrintingId, withUniquePrintingIds } from "./card-ids";
+import { buildCardId, buildPrintingId, withUniquePrintingIds } from "./card-ids";
 
 /**
  * Identifiants des variantes d'impression : ils sont dérivés du nom, mais
@@ -9,6 +9,23 @@ import { buildPrintingId, withUniquePrintingIds } from "./card-ids";
  *
  * Exécution : `npm run test`.
  */
+
+describe("buildCardId", () => {
+  it("colle l'extension au numéro par défaut", () => {
+    assert.equal(buildCardId("riftbound", "sfd", "125"), "SFD125");
+  });
+
+  it("sépare d'un tiret les jeux qui le veulent", () => {
+    assert.equal(buildCardId("swu", "sor", "001"), "SOR-001");
+    // Sorcery n'a pas de numéro de collection : c'est le slug de la carte.
+    assert.equal(buildCardId("sorcery", "got", "abaddon-succubus"), "GOT-abaddon-succubus");
+  });
+
+  it("ne rend rien tant que l'extension ou le numéro manque", () => {
+    assert.equal(buildCardId("sorcery", "got", ""), "");
+    assert.equal(buildCardId("sorcery", "", "abaddon-succubus"), "");
+  });
+});
 
 describe("buildPrintingId", () => {
   it("dérive un identifiant lisible du nom de la variante", () => {

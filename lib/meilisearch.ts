@@ -51,6 +51,13 @@ export const indexes: { [gameSlug: string]: CardIndexConfig } = {
       set: 'setCode',
       collectorNumber: 'collectorNumber',
     },
+  },
+  sorcery: {
+    name: 'sorcery-cards',
+    keys: {
+      set: 'setCode',
+      collectorNumber: 'collectorNumber',
+    },
   }
 };
 

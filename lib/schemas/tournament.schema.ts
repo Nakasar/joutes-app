@@ -446,7 +446,9 @@ export const tournamentFormAnswerSchema = z.object({
       name: z.string().min(1).max(200),
       image: z.string().max(500).optional(),
       setCode: z.string().max(20).optional(),
-      collectorNumber: z.string().max(20).optional(),
+      // Voir `cardSchema` : le numéro d'une carte Sorcery est son slug, plus
+      // long que les numéros des autres jeux.
+      collectorNumber: z.string().max(40).optional(),
     })
     .optional(),
   // Saisie brute d'une liste de deck : texte, lien ou code. L'analyse est

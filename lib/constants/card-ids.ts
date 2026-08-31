@@ -10,6 +10,9 @@
  */
 const CARD_ID_SEPARATOR_BY_GAME: Record<string, string> = {
   swu: "-",
+  // Sorcery n'imprime pas de numéro de collection : le sien est le slug de la
+  // carte (`GOT-abaddon-succubus`), que le tiret sépare du code d'extension.
+  sorcery: "-",
 };
 
 export function cardIdSeparator(gameSlug?: string): string {
