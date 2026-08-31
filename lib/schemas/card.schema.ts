@@ -67,7 +67,11 @@ export const cardSchema = z.object({
     .string()
     .trim()
     .min(1, "Le numéro de collection est requis")
-    .max(20, "Le numéro de collection est trop long"),
+    // Un « numéro » n'est pas toujours un nombre : Sorcery n'en imprime pas et
+    // tient lieu de numéro le slug de la carte (`the-manor-at-daperyll-hill`,
+    // 26 caractères). Le plafond reste sous celui de l'identifiant (64), qui
+    // concatène le code d'extension (20 au plus) et le numéro.
+    .max(40, "Le numéro de collection est trop long"),
   lang: z.string().trim().min(2, "La langue est requise").max(5, "La langue est trop longue"),
   image: z.union([z.url("L'URL de l'image doit être valide"), z.literal("")]).optional(),
   text: z.string().max(5000, "Le texte de la carte est trop long").optional(),

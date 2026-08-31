@@ -66,6 +66,7 @@ import db from "../../../lib/mongodb.ts";
 import meilisearch, { indexes } from "../../../lib/meilisearch.ts";
 import { importedCardSearchDocument } from "../../../lib/cards/import-search.ts";
 import { buildCardId, withUniquePrintingIds } from "../../../lib/constants/card-ids.ts";
+import { MAX_CARD_PRINTINGS } from "../../../lib/schemas/card.schema.ts";
 import type { CardPrinting } from "../../../lib/types/card.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -403,7 +404,9 @@ function toCard(card: ApiCard, setName: string): SorceryCard | undefined {
     // La carte n'existe qu'en foil quand aucun de ses tirages n'est normal —
     // le cas de la moitié des promotionnelles.
     foil: printings.every(isFoil) || undefined,
-    printings: variants.length > 0 ? variants.slice(0, 30) : undefined,
+    // Le plafond de variantes n'est pas appliqué ici : il l'est à l'écriture,
+    // qui seule connaît aussi celles saisies à la main.
+    printings: variants.length > 0 ? variants : undefined,
     setName: base.set_name?.trim() || setName,
     releaseDate: releaseDateOf(base),
     type: text(card.type),
@@ -512,6 +515,35 @@ async function readExtraPrintings(cards: SorceryCard[], gameId: ObjectId): Promi
   );
 }
 
+/**
+ * Variantes d'une carte, dans la limite que l'application accepte.
+ *
+ * Au-delà, ce sont les variantes saisies à la main qui sont gardées : elles
+ * n'existent nulle part ailleurs, alors qu'un import suffit à retrouver celles
+ * de la source. Le plafond n'est jamais atteint aujourd'hui — trois variantes
+ * au plus par carte —, mais une carte qui le franchirait perdrait des tirages
+ * en silence, et c'est ici que ça se voit.
+ */
+function limitPrintings(id: string, imported: CardPrinting[], manual: CardPrinting[]): CardPrinting[] {
+  const total = imported.length + manual.length;
+
+  if (total <= MAX_CARD_PRINTINGS) {
+    return [...imported, ...manual];
+  }
+
+  const kept = [
+    ...imported.slice(0, Math.max(0, MAX_CARD_PRINTINGS - manual.length)),
+    ...manual.slice(0, MAX_CARD_PRINTINGS),
+  ];
+
+  console.warn(
+    `${id} : ${total} variantes (${imported.length} importées, ${manual.length} saisies à la main), ` +
+      `les ${kept.length} premières sont conservées — l'application en accepte ${MAX_CARD_PRINTINGS}.`
+  );
+
+  return kept;
+}
+
 async function writeCards(cards: SorceryCard[]): Promise<void> {
   const gameId = await resolveGameId();
   const extraPrintings = await readExtraPrintings(cards, gameId);
@@ -521,8 +553,7 @@ async function writeCards(cards: SorceryCard[]): Promise<void> {
   }
 
   const complete = cards.map((card) => {
-    const extra = extraPrintings.get(card.id);
-    const printings = [...(card.printings ?? []), ...(extra ?? [])].slice(0, 30);
+    const printings = limitPrintings(card.id, card.printings ?? [], extraPrintings.get(card.id) ?? []);
 
     return { ...card, ...(printings.length > 0 ? { printings } : {}) };
   });
