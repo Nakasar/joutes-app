@@ -44,7 +44,7 @@ const eventMappingConfigSchema = z.object({
 });
 
 // Schéma pour une source d'événements
-const eventSourceSchema = z.object({
+export const eventSourceSchema = z.object({
   url: z.string().url("L'URL doit être valide"),
   type: z.enum(['IA', 'MAPPING']),
   instructions: z.string().max(2000, "Les consignes sont trop longues").optional(),

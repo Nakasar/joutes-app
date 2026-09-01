@@ -9,10 +9,24 @@ import {
   lairDetailsSchema,
   lairGamesSchema,
   lairEventSourcesSchema,
+  eventSourceSchema,
 } from "@/lib/schemas/lair.schema.ts";
 import { z } from "zod";
 import * as lairsDb from "@/lib/db/lairs.ts";
-import { refreshEvents as refreshEventsService } from "@/lib/services/refresh-events.ts";
+import {
+  previewEventSource,
+  refreshEvents as refreshEventsService,
+  RefreshEventsResult,
+} from "@/lib/services/refresh-events.ts";
+import type { SourceEvent } from "@/lib/events/source-events.ts";
+
+/** Ce que le bouton « Tester » d'une source rend au formulaire. */
+export type EventSourcePreview = {
+  ok: boolean;
+  error?: string;
+  warnings: string[];
+  events: Omit<SourceEvent, "addedBy" | "sourceUrl">[];
+};
 
 export async function getLairs(): Promise<Lair[]> {
   try {
@@ -255,15 +269,21 @@ export async function deleteLair(id: string) {
   }
 }
 
-export async function refreshEvents(lairId: string) {
+export async function refreshEvents(lairId: string): Promise<RefreshEventsResult> {
   try {
     await requireAdmin();
-    
+
     // Valider l'ID
     const validatedId = lairIdSchema.parse(lairId);
-    
+
     // Appeler le service de rafraîchissement des événements
-    return await refreshEventsService(validatedId);
+    const result = await refreshEventsService(validatedId);
+
+    // Les agendas du lieu changent avec ses événements.
+    revalidateLair(validatedId);
+    revalidatePath("/events");
+
+    return result;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { 
@@ -273,6 +293,58 @@ export async function refreshEvents(lairId: string) {
     }
     console.error("Erreur lors du rafraîchissement des événements:", error);
     return { success: false, error: "Erreur lors du rafraîchissement des événements" };
+  }
+}
+
+/**
+ * Lit une source telle qu'elle est saisie, sans rien écrire.
+ *
+ * La source vient du formulaire, pas de la base : c'est précisément pour
+ * vérifier une correspondance **avant** de l'enregistrer — et avant que le
+ * cron ne la découvre fausse — que ce bouton existe. Elle passe par le même
+ * schéma que l'enregistrement, pour que ce qui marche au test marche ensuite.
+ */
+export async function previewLairEventSource(
+  lairId: string,
+  source: unknown,
+): Promise<{ success: true; preview: EventSourcePreview } | { success: false; error: string }> {
+  try {
+    await requireAdmin();
+
+    const validatedId = lairIdSchema.parse(lairId);
+    const validatedSource = eventSourceSchema.parse(source);
+
+    const lair = await lairsDb.getLairById(validatedId);
+    if (!lair) {
+      return { success: false, error: "Lieu non trouvé" };
+    }
+
+    const read = await previewEventSource(lair, validatedSource);
+
+    return {
+      success: true,
+      preview: {
+        ok: read.ok,
+        ...(read.error ? { error: read.error } : {}),
+        warnings: read.warnings,
+        events: read.events.map((event) => ({
+          name: event.name,
+          startDateTime: event.startDateTime,
+          endDateTime: event.endDateTime,
+          gameName: event.gameName,
+          ...(event.price !== undefined ? { price: event.price } : {}),
+          status: event.status,
+          ...(event.url !== undefined ? { url: event.url } : {}),
+          ...(event.externalId !== undefined ? { externalId: event.externalId } : {}),
+        })),
+      },
+    };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message || "Source invalide" };
+    }
+    console.error("Erreur lors du test d'une source d'événements:", error);
+    return { success: false, error: "Erreur lors du test de la source" };
   }
 }
 

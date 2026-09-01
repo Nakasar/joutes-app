@@ -1,7 +1,7 @@
 import { Link } from "@/i18n/navigation.ts";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/middleware/admin.ts";
-import { getLairById } from "@/lib/db/lairs.ts";
+import { getLairById, getLairEventsRefreshReport } from "@/lib/db/lairs.ts";
 import { getAllGames } from "@/lib/db/games.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -50,6 +50,9 @@ export default async function AdminLairPage({
 
   const games = await getAllGames();
   const active = readLairTab(tab);
+  // Le rapport n'est lu que pour l'onglet qui l'affiche : il est hors du lieu
+  // à dessein (voir `getLairEventsRefreshReport`).
+  const refreshReport = active === "sources" ? await getLairEventsRefreshReport(lair.id) : null;
   const declaredGames = games.filter((game) => lair.games?.includes(game.id));
   const sourcesCount = lair.eventsSourceUrls?.length ?? 0;
 
@@ -101,7 +104,7 @@ export default async function AdminLairPage({
 
         {active === "jeux" && <LairGamesForm lair={lair} games={games} />}
 
-        {active === "sources" && <LairEventSourcesForm lair={lair} />}
+        {active === "sources" && <LairEventSourcesForm lair={lair} report={refreshReport} />}
 
         {active === "vitrine" && (
           <div className="space-y-6">

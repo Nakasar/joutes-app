@@ -4905,6 +4905,7 @@ paths:
     get:
       tags: [Cron]
       summary: Refresh events for every lair from their event source URLs
+      description: "Only public lairs with at least one source are visited, a few at a time. Each source is read on its own; a source that fails leaves the events it produced last time untouched. Harvested events already in the database are updated in place so favourites and registrations survive; an event gone from its source is removed, or marked `cancelled` when someone follows it. See `docs/EVENT_SOURCES.md`."
       security: [{ cronSecret: [] }]
       responses:
         "200":
@@ -4915,8 +4916,17 @@ paths:
                 type: object
                 properties:
                   ok: { type: boolean }
-                  summary: { type: object, properties: { total: { type: integer }, successes: { type: integer }, failures: { type: integer } } }
-                  results: { type: array, items: { type: object } }
+                  summary: { type: object, properties: { total: { type: integer }, successes: { type: integer }, failures: { type: integer }, failingSources: { type: integer, description: "Sources that failed inside lairs that otherwise succeeded." } } }
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        lairId: { type: string }
+                        lairName: { type: string }
+                        success: { type: boolean }
+                        message: { type: string }
+                        sources: { type: array, items: { type: object, properties: { url: { type: string }, ok: { type: boolean }, error: { type: string }, warnings: { type: array, items: { type: string } }, count: { type: integer } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -5710,6 +5720,12 @@ components:
         price: { type: number }
         status: { type: string, enum: [available, sold-out, cancelled] }
         addedBy: { type: string }
+        source:
+          type: object
+          description: "Where an automatically harvested event comes from: the configured source URL on the lair, and the event's id in that source when the JSON mapping gives one. Absent on hand-made events."
+          properties:
+            url: { type: string }
+            externalId: { type: string }
         creatorId: { type: string }
         creator: { type: object, properties: { id: { type: string }, displayName: { type: string }, discriminator: { type: string } } }
         staff: { type: array, items: { type: object, properties: { userId: { type: string }, role: { type: string, enum: [organizer, judge] } } } }

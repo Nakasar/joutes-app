@@ -22,6 +22,20 @@ export type Event = {
   price?: number;
   status: 'available' | 'sold-out' | 'cancelled';
   addedBy: string; // "AI-SCRAPPING", "JSON-MAPPING" or "USER"
+  /**
+   * D'où un événement moissonné vient, pour le retrouver au tour suivant.
+   *
+   * `url` est celle de la **source configurée** sur le lieu, pas la page de
+   * l'événement : c'est ce qui permet de ne retirer que les événements d'une
+   * source qu'on a vraiment relue. `externalId` est l'identifiant chez la
+   * source, quand une correspondance JSON en donne un — le rapprochement le
+   * plus sûr qui soit. Absent des événements saisis à la main, et de ceux
+   * moissonnés avant que ce champ existe.
+   */
+  source?: {
+    url: string;
+    externalId?: string;
+  };
   creatorId?: string;
   creator?: {
     id: string;
