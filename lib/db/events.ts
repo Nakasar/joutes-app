@@ -574,12 +574,14 @@ export async function upsertEventsForLair(
     ...verdict.toInsert.map((event) => ({
       insertOne: { document: toInsertedEvent(lairId, event) },
     })),
+    // `lairId` sur chaque filtre, en plus de l'`id` : une écriture groupée
+    // ne doit pas pouvoir sortir du lieu qu'on rafraîchit.
     ...verdict.toUpdate.map(({ existing: match, patch }) => ({
-      updateOne: { filter: { id: match.id }, update: toPatchUpdate(patch) },
+      updateOne: { filter: { id: match.id, lairId }, update: toPatchUpdate(patch) },
     })),
     ...verdict.toCancel.map((event) => ({
       updateOne: {
-        filter: { id: event.id },
+        filter: { id: event.id, lairId },
         update: { $set: { status: 'cancelled' as const, boardsNeedsUpdate: true } },
       },
     })),
@@ -597,7 +599,7 @@ export async function upsertEventsForLair(
         }
 
         if (removedIds.length > 0) {
-          await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({ id: { $in: removedIds } }, { session });
+          await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({ id: { $in: removedIds }, lairId }, { session });
           // Ce que `deleteEvent` retire avec un événement : rien de tout cela
           // n'a de sens sans lui.
           await db.collection("event-portal-settings").deleteMany({ eventId: { $in: removedIds } }, { session });

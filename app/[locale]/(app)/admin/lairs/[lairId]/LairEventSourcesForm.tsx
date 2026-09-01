@@ -55,7 +55,7 @@ function formatDateTime(iso: string): string {
 }
 
 function formatRelative(iso: string): string {
-  const date = DateTime.fromISO(iso).setLocale("fr");
+  const date = DateTime.fromISO(iso, { zone: "Europe/Paris" }).setLocale("fr");
   return date.isValid ? (date.toRelative() ?? date.toFormat("d LLL yyyy HH:mm")) : iso;
 }
 

@@ -289,15 +289,20 @@ async function readAISource(
       continue;
     }
 
-    const gameName = canonicalGameName(extracted.gameName, games);
-    if (!gameName) {
-      warnings.add(`jeu inconnu de la plateforme : « ${extracted.gameName.trim() || "?"} »`);
+    // Jamais une chaîne vide : la jointure des agendas est exacte, et un
+    // événement sans nom de jeu n'apparaîtrait nulle part.
+    const rawGame = extracted.gameName.trim();
+    const gameName = rawGame ? canonicalGameName(rawGame, games) ?? rawGame : "Jeu non spécifié";
+    if (!rawGame) {
+      warnings.add(`jeu absent pour « ${name} », « Jeu non spécifié » écrit à la place`);
+    } else if (!canonicalGameName(rawGame, games)) {
+      warnings.add(`jeu inconnu de la plateforme : « ${rawGame} »`);
     }
 
     events.push({
       name,
       ...dates,
-      gameName: gameName ?? extracted.gameName.trim(),
+      gameName,
       price: extracted.price ?? undefined,
       status: extracted.status,
       url: resolveEventUrl(extracted.url, source.url),

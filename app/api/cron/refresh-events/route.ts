@@ -54,10 +54,9 @@ export async function GET(req: Request) {
         const failures = results.length - successes;
         // Une source en panne dans un lieu qui a par ailleurs réussi : à
         // remonter aussi, sinon elle ne se voit que dans la fiche du lieu.
-        const failingSources = results.reduce(
-            (count, result) => count + (result.report?.sources.filter((source) => !source.ok).length ?? 0),
-            0,
-        );
+        const failingSources = results
+            .filter((result) => result.success)
+            .reduce((count, result) => count + result.report.sources.filter((source) => !source.ok).length, 0);
 
         console.log(`Rafraîchissement terminé : ${successes} succès, ${failures} échecs, ${failingSources} sources en panne`);
 
