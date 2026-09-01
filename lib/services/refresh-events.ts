@@ -9,9 +9,9 @@ import { getAllGames } from "@/lib/db/games";
 import { EventSource, EventSourceRefreshResult, Lair, LairEventsRefreshReport } from "@/lib/types/Lair";
 import { Game } from "@/lib/types/Game";
 import {
+  canonicalGameName,
   EVENTS_TIMEZONE,
   getNestedValue,
-  normalizeEventName,
   normalizeEventPrice,
   normalizeEventStatus,
   readEventsCollection,
@@ -19,12 +19,14 @@ import {
   resolveEventUrl,
   type SourceEvent,
 } from "@/lib/events/source-events";
+import { extractHtmlEvents } from "@/lib/events/html-source";
 
 /**
  * La moisson des événements d'un lieu.
  *
- * Deux sortes de sources : une page lue par un modèle (`IA`), un JSON décrit
- * champ par champ (`MAPPING`). Chacune est lue **séparément** et rend son
+ * Trois sortes de sources : une page lue par un modèle (`IA`), un JSON décrit
+ * champ par champ (`MAPPING`), une page lue par sélecteurs CSS (`HTML`, sans
+ * modèle — voir `lib/events/html-source.ts`). Chacune est lue **séparément** et rend son
  * propre résultat — succès ou échec, événements, avertissements —, pour trois
  * raisons :
  *
@@ -176,6 +178,9 @@ async function readEventSource(
     if (source.type === "MAPPING") {
       return await readMappingSource(source, games, now);
     }
+    if (source.type === "HTML") {
+      return await readHtmlSource(source, games, now);
+    }
     return await readAISource(source, lair, games, now);
   } catch (error) {
     console.error(`Erreur lors de la lecture de la source ${source.url}:`, error);
@@ -209,6 +214,33 @@ async function fetchSource(url: string, accept: string): Promise<Response> {
   return response;
 }
 
+/**
+ * Le texte d'une réponse, dans son encodage à elle.
+ *
+ * `response.text()` décode toujours en UTF-8. Or bien des sites de boutique
+ * servent encore de l'ISO-8859-1 : les accents arrivaient cassés — « D�fis de
+ * ligue » —, s'écrivaient tels quels en base, et faisaient échouer le
+ * rapprochement par nom au tour suivant. On lit donc le jeu de caractères de
+ * l'en-tête, à défaut de la balise `<meta>`, et on décode avec.
+ */
+async function readResponseText(response: Response): Promise<string> {
+  const bytes = new Uint8Array(await response.arrayBuffer());
+
+  const fromHeader = /charset=["']?([^;"'\s]+)/i.exec(response.headers.get("content-type") ?? "")?.[1];
+  const head = new TextDecoder("latin1").decode(bytes.subarray(0, 4096));
+  const fromMeta =
+    /<meta[^>]+charset=["']?([^;"'\s>]+)/i.exec(head)?.[1] ??
+    /<meta[^>]+content=["'][^"']*charset=([^;"'\s]+)/i.exec(head)?.[1];
+
+  const charset = (fromHeader ?? fromMeta ?? "utf-8").trim().toLowerCase();
+
+  try {
+    return new TextDecoder(charset).decode(bytes);
+  } catch {
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+}
+
 function describeError(error: unknown): string {
   if (error instanceof Error) {
     if (error.name === "TimeoutError" || error.name === "AbortError") {
@@ -217,17 +249,6 @@ function describeError(error: unknown): string {
     return error.message || error.name;
   }
   return String(error);
-}
-
-/**
- * Le nom sous lequel la plateforme connaît un jeu, à la casse et aux accents
- * près. Les listes d'événements font une jointure **exacte** sur `gameName` :
- * un « riftbound » en minuscules n'apparaîtrait sur aucun agenda.
- */
-function canonicalGameName(name: string, games: Pick<Game, "name">[]): string | null {
-  const wanted = normalizeEventName(name);
-  if (!wanted) return null;
-  return games.find((game) => normalizeEventName(game.name) === wanted)?.name ?? null;
 }
 
 /** Regroupe les avertissements identiques : « 3 × date de début illisible ». */
@@ -254,7 +275,7 @@ async function readAISource(
   now: DateTime,
 ): Promise<SourceReadResult> {
   const response = await fetchSource(source.url, "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8");
-  const html = await response.text();
+  const html = await readResponseText(response);
   const content = NodeHtmlMarkdown.translate(html).trim();
 
   if (!content) {
@@ -292,10 +313,10 @@ async function readAISource(
     // Jamais une chaîne vide : la jointure des agendas est exacte, et un
     // événement sans nom de jeu n'apparaîtrait nulle part.
     const rawGame = extracted.gameName.trim();
-    const gameName = rawGame ? canonicalGameName(rawGame, games) ?? rawGame : "Jeu non spécifié";
+    const gameName = rawGame ? canonicalGameName(rawGame, games, source.gameAliases) ?? rawGame : "Jeu non spécifié";
     if (!rawGame) {
       warnings.add(`jeu absent pour « ${name} », « Jeu non spécifié » écrit à la place`);
-    } else if (!canonicalGameName(rawGame, games)) {
+    } else if (!canonicalGameName(rawGame, games, source.gameAliases)) {
       warnings.add(`jeu inconnu de la plateforme : « ${rawGame} »`);
     }
 
@@ -378,7 +399,7 @@ async function readMappingSource(
   }
 
   const response = await fetchSource(source.url, "application/json,text/json;q=0.9,*/*;q=0.8");
-  const text = await response.text();
+  const text = await readResponseText(response);
 
   let data: unknown;
   try {
@@ -424,10 +445,10 @@ async function readMappingSource(
     }
 
     const rawGame = overrides.gameName || read(item, mapping.gameName);
-    const gameName = typeof rawGame === "string" && rawGame.trim() ? canonicalGameName(rawGame, games) ?? rawGame.trim() : null;
+    const gameName = typeof rawGame === "string" && rawGame.trim() ? canonicalGameName(rawGame, games, source.gameAliases) ?? rawGame.trim() : null;
     if (!gameName) {
       warnings.add(`jeu absent au chemin « ${mapping.gameName || "(non renseigné)"} », « Jeu non spécifié » écrit à la place`);
-    } else if (!canonicalGameName(gameName, games)) {
+    } else if (!canonicalGameName(gameName, games, source.gameAliases)) {
       warnings.add(`jeu inconnu de la plateforme : « ${gameName} »`);
     }
 
@@ -462,4 +483,38 @@ async function readMappingSource(
   }
 
   return { source, ok: true, warnings: warnings.list(), events };
+}
+
+// ---------------------------------------------------------------------------
+// Source HTML (sélecteurs)
+// ---------------------------------------------------------------------------
+
+async function readHtmlSource(
+  source: EventSource,
+  games: Pick<Game, "name">[],
+  now: DateTime,
+): Promise<SourceReadResult> {
+  const config = source.htmlConfig;
+  if (!config) {
+    return { source, ok: false, error: "Source HTML sans configuration", warnings: [], events: [] };
+  }
+
+  const response = await fetchSource(source.url, "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8");
+  const html = await readResponseText(response);
+
+  const extraction = extractHtmlEvents({ html, config, source, games, now });
+
+  // Un sélecteur qui ne désigne rien est bien plus souvent une mise en page
+  // qui a changé qu'un agenda vide : une panne, qui ne retire rien.
+  if (extraction.itemCount === 0) {
+    return {
+      source,
+      ok: false,
+      error: `Le sélecteur « ${config.itemSelector} » ne désigne aucun élément de la page`,
+      warnings: [],
+      events: [],
+    };
+  }
+
+  return { source, ok: true, warnings: extraction.warnings, events: extraction.events };
 }

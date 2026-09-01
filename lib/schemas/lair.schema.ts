@@ -43,12 +43,39 @@ const eventMappingConfigSchema = z.object({
   eventsFieldsValues: eventFieldsValuesSchema.optional(),
 });
 
+// Où lire un champ dans l'élément d'un événement d'une page HTML
+const htmlFieldRuleSchema = z.object({
+  selector: z.string().max(300, "Le sélecteur est trop long").optional(),
+  attribute: z.string().max(100, "Le nom d'attribut est trop long").optional(),
+});
+
+// Schéma pour la lecture d'une page par sélecteurs
+const eventHtmlConfigSchema = z.object({
+  itemSelector: z.string().trim().min(1, "Le sélecteur des événements est requis").max(300, "Le sélecteur est trop long"),
+  fields: z.object({
+    id: htmlFieldRuleSchema.optional(),
+    title: htmlFieldRuleSchema.optional(),
+    name: htmlFieldRuleSchema.optional(),
+    gameName: htmlFieldRuleSchema.optional(),
+    startDateTime: htmlFieldRuleSchema.optional(),
+    endDateTime: htmlFieldRuleSchema.optional(),
+    price: htmlFieldRuleSchema.optional(),
+    status: htmlFieldRuleSchema.optional(),
+    url: htmlFieldRuleSchema.optional(),
+  }).default({}),
+  titleSeparator: z.string().max(10, "Le séparateur est trop long").optional(),
+});
+
 // Schéma pour une source d'événements
 export const eventSourceSchema = z.object({
   url: z.string().url("L'URL doit être valide"),
-  type: z.enum(['IA', 'MAPPING']),
+  type: z.enum(['IA', 'MAPPING', 'HTML']),
   instructions: z.string().max(2000, "Les consignes sont trop longues").optional(),
   mappingConfig: eventMappingConfigSchema.optional(),
+  htmlConfig: eventHtmlConfigSchema.optional(),
+  gameAliases: z
+    .record(z.string().trim().min(1).max(100), z.string().trim().min(1).max(200))
+    .optional(),
 }).superRefine((data, ctx) => {
   // Si le type est MAPPING, mappingConfig est obligatoire
   if (data.type === 'MAPPING' && !data.mappingConfig) {
@@ -56,6 +83,21 @@ export const eventSourceSchema = z.object({
       code: z.ZodIssueCode.custom,
       message: "La configuration de mapping est requise pour le type MAPPING",
       path: ["mappingConfig"],
+    });
+  }
+  if (data.type === 'HTML' && !data.htmlConfig) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "La configuration des sélecteurs est requise pour le type HTML",
+      path: ["htmlConfig"],
+    });
+  }
+  // Un titre composé ou un nom : sans l'un des deux, aucun événement n'a de nom.
+  if (data.type === 'HTML' && data.htmlConfig && !data.htmlConfig.fields.title && !data.htmlConfig.fields.name) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Indiquez où lire le titre ou le nom des événements",
+      path: ["htmlConfig", "fields", "title"],
     });
   }
 });

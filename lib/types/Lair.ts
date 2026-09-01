@@ -39,12 +39,55 @@ export type EventMappingConfig = {
   eventsFieldsValues?: EventFieldsValues;
 };
 
+/**
+ * Où lire un champ dans l'élément d'un événement : un sélecteur CSS relatif à
+ * cet élément (vide : l'élément lui-même), et le texte de la cible ou l'un
+ * de ses attributs.
+ */
+export type HtmlFieldRule = {
+  selector?: string;
+  attribute?: string;
+};
+
+/**
+ * Une page lue par sélecteurs, sans modèle.
+ *
+ * `title` est le titre composé de l'événement — « Jeu - Nom - JJ/MM/AAAA -
+ * HHhMM » — d'où se lisent le jeu, le nom, la date et l'heure quand la page
+ * ne les donne pas champ par champ. Un champ dédié, s'il est renseigné,
+ * l'emporte sur ce que le titre en dit.
+ */
+export type EventHtmlConfig = {
+  /** Le sélecteur de chaque événement de la page. */
+  itemSelector: string;
+  fields: {
+    id?: HtmlFieldRule;
+    title?: HtmlFieldRule;
+    name?: HtmlFieldRule;
+    gameName?: HtmlFieldRule;
+    startDateTime?: HtmlFieldRule;
+    endDateTime?: HtmlFieldRule;
+    price?: HtmlFieldRule;
+    status?: HtmlFieldRule;
+    url?: HtmlFieldRule;
+  };
+  /** Ce qui sépare les segments du titre composé. « - » par défaut. */
+  titleSeparator?: string;
+};
+
 // Type pour une source d'événements
 export type EventSource = {
   url: string;
-  type: 'IA' | 'MAPPING';
+  type: 'IA' | 'MAPPING' | 'HTML';
   instructions?: string;
   mappingConfig?: EventMappingConfig;
+  htmlConfig?: EventHtmlConfig;
+  /**
+   * Les noms de jeu de la source qui ne sont pas ceux de la plateforme :
+   * « MTG » → « Magic: The Gathering ». Les clés se comparent à la casse et
+   * aux accents près. Vaut pour tous les types de source.
+   */
+  gameAliases?: Record<string, string>;
 };
 
 /** Ce qu'une source a rendu au dernier rafraîchissement. */
