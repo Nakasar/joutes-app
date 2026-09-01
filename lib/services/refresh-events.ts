@@ -1,307 +1,460 @@
-import { NodeHtmlMarkdown } from 'node-html-markdown'
+import { NodeHtmlMarkdown } from "node-html-markdown";
 import { DateTime } from "luxon";
 import { z } from "zod";
-import * as lairsDb from "@/lib/db/lairs";
-import * as eventsDb from "@/lib/db/events";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { Event } from "@/lib/types/Event";
+import * as lairsDb from "@/lib/db/lairs";
+import * as eventsDb from "@/lib/db/events";
 import { getAllGames } from "@/lib/db/games";
-import { EventSource, Lair } from "@/lib/types/Lair";
-import { Game } from '../types/Game';
+import { EventSource, EventSourceRefreshResult, Lair, LairEventsRefreshReport } from "@/lib/types/Lair";
+import { Game } from "@/lib/types/Game";
+import {
+  EVENTS_TIMEZONE,
+  getNestedValue,
+  normalizeEventName,
+  normalizeEventPrice,
+  normalizeEventStatus,
+  readEventsCollection,
+  resolveEventDates,
+  resolveEventUrl,
+  type SourceEvent,
+} from "@/lib/events/source-events";
 
-const eventSchema = z.object({
+/**
+ * La moisson des événements d'un lieu.
+ *
+ * Deux sortes de sources : une page lue par un modèle (`IA`), un JSON décrit
+ * champ par champ (`MAPPING`). Chacune est lue **séparément** et rend son
+ * propre résultat — succès ou échec, événements, avertissements —, pour trois
+ * raisons :
+ *
+ * - une page en panne ne fait pas échouer la moisson des autres ;
+ * - les événements savent de quelle source ils viennent, et le rapprochement
+ *   ne retire que ceux d'une source qu'on a vraiment relue ;
+ * - l'administration peut **tester une source** avant de l'enregistrer, et
+ *   voir ce qu'elle rend.
+ *
+ * Le rapprochement avec ce qui est déjà en base — et la préservation des
+ * favoris et des inscriptions — est l'affaire de `lib/events/source-events.ts`.
+ */
+
+/** Le modèle qui lit les pages. */
+const EXTRACTION_MODEL = "gpt-4.1-mini";
+
+/** Au-delà, une page est tronquée avant d'être envoyée au modèle. */
+const MAX_PAGE_CHARACTERS = 400_000;
+
+const FETCH_TIMEOUT_MS = 25_000;
+
+const USER_AGENT = "JoutesBot/1.0 (+https://joutes.app)";
+
+const extractionSchema = z.object({
   events: z.array(z.object({
     name: z.string(),
-    startDateTime: z.string().describe("ISO 8601 date format"),
-    endDateTime: z.string().describe("ISO 8601 date format"),
+    startDateTime: z.string().describe("Date et heure de début, ISO 8601"),
+    endDateTime: z.string().nullable().describe("Date et heure de fin, ISO 8601, null si la page ne la donne pas"),
+    yearOnPage: z.boolean().describe("true si l'année de l'événement est écrite sur la page, false si tu l'as déduite"),
     gameName: z.string(),
-    price: z.number().optional().nullable(),
-    status: z.enum(['available', 'sold-out', 'cancelled']),
-    url: z.string().optional().nullable(),
-  }))
+    price: z.number().nullable(),
+    status: z.enum(["available", "sold-out", "cancelled"]),
+    url: z.string().nullable(),
+  })),
 });
 
+/** Ce qu'une lecture de source rend, avant toute écriture. */
+export type SourceReadResult = {
+  source: EventSource;
+  ok: boolean;
+  error?: string;
+  warnings: string[];
+  events: SourceEvent[];
+};
+
+export type RefreshEventsResult =
+  | { success: true; message: string; report: LairEventsRefreshReport }
+  | { success: false; error: string; report?: LairEventsRefreshReport };
+
 /**
- * Rafraîchit les événements d'un lair en récupérant et analysant le contenu de ses URLs sources
- * @param lairId - L'ID du lair dont on veut rafraîchir les événements
- * @returns Un objet avec success et un message ou une erreur
+ * Relit toutes les sources d'un lieu et met ses événements à jour.
  */
-export async function refreshEvents(lairId: string) {
-  try {
-    // Récupérer le lair
-    const lair = await lairsDb.getLairById(lairId);
-    
-    if (!lair) {
-      return { success: false, error: "Lieu non trouvé" };
-    }
-    
-    if (!lair.eventsSourceUrls || lair.eventsSourceUrls.length === 0) {
-      return { success: false, error: "Aucune URL source configurée pour ce lieu" };
-    }
+export async function refreshEvents(lairId: string): Promise<RefreshEventsResult> {
+  const lair = await lairsDb.getLairById(lairId);
 
-    // Récupérer la liste des jeux existants dans la plateforme
-    const existingGames = await getAllGames();
-
-    // Séparer les sources par type
-    const aiSources = lair.eventsSourceUrls.filter(source => source.type === 'IA');
-    const mappingSources = lair.eventsSourceUrls.filter(source => source.type === 'MAPPING');
-
-    let allEvents: Event[] = [];
-
-    // Traiter les sources IA (logique existante)
-    if (aiSources.length > 0) {
-      const aiEvents = await processAISources(aiSources, lair, existingGames);
-      allEvents = allEvents.concat(aiEvents);
-    }
-
-    // Traiter les sources MAPPING
-    if (mappingSources.length > 0) {
-      const mappingEvents = await processMappingSources(mappingSources, lair);
-      allEvents = allEvents.concat(mappingEvents);
-    }
-
-    if (allEvents.length === 0) {
-      return { success: false, error: "Aucun événement extrait" };
-    }
-
-    // Upsert events for this lair (update existing ones based on URL + lairId, insert new ones)
-    const { inserted, updated, removed } = await eventsDb.upsertEventsForLair(lair.id, allEvents);
-    
-    return { 
-      success: true, 
-      message: `${inserted} nouveaux événements créés, ${updated} événements mis à jour, ${removed} évènements supprimés.`,
-    };
-  } catch (error) {
-    console.error("Erreur lors du rafraîchissement des événements:", error);
-    return { success: false, error: "Erreur lors du rafraîchissement des événements" };
+  if (!lair) {
+    return { success: false, error: "Lieu non trouvé" };
   }
-}
 
-/**
- * Traite les sources de type IA en utilisant l'extraction intelligente
- */
-async function processAISources(sources: EventSource[], lair: Lair, existingGames: Pick<Game, "name">[]) {
-  // Récupérer le contenu de toutes les URLs en parallèle
-  const pagesContentPromises: Promise<{ url: string, content: string, instructions?: string } | null>[] = sources.map(async (source) => {
-    try {
-      const response = await fetch(source.url);
-      const contentRaw = await response.text();
+  const sources = lair.eventsSourceUrls ?? [];
+  if (sources.length === 0) {
+    return { success: false, error: "Aucune URL source configurée pour ce lieu" };
+  }
 
-      const content = NodeHtmlMarkdown.translate(contentRaw, {}, undefined, undefined);
+  const games = await getAllGames();
+  const now = DateTime.now().setZone(EVENTS_TIMEZONE);
 
-      return { url: source.url, content, instructions: source.instructions };
-    } catch (error) {
-      console.error(`Erreur lors de la récupération de l'URL ${source.url}:`, error);
-      return null;
-    }
+  const reads = await Promise.all(sources.map((source) => readEventSource(source, lair, games, now)));
+
+  const failed = reads.filter((read) => !read.ok);
+  const events = reads.flatMap((read) => read.events);
+
+  const toResult = (read: SourceReadResult): EventSourceRefreshResult => ({
+    url: read.source.url,
+    ok: read.ok,
+    ...(read.error ? { error: read.error } : {}),
+    warnings: read.warnings,
+    count: read.events.length,
   });
-  
-  const pagesContentResults = await Promise.all(pagesContentPromises);
-  const pagesContent = pagesContentResults.filter((page): page is { url: string; content: string; instructions?: string } => page !== null);
-  
-  if (pagesContent.length === 0) {
-    console.warn("Aucun contenu récupéré pour les sources IA");
-    return [];
+
+  if (failed.length === sources.length) {
+    const report: LairEventsRefreshReport = {
+      at: now.toUTC().toISO() as string,
+      sources: reads.map(toResult),
+      inserted: 0, updated: 0, unchanged: 0, cancelled: 0, removed: 0,
+    };
+    await lairsDb.setLairEventsRefreshReport(lair.id, report);
+
+    return { success: false, error: "Aucune source n'a pu être lue", report };
   }
-  
-  // Combiner toutes les pages dans un seul prompt
-  const combinedPrompt = `
-# Instructions
-
-Analyse le contenu HTML suivant provenant de ${pagesContent.length} page(s) différente(s) et extrait tous les événements avec leurs informations.
-
-IMPORTANT: Si un même événement apparaît plusieurs fois (même nom et même date et heure et même lieu), ne le retourne qu'UNE SEULE FOIS.
-Un évènement avec le même nom peut apparaître à des dates ou heures différentes, dans ce cas, garde chaque occurence distincte.
-Un URL ne peut être associée qu'à UN SEUL événement. Si plusieurs événements partagent le même URL, considère que c'est le même événement et ne le retourne qu'une seule fois dans ton JSON.
-
-Pour chaque événement unique, extrait:
-- name: Le nom de l'événement (retire le nom du jeu et la date et l'heure du nom de l'évènement)
-- startDateTime: La date et heure de début au format datetime ISO 8601
-- endDateTime: La date et heure de fin au format datetime ISO 8601
-- gameName: Le nom du jeu de l'événement (parmi la liste ci-dessous si possible)
-- price: Le prix (optionnel, en nombre, undefined si non trouvé, ne pas utiliser null)
-- status: Le statut ('available' si disponible, 'sold-out' si complet, 'cancelled' si annulé)
-- url: Le lien vers la page détaillée de l'événement (si disponible, en général dans une balise <a href="..."> ou <https://example.com/some/link>). Doit contenir le hostname (depuis la racine de la page extraite si non fourni).
-
-Pour le champ gameName utilise en priorité les noms des jeux de la liste fournie ci-dessous (le nom du jeu peut varier entre les évènements et lieux de jeu). Si aucun nom ne correspond, utilise le nom trouvé dans la page des évènements.
-${existingGames.map(game => `- ${game.name}`).join('\n')}
-
-Concernant le titre, par exemple:  
-- Si le titre est "Soirée Jeu de Rôle - Donjons & Dragons - 15 Mars 2024 20:00", le nom de l'événement est "Soirée Jeu de Rôle".
-
-Concernant l'url, par exemple:
-- Si sur la page https://my-site.com/events un événement a un lien relatif "/details/123", l'url complète est "https://my-site.com/details/123".
-
-${lair.eventsSourceInstructions ? `
-# Consignes spécifiques globales pour ce lieu
-
-${lair.eventsSourceInstructions}
-` : ''}
-
-# Contenu des pages :
-
-${pagesContent.map((page, index) => `
-=== PAGE ${index + 1} (${page.url}) ===
-${page.instructions ? `Instructions spécifiques pour cette page: ${page.instructions}\n` : ''}
-${page.content}
-`).join('\n').substring(0, 1000000)};`; // Limiter à 100000 caractères pour éviter les prompts trop longs
 
   try {
-    // Utiliser AI SDK pour extraire les événements de toutes les pages en une seule fois
-    const { object } = await generateObject({
-      model: openai("gpt-4.1-mini"),
-      schema: eventSchema,
-      prompt: combinedPrompt,
-    });
-    
-    console.log(`${object.events.length} événements uniques extraits via IA pour le lieu ${lair.name}`);
-
-    // Set start and end date year to current year, unless the event month is december and current month is january (then set to last year)
-    const currentYear = DateTime.now().year;
-    const currentMonth = DateTime.now().month;
-    
-    const events: Event[] = object.events.map(event => {
-      const startDate = DateTime.fromISO(event.startDateTime, { zone: 'Europe/Paris' });
-      const endDate = DateTime.fromISO(event.endDateTime, { zone: 'Europe/Paris' });
-
-      let adjustedYear = currentYear;
-      if (startDate.month === 12 && currentMonth === 1) {
-        adjustedYear = currentYear - 1;
-      }
-
-      const startDateTime = startDate.set({ year: adjustedYear }).toISO() ?? event.startDateTime;
-      const endDateTime = endDate.set({ year: adjustedYear }).toISO() ?? event.endDateTime;
-
-      return {
-        ...event,
-        price: event.price ?? undefined,
-        url: event.url ?? undefined,
-        id: crypto.randomUUID(),
-        lairId: lair.id,
-        startDateTime: DateTime.fromISO(startDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.startDateTime,
-        endDateTime: DateTime.fromISO(endDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.endDateTime,
-        addedBy: "AI-SCRAPPING",
-      };
+    const counts = await eventsDb.upsertEventsForLair(lair.id, events, {
+      failedSourceUrls: failed.map((read) => read.source.url),
+      now,
     });
 
-    return events;
+    const report: LairEventsRefreshReport = {
+      at: now.toUTC().toISO() as string,
+      sources: reads.map(toResult),
+      ...counts,
+    };
+    await lairsDb.setLairEventsRefreshReport(lair.id, report);
+
+    return { success: true, message: describeReport(report), report };
   } catch (error) {
-    console.error("Erreur lors de l'extraction des événements via IA:", error);
-    return [];
+    console.error(`Erreur lors du rafraîchissement des événements du lieu ${lair.id}:`, error);
+    return { success: false, error: "Erreur lors de l'enregistrement des événements" };
   }
 }
 
 /**
- * Traite les sources de type MAPPING en récupérant le JSON et appliquant le mapping configuré
+ * Lit une source sans rien écrire : ce que le bouton « Tester » de
+ * l'administration appelle, sur une source pas encore enregistrée.
  */
-async function processMappingSources(sources: EventSource[], lair: Lair) {
-  const allEvents: Event[] = [];
+export async function previewEventSource(lair: Lair, source: EventSource): Promise<SourceReadResult> {
+  const games = await getAllGames();
+  return readEventSource(source, lair, games, DateTime.now().setZone(EVENTS_TIMEZONE));
+}
 
-  for (const source of sources) {
-    if (!source.mappingConfig) {
-      console.warn(`Source MAPPING sans configuration: ${source.url}`);
+/** Le résumé d'un rafraîchissement, en une phrase. */
+export function describeReport(report: LairEventsRefreshReport): string {
+  const failures = report.sources.filter((source) => !source.ok);
+  const parts = [
+    `${report.inserted} nouveaux`,
+    `${report.updated} mis à jour`,
+    `${report.unchanged} inchangés`,
+    `${report.cancelled} annulés`,
+    `${report.removed} retirés`,
+  ];
+
+  const summary = `${parts.join(", ")}.`;
+  if (failures.length === 0) return summary;
+
+  return `${summary} ${failures.length} source${failures.length > 1 ? "s" : ""} en échec, laissée${failures.length > 1 ? "s" : ""} en l'état.`;
+}
+
+// ---------------------------------------------------------------------------
+// Lecture d'une source
+// ---------------------------------------------------------------------------
+
+async function readEventSource(
+  source: EventSource,
+  lair: Lair,
+  games: Pick<Game, "name">[],
+  now: DateTime,
+): Promise<SourceReadResult> {
+  try {
+    if (source.type === "MAPPING") {
+      return await readMappingSource(source, games, now);
+    }
+    return await readAISource(source, lair, games, now);
+  } catch (error) {
+    console.error(`Erreur lors de la lecture de la source ${source.url}:`, error);
+    return { source, ok: false, error: describeError(error), warnings: [], events: [] };
+  }
+}
+
+/**
+ * Télécharge une source.
+ *
+ * Un délai, un agent identifiable, et un refus des réponses en erreur : sans
+ * cela, une page en 503 rendait une page d'erreur que le modèle lisait comme
+ * une page sans événement — et tout ce que la source annonçait était retiré.
+ */
+async function fetchSource(url: string, accept: string): Promise<Response> {
+  const parsed = new URL(url);
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("Seules les adresses http(s) sont lues");
+  }
+
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    headers: { "User-Agent": USER_AGENT, Accept: accept },
+    redirect: "follow",
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response;
+}
+
+function describeError(error: unknown): string {
+  if (error instanceof Error) {
+    if (error.name === "TimeoutError" || error.name === "AbortError") {
+      return `Pas de réponse en ${FETCH_TIMEOUT_MS / 1000} s`;
+    }
+    return error.message || error.name;
+  }
+  return String(error);
+}
+
+/**
+ * Le nom sous lequel la plateforme connaît un jeu, à la casse et aux accents
+ * près. Les listes d'événements font une jointure **exacte** sur `gameName` :
+ * un « riftbound » en minuscules n'apparaîtrait sur aucun agenda.
+ */
+function canonicalGameName(name: string, games: Pick<Game, "name">[]): string | null {
+  const wanted = normalizeEventName(name);
+  if (!wanted) return null;
+  return games.find((game) => normalizeEventName(game.name) === wanted)?.name ?? null;
+}
+
+/** Regroupe les avertissements identiques : « 3 × date de début illisible ». */
+class Warnings {
+  private readonly counts = new Map<string, number>();
+
+  add(message: string) {
+    this.counts.set(message, (this.counts.get(message) ?? 0) + 1);
+  }
+
+  list(): string[] {
+    return [...this.counts.entries()].map(([message, count]) => (count > 1 ? `${count} × ${message}` : message));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Source IA
+// ---------------------------------------------------------------------------
+
+async function readAISource(
+  source: EventSource,
+  lair: Lair,
+  games: Pick<Game, "name">[],
+  now: DateTime,
+): Promise<SourceReadResult> {
+  const response = await fetchSource(source.url, "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8");
+  const html = await response.text();
+  const content = NodeHtmlMarkdown.translate(html).trim();
+
+  if (!content) {
+    return { source, ok: false, error: "La page est vide une fois lue", warnings: [], events: [] };
+  }
+
+  const { object } = await generateObject({
+    model: openai(EXTRACTION_MODEL),
+    schema: extractionSchema,
+    prompt: buildExtractionPrompt({ source, lair, games, now, content: content.slice(0, MAX_PAGE_CHARACTERS) }),
+  });
+
+  const warnings = new Warnings();
+  const events: SourceEvent[] = [];
+
+  for (const extracted of object.events) {
+    const dates = resolveEventDates({
+      start: extracted.startDateTime,
+      end: extracted.endDateTime,
+      now,
+      trustYear: extracted.yearOnPage,
+    });
+
+    if (!dates) {
+      warnings.add(`date de début illisible, événement ignoré (« ${extracted.name} »)`);
       continue;
     }
 
-    try {
-      // Fetch JSON data
-      const response = await fetch(source.url);
-      const jsonData = await response.json();
-
-      // Navigate to events using eventsPath
-      const events = getNestedValue(jsonData, source.mappingConfig.eventsPath) as {
-        name: string;
-        startDateTime: string;
-        endDateTime: string;
-        gameName: string;
-        price?: number;
-        status: 'available' | 'sold-out' | 'cancelled';
-        url?: string;
-      }[];
-
-      if (!Array.isArray(events)) {
-        console.warn(`Le chemin ${source.mappingConfig.eventsPath} ne pointe pas vers un tableau`);
-        continue;
-      }
-
-      console.log(`${events.length} événements trouvés dans ${source.url}`);
-
-      // Map each event
-      const mappedEvents = events.map((eventData) => {
-        const mapping = source.mappingConfig!.eventsFieldsMapping;
-        const overrides = source.mappingConfig!.eventsFieldsValues || {};
-
-        // Extract values from JSON using mapping
-        const name = overrides.name || getNestedValue(eventData, mapping.name || '') as string | undefined;
-        const startDateTime = overrides.startDateTime || getNestedValue(eventData, mapping.startDateTime || '') as string || '';
-        const endDateTime = overrides.endDateTime || getNestedValue(eventData, mapping.endDateTime || '') as string || '';
-        const gameName = overrides.gameName || getNestedValue(eventData, mapping.gameName || '') as string | undefined;
-        const price = overrides.price !== undefined ? overrides.price : (mapping.price ? parseFloat(getNestedValue(eventData, mapping.price) as string) : undefined);
-        const status = overrides.status || getNestedValue(eventData, mapping.status || '') as string || 'available';
-        let url = overrides.url || getNestedValue(eventData, mapping.url || '') as string | undefined;
-        if (!url && source.mappingConfig!.eventsBaseUrl) {
-          url = source.mappingConfig!.eventsBaseUrl + (getNestedValue(eventData, mapping.id || '') as string || '');
-        }
-
-        // Set start and end date year to current year, unless the event month is december and current month is january
-        const currentYear = DateTime.now().year;
-        const currentMonth = DateTime.now().month;
-        
-        const startDate = DateTime.fromISO(startDateTime, { zone: 'Europe/Paris' });
-        const endDate = DateTime.fromISO(endDateTime, { zone: 'Europe/Paris' });
-
-        let adjustedYear = currentYear;
-        if (startDate.month === 12 && currentMonth === 1) {
-          adjustedYear = currentYear - 1;
-        }
-
-        const adjustedStartDateTime = startDate.set({ year: adjustedYear }).toISO() ?? startDateTime;
-        let adjustedEndDateTime: string = endDate.set({ year: adjustedYear }).toISO() ?? endDateTime;
-        if (!adjustedEndDateTime) {
-          // If endDateTime is invalid, set it to startDateTime + 4 hours
-          adjustedEndDateTime = DateTime.fromISO(adjustedStartDateTime, { zone: 'Europe/Paris' }).plus({ hours: 4 }).toISO() ?? adjustedStartDateTime;
-        }
-
-        return {
-          id: crypto.randomUUID(),
-          lairId: lair.id,
-          name: name || 'Événement sans nom',
-          startDateTime: DateTime.fromISO(adjustedStartDateTime, { zone: 'Europe/Paris' }).toISO() ?? adjustedStartDateTime,
-          endDateTime: DateTime.fromISO(adjustedEndDateTime, { zone: 'Europe/Paris' }).toISO() ?? adjustedEndDateTime,
-          gameName: gameName || 'Jeu non spécifié',
-          price: isNaN(price as number) ? undefined : price,
-          status: status as 'available' | 'sold-out' | 'cancelled',
-          url: url || undefined,
-          addedBy: "JSON-MAPPING",
-        };
-      });
-
-      allEvents.push(...mappedEvents);
-    } catch (error) {
-      console.error(`Erreur lors du traitement de la source ${source.url}:`, error);
+    const name = extracted.name.trim();
+    if (!name) {
+      warnings.add("événement sans nom, ignoré");
+      continue;
     }
+
+    const gameName = canonicalGameName(extracted.gameName, games);
+    if (!gameName) {
+      warnings.add(`jeu inconnu de la plateforme : « ${extracted.gameName.trim() || "?"} »`);
+    }
+
+    events.push({
+      name,
+      ...dates,
+      gameName: gameName ?? extracted.gameName.trim(),
+      price: extracted.price ?? undefined,
+      status: extracted.status,
+      url: resolveEventUrl(extracted.url, source.url),
+      addedBy: "AI-SCRAPPING",
+      sourceUrl: source.url,
+    });
   }
 
-  return allEvents;
+  return { source, ok: true, warnings: warnings.list(), events };
 }
 
-/**
- * Récupère une valeur dans un objet en utilisant un chemin (ex: "data.events" ou "results[0].name")
- */
-function getNestedValue(obj: unknown, path: string): unknown {
-  if (!path) return undefined;
-  
-  return path.split('.').reduce((current: unknown, key) => {
-    if (current === null || current === undefined) return undefined;
-    
-    // Handle array indexing like "results[0]"
-    const arrayMatch = key.match(/^(\w+)\[(\d+)\]$/);
-    if (arrayMatch) {
-      const [, arrayKey, index] = arrayMatch;
-      return (current as Record<string, unknown[]>)[arrayKey]?.[parseInt(index)];
+function buildExtractionPrompt({
+  source,
+  lair,
+  games,
+  now,
+  content,
+}: {
+  source: EventSource;
+  lair: Lair;
+  games: Pick<Game, "name">[];
+  now: DateTime;
+  content: string;
+}): string {
+  return `# Instructions
+
+Nous sommes le ${now.setLocale("fr").toFormat("cccc d LLLL yyyy")} (fuseau ${EVENTS_TIMEZONE}). Analyse le contenu suivant, tiré de la page ${source.url} du lieu « ${lair.name} », et extrait tous les événements qu'elle annonce.
+
+IMPORTANT :
+- Si un même événement apparaît plusieurs fois (même nom, même date, même heure), ne le retourne qu'UNE SEULE FOIS.
+- Un événement du même nom à des dates ou heures différentes est un événement distinct : garde chaque occurrence.
+- Une URL ne désigne qu'UN SEUL événement : si plusieurs événements partagent la même URL, c'est le même événement.
+- Les dates sont en heure de Paris. Quand la page ne donne pas l'année, déduis-la de la date du jour : une page d'agenda annonce ce qui vient, et met yearOnPage à false.
+
+Pour chaque événement :
+- name : le nom de l'événement, sans le nom du jeu ni la date ni l'heure. « Soirée Jeu de Rôle - Donjons & Dragons - 15 mars 2024 20:00 » donne « Soirée Jeu de Rôle ».
+- startDateTime : la date et l'heure de début, ISO 8601.
+- endDateTime : la date et l'heure de fin, ISO 8601, ou null si la page ne la donne pas.
+- yearOnPage : true si l'année est écrite sur la page pour cet événement, false si tu l'as déduite.
+- gameName : le nom du jeu, en priorité parmi ceux de la liste ci-dessous (le nom peut varier d'une page à l'autre). Sinon, celui que la page donne.
+- price : le prix en nombre, ou null.
+- status : 'available' si ouvert, 'sold-out' si complet, 'cancelled' si annulé.
+- url : le lien vers la page de l'événement, complet (avec le nom d'hôte). Sur https://my-site.com/events, un lien « /details/123 » devient https://my-site.com/details/123. null s'il n'y en a pas.
+
+Jeux connus de la plateforme :
+${games.map((game) => `- ${game.name}`).join("\n")}
+${source.instructions ? `
+# Consignes spécifiques pour cette page
+
+${source.instructions}
+` : ""}${lair.eventsSourceInstructions ? `
+# Consignes spécifiques pour ce lieu
+
+${lair.eventsSourceInstructions}
+` : ""}
+# Contenu de la page
+
+${content}`;
+}
+
+// ---------------------------------------------------------------------------
+// Source en correspondance (JSON)
+// ---------------------------------------------------------------------------
+
+async function readMappingSource(
+  source: EventSource,
+  games: Pick<Game, "name">[],
+  now: DateTime,
+): Promise<SourceReadResult> {
+  const config = source.mappingConfig;
+  if (!config) {
+    return { source, ok: false, error: "Source en correspondance sans configuration", warnings: [], events: [] };
+  }
+
+  const response = await fetchSource(source.url, "application/json,text/json;q=0.9,*/*;q=0.8");
+  const text = await response.text();
+
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return { source, ok: false, error: "La réponse n'est pas un JSON valide", warnings: [], events: [] };
+  }
+
+  const items = readEventsCollection(data, config.eventsPath);
+  if (!items) {
+    return {
+      source,
+      ok: false,
+      error: `Le chemin « ${config.eventsPath} » ne désigne pas une liste d'événements`,
+      warnings: [],
+      events: [],
+    };
+  }
+
+  const mapping = config.eventsFieldsMapping;
+  const overrides = config.eventsFieldsValues ?? {};
+  const read = (item: unknown, path?: string) => (path ? getNestedValue(item, path) : undefined);
+  const warnings = new Warnings();
+  const events: SourceEvent[] = [];
+
+  for (const item of items) {
+    const dates = resolveEventDates({
+      start: overrides.startDateTime || read(item, mapping.startDateTime),
+      end: overrides.endDateTime || read(item, mapping.endDateTime),
+      now,
+      trustYear: true,
+    });
+
+    if (!dates) {
+      warnings.add(`date de début illisible au chemin « ${mapping.startDateTime || "(non renseigné)"} », événement ignoré`);
+      continue;
     }
-    
-    return (current as Record<string, unknown>)[key];
-  }, obj);
+
+    const rawName = overrides.name || read(item, mapping.name);
+    const name = typeof rawName === "string" ? rawName.trim() : "";
+    if (!name) {
+      warnings.add(`nom absent au chemin « ${mapping.name || "(non renseigné)"} », « Événement sans nom » écrit à la place`);
+    }
+
+    const rawGame = overrides.gameName || read(item, mapping.gameName);
+    const gameName = typeof rawGame === "string" && rawGame.trim() ? canonicalGameName(rawGame, games) ?? rawGame.trim() : null;
+    if (!gameName) {
+      warnings.add(`jeu absent au chemin « ${mapping.gameName || "(non renseigné)"} », « Jeu non spécifié » écrit à la place`);
+    } else if (!canonicalGameName(gameName, games)) {
+      warnings.add(`jeu inconnu de la plateforme : « ${gameName} »`);
+    }
+
+    const rawStatus = overrides.status || read(item, mapping.status);
+    let status = normalizeEventStatus(rawStatus);
+    if (!status) {
+      if (rawStatus !== undefined && rawStatus !== null && rawStatus !== "") {
+        warnings.add(`statut « ${String(rawStatus)} » inconnu, lu comme « available »`);
+      }
+      status = "available";
+    }
+
+    const rawId = read(item, mapping.id);
+    const externalId = rawId !== undefined && rawId !== null && rawId !== "" ? String(rawId) : undefined;
+
+    let url = overrides.url ? resolveEventUrl(overrides.url, source.url) : resolveEventUrl(read(item, mapping.url), source.url);
+    if (!url && config.eventsBaseUrl && externalId) {
+      url = resolveEventUrl(config.eventsBaseUrl + externalId, source.url);
+    }
+
+    events.push({
+      name: name || "Événement sans nom",
+      ...dates,
+      gameName: gameName ?? "Jeu non spécifié",
+      price: overrides.price !== undefined ? overrides.price : normalizeEventPrice(read(item, mapping.price)),
+      status,
+      url,
+      addedBy: "JSON-MAPPING",
+      sourceUrl: source.url,
+      externalId,
+    });
+  }
+
+  return { source, ok: true, warnings: warnings.list(), events };
 }

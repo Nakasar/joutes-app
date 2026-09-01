@@ -1,6 +1,6 @@
 import db from "@/lib/mongodb";
 import { purgeStreamTarget } from "@/lib/db/stream-links";
-import { Lair, LairProGrant } from "@/lib/types/Lair";
+import { Lair, LairEventsRefreshReport, LairProGrant } from "@/lib/types/Lair";
 import { ObjectId, WithId, Document, Filter } from "mongodb";
 
 const COLLECTION_NAME = "lairs";
@@ -91,6 +91,48 @@ export async function getAllLairs(userId?: string): Promise<Lair[]> {
   
   const lairs = await db.collection(COLLECTION_NAME).find(query).toArray();
   return lairs.map(toLair);
+}
+
+/**
+ * Les lieux qui ont quelque chose à moissonner : publics, avec au moins une
+ * source. C'est ce que le cron parcourt — inutile de tenter, et de compter en
+ * échec, les lieux qui n'ont aucune source.
+ */
+export async function getLairsWithEventSources(): Promise<Lair[]> {
+  const lairs = await db
+    .collection(COLLECTION_NAME)
+    .find({ isPrivate: { $ne: true }, "eventsSourceUrls.0": { $exists: true } })
+    .toArray();
+
+  return lairs.map(toLair);
+}
+
+/**
+ * Note ce que le dernier rafraîchissement a donné.
+ *
+ * Écriture ciblée : le rapport n'a pas à passer par `updateLair`, qui est la
+ * surface des formulaires, et ne doit surtout pas en faire partie — un
+ * enregistrement des sources l'aurait réécrit.
+ */
+export async function setLairEventsRefreshReport(id: string, report: LairEventsRefreshReport): Promise<void> {
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { eventsRefresh: report } }
+  );
+}
+
+/**
+ * Le compte rendu du dernier rafraîchissement d'un lieu.
+ *
+ * Hors de `toLair`, comme l'octroi Pro : ses messages d'erreur décrivent des
+ * pannes de sites tiers et n'ont rien à faire sur `GET /api/lairs`.
+ */
+export async function getLairEventsRefreshReport(id: string): Promise<LairEventsRefreshReport | null> {
+  const doc = await db
+    .collection(COLLECTION_NAME)
+    .findOne({ _id: new ObjectId(id) }, { projection: { eventsRefresh: 1 } });
+
+  return (doc?.eventsRefresh as LairEventsRefreshReport | undefined) ?? null;
 }
 
 export async function searchLairs(options: SearchLairsOptions): Promise<PaginatedLairsResult> {

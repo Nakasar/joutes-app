@@ -47,6 +47,37 @@ export type EventSource = {
   mappingConfig?: EventMappingConfig;
 };
 
+/** Ce qu'une source a rendu au dernier rafraîchissement. */
+export type EventSourceRefreshResult = {
+  url: string;
+  ok: boolean;
+  /** Pourquoi la lecture a échoué — « HTTP 503 », un JSON illisible… */
+  error?: string;
+  /** Ce qui a été lu mais mal compris : un statut inconnu, une date illisible. */
+  warnings: string[];
+  /** Le nombre d'événements que la source a rendus. */
+  count: number;
+};
+
+/**
+ * Le compte rendu du dernier rafraîchissement automatique d'un lieu.
+ *
+ * Écrit par `refreshEvents` à chaque tour, du cron comme du bouton de
+ * l'administration, pour qu'une source en panne se voie sans aller lire les
+ * journaux du serveur. Sort du lieu par `getLairEventsRefreshReport`, et
+ * seulement là : ses messages d'erreur n'ont rien à faire sur l'API publique.
+ */
+export type LairEventsRefreshReport = {
+  /** ISO 8601. */
+  at: string;
+  sources: EventSourceRefreshResult[];
+  inserted: number;
+  updated: number;
+  unchanged: number;
+  cancelled: number;
+  removed: number;
+};
+
 /** Un réseau ou un site du lieu, affiché dans la colonne « Suivre le lieu ». */
 export type LairLink = {
   type: 'website' | 'instagram' | 'facebook' | 'discord' | 'twitch' | 'youtube' | 'x' | 'other';

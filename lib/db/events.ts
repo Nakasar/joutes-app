@@ -2,8 +2,14 @@ import db from "@/lib/mongodb";
 import {Event, RegistrationStatus} from "@/lib/types/Event";
 import {getUserById} from "@/lib/db/users";
 import {getLairIdsNearLocation} from "./lairs";
-import {ObjectId} from "mongodb";
+import {AnyBulkWriteOperation, ObjectId, UpdateFilter} from "mongodb";
 import {DateTime} from "luxon";
+import {
+  AUTOMATED_EVENT_AUTHORS,
+  reconcileSourceEvents,
+  type SourceEvent,
+  type SourceEventPatch,
+} from "@/lib/events/source-events";
 
 const COLLECTION_NAME = "events";
 
@@ -527,123 +533,141 @@ export async function deleteEventsByLairId(lairId: string): Promise<number> {
   return result.deletedCount;
 }
 
-// Replace all AI-scrapped events for a lair (delete old AI-scrapped ones and insert new ones)
-// User-created events are preserved
-export async function replaceEventsForLair(lairId: string, events: Event[]): Promise<void> {
+/**
+ * Applique aux événements d'un lieu ce qu'une relecture de ses sources a rendu.
+ *
+ * Le verdict — quoi insérer, mettre à jour, annuler, retirer — est rendu par
+ * `reconcileSourceEvents`, sur la base de **tout** ce que le lieu a
+ * d'automatisé ; ici on ne fait que l'exécuter, en une seule écriture groupée
+ * et dans une transaction. Les événements saisis à la main ne sont jamais
+ * touchés.
+ *
+ * Un événement retrouvé est mis à jour **en place** : son `id`, ses favoris,
+ * ses inscriptions, ses tableaux Discord restent. C'est tout l'objet de la
+ * fonction — voir `lib/events/source-events.ts` pour ce que l'ancienne
+ * version faisait perdre.
+ *
+ * `failedSourceUrls` : les sources qui n'ont pas répondu. Leurs événements
+ * sont laissés en paix, une panne n'étant pas une annulation.
+ */
+export async function upsertEventsForLair(
+  lairId: string,
+  events: SourceEvent[],
+  { failedSourceUrls = [], now = DateTime.utc() }: { failedSourceUrls?: string[]; now?: DateTime } = {},
+): Promise<{ inserted: number; updated: number; unchanged: number; cancelled: number; removed: number }> {
+  const existing = await db
+    .collection<EventDocument>(COLLECTION_NAME)
+    .find(
+      { lairId, addedBy: { $in: [...AUTOMATED_EVENT_AUTHORS] } },
+      {
+        projection: {
+          _id: 0, id: 1, name: 1, startDateTime: 1, endDateTime: 1, gameName: 1, price: 1,
+          status: 1, url: 1, addedBy: 1, favoritedBy: 1, participants: 1, source: 1,
+        },
+      },
+    )
+    .toArray();
 
+  const verdict = reconcileSourceEvents({ incoming: events, existing, now, failedSourceUrls });
 
-  // Use a transaction for atomic operation
-  const session = db.client.startSession();
+  const operations: AnyBulkWriteOperation<EventDocument>[] = [
+    ...verdict.toInsert.map((event) => ({
+      insertOne: { document: toInsertedEvent(lairId, event) },
+    })),
+    ...verdict.toUpdate.map(({ existing: match, patch }) => ({
+      updateOne: { filter: { id: match.id }, update: toPatchUpdate(patch) },
+    })),
+    ...verdict.toCancel.map((event) => ({
+      updateOne: {
+        filter: { id: event.id },
+        update: { $set: { status: 'cancelled' as const, boardsNeedsUpdate: true } },
+      },
+    })),
+  ];
 
-  try {
-    await session.withTransaction(async () => {
-      // Delete only AI-scrapped events for this lair
-      await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({
-        lairId,
-        addedBy: "AI-SCRAPPING"
-      }, {session});
+  const removedIds = verdict.toDelete.map((event) => event.id);
 
-      // Insert new events if any
-      if (events.length > 0) {
-        await db.collection<EventDocument>(COLLECTION_NAME).insertMany(events, {session});
-      }
-    });
-  } finally {
-    await session.endSession();
+  if (operations.length > 0 || removedIds.length > 0) {
+    const session = db.client.startSession();
+
+    try {
+      await session.withTransaction(async () => {
+        if (operations.length > 0) {
+          await db.collection<EventDocument>(COLLECTION_NAME).bulkWrite(operations, { session, ordered: false });
+        }
+
+        if (removedIds.length > 0) {
+          await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({ id: { $in: removedIds } }, { session });
+          // Ce que `deleteEvent` retire avec un événement : rien de tout cela
+          // n'a de sens sans lui.
+          await db.collection("event-portal-settings").deleteMany({ eventId: { $in: removedIds } }, { session });
+          await db.collection("matches").deleteMany({ eventId: { $in: removedIds } }, { session });
+          await db.collection("event-announcements").deleteMany({ eventId: { $in: removedIds } }, { session });
+          await db.collection("event-player-notes").deleteMany({ eventId: { $in: removedIds } }, { session });
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
   }
+
+  return {
+    inserted: verdict.toInsert.length,
+    updated: verdict.toUpdate.length,
+    unchanged: verdict.unchanged.length,
+    cancelled: verdict.toCancel.length,
+    removed: removedIds.length,
+  };
+}
+
+/** Un événement moissonné, tel qu'on l'écrit la première fois. */
+function toInsertedEvent(lairId: string, event: SourceEvent): EventDocument {
+  return {
+    id: crypto.randomUUID(),
+    lairId,
+    name: event.name,
+    startDateTime: event.startDateTime,
+    endDateTime: event.endDateTime,
+    gameName: event.gameName,
+    ...(event.price !== undefined ? { price: event.price } : {}),
+    status: event.status,
+    ...(event.url !== undefined ? { url: event.url } : {}),
+    addedBy: event.addedBy,
+    source: {
+      url: event.sourceUrl,
+      ...(event.externalId !== undefined ? { externalId: event.externalId } : {}),
+    },
+  };
 }
 
 /**
- * Upsert AI-scrapped events for a lair
- * - Updates existing events if they have the same URL + lairId
- * - Inserts new events if they don't exist yet
- * - Preserves user-created events
- * @param lairId - The lair's ID
- * @param events - The events to upsert
- * @returns Object with counts of inserted and updated events
+ * Le `$set` / `$unset` d'un événement retrouvé.
+ *
+ * Les champs absents sont **retirés**, pas écrits à `null` : un prix qui
+ * disparaît de la source doit disparaître de l'événement, et le pilote écrit
+ * `undefined` comme `null` si on le laisse faire.
  */
-export async function upsertEventsForLair(lairId: string, events: Event[]): Promise<{
-  inserted: number;
-  updated: number;
-  removed: number;
-}> {
-  const currentDate = DateTime.utc().minus({ days: 1 });
+function toPatchUpdate(patch: SourceEventPatch): UpdateFilter<EventDocument> {
+  const set: Record<string, unknown> = { boardsNeedsUpdate: true };
+  const unset: Record<string, ''> = {};
 
-  if (events.length === 0) {
-    const result = await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({
-      lairId,
-      addedBy: {$in: ["AI-SCRAPPING", "JSON-MAPPING"]},
-      startDateTime: { $gte: currentDate.toISO() },
-      endDateTime: { $gte: currentDate.toISO() },
-    });
-
-    return { inserted: 0, updated: 0, removed: result.deletedCount };
+  for (const [key, value] of Object.entries(patch)) {
+    if (key === 'source') continue;
+    if (value === undefined) {
+      unset[key] = '';
+    } else {
+      set[key] = value;
+    }
   }
 
-  // Use a transaction for atomic operation
-  const session = db.client.startSession();
-  let inserted = 0;
-  let updated = 0;
-  let removed = 0;
-  const eventsUpserted: ObjectId[] = [];
-
-  try {
-    await session.withTransaction(async () => {
-      for (const event of events) {
-        // Si l'événement a une URL, on utilise URL + lairId comme discriminant
-        if (event.url) {
-          const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
-            {
-              lairId,
-              url: event.url,
-              addedBy: {$in: ["AI-SCRAPPING", "JSON-MAPPING"]} // Ne pas écraser les événements créés par les utilisateurs
-            },
-            {
-              $set: {
-                name: event.name,
-                startDateTime: event.startDateTime,
-                endDateTime: event.endDateTime,
-                gameName: event.gameName,
-                price: event.price,
-                status: event.status,
-              }
-            },
-            {session}
-          );
-
-          if (result.matchedCount > 0) {
-            if (result.upsertedId) {
-              eventsUpserted.push(result.upsertedId);
-            }
-            updated++;
-          } else {
-            // L'événement n'existe pas, on l'insère
-            const result = await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event, {session});
-            eventsUpserted.push(result.insertedId);
-            inserted++;
-          }
-        } else {
-          // Si pas d'URL, on insère toujours (impossible de détecter les doublons)
-          const result = await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event, {session});
-          eventsUpserted.push(result.insertedId);
-          inserted++;
-        }
-      }
-
-      const result = await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({
-        lairId,
-        addedBy: {$in: ["AI-SCRAPPING", "JSON-MAPPING"]},
-        _id: { $nin: eventsUpserted },
-        startDateTime: { $gte: currentDate.toISO() },
-        endDateTime: { $gte: currentDate.toISO() },
-      });
-      removed+=result.deletedCount;
-    });
-  } finally {
-    await session.endSession();
+  if (patch.source) {
+    set.source = {
+      url: patch.source.url,
+      ...(patch.source.externalId !== undefined ? { externalId: patch.source.externalId } : {}),
+    };
   }
 
-  return {inserted, updated, removed};
+  return Object.keys(unset).length > 0 ? { $set: set, $unset: unset } : { $set: set };
 }
 
 /**
