@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;800&amp;family=Geist+Mono:wght@500&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    /* Croquis basse fidélité : noir, blanc, un gris. Seule la structure compte. */
+    .sketch {
+      box-sizing: border-box; width: 794px; height: 1123px; padding: 56px;
+      display: flex; flex-direction: column; gap: 20px;
+      background: #ffffff; color: #262626;
+      font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+      overflow: hidden;
+    }
+    .kicker { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #737373; }
+    .title { font-size: 52px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin: 0; white-space: nowrap; }
+    .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+    .venue { display: flex; align-items: center; gap: 12px; }
+    .box { width: 56px; height: 56px; border: 2px dashed #a3a3a3; border-radius: 12px; }
+    .venue-name { font-size: 20px; font-weight: 700; margin: 0; white-space: nowrap; }
+    .venue-sub { font-size: 12px; color: #737373; }
+    .dow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+    .dow span { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #737373; text-align: center; }
+    .grid { flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: repeat(5, minmax(0, 1fr)); gap: 6px; }
+    .cell { border: 1.5px solid #d4d4d4; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .cell.off { border-style: dashed; opacity: 0.4; }
+    .num { font-size: 14px; font-weight: 700; }
+    .chip { font-size: 10.5px; line-height: 14px; padding: 3px 5px; border-radius: 4px; background: #e5e5e5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .foot { display: flex; align-items: center; justify-content: space-between; border-top: 2px solid #e5e5e5; padding-top: 16px; }
+    .wordmark { font-size: 18px; font-weight: 700; }
+    .qr { width: 72px; height: 72px; border: 2px dashed #a3a3a3; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #737373; }
+    .note { font-size: 12px; color: #737373; }
+  </style>
+</helmet>
+<div class="sketch">
+  <header class="head">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span class="kicker">Programme du mois</span>
+      <h1 class="title">Septembre 2026</h1>
+    </div>
+    <div class="venue">
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right">
+        <p class="venue-name">La Taverne du Dé</p>
+        <span class="venue-sub">14 rue des Capucins, Lyon</span>
+      </div>
+      <div class="box"></div>
+    </div>
+  </header>
+  <div class="dow"><span>lun.</span><span>mar.</span><span>mer.</span><span>jeu.</span><span>ven.</span><span>sam.</span><span>dim.</span></div>
+  <main class="grid">
+      <div class="cell off"><span class="num">31</span></div>
+      <div class="cell"><span class="num">1</span><span class="chip">Core Constructed</span></div>
+      <div class="cell"><span class="num">2</span></div>
+      <div class="cell"><span class="num">3</span><span class="chip">Nexus</span></div>
+      <div class="cell"><span class="num">4</span></div>
+      <div class="cell"><span class="num">5</span><span class="chip">Standard · complet</span></div>
+      <div class="cell"><span class="num">6</span></div>
+      <div class="cell"><span class="num">7</span><span class="chip">Commander</span></div>
+      <div class="cell"><span class="num">8</span></div>
+      <div class="cell"><span class="num">9</span><span class="chip">Nexus</span></div>
+      <div class="cell"><span class="num">10</span><span class="chip">Draft · complet</span></div>
+      <div class="cell"><span class="num">11</span></div>
+      <div class="cell"><span class="num">12</span><span class="chip">Store Champ.</span></div>
+      <div class="cell"><span class="num">13</span><span class="chip">League Cup</span></div>
+      <div class="cell"><span class="num">14</span></div>
+      <div class="cell"><span class="num">15</span></div>
+      <div class="cell"><span class="num">16</span></div>
+      <div class="cell"><span class="num">17</span></div>
+      <div class="cell"><span class="num">18</span><span class="chip">FNM</span></div>
+      <div class="cell"><span class="num">19</span><span class="chip">Avant-première</span></div>
+      <div class="cell"><span class="num">20</span></div>
+      <div class="cell"><span class="num">21</span></div>
+      <div class="cell"><span class="num">22</span></div>
+      <div class="cell"><span class="num">23</span><span class="chip">Nexus</span></div>
+      <div class="cell"><span class="num">24</span></div>
+      <div class="cell"><span class="num">25</span></div>
+      <div class="cell"><span class="num">26</span><span class="chip">Régional</span></div>
+      <div class="cell"><span class="num">27</span><span class="chip">Initiation</span></div>
+      <div class="cell"><span class="num">28</span></div>
+      <div class="cell"><span class="num">29</span><span class="chip">Core Constructed</span></div>
+      <div class="cell"><span class="num">30</span></div>
+      <div class="cell off"><span class="num">1</span></div>
+      <div class="cell off"><span class="num">2</span></div>
+      <div class="cell off"><span class="num">3</span></div>
+      <div class="cell off"><span class="num">4</span></div>
+  </main>
+  <footer class="foot">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <span class="wordmark">Joutes</span>
+      <span class="note">Inscriptions sur joutes.app</span>
+    </div>
+    <div class="qr">QR</div>
+  </footer>
+</div>
+</x-dc>
+</body>
+</html>
