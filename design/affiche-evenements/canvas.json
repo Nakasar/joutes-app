@@ -38,7 +38,7 @@
       "x": 1800,
       "y": -340,
       "w": 620,
-      "text": "À trancher, et ce qui est un exemple.\n\n— Le mode mensuel : chaque style devra en avoir une déclinaison ; les planches ici montrent la semaine.\n\n— Les noms de jeu tiennent lieu de logos : la version livrée y met le logo horizontal du jeu (game.images.horizontal) là où le style s'y prête.\n\n— La personnalisation Pro (logo du lieu, couleur d'accent) vient par-dessus le style choisi ; l'écran de réglages en bas à droite montre le sélecteur de style avec le verrou Pro.\n\n— Le lieu, ses événements et le QR sont des exemples. La peinture du style Taverne est l'illustration déjà présente dans public/joutes.png."
+      "text": "À trancher, et ce qui est un exemple.\n\n— Le mode mensuel : chaque style devra en avoir une déclinaison ; les planches ici montrent la semaine.\n\n— Les noms de jeu tiennent lieu de logos : la version livrée y met le logo horizontal du jeu (game.images.horizontal) là où le style s'y prête.\n\n— La personnalisation Pro (logo du lieu, couleur d'accent) vient par-dessus le style choisi ; l'écran de réglages en bas à droite montre le sélecteur de style avec le verrou Pro.\n\n— Le lieu, ses événements et le QR sont des exemples. La peinture du style Taverne est l'illustration déjà présente dans public/joutes.png, réduite en JPEG pour l'affiche."
     },
     {
       "id": "anciennes",
