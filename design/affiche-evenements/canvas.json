@@ -23,7 +23,7 @@
     {
       "id": "pro",
       "page": "page-1",
-      "x": 640,
+      "x": 1800,
       "y": -320,
       "w": 580,
       "text": "Le thème d'un lieu Joutes Pro (troisième planche).\n\nTrois leviers au-dessus de la planche, à essayer : la couleur d'accent (étiquette, pastilles, encart), la couleur du marqueur (le trait sous les jours et le numéro), et la police des titres — Lilita One, Titan One, Bangers ou Fredoka. Le logo du lieu prend place à côté de sa signature.\n\nSans Pro, l'affiche garde l'accent violet et le marqueur doré de Joutes, sans logo (les deux premières planches).\n\nÀ trancher : la palette de l'affiche est plus large que celle de la vitrine (cinq accents vérifiés sur fond sombre) — sur papier clair, d'autres teintes tiennent."
@@ -31,7 +31,7 @@
     {
       "id": "trancher",
       "page": "page-1",
-      "x": 1280,
+      "x": 640,
       "y": -320,
       "w": 580,
       "text": "À trancher, et ce qui est un exemple.\n\n— Les mots à droite des tickets tiennent lieu de logos : la version livrée y met le logo horizontal du jeu (game.images.horizontal), et retombe sur ce mot-symbole quand le jeu n'en a pas.\n\n— Où ça vit : un onglet « Affiche » dans la gestion du lieu (planche du bas), aperçu à droite, export PNG / PDF / impression.\n\n— A4 sur les réseaux : le 1:1,41 déborde du 4:5 d'Instagram ; Facebook et Discord l'acceptent. Un format story 9:16 peut venir ensuite.\n\n— Le lieu, ses événements et le QR sont des exemples ; le QR sera encodé avec le paquet qrcode déjà présent."
