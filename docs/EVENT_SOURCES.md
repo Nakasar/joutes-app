@@ -11,7 +11,7 @@ champ par champ, ou — en dernier recours — une page lue par un modèle. Le c
 | `lib/services/refresh-events.ts` | Lit chaque source, appelle le modèle ou applique la correspondance, écrit le rapport |
 | `lib/events/source-events.ts` | Tout ce qui se décide sans la base : dates, statuts, jeux, **rapprochement** avec l'existant |
 | `lib/events/html-source.ts` | La lecture d'une page par sélecteurs : titre composé, champs, jeu |
-| `lib/events/html-presets.ts` | Les configurations toutes faites (boutique Oasis) |
+| `lib/events/html-presets.ts` | Les configurations toutes faites (boutique Oasis, Animations du Gobelin) |
 | `lib/db/events.ts` — `upsertEventsForLair` | Exécute le verdict du rapprochement en une écriture groupée |
 | `lib/db/lairs.ts` — `*EventsRefreshReport` | Le compte rendu du dernier tour, lu par l'administration |
 | `app/api/cron/refresh-events/route.ts` | Le cron : les lieux qui ont une source, trois à la fois |
@@ -130,10 +130,23 @@ ligne, où les événements sont des produits.
   motif, où qu'elles soient ; le reste est coupé au séparateur (« - » par
   défaut, un tiret ne comptant qu'entouré d'espaces) : premier segment le
   jeu, le reste le nom. Un champ dédié, s'il est renseigné, l'emporte.
+- **Date et heure à part** : quand la page les donne dans deux éléments —
+  « mercredi 02 septembre » d'un côté, « 13:30 - 18:30 » de l'autre —, on
+  renseigne `date` et `time` ; une plage horaire donne aussi la fin. Un
+  début complet (`startDateTime`) l'emporte sur les deux.
 - **Statut** : lu dans un texte de stock ou de disponibilité (« En stock »,
-  « Rupture », « Complet », « Annulé »…).
-- **Préréglages** : le bouton « Boutique Oasis » remplit la configuration de
-  cette plateforme de boutique (celle de l'Antre Temps), modifiable ensuite.
+  « Rupture », « Complet », « 8 restantes », « 0 restante », « Annulé »…).
+- **Lieu** : une page qui liste plusieurs villes se filtre avec le champ
+  `venue` et la valeur à garder (« Thionville »). Si rien ne passe le filtre,
+  la source le signale.
+- **Champs de formulaire** (tous types de source) : quand la page attend un
+  formulaire pour afficher la bonne ville — « animation = Thionville.lieu »
+  chez le Gobelin —, ces champs sont envoyés en POST, comme le ferait le
+  navigateur.
+- **Préréglages** : « Boutique Oasis » (la plateforme de l'Antre Temps) et
+  « Animations du Gobelin » (une page pour toutes les villes, filtrée par
+  formulaire ; le préréglage vise Thionville, la ville se change dans les
+  champs de formulaire et dans le filtre de lieu). Modifiables ensuite.
 
 Tous les champs lus passent par les mêmes lecteurs que la correspondance JSON
 (prix, liens relatifs, dates) ; l'identifiant, s'il y en a un (`idProduit`),
@@ -206,5 +219,6 @@ node --import ./scripts/ts-paths-hook.mjs --test lib/events/source-events.test.t
 
 Les tests couvrent les dates, les champs, et surtout le rapprochement : le
 scénario d'origine — un événement retrouvé par son URL, avec un favori, mis à
-jour et **pas** retiré — y est en premier. La lecture HTML est testée sur un
-extrait réel de la page de l'Antre Temps (`lib/events/__fixtures__/`).
+jour et **pas** retiré — y est en premier. La lecture HTML est testée sur des
+extraits réels des pages de l'Antre Temps et du Gobelin
+(`lib/events/__fixtures__/`).

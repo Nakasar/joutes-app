@@ -65,14 +65,26 @@ export type EventHtmlConfig = {
     title?: HtmlFieldRule;
     name?: HtmlFieldRule;
     gameName?: HtmlFieldRule;
+    /** Une date seule — « mercredi 02 septembre », « 03/09/2026 » — quand la page la donne à part. */
+    date?: HtmlFieldRule;
+    /** Une heure, ou une plage — « 19h30 », « 13:30 - 18:30 » — quand la page la donne à part. */
+    time?: HtmlFieldRule;
     startDateTime?: HtmlFieldRule;
     endDateTime?: HtmlFieldRule;
     price?: HtmlFieldRule;
     status?: HtmlFieldRule;
     url?: HtmlFieldRule;
+    /** Le lieu ou la ville de l'événement, pour `venue`. */
+    venue?: HtmlFieldRule;
   };
   /** Ce qui sépare les segments du titre composé. « - » par défaut. */
   titleSeparator?: string;
+  /**
+   * Ne garder que les événements dont le champ `venue` vaut ceci, à la casse
+   * et aux accents près : une page qui liste plusieurs villes ne donne au
+   * lieu que la sienne.
+   */
+  venue?: string;
 };
 
 // Type pour une source d'événements
@@ -82,6 +94,13 @@ export type EventSource = {
   instructions?: string;
   mappingConfig?: EventMappingConfig;
   htmlConfig?: EventHtmlConfig;
+  /**
+   * Les champs d'un formulaire à envoyer pour obtenir la page — la ville à
+   * afficher, un filtre. Quand ils sont là, la page est demandée en POST
+   * (`application/x-www-form-urlencoded`) plutôt qu'en GET. Vaut pour tous
+   * les types de source.
+   */
+  formFields?: Record<string, string>;
   /**
    * Les noms de jeu de la source qui ne sont pas ceux de la plateforme :
    * « MTG » → « Magic: The Gathering ». Les clés se comparent à la casse et

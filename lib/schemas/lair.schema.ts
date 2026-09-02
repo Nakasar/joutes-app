@@ -57,13 +57,17 @@ const eventHtmlConfigSchema = z.object({
     title: htmlFieldRuleSchema.optional(),
     name: htmlFieldRuleSchema.optional(),
     gameName: htmlFieldRuleSchema.optional(),
+    date: htmlFieldRuleSchema.optional(),
+    time: htmlFieldRuleSchema.optional(),
     startDateTime: htmlFieldRuleSchema.optional(),
     endDateTime: htmlFieldRuleSchema.optional(),
     price: htmlFieldRuleSchema.optional(),
     status: htmlFieldRuleSchema.optional(),
     url: htmlFieldRuleSchema.optional(),
+    venue: htmlFieldRuleSchema.optional(),
   }).default({}),
   titleSeparator: z.string().max(10, "Le séparateur est trop long").optional(),
+  venue: z.string().trim().max(200, "Le lieu est trop long").optional(),
 });
 
 // Schéma pour une source d'événements
@@ -73,6 +77,9 @@ export const eventSourceSchema = z.object({
   instructions: z.string().max(2000, "Les consignes sont trop longues").optional(),
   mappingConfig: eventMappingConfigSchema.optional(),
   htmlConfig: eventHtmlConfigSchema.optional(),
+  formFields: z
+    .record(z.string().trim().min(1).max(100), z.string().max(500))
+    .optional(),
   gameAliases: z
     .record(z.string().trim().min(1).max(100), z.string().trim().min(1).max(200))
     .optional(),

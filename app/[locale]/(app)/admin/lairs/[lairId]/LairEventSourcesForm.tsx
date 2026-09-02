@@ -39,11 +39,38 @@ const HTML_FIELDS: { key: keyof EventHtmlConfig["fields"]; hint: string }[] = [
   { key: "url", hint: "Lien de l'événement (attribut href)" },
   { key: "name", hint: "Nom seul, si la page le donne à part" },
   { key: "gameName", hint: "Jeu seul, si la page le donne à part" },
-  { key: "startDateTime", hint: "Début, si la page le donne à part" },
-  { key: "endDateTime", hint: "Fin, si la page la donne" },
+  { key: "date", hint: "Date seule : « mercredi 02 septembre », « 03/09/2026 »" },
+  { key: "time", hint: "Heure ou plage : « 19h30 », « 13:30 - 18:30 »" },
+  { key: "startDateTime", hint: "Début complet, si la page le donne" },
+  { key: "endDateTime", hint: "Fin complète, si la page la donne" },
   { key: "price", hint: "Prix, en texte ou en nombre" },
-  { key: "status", hint: "Stock ou disponibilité" },
+  { key: "status", hint: "Stock, places restantes ou disponibilité" },
+  { key: "venue", hint: "Ville ou lieu, pour le filtre ci-dessous" },
 ];
+
+/**
+ * Les champs de formulaire, ligne par ligne : « animation = Thionville.lieu ».
+ * Même forme que les alias de jeu.
+ */
+function parseKeyValues(text: string): Record<string, string> | undefined {
+  const values: Record<string, string> = {};
+
+  for (const line of text.split("\n")) {
+    const separator = line.indexOf("=");
+    if (separator === -1) continue;
+    const key = line.slice(0, separator).trim();
+    const value = line.slice(separator + 1).trim();
+    if (key) values[key] = value;
+  }
+
+  return Object.keys(values).length > 0 ? values : undefined;
+}
+
+function formatKeyValues(values: Record<string, string> | undefined): string {
+  return Object.entries(values ?? {})
+    .map(([key, value]) => `${key} = ${value}`)
+    .join("\n");
+}
 
 function emptyHtml(source: EventSource): EventHtmlConfig {
   return source.htmlConfig ?? { itemSelector: "", fields: {} };
@@ -88,14 +115,22 @@ type SourceDraft = {
   source: EventSource;
   /** Les alias en cours de saisie, ligne par ligne ; lus au moment d'envoyer. */
   aliasesText: string;
+  /** Les champs de formulaire en cours de saisie, même forme. */
+  formFieldsText: string;
 };
 
-/** La source telle qu'elle part au serveur : les alias saisis, lus. */
+/** La source telle qu'elle part au serveur : les alias et les champs saisis, lus. */
 function toSource(draft: SourceDraft): EventSource {
   const aliases = parseAliases(draft.aliasesText);
+  const formFields = parseKeyValues(draft.formFieldsText);
   const source: EventSource = { ...draft.source };
   delete source.gameAliases;
-  return aliases ? { ...source, gameAliases: aliases } : source;
+  delete source.formFields;
+  return {
+    ...source,
+    ...(aliases ? { gameAliases: aliases } : {}),
+    ...(formFields ? { formFields } : {}),
+  };
 }
 
 /** Ce que le bouton « Tester » d'une source a rendu, ou est en train de rendre. */
@@ -144,6 +179,7 @@ export function LairEventSourcesForm({
       key: `source-${index}`,
       source,
       aliasesText: formatAliases(source.gameAliases),
+      formFieldsText: formatKeyValues(source.formFields),
     })),
   );
   const [previews, setPreviews] = useState<Record<string, PreviewState>>({});
@@ -193,9 +229,9 @@ export function LairEventSourcesForm({
     patchHtml(key, source, { fields });
   };
 
-  const patchAliases = (key: string, aliasesText: string) => {
+  const patchDraftText = (key: string, next: Partial<Pick<SourceDraft, "aliasesText" | "formFieldsText">>) => {
     setDrafts((previous) =>
-      previous.map((draft) => (draft.key === key ? { ...draft, aliasesText } : draft)),
+      previous.map((draft) => (draft.key === key ? { ...draft, ...next } : draft)),
     );
     setPreviews((previous) => {
       if (!(key in previous)) return previous;
@@ -303,6 +339,7 @@ export function LairEventSourcesForm({
                     key: `ajoutee-${(nextKey.current += 1)}`,
                     source: { url: "", type: "HTML", htmlConfig: { itemSelector: "", fields: {} } },
                     aliasesText: "",
+                    formFieldsText: "",
                   },
                 ])
               }
@@ -633,7 +670,10 @@ export function LairEventSourcesForm({
                           size="sm"
                           variant="outline"
                           title={preset.description}
-                          onClick={() => patch(key, { ...source, htmlConfig: preset.config })}
+                          onClick={() => {
+                            patch(key, { ...source, htmlConfig: preset.config });
+                            patchDraftText(key, { formFieldsText: formatKeyValues(preset.formFields) });
+                          }}
                         >
                           {preset.label}
                         </Button>
@@ -682,6 +722,27 @@ export function LairEventSourcesForm({
                           tiret par défaut.
                         </p>
                       </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor={`html-venue-${key}`}
+                        className="block text-xs font-medium text-muted-foreground mb-1"
+                      >
+                        Ne garder que le lieu (optionnel)
+                      </label>
+                      <input
+                        id={`html-venue-${key}`}
+                        type="text"
+                        value={source.htmlConfig?.venue ?? ""}
+                        onChange={(e) => patchHtml(key, source, { venue: e.target.value || undefined })}
+                        placeholder="Thionville"
+                        className={FIELD_CLASS}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Quand la page liste plusieurs villes : seuls les événements dont le champ{" "}
+                        <span className="font-mono">venue</span> vaut ceci sont gardés.
+                      </p>
                     </div>
 
                     <div>
@@ -735,6 +796,28 @@ export function LairEventSourcesForm({
 
                 <div>
                   <label
+                    htmlFor={`source-form-${key}`}
+                    className="block text-xs font-medium text-muted-foreground mb-1"
+                  >
+                    Champs de formulaire (optionnel)
+                  </label>
+                  <textarea
+                    id={`source-form-${key}`}
+                    rows={2}
+                    value={draft.formFieldsText}
+                    onChange={(e) => patchDraftText(key, { formFieldsText: e.target.value })}
+                    placeholder={"animation = Thionville.lieu"}
+                    className={`${FIELD_CLASS} font-mono`}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Un champ par ligne. La page est alors demandée en POST avec ces champs, comme
+                    en validant le formulaire du site : c&apos;est ainsi qu&apos;un site qui sert
+                    plusieurs villes sur la même adresse rend la bonne.
+                  </p>
+                </div>
+
+                <div>
+                  <label
                     htmlFor={`source-aliases-${key}`}
                     className="block text-xs font-medium text-muted-foreground mb-1"
                   >
@@ -744,7 +827,7 @@ export function LairEventSourcesForm({
                     id={`source-aliases-${key}`}
                     rows={2}
                     value={draft.aliasesText}
-                    onChange={(e) => patchAliases(key, e.target.value)}
+                    onChange={(e) => patchDraftText(key, { aliasesText: e.target.value })}
                     placeholder={"MTG = Magic: The Gathering\nPokemon TCG = Pokémon"}
                     className={`${FIELD_CLASS} font-mono`}
                   />

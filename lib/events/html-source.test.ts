@@ -3,8 +3,8 @@ import { describe, it } from "node:test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { DateTime } from "luxon";
-import { extractHtmlEvents, parseCompositeTitle } from "./html-source";
-import { OASIS_PRESET } from "./html-presets";
+import { extractHtmlEvents, parseCompositeTitle, parseDateText, parseTimeRange } from "./html-source";
+import { GOBELIN_PRESET, OASIS_PRESET } from "./html-presets";
 
 const PARIS = "Europe/Paris";
 const NOW = DateTime.fromISO("2026-09-01T10:00", { zone: PARIS });
@@ -13,31 +13,35 @@ const SOURCE_URL = "https://www.antretemps.com/evenements-boutique-tournois/";
 /** Quatre cases de la grille de l'Antre Temps, telles que le site les sert. */
 const OASIS_PAGE = readFileSync(path.join(import.meta.dirname, "__fixtures__", "antretemps-oasis.html"), "utf-8");
 
+/** Cinq cartes de la page du Gobelin, filtrée sur Thionville, telles que le site les sert. */
+const GOBELIN_PAGE = readFileSync(path.join(import.meta.dirname, "__fixtures__", "gobelin-thionville.html"), "utf-8");
+
 const GAMES = [
   { name: "Riftbound" },
   { name: "Pokémon" },
   { name: "Magic: The Gathering" },
   { name: "Star Wars: Unlimited" },
+  { name: "Yu-Gi-Oh!" },
+  { name: "One Piece Card Game" },
+  { name: "Lorcana" },
 ];
 
 describe("titre composé", () => {
   it("lit « Jeu - Nom - JJ/MM/AAAA - HHhMM »", () => {
     const title = parseCompositeTitle("Riftbound - Tournois Nexus - 03/09/2026 - 19h30");
-    assert.deepEqual(title, {
-      game: "Riftbound",
-      name: "Tournois Nexus",
-      date: { day: 3, month: 9, year: 2026 },
-      time: { hour: 19, minute: 30 },
-    });
+    assert.equal(title.game, "Riftbound");
+    assert.equal(title.name, "Tournois Nexus");
+    assert.deepEqual(title.segments, ["Riftbound", "Tournois Nexus"]);
+    assert.deepEqual(title.date, { day: 3, month: 9, year: 2026 });
+    assert.deepEqual(title.time, { hour: 19, minute: 30 });
   });
 
   it("accepte l'heure avant la date et l'année sur deux chiffres", () => {
-    assert.deepEqual(parseCompositeTitle("Star Wars Unlimited - Store Showdown set 8 - 10h30 - 26/09/2026"), {
-      game: "Star Wars Unlimited",
-      name: "Store Showdown set 8",
-      date: { day: 26, month: 9, year: 2026 },
-      time: { hour: 10, minute: 30 },
-    });
+    const title = parseCompositeTitle("Star Wars Unlimited - Store Showdown set 8 - 10h30 - 26/09/2026");
+    assert.equal(title.game, "Star Wars Unlimited");
+    assert.equal(title.name, "Store Showdown set 8");
+    assert.deepEqual(title.date, { day: 26, month: 9, year: 2026 });
+    assert.deepEqual(title.time, { hour: 10, minute: 30 });
     assert.equal(parseCompositeTitle("Avant Premiere MTG Réalité Fracturée - 25/09/26 - 19h30").date?.year, 2026);
   });
 
@@ -60,7 +64,11 @@ describe("titre composé", () => {
   });
 
   it("garde tout le titre comme nom quand rien ne le découpe", () => {
-    assert.deepEqual(parseCompositeTitle("Grand tournoi de rentrée"), { name: "Grand tournoi de rentrée", date: undefined, time: undefined });
+    const title = parseCompositeTitle("Grand tournoi de rentrée");
+    assert.equal(title.name, "Grand tournoi de rentrée");
+    assert.equal(title.game, undefined);
+    assert.equal(title.date, undefined);
+    assert.equal(title.time, undefined);
   });
 });
 
@@ -198,5 +206,81 @@ describe("page HTML — cas limites", () => {
     const extraction = extractHtmlEvents({ html, config, source: { url: SOURCE_URL }, games: GAMES, now: december });
 
     assert.equal(extraction.events[0].startDateTime, "2027-01-15T20:00:00.000+01:00");
+  });
+});
+
+describe("date et heure à part", () => {
+  it("lit une date en toutes lettres sans année", () => {
+    assert.deepEqual(parseDateText("mercredi 02 septembre"), { day: 2, month: 9 });
+    assert.deepEqual(parseDateText("03/09/2026"), { day: 3, month: 9, year: 2026 });
+    assert.equal(parseDateText("bientôt"), undefined);
+  });
+
+  it("lit une heure seule ou une plage, avec ou sans secondes", () => {
+    assert.deepEqual(parseTimeRange("19h30"), { start: { hour: 19, minute: 30 } });
+    assert.deepEqual(parseTimeRange("13:30 - 18:30"), { start: { hour: 13, minute: 30 }, end: { hour: 18, minute: 30 } });
+    assert.deepEqual(parseTimeRange("13:30:00 - 18:30:00"), { start: { hour: 13, minute: 30 }, end: { hour: 18, minute: 30 } });
+    assert.equal(parseTimeRange("toute la journée"), undefined);
+  });
+});
+
+describe("page du Gobelin — Thionville", () => {
+  const extraction = extractHtmlEvents({
+    html: GOBELIN_PAGE,
+    config: GOBELIN_PRESET.config,
+    source: { url: "https://www.lesanimationsdugobelin.com/animations", gameAliases: { "One Piece": "One Piece Card Game", "Yu-Gi-Oh": "Yu-Gi-Oh!" } },
+    games: GAMES,
+    now: NOW,
+  });
+
+  it("lit chaque carte", () => {
+    assert.equal(extraction.itemCount, 5);
+    assert.equal(extraction.events.length, 5);
+    assert.deepEqual(extraction.warnings, []);
+  });
+
+  it("compose le début et la fin depuis la date et la plage horaire", () => {
+    const nexus = extraction.events.find((event) => event.name === "Tournoi Nexus");
+    assert.ok(nexus);
+    assert.equal(nexus.gameName, "Riftbound");
+    assert.match(nexus.startDateTime, /^2026-\d{2}-\d{2}T\d{2}:\d{2}:00\.000\+02:00$/);
+    assert.ok(nexus.endDateTime > nexus.startDateTime);
+    assert.equal(nexus.status, "available");
+    assert.ok(nexus.url?.startsWith("https://www.lesanimationsdugobelin.com/animations/view/"));
+    assert.equal(typeof nexus.price, "number");
+  });
+
+  it("lit le jeu à part et garde le titre entier comme nom", () => {
+    const core = extraction.events.find((event) => event.name === "Tournoi Core Constructed");
+    assert.equal(core?.gameName, "Lorcana");
+
+    const standard = extraction.events.find((event) => event.name === "Tournoi Standard" && event.gameName === "Yu-Gi-Oh!");
+    assert.ok(standard, "« Tournoi Standard » n'est pas un jeu suivi d'un nom");
+  });
+
+  it("retire du nom le jeu que le titre répète", () => {
+    const prerelease = extraction.events.find((event) => event.gameName === "Pokémon");
+    assert.equal(prerelease?.name, "Avant-Première Règne Delta");
+  });
+
+  it("lit « Complet » et « -1 restante » comme complet, « 8 restantes » comme disponible", () => {
+    const byGame = Object.fromEntries(extraction.events.map((event) => [event.gameName, event.status]));
+    assert.equal(byGame["One Piece Card Game"], "sold-out");
+    assert.equal(byGame["Pokémon"], "sold-out");
+    assert.equal(byGame["Yu-Gi-Oh!"], "available");
+  });
+
+  it("ne garde que la ville demandée", () => {
+    const metz = extractHtmlEvents({
+      html: GOBELIN_PAGE,
+      config: { ...GOBELIN_PRESET.config, venue: "Metz" },
+      source: { url: "https://www.lesanimationsdugobelin.com/animations" },
+      games: GAMES,
+      now: NOW,
+    });
+
+    assert.equal(metz.itemCount, 5);
+    assert.equal(metz.events.length, 0);
+    assert.ok(metz.warnings.some((warning) => warning.includes("« Metz »")));
   });
 });

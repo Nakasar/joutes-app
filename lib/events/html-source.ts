@@ -7,6 +7,7 @@ import {
   EVENTS_TIMEZONE,
   findGameInText,
   inferStatusFromText,
+  normalizeEventName,
   normalizeEventPrice,
   normalizeEventStatus,
   resolveEventDates,
@@ -36,11 +37,14 @@ export const HTML_FIELDS = [
   "title",
   "name",
   "gameName",
+  "date",
+  "time",
   "startDateTime",
   "endDateTime",
   "price",
   "status",
   "url",
+  "venue",
 ] as const;
 
 export type HtmlField = (typeof HTML_FIELDS)[number];
@@ -69,11 +73,16 @@ const FRENCH_DATE =
 /** « 19h30 », « 14h », « 10:30 », « 19 h 30 ». */
 const TIME = /\b(\d{1,2})\s*(?:h|H|:)\s*(\d{2})?\b/;
 
+export type DayOfYear = { day: number; month: number; year?: number };
+export type TimeOfDay = { hour: number; minute: number };
+
 export type CompositeTitle = {
   game?: string;
   name: string;
-  date?: { day: number; month: number; year?: number };
-  time?: { hour: number; minute: number };
+  /** Les segments du titre, date et heure retirées, dans l'ordre. */
+  segments: string[];
+  date?: DayOfYear;
+  time?: TimeOfDay;
 };
 
 function stripAccents(text: string): string {
@@ -89,36 +98,8 @@ function stripAccents(text: string): string {
  * jeu, le reste le nom. Un titre sans séparateur est tout entier un nom.
  */
 export function parseCompositeTitle(title: string, separator: string = DEFAULT_TITLE_SEPARATOR): CompositeTitle {
-  let rest = title.replace(/\s+/g, " ").trim();
-  let date: CompositeTitle["date"];
-  let time: CompositeTitle["time"];
-
-  const numeric = NUMERIC_DATE.exec(rest);
-  if (numeric) {
-    const year = Number.parseInt(numeric[3], 10);
-    date = {
-      day: Number.parseInt(numeric[1], 10),
-      month: Number.parseInt(numeric[2], 10),
-      year: numeric[3].length === 2 ? 2000 + year : year,
-    };
-    rest = rest.replace(numeric[0], " ");
-  } else {
-    const french = FRENCH_DATE.exec(rest);
-    if (french) {
-      date = {
-        day: Number.parseInt(french[1], 10),
-        month: FRENCH_MONTHS.indexOf(stripAccents(french[2]).toLowerCase()) + 1,
-        ...(french[3] ? { year: Number.parseInt(french[3], 10) } : {}),
-      };
-      rest = rest.replace(french[0], " ");
-    }
-  }
-
-  const hour = TIME.exec(rest);
-  if (hour) {
-    time = { hour: Number.parseInt(hour[1], 10), minute: hour[2] ? Number.parseInt(hour[2], 10) : 0 };
-    rest = rest.replace(hour[0], " ");
-  }
+  const { date, rest: withoutDate } = takeDate(title.replace(/\s+/g, " ").trim());
+  const { time, rest } = takeTime(withoutDate);
 
   // Retirer la date et l'heure laisse des séparateurs orphelins (« Nexus -  - ») :
   // un segment sans lettre ni chiffre n'est pas un segment.
@@ -128,10 +109,71 @@ export function parseCompositeTitle(title: string, separator: string = DEFAULT_T
     .filter((segment) => /[\p{L}\p{N}]/u.test(segment));
 
   if (segments.length >= 2) {
-    return { game: segments[0], name: segments.slice(1).join(separator), date, time };
+    return { game: segments[0], name: segments.slice(1).join(separator), segments, date, time };
   }
 
-  return { name: segments[0] ?? "", date, time };
+  return { name: segments[0] ?? "", segments, date, time };
+}
+
+/** Retire la première date d'un texte, et la rend. */
+function takeDate(text: string): { date?: DayOfYear; rest: string } {
+  const numeric = NUMERIC_DATE.exec(text);
+  if (numeric) {
+    const year = Number.parseInt(numeric[3], 10);
+    return {
+      date: {
+        day: Number.parseInt(numeric[1], 10),
+        month: Number.parseInt(numeric[2], 10),
+        year: numeric[3].length === 2 ? 2000 + year : year,
+      },
+      rest: text.replace(numeric[0], " "),
+    };
+  }
+
+  const french = FRENCH_DATE.exec(text);
+  if (french) {
+    return {
+      date: {
+        day: Number.parseInt(french[1], 10),
+        month: FRENCH_MONTHS.indexOf(stripAccents(french[2]).toLowerCase()) + 1,
+        ...(french[3] ? { year: Number.parseInt(french[3], 10) } : {}),
+      },
+      rest: text.replace(french[0], " "),
+    };
+  }
+
+  return { rest: text };
+}
+
+/** Retire la première heure d'un texte, et la rend. */
+function takeTime(text: string): { time?: TimeOfDay; rest: string } {
+  const hour = TIME.exec(text);
+  if (!hour) return { rest: text };
+
+  return {
+    time: { hour: Number.parseInt(hour[1], 10), minute: hour[2] ? Number.parseInt(hour[2], 10) : 0 },
+    rest: text.replace(hour[0], " "),
+  };
+}
+
+/** « mercredi 02 septembre », « 03/09/2026 » : une date seule. */
+export function parseDateText(text: string): DayOfYear | undefined {
+  return takeDate(text.replace(/\s+/g, " ").trim()).date;
+}
+
+/**
+ * « 19h30 », « 13:30 - 18:30 », « 13:30:00 - 18:30:00 » : une heure, ou une
+ * plage. La seconde heure, s'il y en a une, est la fin.
+ */
+export function parseTimeRange(text: string): { start: TimeOfDay; end?: TimeOfDay } | undefined {
+  const first = takeTime(text.replace(/\s+/g, " ").trim());
+  if (!first.time) return undefined;
+
+  // « 13:30:00 » laisse « :00 » derrière la première heure : on l'écarte
+  // avant de chercher la fin, sinon il passerait pour « 00 h ».
+  const second = takeTime(first.rest.replace(/^\s*:\d{2}/, " "));
+
+  return { start: first.time, ...(second.time ? { end: second.time } : {}) };
 }
 
 /**
@@ -198,11 +240,23 @@ export function extractHtmlEvents({
   const warn = (message: string) => counts.set(message, (counts.get(message) ?? 0) + 1);
   const events: SourceEvent[] = [];
 
+  const wantedVenue = config.venue ? normalizeEventName(config.venue) : null;
+  let skippedVenues = 0;
+
   for (const item of items) {
+    if (wantedVenue) {
+      const venue = readHtmlField(item, fields.venue);
+      if (!venue || normalizeEventName(venue) !== wantedVenue) {
+        skippedVenues += 1;
+        continue;
+      }
+    }
+
     const rawTitle = readHtmlField(item, fields.title);
     const title = rawTitle ? parseCompositeTitle(rawTitle, separator) : null;
+    const explicitGame = readHtmlField(item, fields.gameName);
 
-    const name = readHtmlField(item, fields.name) ?? title?.name;
+    const name = readHtmlField(item, fields.name) ?? (title ? titleName(title, explicitGame, games, source.gameAliases, separator) : undefined);
     if (!name) {
       warn("événement sans nom, ignoré");
       continue;
@@ -215,7 +269,7 @@ export function extractHtmlEvents({
     }
 
     const { gameName, warning } = resolveGame({
-      explicit: readHtmlField(item, fields.gameName),
+      explicit: explicitGame,
       title: rawTitle,
       titleGame: title?.game,
       games,
@@ -245,6 +299,10 @@ export function extractHtmlEvents({
     });
   }
 
+  if (wantedVenue && items.length > 0 && skippedVenues === items.length) {
+    warn(`aucun événement au lieu « ${config.venue} » : vérifiez le champ venue et l'orthographe`);
+  }
+
   return {
     itemCount: items.length,
     events,
@@ -253,10 +311,45 @@ export function extractHtmlEvents({
 }
 
 /**
- * Les bornes d'un événement : depuis des champs dédiés quand la page en a,
- * sinon depuis la date et l'heure du titre. Une date de titre sans année
- * prend celle qu'un agenda suggère ; sans heure, elle commence à minuit et
- * le signale.
+ * Le nom que donne un titre composé.
+ *
+ * Sans jeu à part, le premier segment est le jeu et le reste le nom. Avec un
+ * jeu lu ailleurs sur la page, le titre est tout entier un nom — « Tournoi de
+ * Lancement - Chapitre 14 » n'est pas un jeu suivi d'un nom —, sauf si son
+ * premier segment répète ce jeu : « POKEMON - Avant-Première Règne Delta »
+ * donne « Avant-Première Règne Delta ».
+ */
+function titleName(
+  title: CompositeTitle,
+  explicitGame: string | undefined,
+  games: Pick<Game, "name">[],
+  aliases: Record<string, string> | undefined,
+  separator: string,
+): string {
+  if (!explicitGame) return title.name;
+
+  const [first, ...others] = title.segments;
+  if (others.length === 0) return title.name;
+
+  const game = canonicalGameName(explicitGame, games, aliases) ?? explicitGame;
+  const firstGame = canonicalGameName(first, games, aliases) ?? findGameInText(first, games, aliases);
+  const repeatsGame =
+    normalizeEventName(first) === normalizeEventName(explicitGame) ||
+    (firstGame !== null && normalizeEventName(firstGame) === normalizeEventName(game));
+
+  return repeatsGame ? others.join(separator) : title.segments.join(separator);
+}
+
+/**
+ * Les bornes d'un événement, dans l'ordre de ce que la page donne :
+ *
+ * 1. un début complet (`startDateTime`) ;
+ * 2. une date et une heure à part (`date`, `time`) — la plage « 13:30 -
+ *    18:30 » donne aussi la fin ;
+ * 3. la date et l'heure du titre composé.
+ *
+ * Une date sans année prend celle qu'un agenda suggère ; sans heure, elle
+ * commence à minuit.
  */
 function resolveStartAndEnd({
   item,
@@ -276,18 +369,31 @@ function resolveStartAndEnd({
     return resolveEventDates({ start: explicitStart, end: explicitEnd, now, trustYear: true });
   }
 
-  if (!title?.date) return null;
+  const dateText = readHtmlField(item, fields.date);
+  const timeText = readHtmlField(item, fields.time);
+  const range = timeText ? parseTimeRange(timeText) : undefined;
 
-  const { day, month, year } = title.date;
-  const hour = title.time?.hour ?? 0;
-  const minute = title.time?.minute ?? 0;
+  const date = (dateText ? parseDateText(dateText) : undefined) ?? title?.date;
+  const time = range?.start ?? title?.time;
+  if (!date) return null;
 
-  const guessed = DateTime.fromObject({ year: year ?? now.year, month, day, hour, minute }, { zone: EVENTS_TIMEZONE });
+  const start = dayAt(date, time, now);
+  if (!start) return null;
+
+  const end = explicitEnd ?? (range?.end ? dayAt(date, range.end, now)?.toISO() : undefined);
+
+  return resolveEventDates({ start: start.toISO(), end, now, trustYear: true });
+}
+
+/** Une date et une heure, dans l'année qu'un agenda suggère si elle manque. */
+function dayAt(date: DayOfYear, time: TimeOfDay | undefined, now: DateTime): DateTime | null {
+  const guessed = DateTime.fromObject(
+    { year: date.year ?? now.year, month: date.month, day: date.day, hour: time?.hour ?? 0, minute: time?.minute ?? 0 },
+    { zone: EVENTS_TIMEZONE },
+  );
   if (!guessed.isValid) return null;
 
-  const start = resolveEventYear(guessed, now, { trustYear: year !== undefined });
-
-  return resolveEventDates({ start: start.toISO(), end: explicitEnd, now, trustYear: true });
+  return resolveEventYear(guessed, now, { trustYear: date.year !== undefined });
 }
 
 

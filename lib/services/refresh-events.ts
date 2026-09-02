@@ -195,15 +195,26 @@ async function readEventSource(
  * cela, une page en 503 rendait une page d'erreur que le modèle lisait comme
  * une page sans événement — et tout ce que la source annonçait était retiré.
  */
-async function fetchSource(url: string, accept: string): Promise<Response> {
-  const parsed = new URL(url);
+async function fetchSource(source: Pick<EventSource, "url" | "formFields">, accept: string): Promise<Response> {
+  const parsed = new URL(source.url);
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     throw new Error("Seules les adresses http(s) sont lues");
   }
 
-  const response = await fetch(url, {
+  // Des champs de formulaire : la page se demande en POST, comme le ferait
+  // le navigateur en validant le formulaire — c'est ainsi qu'un site qui
+  // sert plusieurs villes sur la même adresse rend celle qu'on veut.
+  const formFields = source.formFields && Object.keys(source.formFields).length > 0 ? source.formFields : null;
+
+  const response = await fetch(source.url, {
+    method: formFields ? "POST" : "GET",
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    headers: { "User-Agent": USER_AGENT, Accept: accept },
+    headers: {
+      "User-Agent": USER_AGENT,
+      Accept: accept,
+      ...(formFields ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
+    },
+    ...(formFields ? { body: new URLSearchParams(formFields).toString() } : {}),
     redirect: "follow",
   });
 
@@ -274,7 +285,7 @@ async function readAISource(
   games: Pick<Game, "name">[],
   now: DateTime,
 ): Promise<SourceReadResult> {
-  const response = await fetchSource(source.url, "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8");
+  const response = await fetchSource(source, "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8");
   const html = await readResponseText(response);
   const content = NodeHtmlMarkdown.translate(html).trim();
 
@@ -398,7 +409,7 @@ async function readMappingSource(
     return { source, ok: false, error: "Source en correspondance sans configuration", warnings: [], events: [] };
   }
 
-  const response = await fetchSource(source.url, "application/json,text/json;q=0.9,*/*;q=0.8");
+  const response = await fetchSource(source, "application/json,text/json;q=0.9,*/*;q=0.8");
   const text = await readResponseText(response);
 
   let data: unknown;
@@ -499,7 +510,7 @@ async function readHtmlSource(
     return { source, ok: false, error: "Source HTML sans configuration", warnings: [], events: [] };
   }
 
-  const response = await fetchSource(source.url, "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8");
+  const response = await fetchSource(source, "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8");
   const html = await readResponseText(response);
 
   const extraction = extractHtmlEvents({ html, config, source, games, now });

@@ -366,11 +366,20 @@ export function findGameInText(
  * « complet », un bandeau « annulé » —, quand aucun mot exact ne l'a donné.
  */
 export function inferStatusFromText(text: string): EventStatus | null {
+  // Avant la normalisation, qui perd le signe : « -1 restante », c'est une
+  // place de trop, pas une de libre.
+  if (/-\s*\d+\s*(restante|place|dispo)/i.test(text)) return "sold-out";
+
   const normalized = normalizeEventName(text);
   if (!normalized) return null;
 
   if (/\bannul/.test(normalized)) return "cancelled";
   if (/rupture|epuis|indisponible|complet|sold out|soldout|plus de place|ferme/.test(normalized)) return "sold-out";
+  // « 8 restantes », « 1 restante », et « 0 restante » ou « -1 restante »
+  // quand tout est pris — le signe s'est perdu dans la normalisation, mais un
+  // zéro suffit.
+  if (/\b0 (restante|place|dispo)/.test(normalized)) return "sold-out";
+  if (/\b[1-9]\d* (restante|place|dispo)/.test(normalized)) return "available";
   if (/en stock|disponible|available|ouvert|inscription|place/.test(normalized)) return "available";
 
   return null;
