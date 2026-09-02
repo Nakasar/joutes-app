@@ -1394,8 +1394,218 @@
         "details": "Details",
         "customization": "Anpassung",
         "news": "Neuigkeiten",
+        "events": "Veranstaltungen",
         "owners": "Eigentümer",
         "subscription": "Abonnement"
+      },
+      "events": {
+        "private": "Ein privater Ort kann keine Website verbinden: seine Veranstaltungen werden von Hand auf seiner Seite angelegt.",
+        "team": {
+          "title": "Deine Veranstaltungen werden vom Joutes-Team gelesen",
+          "description": "Das Team hat deinen Kalender für dich verbunden. Er aktualisiert sich von selbst; um die Seite oder eine Einstellung zu ändern, schreib uns."
+        },
+        "intro": {
+          "title": "Deine Veranstaltungen auf Joutes, ohne etwas neu einzutippen",
+          "description": "Wenn deine Turniere und Spieleabende schon auf deiner Website stehen, kann Joutes sie für dich lesen. Sie erscheinen auf deiner Seite und im Kalender der Spieler, die dir folgen, und bleiben von selbst aktuell.",
+          "steps": {
+            "one": "Du fügst die Adresse deiner Veranstaltungsseite ein",
+            "two": "Du prüfst, ob Joutes sie richtig verstanden hat",
+            "three": "Das war's: sie aktualisieren sich jede Woche"
+          },
+          "start": "Meine Website verbinden",
+          "duration": "Etwa 3 Minuten",
+          "previewLabel": "Was die Spieler sehen werden",
+          "samples": {
+            "one": {
+              "name": "Nexus-Turnier",
+              "meta": "Riftbound · Do. 3. Sept., 19:30",
+              "status": "14 Plätze"
+            },
+            "two": {
+              "name": "Core-Constructed-Turnier",
+              "meta": "Lorcana · Mi. 2. Sept., 19:30",
+              "status": "10 Plätze"
+            },
+            "three": {
+              "name": "Standard-Turnier",
+              "meta": "One Piece Card Game · Sa. 5. Sept., 10:00",
+              "status": "Ausgebucht"
+            }
+          }
+        },
+        "manual": {
+          "title": "Du möchtest sie lieber selbst eintragen?",
+          "description": "Lege deine Veranstaltungen einzeln auf deiner Seite an. Du kannst deine Website später verbinden.",
+          "create": "Veranstaltung anlegen"
+        },
+        "help": {
+          "introTitle": "Keine Website, oder unsicher?",
+          "introDescription": "Schick uns einen Link zu deinen Veranstaltungen (Website, Facebook, Instagram…): das Joutes-Team stellt die Verbindung für dich her.",
+          "title": "Brauchst du Hilfe?",
+          "connectedDescription": "Wenn das Lesen nicht mehr funktioniert oder du die Website wechselst, kümmert sich das Joutes-Team darum.",
+          "ask": "Das Joutes-Team fragen",
+          "askAgain": "Erneut anfragen",
+          "pending": "Anfrage gesendet am {date}. Das Team antwortet per E-Mail, meist innerhalb weniger Tage.",
+          "urlLabel": "Link zu deinen Veranstaltungen (optional)",
+          "noteLabel": "Ein Hinweis für uns (optional)",
+          "notePlaceholder": "Z. B.: die Veranstaltungen stehen im Reiter „Turniere“, man muss auf „Mehr anzeigen“ klicken, um alle zu sehen…",
+          "send": "An das Joutes-Team senden",
+          "sending": "Wird gesendet…",
+          "sent": "Anfrage gesendet. Das Joutes-Team meldet sich bei dir.",
+          "failed": "Senden fehlgeschlagen. Versuche es gleich noch einmal oder schreib uns.",
+          "invalidUrl": "Der Link muss eine vollständige Adresse sein, die mit https:// beginnt",
+          "cancel": "Abbrechen"
+        },
+        "contact": {
+          "lead": "Um direkt mit uns zu sprechen:",
+          "discord": "Joutes-Discord",
+          "pro": "Mit Joutes Pro begleitet dich das Team vorrangig, schneller und weiter: Einrichtung gemeinsam mit dir, Nachverfolgung deiner Lesungen."
+        },
+        "wizard": {
+          "steps": {
+            "site": "Deine Website",
+            "venues": "Deine Städte",
+            "games": "Deine Spiele",
+            "check": "Prüfung"
+          },
+          "cancel": "Abbrechen",
+          "back": "Zurück",
+          "next": "Weiter",
+          "reading": "Deine Website wird gelesen…"
+        },
+        "site": {
+          "title": "Wo stehen deine Veranstaltungen im Internet?",
+          "description": "Öffne die Seite deiner Website, die deine Turniere und Spieleabende auflistet, kopiere ihre Adresse aus der Browserleiste und füge sie hier ein.",
+          "urlLabel": "Adresse der Seite",
+          "urlHint": "Zum Beispiel: https://deinladen.de/veranstaltungen",
+          "check": "Prüfen",
+          "checking": "Wird geprüft…",
+          "known": "Wir kennen diese Website: {name}",
+          "knownVenues": "Joutes kann ihre Veranstaltungen lesen. Diese Seite deckt mehrere Städte ab: im nächsten Schritt fragen wir dich, welche angezeigt werden sollen.",
+          "knownSimple": "Joutes kann ihre Veranstaltungen lesen. Im nächsten Schritt zeigen wir dir, was wir dort gefunden haben.",
+          "nothingSaved": "Vor dem letzten Schritt wird nichts gespeichert.",
+          "unknownNote": "Weiter geht es nur mit einer Website, die Joutes lesen kann."
+        },
+        "unknown": {
+          "title": "Diese Website können wir noch nicht lesen",
+          "description": "Kein Problem: schick uns diese Adresse, und das Joutes-Team lernt, sie zu lesen. Du bekommst eine Nachricht, sobald es so weit ist, meist innerhalb weniger Tage. Bis dahin kannst du deine Veranstaltungen von Hand anlegen.",
+          "noteLabel": "Ein Hinweis für uns (optional)",
+          "notePlaceholder": "Z. B.: die Veranstaltungen stehen im Reiter „Turniere“, man muss auf „Mehr anzeigen“ klicken, um alle zu sehen…",
+          "send": "An das Joutes-Team senden",
+          "sending": "Wird gesendet…",
+          "notify": "Wir benachrichtigen dich per E-Mail an {email}",
+          "sent": "Adresse gesendet. Das Joutes-Team meldet sich, sobald diese Website gelesen werden kann.",
+          "failed": "Senden fehlgeschlagen. Versuche es gleich noch einmal oder schreib uns.",
+          "alreadySent": "Adresse an das Joutes-Team gesendet. Wir melden uns, sobald diese Website gelesen werden kann."
+        },
+        "venues": {
+          "title": "Welche Städte anzeigen?",
+          "description": "Diese Website listet die Veranstaltungen mehrerer Läden. Hake die an, die deine sind: nur ihre Termine erscheinen auf deiner Seite.",
+          "count": "{count, plural, =0 {keine Veranstaltungen} one {# Veranstaltung} other {# Veranstaltungen}}",
+          "none": "Die Seite bietet derzeit keine Stadt an.",
+          "prechecked": "{cities} ist vorab angehakt: das ist die Stadt deines Ortes auf Joutes. Entferne den Haken, wenn es nicht deine ist."
+        },
+        "games": {
+          "title": "Zu welchen Spielen gehören deine Veranstaltungen?",
+          "description": "Deine Website benennt Spiele auf ihre Weise. Joutes hat die meisten erkannt; sag uns einfach, welche die übrigen sind, damit die Spieler des richtigen Spiels deine Termine sehen.",
+          "onSite": "Auf deiner Website",
+          "onJoutes": "Auf Joutes",
+          "count": "{count, plural, one {# Veranstaltung} other {# Veranstaltungen}}",
+          "choose": "Aus der Liste wählen…",
+          "chooseFor": "Spiel auf Joutes für {name}",
+          "notOnJoutes": "Dieses Spiel ist nicht auf Joutes",
+          "note": "Ein Spiel ohne Zuordnung geht nicht verloren: seine Veranstaltungen bleiben erhalten, erscheinen aber in keinem Kalender, bis du es gewählt hast. Steht das Spiel nicht in der Liste, wähle „Dieses Spiel ist nicht auf Joutes“: wir fügen es hinzu.",
+          "remaining": "{count, plural, one {# Spiel bleibt zu wählen} other {# Spiele bleiben zu wählen}} — du kannst das später tun.",
+          "none": "Auf dieser Seite wurde kein Spiel gelesen."
+        },
+        "check": {
+          "title": "Stimmt alles?",
+          "description": "Das hat Joutes auf deiner Website gelesen. Vergleiche mit deinem Kalender: wenn Namen, Termine und Preise stimmen, kannst du aktivieren.",
+          "found": "Veranstaltungen gefunden",
+          "foundIn": "Veranstaltungen gefunden in {cities}",
+          "gamesRecognized": "Spiele, davon {recognized} erkannt",
+          "lastDate": "letzter gelesener Termin",
+          "listTitle": "Deine nächsten Veranstaltungen, wie die Spieler sie sehen werden",
+          "noEvents": "Auf dieser Seite wurde keine kommende Veranstaltung gelesen.",
+          "seeMore": "Die {count} anderen anzeigen",
+          "andMore": "… und {count} weitere, hier nicht angezeigt.",
+          "status": {
+            "available": "Plätze frei",
+            "soldOut": "Ausgebucht",
+            "cancelled": "Abgesagt"
+          },
+          "note": "Nach der Aktivierung liest Joutes deine Website im gewählten Rhythmus neu und aktualisiert deine Veranstaltungen von selbst. Spieler, die einen Termin als Favorit markiert haben, behalten ihn, auch wenn du Namen oder Uhrzeit änderst.",
+          "report": "Etwas stimmt nicht? Sag es uns",
+          "reportSubject": "Verbindung meiner Website: etwas stimmt nicht",
+          "activate": "Alles gut, aktivieren",
+          "activating": "Wird aktiviert…"
+        },
+        "frequency": {
+          "title": "Wie oft sollen wir deine Website neu lesen?",
+          "description": "Du kannst das später ändern. Ein Button „Jetzt prüfen“ bleibt jederzeit verfügbar.",
+          "weekly": {
+            "label": "Einmal pro Woche",
+            "hint": "Empfohlen. Mittwochmorgen."
+          },
+          "daily": {
+            "label": "Einmal pro Tag",
+            "hintPro": "Jeden Morgen. In deinem Joutes Pro enthalten.",
+            "hintLocked": "Jeden Morgen. Mit Joutes Pro."
+          },
+          "discoverPro": "Joutes Pro entdecken"
+        },
+        "connected": {
+          "activated": "Deine Website ist verbunden. Deine Veranstaltungen sind online.",
+          "title": "Deine Website ist verbunden",
+          "titleFailed": "Deine Website konnte nicht gelesen werden",
+          "lastRead": "Letzte Lesung {when}: {count, plural, =0 {keine Veranstaltungen} one {# Veranstaltung} other {# Veranstaltungen}} aktuell.",
+          "lastReadFailed": "Letzte Lesung {when}: sie ist fehlgeschlagen, deine Veranstaltungen bleiben wie sie sind.",
+          "nextRead": "Nächste Lesung {when}.",
+          "refreshNow": "Jetzt prüfen",
+          "refreshing": "Wird gelesen…",
+          "refreshed": "Deine Website wurde neu gelesen.",
+          "refreshFailed": "Das Lesen ist fehlgeschlagen.",
+          "unknownGamesTitle": "{count, plural, one {Ein Spiel wartet auf deine Wahl.} other {# Spiele warten auf deine Wahl.}}",
+          "unknownGames": "Die Veranstaltungen {names} erscheinen in keinem Kalender, bis du gesagt hast, welches Spiel das auf Joutes ist.",
+          "chooseGame": "Spiel wählen",
+          "edit": "Bearbeiten",
+          "changePage": "Seite wechseln",
+          "facets": {
+            "venues": "Angezeigte Städte",
+            "allVenues": "Alle",
+            "games": "Spiele",
+            "gamesAuto": "Automatisch erkannt",
+            "page": "Gelesene Seite",
+            "frequency": "Leserhythmus",
+            "frequencyHint": "Mittwochmorgen. Einmal täglich mit Joutes Pro."
+          },
+          "wrong": {
+            "title": "Eine Veranstaltung fehlt oder ist falsch?",
+            "description": "Korrigiere sie zuerst auf deiner Website: Joutes liest sie bei der nächsten Lesung neu. Für einen Termin, der nicht auf deiner Website steht, lege ihn hier von Hand an."
+          },
+          "disconnect": "Website trennen",
+          "disconnectConfirm": "Ja, trennen",
+          "disconnecting": "Wird getrennt…",
+          "disconnected": "Website getrennt. Deine Veranstaltungen bleiben online wie sie sind."
+        },
+        "settings": {
+          "title": "Das Lesen deiner Website einstellen",
+          "description": "Deine Städte, deine Spiele und der Rhythmus. Joutes liest deine Website neu, sobald du speicherst.",
+          "save": "Speichern und neu lesen",
+          "saving": "Wird gespeichert…",
+          "saved": "Einstellungen gespeichert. Deine Website wurde neu gelesen."
+        },
+        "errors": {
+          "INVALID": "Die Adresse muss vollständig sein und mit https:// beginnen",
+          "NOT_FOUND": "Dieser Ort wurde nicht gefunden.",
+          "PRIVATE": "Ein privater Ort kann keine Website verbinden.",
+          "UNKNOWN_SITE": "Joutes kann diese Website noch nicht lesen.",
+          "VENUES_REQUIRED": "Hake mindestens eine Stadt an.",
+          "PRO_REQUIRED": "Tägliches Lesen erfordert Joutes Pro.",
+          "READ_FAILED": "Deine Website konnte nicht gelesen werden.",
+          "NOTHING_CONNECTED": "Keine Website ist verbunden.",
+          "FAILED": "Etwas ist schiefgelaufen. Versuche es gleich noch einmal."
+        }
       },
       "customization": {
         "organizers": {

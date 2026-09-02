@@ -84,6 +84,7 @@ export const eventSourceSchema = z.object({
   gameAliases: z
     .record(z.string().trim().min(1).max(100), z.string().trim().min(1).max(200))
     .optional(),
+  managedBy: z.literal("owner").optional(),
 }).superRefine((data, ctx) => {
   // Si le type est MAPPING, mappingConfig est obligatoire
   if (data.type === 'MAPPING' && !data.mappingConfig) {
@@ -247,3 +248,34 @@ export const lairCreationSchema = z.object({
 });
 
 export type LairCreationInput = z.infer<typeof lairCreationSchema>;
+
+export const eventsRefreshFrequencySchema = z.enum(["weekly", "daily"]);
+
+/**
+ * Ce qu'un gérant envoie pour connecter la page de son site.
+ *
+ * Pas de sélecteur ni de formulaire : tout vient du préréglage que
+ * `findPresetForUrl` a reconnu, et dont on ne reçoit que la clé. Le gérant ne
+ * choisit que l'adresse, ses villes, ses alias de jeu et le rythme.
+ */
+export const managerEventSourceSchema = z.object({
+  url: z.string().url("L'adresse doit être valide"),
+  presetKey: z.string().trim().min(1).max(50),
+  venues: z.array(z.string().trim().min(1).max(200)).max(50, "Trop de villes").optional(),
+  gameAliases: z
+    .record(z.string().trim().min(1).max(100), z.string().trim().min(1).max(200))
+    .optional(),
+});
+
+export const managerEventSettingsSchema = z.object({
+  venues: z.array(z.string().trim().min(1).max(200)).max(50, "Trop de villes").optional(),
+  gameAliases: z
+    .record(z.string().trim().min(1).max(100), z.string().trim().min(1).max(200))
+    .optional(),
+  frequency: eventsRefreshFrequencySchema.optional(),
+});
+
+export const eventsSourceHelpRequestSchema = z.object({
+  url: z.string().trim().url("L'adresse doit être valide").optional().or(z.literal("")),
+  note: z.string().trim().max(2000, "Le message est trop long").optional(),
+});

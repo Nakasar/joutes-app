@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
+import { DateTime } from 'luxon';
 import { getLairsWithEventSources } from '@/lib/db/lairs';
 import { refreshEvents } from '@/lib/services/refresh-events';
+import { proLairIds } from '@/lib/subscriptions/access';
+import { isRefreshDue } from '@/lib/events/connect';
+import { EVENTS_TIMEZONE } from '@/lib/events/source-events';
 
 /**
  * Combien de lieux sont moissonnés en même temps.
@@ -35,9 +39,21 @@ export async function GET(req: Request) {
     try {
         // Seuls les lieux qui ont une source : les autres n'ont rien à
         // rafraîchir, et les compter en échec noyait les vraies pannes.
-        const lairs = await getLairsWithEventSources();
+        const withSources = await getLairsWithEventSources();
 
-        console.log(`Rafraîchissement des événements pour ${lairs.length} lieux...`);
+        // Le cron passe chaque matin ; chaque lieu dit s'il est à relire
+        // aujourd'hui — tous les jours pour un lieu Pro qui l'a demandé, le
+        // mercredi sinon. `?all=1` relit tout, pour la main.
+        const all = new URL(req.url).searchParams.get('all') === '1';
+        const now = DateTime.now().setZone(EVENTS_TIMEZONE);
+        const pro = await proLairIds(withSources.map((lair) => lair.id));
+        const lairs = all
+            ? withSources
+            : withSources.filter((lair) =>
+                isRefreshDue({ frequency: lair.eventsRefreshFrequency, pro: pro.has(lair.id), now }),
+            );
+
+        console.log(`Rafraîchissement des événements pour ${lairs.length} lieux (${withSources.length} avec sources)...`);
 
         const results = await mapWithConcurrency(lairs, CONCURRENCY, async (lair) => {
             console.log(`Rafraîchissement des événements pour le lieu ${lair.name} (${lair.id})...`);
@@ -64,6 +80,7 @@ export async function GET(req: Request) {
             ok: true,
             summary: {
                 total: lairs.length,
+                skipped: withSources.length - lairs.length,
                 successes,
                 failures,
                 failingSources,

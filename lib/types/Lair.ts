@@ -115,6 +115,29 @@ export type EventSource = {
    * aux accents près. Vaut pour tous les types de source.
    */
   gameAliases?: Record<string, string>;
+  /**
+   * `"owner"` : la source que le gérant du lieu a connectée lui-même, depuis
+   * son écran de gestion. Il ne voit et ne modifie que celle-là ; les autres
+   * sont l'affaire de l'équipe.
+   */
+  managedBy?: "owner";
+};
+
+/** Le rythme auquel Joutes relit les sources d'un lieu. */
+export type LairEventsRefreshFrequency = "weekly" | "daily";
+
+/**
+ * Une demande d'aide d'un gérant pour connecter son site : la page que Joutes
+ * ne sait pas encore lire, et un mot pour aider. L'équipe la voit dans
+ * l'administration du lieu et la clôt une fois la source configurée.
+ */
+export type LairEventsSourceRequest = {
+  url?: string;
+  note?: string;
+  requestedBy: User['id'];
+  /** ISO 8601. */
+  requestedAt: string;
+  status: "pending" | "done";
 };
 
 /** Ce qu'une source a rendu au dernier rafraîchissement. */
@@ -299,6 +322,13 @@ export type Lair = {
 
   
   eventsSourceUrls?: EventSource[];
+
+  /**
+   * Hebdomadaire par défaut. Le quotidien est réservé aux lieux Pro : un lieu
+   * qui l'a choisi puis a perdu son Pro est relu le mercredi, sans rien à
+   * réécrire (voir `isRefreshDue`).
+   */
+  eventsRefreshFrequency?: LairEventsRefreshFrequency;
   
   /** @deprecated Utilisez les instructions dans chaque EventSource */
   eventsSourceInstructions?: string;

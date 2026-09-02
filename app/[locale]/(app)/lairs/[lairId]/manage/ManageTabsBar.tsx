@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation.ts";
 import { cn } from "@/lib/utils.ts";
 
-export const MANAGE_TABS = ["details", "customization", "news", "owners", "subscription"] as const;
+export const MANAGE_TABS = ["details", "customization", "news", "events", "owners", "subscription"] as const;
 
 export type ManageTab = (typeof MANAGE_TABS)[number];
 

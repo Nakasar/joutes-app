@@ -1394,8 +1394,218 @@
         "details": "Dettagli",
         "customization": "Personalizzazione",
         "news": "Notizie",
+        "events": "Eventi",
         "owners": "Proprietari",
         "subscription": "Abbonamento"
+      },
+      "events": {
+        "private": "Un luogo privato non può collegare un sito: i suoi eventi si creano a mano dalla sua pagina.",
+        "team": {
+          "title": "I tuoi eventi sono letti dal team Joutes",
+          "description": "Il team ha collegato la tua agenda per te. Si aggiorna da sola; per cambiare pagina o impostazione, scrivici."
+        },
+        "intro": {
+          "title": "I tuoi eventi su Joutes, senza riscrivere nulla",
+          "description": "Se i tuoi tornei e le tue serate sono già sul tuo sito, Joutes può leggerli per te. Appariranno sulla tua pagina e nell'agenda dei giocatori che ti seguono, e resteranno aggiornati da soli.",
+          "steps": {
+            "one": "Incolli l'indirizzo della pagina dei tuoi eventi",
+            "two": "Verifichi che Joutes li abbia capiti bene",
+            "three": "Tutto qui: si aggiornano ogni settimana"
+          },
+          "start": "Collegare il mio sito",
+          "duration": "Circa 3 minuti",
+          "previewLabel": "Cosa vedranno i giocatori",
+          "samples": {
+            "one": {
+              "name": "Torneo Nexus",
+              "meta": "Riftbound · gio 3 set, 19:30",
+              "status": "14 posti"
+            },
+            "two": {
+              "name": "Torneo Core Constructed",
+              "meta": "Lorcana · mer 2 set, 19:30",
+              "status": "10 posti"
+            },
+            "three": {
+              "name": "Torneo Standard",
+              "meta": "One Piece Card Game · sab 5 set, 10:00",
+              "status": "Completo"
+            }
+          }
+        },
+        "manual": {
+          "title": "Preferisci inserirli tu stesso?",
+          "description": "Crea i tuoi eventi uno per uno dalla tua pagina. Potrai collegare il tuo sito più tardi.",
+          "create": "Creare un evento"
+        },
+        "help": {
+          "introTitle": "Nessun sito, o non sei sicuro?",
+          "introDescription": "Inviaci un link ai tuoi eventi (sito, Facebook, Instagram…): il team Joutes fa il collegamento per te.",
+          "title": "Serve aiuto?",
+          "connectedDescription": "Se la lettura non funziona più, o se cambi sito, se ne occupa il team Joutes.",
+          "ask": "Chiedere al team Joutes",
+          "askAgain": "Inviare un'altra richiesta",
+          "pending": "Richiesta inviata il {date}. Il team risponde via e-mail, in genere entro pochi giorni.",
+          "urlLabel": "Link ai tuoi eventi (facoltativo)",
+          "noteLabel": "Una nota per aiutarci (facoltativa)",
+          "notePlaceholder": "Es.: gli eventi sono nella scheda « Tornei », bisogna cliccare « Vedi altro » per vederli tutti…",
+          "send": "Inviare al team Joutes",
+          "sending": "Invio…",
+          "sent": "Richiesta inviata. Il team Joutes ti ricontatterà.",
+          "failed": "Invio non riuscito. Riprova tra un istante, o scrivici.",
+          "invalidUrl": "Il link deve essere un indirizzo completo, che inizia con https://",
+          "cancel": "Annulla"
+        },
+        "contact": {
+          "lead": "Per parlarne direttamente:",
+          "discord": "Discord di Joutes",
+          "pro": "Con Joutes Pro, il team ti accompagna in priorità, più in fretta e più a fondo: configurazione fatta con te, monitoraggio delle tue letture."
+        },
+        "wizard": {
+          "steps": {
+            "site": "Il tuo sito",
+            "venues": "Le tue città",
+            "games": "I tuoi giochi",
+            "check": "Verifica"
+          },
+          "cancel": "Annulla",
+          "back": "Indietro",
+          "next": "Continua",
+          "reading": "Lettura del tuo sito…"
+        },
+        "site": {
+          "title": "Dove sono i tuoi eventi su internet?",
+          "description": "Apri la pagina del tuo sito che elenca i tuoi tornei e le tue serate, copia il suo indirizzo dalla barra del browser e incollalo qui.",
+          "urlLabel": "Indirizzo della pagina",
+          "urlHint": "Per esempio: https://iltuonegozio.it/eventi",
+          "check": "Verifica",
+          "checking": "Verifica…",
+          "known": "Conosciamo questo sito: {name}",
+          "knownVenues": "Joutes sa leggere i suoi eventi. Questa pagina copre più città: nel passo successivo ti chiederemo quali mostrare.",
+          "knownSimple": "Joutes sa leggere i suoi eventi. Nel passo successivo ti mostriamo cosa vi abbiamo trovato.",
+          "nothingSaved": "Nulla viene salvato prima dell'ultimo passo.",
+          "unknownNote": "Continuare è possibile solo con un sito che Joutes sa leggere."
+        },
+        "unknown": {
+          "title": "Non sappiamo ancora leggere questo sito",
+          "description": "Non è grave: inviaci questo indirizzo, e il team Joutes impara a leggerlo. Riceverai un messaggio quando sarà pronto, in genere entro pochi giorni. Nel frattempo, puoi creare i tuoi eventi a mano.",
+          "noteLabel": "Una nota per aiutarci (facoltativa)",
+          "notePlaceholder": "Es.: gli eventi sono nella scheda « Tornei », bisogna cliccare « Vedi altro » per vederli tutti…",
+          "send": "Inviare al team Joutes",
+          "sending": "Invio…",
+          "notify": "Ti avvisiamo via e-mail a {email}",
+          "sent": "Indirizzo inviato. Il team Joutes ti ricontatterà non appena questo sito sarà leggibile.",
+          "failed": "Invio non riuscito. Riprova tra un istante, o scrivici.",
+          "alreadySent": "Indirizzo inviato al team Joutes. Ti ricontatteremo non appena questo sito sarà leggibile."
+        },
+        "venues": {
+          "title": "Quali città mostrare?",
+          "description": "Questo sito elenca gli eventi di più negozi. Spunta quelli che sono tuoi: solo le loro date appariranno sulla tua pagina.",
+          "count": "{count, plural, =0 {nessun evento} one {# evento} other {# eventi}}",
+          "none": "La pagina non propone alcuna città per ora.",
+          "prechecked": "{cities} è spuntata d'ufficio: è la città del tuo luogo su Joutes. Togli la spunta se non è la tua."
+        },
+        "games": {
+          "title": "A quali giochi corrispondono i tuoi eventi?",
+          "description": "Il tuo sito chiama i giochi a modo suo. Joutes ne ha riconosciuti la maggior parte; dicci semplicemente quali sono gli altri, perché i giocatori del gioco giusto vedano le tue date.",
+          "onSite": "Sul tuo sito",
+          "onJoutes": "Su Joutes",
+          "count": "{count, plural, one {# evento} other {# eventi}}",
+          "choose": "Scegli dalla lista…",
+          "chooseFor": "Gioco su Joutes per {name}",
+          "notOnJoutes": "Questo gioco non è su Joutes",
+          "note": "Un gioco senza corrispondenza non è perso: i suoi eventi sono conservati, ma non appaiono in nessuna agenda finché non l'hai scelto. Se il gioco non è nella lista, scegli « Questo gioco non è su Joutes »: lo aggiungeremo.",
+          "remaining": "{count, plural, one {# gioco resta da scegliere} other {# giochi restano da scegliere}} — potrai farlo più tardi.",
+          "none": "Nessun gioco è stato letto su questa pagina."
+        },
+        "check": {
+          "title": "È tutto giusto?",
+          "description": "Ecco cosa Joutes ha letto sul tuo sito. Confronta con la tua agenda: se nomi, date e prezzi sono giusti, puoi attivare.",
+          "found": "eventi trovati",
+          "foundIn": "eventi trovati a {cities}",
+          "gamesRecognized": "giochi, di cui {recognized} riconosciuti",
+          "lastDate": "ultima data letta",
+          "listTitle": "I tuoi prossimi eventi, come li vedranno i giocatori",
+          "noEvents": "Nessun evento futuro è stato letto su questa pagina.",
+          "seeMore": "Vedi gli altri {count}",
+          "andMore": "… e altri {count}, non mostrati qui.",
+          "status": {
+            "available": "Posti disponibili",
+            "soldOut": "Completo",
+            "cancelled": "Annullato"
+          },
+          "note": "Una volta attivato, Joutes rilegge il tuo sito al ritmo scelto e aggiorna i tuoi eventi da solo. I giocatori che hanno messo una data tra i preferiti la conservano, anche se ne cambi il nome o l'ora.",
+          "report": "Qualcosa non va? Diccelo",
+          "reportSubject": "Collegamento del mio sito: qualcosa non va",
+          "activate": "Tutto a posto, attiva",
+          "activating": "Attivazione…"
+        },
+        "frequency": {
+          "title": "Con che ritmo rileggere il tuo sito?",
+          "description": "Potrai cambiare più tardi. Un pulsante « Verifica ora » resta disponibile in ogni momento.",
+          "weekly": {
+            "label": "Una volta a settimana",
+            "hint": "Consigliato. Il mercoledì mattina."
+          },
+          "daily": {
+            "label": "Una volta al giorno",
+            "hintPro": "Ogni mattina. Incluso nel tuo Joutes Pro.",
+            "hintLocked": "Ogni mattina. Con Joutes Pro."
+          },
+          "discoverPro": "Scopri Joutes Pro"
+        },
+        "connected": {
+          "activated": "Il tuo sito è collegato. I tuoi eventi sono online.",
+          "title": "Il tuo sito è collegato",
+          "titleFailed": "Il tuo sito non ha potuto essere letto",
+          "lastRead": "Ultima lettura {when}: {count, plural, =0 {nessun evento} one {# evento} other {# eventi}} aggiornati.",
+          "lastReadFailed": "Ultima lettura {when}: non è riuscita, i tuoi eventi restano così come sono.",
+          "nextRead": "Prossima lettura {when}.",
+          "refreshNow": "Verifica ora",
+          "refreshing": "Lettura…",
+          "refreshed": "Il tuo sito è stato riletto.",
+          "refreshFailed": "La lettura non è riuscita.",
+          "unknownGamesTitle": "{count, plural, one {Un gioco attende la tua scelta.} other {# giochi attendono la tua scelta.}}",
+          "unknownGames": "Gli eventi {names} non appaiono in nessuna agenda finché non hai detto quale gioco è su Joutes.",
+          "chooseGame": "Scegli il gioco",
+          "edit": "Modifica",
+          "changePage": "Cambia pagina",
+          "facets": {
+            "venues": "Città mostrate",
+            "allVenues": "Tutte",
+            "games": "Giochi",
+            "gamesAuto": "Riconosciuti automaticamente",
+            "page": "Pagina letta",
+            "frequency": "Ritmo di lettura",
+            "frequencyHint": "Il mercoledì mattina. Una volta al giorno con Joutes Pro."
+          },
+          "wrong": {
+            "title": "Un evento manca o è sbagliato?",
+            "description": "Correggilo prima sul tuo sito: Joutes lo rileggerà alla prossima lettura. Per una data che non è sul tuo sito, creala qui a mano."
+          },
+          "disconnect": "Scollegare il sito",
+          "disconnectConfirm": "Sì, scollegare",
+          "disconnecting": "Scollegamento…",
+          "disconnected": "Sito scollegato. I tuoi eventi restano online così come sono."
+        },
+        "settings": {
+          "title": "Regolare la lettura del tuo sito",
+          "description": "Le tue città, i tuoi giochi e il ritmo. Joutes rilegge il tuo sito non appena salvi.",
+          "save": "Salva e rileggi",
+          "saving": "Salvataggio…",
+          "saved": "Impostazioni salvate. Il tuo sito è stato riletto."
+        },
+        "errors": {
+          "INVALID": "L'indirizzo deve essere completo e iniziare con https://",
+          "NOT_FOUND": "Questo luogo non è stato trovato.",
+          "PRIVATE": "Un luogo privato non può collegare un sito.",
+          "UNKNOWN_SITE": "Joutes non sa ancora leggere questo sito.",
+          "VENUES_REQUIRED": "Spunta almeno una città.",
+          "PRO_REQUIRED": "La lettura quotidiana richiede Joutes Pro.",
+          "READ_FAILED": "Il tuo sito non ha potuto essere letto.",
+          "NOTHING_CONNECTED": "Nessun sito è collegato.",
+          "FAILED": "Si è verificato un errore. Riprova tra un istante."
+        }
       },
       "customization": {
         "organizers": {

@@ -2,20 +2,32 @@
 
 Un lieu public peut déclarer des **sources** d'où ses événements sont
 moissonnés automatiquement : une page lue par sélecteurs CSS, un JSON décrit
-champ par champ, ou — en dernier recours — une page lue par un modèle. Le cron `/api/cron/refresh-events` les relit chaque mercredi
-à 8 h ; le bouton **Rafraîchir** de la fiche d'administration
-(`/admin/lairs/:id?tab=sources`) fait la même chose à la demande.
+champ par champ, ou — en dernier recours — une page lue par un modèle. Le
+cron `/api/cron/refresh-events` passe chaque matin à 8 h et relit les lieux
+dont c'est le jour : **le mercredi** pour tous, **chaque jour** pour un lieu
+Joutes Pro qui l'a demandé. Le bouton **Rafraîchir** de la fiche
+d'administration (`/admin/lairs/:id?tab=sources`) et le bouton **Vérifier
+maintenant** de l'écran du gérant (`/lairs/:id/manage?tab=events`) font la
+même chose à la demande.
+
+Deux publics configurent ces sources. L'**équipe**, depuis l'administration,
+dispose de tout : sélecteurs, correspondance JSON, IA. Le **gérant** du lieu,
+depuis son écran de gestion, connecte la page de son site en quelques
+écrans, sans jamais voir un sélecteur — et sans IA, réservée à l'équipe.
 
 | Fichier | Rôle |
 | --- | --- |
 | `lib/services/refresh-events.ts` | Lit chaque source, appelle le modèle ou applique la correspondance, écrit le rapport |
 | `lib/events/source-events.ts` | Tout ce qui se décide sans la base : dates, statuts, jeux, **rapprochement** avec l'existant |
 | `lib/events/html-source.ts` | La lecture d'une page par sélecteurs : titre composé, champs, jeu |
-| `lib/events/html-presets.ts` | Les configurations toutes faites (boutique Oasis, Animations du Gobelin) |
+| `lib/events/html-presets.ts` | Les configurations toutes faites (boutique Oasis, Animations du Gobelin), avec leurs domaines |
+| `lib/events/connect.ts` | La connexion par le gérant : reconnaître une page à son domaine, bâtir sa source, résumer les jeux, dire quel lieu relire aujourd'hui |
 | `lib/db/events.ts` — `upsertEventsForLair` | Exécute le verdict du rapprochement en une écriture groupée |
-| `lib/db/lairs.ts` — `*EventsRefreshReport` | Le compte rendu du dernier tour, lu par l'administration |
-| `app/api/cron/refresh-events/route.ts` | Le cron : les lieux qui ont une source, trois à la fois |
-| `app/[locale]/(app)/admin/lairs/[lairId]/LairEventSourcesForm.tsx` | Le formulaire, avec le test d'une source et le rapport |
+| `lib/db/lairs.ts` — `*EventsRefreshReport`, `*EventsSourceRequest` | Le compte rendu du dernier tour et la demande d'aide du gérant, hors du lieu |
+| `app/api/cron/refresh-events/route.ts` | Le cron : chaque matin, les lieux à relire ce jour-là, trois à la fois |
+| `app/[locale]/(app)/admin/lairs/[lairId]/LairEventSourcesForm.tsx` | Le formulaire de l'équipe, avec le test d'une source, le rapport et la demande du gérant |
+| `app/[locale]/(app)/lairs/[lairId]/manage/LairEventsConnect.tsx` | L'onglet « Événements » du gérant : l'assistant, l'état connecté, les réglages |
+| `app/[locale]/(app)/lairs/[lairId]/manage/events-actions.ts` | Les actions du gérant, gardées par `requireAdminOrOwner` |
 
 ## Pourquoi les favoris se perdaient
 
@@ -200,6 +212,56 @@ Les statuts sont reconnus sous leurs noms courants (`open`, `full`,
 texte (`"12,50 €"`, `"Gratuit"`). Le nom du jeu est rapproché de ceux de la
 plateforme, à la casse et aux accents près.
 
+## Connecter son site, côté gérant
+
+L'onglet **Événements** de l'écran de gestion (`/lairs/:id/manage?tab=events`)
+est écrit pour un gérant de boutique. Il colle l'adresse de la page de ses
+événements ; `findPresetForUrl` la reconnaît — ou non — à son **domaine**,
+parmi les préréglages (`hosts`). Rien n'est lu à ce stade.
+
+- **Site reconnu** : trois écrans. *Vos villes*, si le préréglage lit une
+  ville par événement ou attend `{ville}` dans son formulaire : la page est
+  sondée sans ville pour proposer celles qu'elle sert, avec leurs comptes, et
+  celles dont le nom figure dans l'adresse du lieu sont cochées d'office.
+  *Vos jeux* : la lecture est faite avec les villes cochées, et
+  `summarizeGames` liste les noms de jeu du site, les inconnus en tête ; le
+  gérant choisit pour chacun le jeu de la plateforme, ce qui devient un
+  **alias**. *Vérification* : les prochains événements tels que les joueurs
+  les verront, le choix du rythme, et le bouton qui active.
+- **Activer** (`connectEventPage`) : la source est bâtie par
+  `buildManagerSource` — le préréglage, ses villes, ses alias, et
+  `managedBy: "owner"` —, remplace celle que le gérant avait connectée, ne
+  touche pas à celles de l'équipe, et une première lecture est faite
+  aussitôt. Un gérant ne voit et ne modifie que la sienne ; si l'équipe a déjà
+  configuré une source, l'onglet le dit et n'en propose pas une seconde.
+- **Connecté** : l'état en une phrase — domaine, villes, dernière lecture,
+  prochaine lecture —, et une seule action à la fois : les jeux que le dernier
+  rapport dit inconnus (`unknownGamesFromWarnings`), à choisir. Les réglages
+  (villes, jeux, rythme) sont derrière **Modifier** et relisent le site à
+  l'enregistrement ; **Changer de page** repasse par l'assistant ;
+  **Déconnecter** retire la source sans toucher aux événements.
+- **Site inconnu** : le gérant envoie l'adresse et un mot à l'équipe
+  (`requestEventSourceHelp`). La demande est écrite sur le lieu
+  (`eventsSourceRequest`, hors de `toLair`), l'équipe reçoit un courriel à
+  `contact@joutes.app` quand Resend est configuré, et la fiche
+  d'administration l'affiche en tête de l'onglet Sources. **Marquer comme
+  traitée** la clôt et prévient le gérant par courriel. Le Discord et
+  l'adresse de contact sont rappelés partout où le gérant peut coincer, avec
+  la mention de l'accompagnement prioritaire de Joutes Pro.
+
+Toutes les actions passent par `requireAdminOrOwner` et revalident ce
+qu'elles décident côté serveur : le rythme quotidien est refusé sans Pro, une
+page hors préréglage est refusée, une source à villes sans ville cochée est
+refusée. Un bouton grisé ne protège rien.
+
+### Le rythme
+
+`eventsRefreshFrequency` sur le lieu : `weekly` (défaut, le mercredi) ou
+`daily`. Le cron passe **chaque matin** et `isRefreshDue` dit pour chaque
+lieu s'il est à relire : `daily` ne vaut que si le lieu est Pro au moment du
+tour — un lieu qui perd son Pro retombe sur le mercredi sans rien à réécrire.
+`?all=1` sur le cron relit tout, pour la main.
+
 ## Le rapport
 
 Chaque tour écrit sur le lieu, dans `eventsRefresh`, ce qu'il a donné : la
@@ -223,7 +285,7 @@ La réponse détaille chaque lieu et chaque source ; `summary.failingSources`
 compte les sources en panne dans des lieux par ailleurs réussis.
 
 ```bash
-node --import ./scripts/ts-paths-hook.mjs --test lib/events/source-events.test.ts lib/events/html-source.test.ts
+node --import ./scripts/ts-paths-hook.mjs --test lib/events/source-events.test.ts lib/events/html-source.test.ts lib/events/connect.test.ts
 ```
 
 Les tests couvrent les dates, les champs, et surtout le rapprochement : le

@@ -19,6 +19,8 @@ import {
   RefreshEventsResult,
 } from "@/lib/services/refresh-events.ts";
 import type { SourceEvent } from "@/lib/events/source-events.ts";
+import { getUserById } from "@/lib/db/users.ts";
+import { notifyManagerSourceReady } from "@/lib/services/event-source-requests.ts";
 
 /** Ce que le bouton « Tester » d'une source rend au formulaire. */
 export type EventSourcePreview = {
@@ -348,6 +350,48 @@ export async function previewLairEventSource(
     }
     console.error("Erreur lors du test d'une source d'événements:", error);
     return { success: false, error: "Erreur lors du test de la source" };
+  }
+}
+
+/**
+ * Clôt la demande d'aide d'un gérant, une fois sa source configurée, et le
+ * prévient par courriel quand l'envoi est configuré.
+ */
+export async function markEventSourceRequestDone(lairId: string) {
+  try {
+    await requireAdmin();
+
+    const validatedId = lairIdSchema.parse(lairId);
+    const lair = await lairsDb.getLairById(validatedId);
+    if (!lair) return { success: false, error: "Lieu non trouvé" };
+
+    const request = await lairsDb.getLairEventsSourceRequest(validatedId);
+    if (!request || request.status !== "pending") {
+      return { success: false, error: "Aucune demande en attente" };
+    }
+
+    await lairsDb.setLairEventsSourceRequest(validatedId, { ...request, status: "done" });
+
+    const requester = await getUserById(request.requestedBy);
+    if (requester?.email) {
+      await notifyManagerSourceReady({
+        to: requester.email,
+        lairId: validatedId,
+        lairName: lair.name,
+        appUrl: process.env.NEXT_PUBLIC_BASE_URL?.trim() || process.env.BETTER_AUTH_URL?.trim() || "https://joutes.app",
+      });
+    }
+
+    revalidateLair(validatedId);
+    revalidatePath(`/lairs/${validatedId}/manage`);
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message || "ID invalide" };
+    }
+    console.error("Erreur à la clôture d'une demande de connexion :", error);
+    return { success: false, error: "Erreur à la clôture de la demande" };
   }
 }
 

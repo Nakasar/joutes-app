@@ -1,6 +1,13 @@
 import db from "@/lib/mongodb";
 import { purgeStreamTarget } from "@/lib/db/stream-links";
-import { Lair, LairEventsRefreshReport, LairProGrant } from "@/lib/types/Lair";
+import {
+  EventSource,
+  Lair,
+  LairEventsRefreshFrequency,
+  LairEventsRefreshReport,
+  LairEventsSourceRequest,
+  LairProGrant,
+} from "@/lib/types/Lair";
 import { ObjectId, WithId, Document, Filter } from "mongodb";
 
 const COLLECTION_NAME = "lairs";
@@ -41,6 +48,7 @@ function toLair(doc: WithId<Document>): Lair {
     owners: doc.owners || [],
     createdBy: doc.createdBy,
     eventsSourceUrls: doc.eventsSourceUrls || [],
+    eventsRefreshFrequency: doc.eventsRefreshFrequency,
     eventsSourceInstructions: doc.eventsSourceInstructions,
     location: doc.location,
     address: doc.address,
@@ -119,6 +127,53 @@ export async function setLairEventsRefreshReport(id: string, report: LairEventsR
     { _id: new ObjectId(id) },
     { $set: { eventsRefresh: report } }
   );
+}
+
+/** Les sources d'un lieu, et rien d'autre : ce que la connexion par le gérant réécrit. */
+export async function setLairEventSources(id: string, sources: EventSource[]): Promise<boolean> {
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { eventsSourceUrls: sources } }
+  );
+
+  return result.matchedCount > 0;
+}
+
+export async function setLairEventsRefreshFrequency(
+  id: string,
+  frequency: LairEventsRefreshFrequency
+): Promise<boolean> {
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { eventsRefreshFrequency: frequency } }
+  );
+
+  return result.matchedCount > 0;
+}
+
+/**
+ * La demande d'aide d'un gérant, hors de `toLair` comme le rapport : elle
+ * porte un identifiant de compte et un texte libre, qui n'ont rien à faire
+ * sur `GET /api/lairs`.
+ */
+export async function setLairEventsSourceRequest(
+  id: string,
+  request: LairEventsSourceRequest | null
+): Promise<boolean> {
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(id) },
+    request ? { $set: { eventsSourceRequest: request } } : { $unset: { eventsSourceRequest: "" } }
+  );
+
+  return result.matchedCount > 0;
+}
+
+export async function getLairEventsSourceRequest(id: string): Promise<LairEventsSourceRequest | null> {
+  const doc = await db
+    .collection(COLLECTION_NAME)
+    .findOne({ _id: new ObjectId(id) }, { projection: { eventsSourceRequest: 1 } });
+
+  return (doc?.eventsSourceRequest as LairEventsSourceRequest | undefined) ?? null;
 }
 
 /**
