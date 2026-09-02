@@ -7,287 +7,299 @@
 <body>
 <x-dc>
 <helmet>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Poppins:wght@500;600;700&amp;display=swap">
   <style>
-    body { margin: 0; background: #0a0a0a; }
+    body { margin: 0; background: #4f321b; }
     a { color: inherit; text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    .poster {
+    .board {
       --accent: #9333ea;
-      --display: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-      --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --marker: #e0b04a;
+      --display: 'Lilita One', 'Arial Rounded MT Bold', 'Arial Black', sans-serif;
+      --ink: #141414;
+      --paper: #f5eedf;
+      --line: rgba(120, 96, 60, 0.16);
       position: relative;
       box-sizing: border-box;
-      width: 794px;
-      height: 1123px;
-      padding: 56px 56px 40px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
+      width: 794px; height: 1123px;
+      padding: 28px;
       overflow: hidden;
-      font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-      background: var(--bg);
-      color: var(--fg);
+      font-family: 'Poppins', 'Segoe UI', Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      background:
+        repeating-linear-gradient(92deg, rgba(0, 0, 0, 0) 0 18px, rgba(0, 0, 0, 0.06) 18px 22px, rgba(0, 0, 0, 0) 22px 41px),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0 3px, rgba(0, 0, 0, 0.05) 3px 7px),
+        linear-gradient(180deg, #6a4527, #4f321b);
       -webkit-font-smoothing: antialiased;
     }
-    .poster.sombre {
-      --bg: #0a0a0a;
-      --fg: #fafafa;
-      --muted: #a1a1a1;
-      --card: #171717;
-      --pill: #262626;
-      --border: rgba(255, 255, 255, 0.10);
-      --rule: rgba(255, 255, 255, 0.12);
-      --accent-text: color-mix(in oklab, var(--accent) 84%, white 16%);
-      --accent-45: color-mix(in oklab, var(--accent) 45%, transparent);
-      --accent-8: color-mix(in oklab, var(--accent) 8%, transparent);
-      --qr-bg: #ffffff;
-      --qr-fg: #0a0a0a;
+    .sheet {
+      position: relative;
+      box-sizing: border-box;
+      width: 100%; height: 100%;
+      padding: 46px 34px 30px;
+      display: flex; flex-direction: column; gap: 24px;
+      background:
+        repeating-linear-gradient(180deg, transparent 0 27px, var(--line) 27px 28px),
+        var(--paper);
+      border-radius: 3px;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45), 0 2px 0 rgba(255, 255, 255, 0.5) inset;
     }
-    /* En clair, pas de filets à 1 px : les lignes passent à 2 px et les
-       cartes prennent un fond plutôt qu'une bordure — sur papier, un trait
-       hexadécimal e5e5e5 disparaît. */
-    .poster.clair {
-      --bg: #ffffff;
-      --fg: #0a0a0a;
-      --muted: #737373;
-      --card: #f5f5f5;
-      --pill: #e5e5e5;
-      --border: transparent;
-      --rule: #e5e5e5;
-      --accent-text: color-mix(in oklab, var(--accent) 72%, black 28%);
-      --accent-45: color-mix(in oklab, var(--accent) 45%, transparent);
-      --accent-8: color-mix(in oklab, var(--accent) 8%, transparent);
-      --qr-bg: #ffffff;
-      --qr-fg: #0a0a0a;
+    .sheet::before {
+      /* La marge rouge d'un cahier, décalée à gauche. */
+      content: ""; position: absolute; top: 0; bottom: 0; left: 46px; width: 1.5px;
+      background: rgba(220, 80, 90, 0.35);
     }
-    .poster.clair .day-rule, .poster.clair .foot { border-color: #e5e5e5; }
-    .poster.clair .day-rule { height: 2px; }
-    .poster.clair .foot { border-top-width: 2px; }
-    .poster .display { font-family: var(--display); }
-    .poster .mono { font-family: var(--mono); }
+    .display { font-family: var(--display); }
 
-    .head { display: flex; flex-direction: column; gap: 18px; }
-    .head-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-    .kicker {
-      font-family: var(--mono);
-      font-size: 12px;
-      font-weight: 500;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--accent-text);
+    /* Punaise : un disque bombé et son ombre portée. */
+    .pin {
+      position: absolute; z-index: 5; width: 20px; height: 20px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff 0, color-mix(in oklab, var(--pin) 70%, white) 18%, var(--pin) 55%, color-mix(in oklab, var(--pin) 70%, black) 100%);
+      box-shadow: 0 6px 6px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.5) inset;
     }
-    .period { font-size: 60px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin: 0; white-space: nowrap; }
-    .period-sub { font-size: 15px; color: var(--muted); }
-    .venue { display: flex; align-items: center; gap: 14px; }
-    .venue-text { display: flex; flex-direction: column; gap: 4px; }
-    .venue-name { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; margin: 0; }
-    .venue-address { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+    .pin::after {
+      content: ""; position: absolute; left: 9px; top: 18px; width: 2px; height: 9px;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0));
+      transform: rotate(-20deg);
+    }
+    .tape {
+      position: absolute; z-index: 6; width: 76px; height: 22px;
+      background: rgba(255, 250, 235, 0.55);
+      border-left: 1px dashed rgba(0, 0, 0, 0.15); border-right: 1px dashed rgba(0, 0, 0, 0.15);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+    }
+    .clip { position: absolute; z-index: 6; }
+
+    /* L'étiquette de date : un autocollant de travers, agrafé au coin. */
+    .sticker {
+      position: absolute; z-index: 4; top: 22px; left: 22px;
+      padding: 14px 24px 16px;
+      background: var(--accent); color: #fff;
+      border-radius: 4px;
+      transform: rotate(-3deg);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      text-align: center; line-height: 0.95; text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .sticker .big { font-size: 46px; }
+    .sticker .small { font-size: 24px; }
+
+    .cols { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+    .col { display: flex; flex-direction: column; gap: 20px; }
+
+    /* Un bloc-jour : une ardoise noire, son titre souligné au marqueur. */
+    .day {
+      position: relative;
+      background: var(--ink); border-radius: 8px;
+      padding: 11px 11px 12px;
+      display: flex; flex-direction: column; gap: 11px;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+    }
+    .day-title {
+      position: relative; align-self: center;
+      color: #fff; font-size: 34px; line-height: 1; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 6px 12px 10px; margin: 0;
+    }
+    .day-title::after {
+      content: ""; position: absolute; left: 8px; right: 8px; bottom: 2px; height: 6px;
+      background: var(--marker); border-radius: 3px; transform: rotate(-1.2deg);
+    }
+    .day-title .num { color: var(--marker); margin-left: 6px; }
+
+    /* Un ticket : blanc, perforé sur ses deux bords. */
+    .ticket {
+      position: relative; box-sizing: border-box;
+      min-height: 74px; padding: 10px 16px 10px 22px;
+      background: #fff; border-radius: 6px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .ticket::before, .ticket::after {
+      content: ""; position: absolute; top: 4px; bottom: 4px; width: 7px;
+      background: radial-gradient(circle at 50% 50%, var(--ink) 2.2px, transparent 2.9px) 0 0 / 7px 9px repeat-y;
+    }
+    .ticket::before { left: 0; }
+    .ticket::after { right: 0; }
+    .t-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .t-name { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.2; }
+    .t-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag {
+      display: inline-flex; align-items: center; height: 24px; padding: 0 11px; border-radius: 999px;
+      font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap;
+      background: var(--accent); color: #fff;
+    }
+    .tag.soft { background: #ece5d6; color: #3d3529; font-weight: 600; }
+    .tag.full { background: var(--ink); color: #fff; }
+    .t-game {
+      flex-shrink: 0; max-width: 118px; text-align: right;
+      font-size: 17px; line-height: 1; text-transform: uppercase; letter-spacing: 0.01em;
+    }
+
+    /* L'affiche mensuelle : tickets sur une ligne, la date en pastille. */
+    .day.week { gap: 5px; }
+    .day.week .ticket { min-height: 50px; padding: 6px 14px 6px 20px; gap: 10px; }
+    .day.week .t-main { gap: 4px; flex: 1; }
+    .day.week .t-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14.5px; }
+    .day.week .tag { height: 21px; padding: 0 9px; font-size: 11.5px; }
+    .day.week .tag.date { background: var(--ink); color: #fff; }
+    .day.week .t-game { font-size: 14px; max-width: 104px; }
+    .day.week .day-title { font-size: 30px; }
+
+    /* L'appel : un encart à l'accent, scotché, avec le QR code. */
+    .cta {
+      position: relative;
+      background: var(--accent); color: #fff; border-radius: 8px;
+      padding: 14px 16px; display: flex; align-items: center; gap: 14px;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+    }
+    .cta-text { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .cta-title { margin: 0; font-size: 21px; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.03em; }
+    .cta-sub { margin: 0; font-size: 12px; font-weight: 500; line-height: 1.3; opacity: 0.95; }
+    .qr { width: 86px; height: 86px; box-sizing: border-box; padding: 6px; background: #fff; color: #141414; border-radius: 6px; flex-shrink: 0; }
+
+    .bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding: 0 6px; }
+    .brand { display: flex; align-items: center; gap: 8px; }
+    .brand img { width: 30px; height: 30px; border-radius: 50%; display: block; }
+    .brand-text { display: flex; flex-direction: column; gap: 1px; }
+    .brand-name { font-size: 20px; line-height: 1; color: var(--ink); }
+    .brand-line { font-size: 11px; font-weight: 500; color: #6b5e4a; }
+    .signature { display: flex; align-items: center; gap: 10px; transform: rotate(-2.5deg); }
+    .sig-text { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
+    .sig-name { font-size: 28px; line-height: 1; color: var(--accent); text-transform: uppercase; letter-spacing: 0.02em; margin: 0; }
+    .sig-address { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 500; color: #6b5e4a; }
     .vlogo {
-      width: 60px; height: 60px; flex-shrink: 0;
+      width: 48px; height: 48px; flex-shrink: 0; border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
-      border-radius: 14px;
-      border: 1px solid var(--accent-45);
-      background: var(--accent-8);
-      color: var(--accent-text);
+      background: var(--ink); color: var(--marker);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
     }
-
-    .days { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
-    .day { display: flex; flex-direction: column; gap: 8px; }
-    .day-head { display: flex; align-items: baseline; gap: 10px; height: 24px; }
-    .day-name { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-text); }
-    .day-num { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
-    .day-rule { flex: 1; height: 1px; background: var(--rule); align-self: center; }
-
-    .row {
-      display: flex; align-items: center; gap: 14px;
-      height: 44px; padding: 0 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--card);
-    }
-    .time { font-family: var(--mono); font-size: 14px; width: 112px; flex-shrink: 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .rail { width: 3px; height: 26px; border-radius: 2px; flex-shrink: 0; }
-    .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-    .name { font-size: 16px; font-weight: 600; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
-    .meta { font-size: 12.5px; line-height: 16px; color: var(--muted); margin: 0; }
-    .seats { font-size: 12.5px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
-    .pill {
-      display: inline-flex; align-items: center;
-      height: 22px; padding: 0 9px; border-radius: 999px;
-      font-size: 11px; font-weight: 600; white-space: nowrap;
-      background: var(--pill); color: var(--fg);
-    }
-
-    /* L'affiche mensuelle : une ligne par événement, la date en tête. */
-    .weeks { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-    .week { display: flex; flex-direction: column; gap: 4px; }
-    .week-head { display: flex; align-items: center; gap: 10px; height: 24px; margin-bottom: 2px; }
-    .mrow {
-      display: flex; align-items: center; gap: 12px;
-      height: 30px; padding: 0 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--card);
-    }
-    .mdate { font-family: var(--mono); font-size: 12.5px; width: 58px; flex-shrink: 0; }
-    .mtime { font-family: var(--mono); font-size: 12.5px; width: 44px; flex-shrink: 0; color: var(--muted); }
-    .mrow .rail { height: 18px; }
-    .minfo { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; }
-    .mname { font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
-    .mgame { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
-    .mright { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; flex-shrink: 0; font-variant-numeric: tabular-nums; }
-
-    .foot { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid var(--rule); padding-top: 16px; }
-    .foot-left { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
-    .wordmark { display: inline-flex; align-items: center; gap: 8px; }
-    .wordmark img { width: 28px; height: 28px; border-radius: 999px; display: block; }
-    .wordmark span {
-      font-size: 20px; font-weight: 700; line-height: 1;
-      background: linear-gradient(90deg, var(--fg), #9333ea);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-    .foot-line { font-size: 13px; color: var(--muted); margin: 0; white-space: nowrap; }
-    .foot-right { display: flex; align-items: center; gap: 14px; }
-    .scan { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
-    .scan-title { font-size: 13px; font-weight: 600; }
-    .scan-url { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
-    .qr { width: 84px; height: 84px; padding: 6px; box-sizing: border-box; border-radius: 8px; background: var(--qr-bg); color: var(--qr-fg); flex-shrink: 0; }
 
   </style>
 </helmet>
-<div class="{{rootClass}}">
-  <header class="head">
-    <div class="venue">
-      <div class="venue-text">
-        <h2 class="venue-name display">La Taverne du Dé</h2>
-        <span class="venue-address"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>14 rue des Capucins, 69001 Lyon</span>
+<div class="board">
+  <div class="sheet">
+    <span class="clip" style="top: -12px; left: 430px;"><svg width="26" height="60" viewBox="0 0 26 60" fill="none" stroke="#8c8c8c" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M8 18v30a5 5 0 0 0 10 0V12a8 8 0 0 0-16 0v34"></path><path d="M13 12v30a3 3 0 0 1-6 0V20"></path></svg></span>
+    <span class="pin" style="--pin: #d92b52; top: 14px; right: 26px;"></span>
+    <div class="sticker display">
+      <span class="big">7 – 13</span>
+      <span class="small">septembre</span>
+    </div>
+    <div class="cols">
+      <div class="col" style="padding-top: 72px">
+      <section class="day">
+        <span class="pin" style="--pin: #d92b52; top: -9px; left: 14px;"></span>
+        <h2 class="day-title display">Lundi<span class="num">7</span></h2>
+        <div class="ticket">
+          <div class="t-main">
+            <p class="t-name">Soirée Commander</p>
+            <div class="t-tags"><span class="tag">19:30 – 23:00</span><span class="tag soft">entrée libre</span></div>
+          </div>
+          <span class="t-game display" style="color: #d9482b">Magic</span>
+        </div>
+      </section>
+      <section class="day">
+        <span class="pin" style="--pin: #2f9e44; top: -9px; right: 14px;"></span>
+        <h2 class="day-title display">Mardi<span class="num">8</span></h2>
+        <div class="ticket">
+          <div class="t-main">
+            <p class="t-name">Tournoi Core Constructed</p>
+            <div class="t-tags"><span class="tag">19:00 – 22:30</span><span class="tag soft">8 € · 6/16 places</span></div>
+          </div>
+          <span class="t-game display" style="color: #6d4fc4">Lorcana</span>
+        </div>
+      </section>
+      <section class="day">
+        <span class="pin" style="--pin: #e8b917; top: -9px; left: 14px;"></span>
+        <h2 class="day-title display">Mercredi<span class="num">9</span></h2>
+        <div class="ticket">
+          <div class="t-main">
+            <p class="t-name">Tournoi Nexus</p>
+            <div class="t-tags"><span class="tag">19:30 – 23:00</span><span class="tag soft">10 € · 14/24 places</span></div>
+          </div>
+          <span class="t-game display" style="color: #c8842a">Riftbound</span>
+        </div>
+      </section>
+      <section class="day">
+        <span class="pin" style="--pin: #2b7bd9; top: -9px; right: 14px;"></span>
+        <h2 class="day-title display">Jeudi<span class="num">10</span></h2>
+        <div class="ticket">
+          <div class="t-main">
+            <p class="t-name">Draft Standard</p>
+            <div class="t-tags"><span class="tag">19:00 – 22:00</span><span class="tag full">Complet</span></div>
+          </div>
+          <span class="t-game display" style="color: #1f1f1f">One Piece</span>
+        </div>
+      </section>
+      </div>
+      <div class="col">
+      <section class="day">
+        <span class="pin" style="--pin: #d92b52; top: -9px; left: 14px;"></span>
+        <h2 class="day-title display">Vendredi<span class="num">11</span></h2>
+        <div class="ticket">
+          <div class="t-main">
+            <p class="t-name">Friday Night Magic</p>
+            <div class="t-tags"><span class="tag">20:00 – 00:00</span><span class="tag soft">15 € · 18/32 places</span></div>
+          </div>
+          <span class="t-game display" style="color: #d9482b">Magic</span>
+        </div>
+      </section>
+      <section class="day">
+        <span class="pin" style="--pin: #2f9e44; top: -9px; right: 14px;"></span>
+        <h2 class="day-title display">Samedi<span class="num">12</span></h2>
+        <div class="ticket">
+          <div class="t-main">
+            <p class="t-name">Store Championship</p>
+            <div class="t-tags"><span class="tag">10:00 – 18:00</span><span class="tag soft">15 € · 21/40 places</span></div>
+          </div>
+          <span class="t-game display" style="color: #1d6fb8">Star Wars Unlimited</span>
+        </div>
+        <div class="ticket">
+          <div class="t-main">
+            <p class="t-name">Initiation Riftbound</p>
+            <div class="t-tags"><span class="tag">14:00 – 17:00</span><span class="tag soft">entrée libre</span></div>
+          </div>
+          <span class="t-game display" style="color: #c8842a">Riftbound</span>
+        </div>
+      </section>
+      <section class="day">
+        <span class="pin" style="--pin: #e8b917; top: -9px; left: 14px;"></span>
+        <h2 class="day-title display">Dimanche<span class="num">13</span></h2>
+        <div class="ticket">
+          <div class="t-main">
+            <p class="t-name">League Cup</p>
+            <div class="t-tags"><span class="tag">14:00 – 18:00</span><span class="tag soft">5 € · 12/32 places</span></div>
+          </div>
+          <span class="t-game display" style="color: #e0b300">Pokémon</span>
+        </div>
+      </section>
+      <div class="cta">
+        <span class="tape" style="top: -11px; left: -18px; transform: rotate(-35deg);"></span>
+        <span class="tape" style="bottom: -10px; right: -20px; transform: rotate(-35deg);"></span>
+        <div class="cta-text">
+          <p class="cta-title display">Inscriptions sur joutes.app</p>
+          <p class="cta-sub">Scannez le code pour réserver votre place ou suivre le lieu.</p>
+        </div>
+        <div class="qr"><svg viewBox="0 0 25 25" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="display:block;width:100%;height:100%"><rect x="0" y="0" width="1" height="1"/><rect x="1" y="0" width="1" height="1"/><rect x="2" y="0" width="1" height="1"/><rect x="3" y="0" width="1" height="1"/><rect x="4" y="0" width="1" height="1"/><rect x="5" y="0" width="1" height="1"/><rect x="6" y="0" width="1" height="1"/><rect x="8" y="0" width="1" height="1"/><rect x="10" y="0" width="1" height="1"/><rect x="11" y="0" width="1" height="1"/><rect x="14" y="0" width="1" height="1"/><rect x="18" y="0" width="1" height="1"/><rect x="19" y="0" width="1" height="1"/><rect x="20" y="0" width="1" height="1"/><rect x="21" y="0" width="1" height="1"/><rect x="22" y="0" width="1" height="1"/><rect x="23" y="0" width="1" height="1"/><rect x="24" y="0" width="1" height="1"/><rect x="0" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="11" y="1" width="1" height="1"/><rect x="12" y="1" width="1" height="1"/><rect x="15" y="1" width="1" height="1"/><rect x="17" y="1" width="1" height="1"/><rect x="18" y="1" width="1" height="1"/><rect x="24" y="1" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="10" y="2" width="1" height="1"/><rect x="18" y="2" width="1" height="1"/><rect x="20" y="2" width="1" height="1"/><rect x="21" y="2" width="1" height="1"/><rect x="22" y="2" width="1" height="1"/><rect x="24" y="2" width="1" height="1"/><rect x="0" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="8" y="3" width="1" height="1"/><rect x="9" y="3" width="1" height="1"/><rect x="11" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="13" y="3" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="15" y="3" width="1" height="1"/><rect x="18" y="3" width="1" height="1"/><rect x="20" y="3" width="1" height="1"/><rect x="21" y="3" width="1" height="1"/><rect x="22" y="3" width="1" height="1"/><rect x="24" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="14" y="4" width="1" height="1"/><rect x="15" y="4" width="1" height="1"/><rect x="17" y="4" width="1" height="1"/><rect x="18" y="4" width="1" height="1"/><rect x="20" y="4" width="1" height="1"/><rect x="21" y="4" width="1" height="1"/><rect x="22" y="4" width="1" height="1"/><rect x="24" y="4" width="1" height="1"/><rect x="0" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="5" width="1" height="1"/><rect x="13" y="5" width="1" height="1"/><rect x="14" y="5" width="1" height="1"/><rect x="15" y="5" width="1" height="1"/><rect x="16" y="5" width="1" height="1"/><rect x="17" y="5" width="1" height="1"/><rect x="18" y="5" width="1" height="1"/><rect x="24" y="5" width="1" height="1"/><rect x="0" y="6" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="11" y="6" width="1" height="1"/><rect x="13" y="6" width="1" height="1"/><rect x="18" y="6" width="1" height="1"/><rect x="19" y="6" width="1" height="1"/><rect x="20" y="6" width="1" height="1"/><rect x="21" y="6" width="1" height="1"/><rect x="22" y="6" width="1" height="1"/><rect x="23" y="6" width="1" height="1"/><rect x="24" y="6" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="10" y="8" width="1" height="1"/><rect x="13" y="8" width="1" height="1"/><rect x="15" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="17" y="8" width="1" height="1"/><rect x="18" y="8" width="1" height="1"/><rect x="20" y="8" width="1" height="1"/><rect x="22" y="8" width="1" height="1"/><rect x="23" y="8" width="1" height="1"/><rect x="0" y="9" width="1" height="1"/><rect x="8" y="9" width="1" height="1"/><rect x="9" y="9" width="1" height="1"/><rect x="10" y="9" width="1" height="1"/><rect x="11" y="9" width="1" height="1"/><rect x="12" y="9" width="1" height="1"/><rect x="14" y="9" width="1" height="1"/><rect x="18" y="9" width="1" height="1"/><rect x="20" y="9" width="1" height="1"/><rect x="21" y="9" width="1" height="1"/><rect x="23" y="9" width="1" height="1"/><rect x="0" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="11" y="10" width="1" height="1"/><rect x="12" y="10" width="1" height="1"/><rect x="13" y="10" width="1" height="1"/><rect x="15" y="10" width="1" height="1"/><rect x="20" y="10" width="1" height="1"/><rect x="21" y="10" width="1" height="1"/><rect x="23" y="10" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="9" y="11" width="1" height="1"/><rect x="12" y="11" width="1" height="1"/><rect x="13" y="11" width="1" height="1"/><rect x="14" y="11" width="1" height="1"/><rect x="17" y="11" width="1" height="1"/><rect x="20" y="11" width="1" height="1"/><rect x="22" y="11" width="1" height="1"/><rect x="23" y="11" width="1" height="1"/><rect x="24" y="11" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="8" y="12" width="1" height="1"/><rect x="14" y="12" width="1" height="1"/><rect x="15" y="12" width="1" height="1"/><rect x="16" y="12" width="1" height="1"/><rect x="22" y="12" width="1" height="1"/><rect x="24" y="12" width="1" height="1"/><rect x="0" y="13" width="1" height="1"/><rect x="2" y="13" width="1" height="1"/><rect x="4" y="13" width="1" height="1"/><rect x="5" y="13" width="1" height="1"/><rect x="8" y="13" width="1" height="1"/><rect x="9" y="13" width="1" height="1"/><rect x="16" y="13" width="1" height="1"/><rect x="21" y="13" width="1" height="1"/><rect x="22" y="13" width="1" height="1"/><rect x="23" y="13" width="1" height="1"/><rect x="24" y="13" width="1" height="1"/><rect x="0" y="14" width="1" height="1"/><rect x="1" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="5" y="14" width="1" height="1"/><rect x="6" y="14" width="1" height="1"/><rect x="9" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="12" y="14" width="1" height="1"/><rect x="15" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="17" y="14" width="1" height="1"/><rect x="18" y="14" width="1" height="1"/><rect x="21" y="14" width="1" height="1"/><rect x="24" y="14" width="1" height="1"/><rect x="0" y="15" width="1" height="1"/><rect x="2" y="15" width="1" height="1"/><rect x="3" y="15" width="1" height="1"/><rect x="4" y="15" width="1" height="1"/><rect x="10" y="15" width="1" height="1"/><rect x="11" y="15" width="1" height="1"/><rect x="12" y="15" width="1" height="1"/><rect x="13" y="15" width="1" height="1"/><rect x="14" y="15" width="1" height="1"/><rect x="15" y="15" width="1" height="1"/><rect x="16" y="15" width="1" height="1"/><rect x="17" y="15" width="1" height="1"/><rect x="21" y="15" width="1" height="1"/><rect x="2" y="16" width="1" height="1"/><rect x="3" y="16" width="1" height="1"/><rect x="15" y="16" width="1" height="1"/><rect x="19" y="16" width="1" height="1"/><rect x="20" y="16" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="2" y="17" width="1" height="1"/><rect x="3" y="17" width="1" height="1"/><rect x="5" y="17" width="1" height="1"/><rect x="12" y="17" width="1" height="1"/><rect x="16" y="17" width="1" height="1"/><rect x="18" y="17" width="1" height="1"/><rect x="19" y="17" width="1" height="1"/><rect x="20" y="17" width="1" height="1"/><rect x="22" y="17" width="1" height="1"/><rect x="0" y="18" width="1" height="1"/><rect x="1" y="18" width="1" height="1"/><rect x="2" y="18" width="1" height="1"/><rect x="3" y="18" width="1" height="1"/><rect x="4" y="18" width="1" height="1"/><rect x="5" y="18" width="1" height="1"/><rect x="6" y="18" width="1" height="1"/><rect x="8" y="18" width="1" height="1"/><rect x="11" y="18" width="1" height="1"/><rect x="12" y="18" width="1" height="1"/><rect x="14" y="18" width="1" height="1"/><rect x="15" y="18" width="1" height="1"/><rect x="16" y="18" width="1" height="1"/><rect x="17" y="18" width="1" height="1"/><rect x="20" y="18" width="1" height="1"/><rect x="21" y="18" width="1" height="1"/><rect x="24" y="18" width="1" height="1"/><rect x="0" y="19" width="1" height="1"/><rect x="6" y="19" width="1" height="1"/><rect x="8" y="19" width="1" height="1"/><rect x="10" y="19" width="1" height="1"/><rect x="14" y="19" width="1" height="1"/><rect x="15" y="19" width="1" height="1"/><rect x="24" y="19" width="1" height="1"/><rect x="0" y="20" width="1" height="1"/><rect x="2" y="20" width="1" height="1"/><rect x="3" y="20" width="1" height="1"/><rect x="4" y="20" width="1" height="1"/><rect x="6" y="20" width="1" height="1"/><rect x="8" y="20" width="1" height="1"/><rect x="10" y="20" width="1" height="1"/><rect x="12" y="20" width="1" height="1"/><rect x="13" y="20" width="1" height="1"/><rect x="17" y="20" width="1" height="1"/><rect x="19" y="20" width="1" height="1"/><rect x="21" y="20" width="1" height="1"/><rect x="0" y="21" width="1" height="1"/><rect x="2" y="21" width="1" height="1"/><rect x="3" y="21" width="1" height="1"/><rect x="4" y="21" width="1" height="1"/><rect x="6" y="21" width="1" height="1"/><rect x="8" y="21" width="1" height="1"/><rect x="12" y="21" width="1" height="1"/><rect x="18" y="21" width="1" height="1"/><rect x="20" y="21" width="1" height="1"/><rect x="21" y="21" width="1" height="1"/><rect x="24" y="21" width="1" height="1"/><rect x="0" y="22" width="1" height="1"/><rect x="2" y="22" width="1" height="1"/><rect x="3" y="22" width="1" height="1"/><rect x="4" y="22" width="1" height="1"/><rect x="6" y="22" width="1" height="1"/><rect x="8" y="22" width="1" height="1"/><rect x="9" y="22" width="1" height="1"/><rect x="13" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="15" y="22" width="1" height="1"/><rect x="16" y="22" width="1" height="1"/><rect x="18" y="22" width="1" height="1"/><rect x="19" y="22" width="1" height="1"/><rect x="21" y="22" width="1" height="1"/><rect x="22" y="22" width="1" height="1"/><rect x="23" y="22" width="1" height="1"/><rect x="24" y="22" width="1" height="1"/><rect x="0" y="23" width="1" height="1"/><rect x="6" y="23" width="1" height="1"/><rect x="9" y="23" width="1" height="1"/><rect x="14" y="23" width="1" height="1"/><rect x="22" y="23" width="1" height="1"/><rect x="23" y="23" width="1" height="1"/><rect x="0" y="24" width="1" height="1"/><rect x="1" y="24" width="1" height="1"/><rect x="2" y="24" width="1" height="1"/><rect x="3" y="24" width="1" height="1"/><rect x="4" y="24" width="1" height="1"/><rect x="5" y="24" width="1" height="1"/><rect x="6" y="24" width="1" height="1"/><rect x="9" y="24" width="1" height="1"/><rect x="11" y="24" width="1" height="1"/><rect x="13" y="24" width="1" height="1"/><rect x="14" y="24" width="1" height="1"/><rect x="15" y="24" width="1" height="1"/><rect x="16" y="24" width="1" height="1"/><rect x="17" y="24" width="1" height="1"/><rect x="18" y="24" width="1" height="1"/><rect x="20" y="24" width="1" height="1"/><rect x="21" y="24" width="1" height="1"/><rect x="22" y="24" width="1" height="1"/></svg></div>
+      </div>
       </div>
     </div>
-    <div class="head-main">
-      <span class="kicker">Programme de la semaine</span>
-      <h1 class="period display">7 – 13 septembre</h1>
-      <span class="period-sub">2026 · 8 événements</span>
+    <div class="bottom">
+      <div class="brand">
+        <img src="joutes.png" alt="">
+        <div class="brand-text"><span class="brand-name display">Joutes</span><span class="brand-line">Programme complet sur joutes.app</span></div>
+      </div>
+      <div class="signature">
+        <div class="sig-text">
+          <p class="sig-name display">La Taverne du Dé</p>
+          <span class="sig-address"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>14 rue des Capucins, 69001 Lyon</span>
+        </div>
+      </div>
     </div>
-  </header>
-  <main class="days">
-    <section class="day">
-      <div class="day-head"><span class="day-name">Lundi</span><span class="day-num display">7</span><span class="day-rule"></span></div>
-      <div class="row">
-        <span class="time">19:30 – 23:00</span>
-        <span class="rail" style="background: #f97316"></span>
-        <div class="info">
-          <p class="name display">Soirée Commander</p>
-          <p class="meta">Magic: The Gathering · entrée libre</p>
-        </div>
-        <span class="seats">sans inscription</span>
-      </div>
-    </section>
-    <section class="day">
-      <div class="day-head"><span class="day-name">Mardi</span><span class="day-num display">8</span><span class="day-rule"></span></div>
-      <div class="row">
-        <span class="time">19:00 – 22:30</span>
-        <span class="rail" style="background: #a78bfa"></span>
-        <div class="info">
-          <p class="name display">Tournoi Core Constructed</p>
-          <p class="meta">Lorcana · 8,00 €</p>
-        </div>
-        <span class="seats">6 / 16 inscrits</span>
-      </div>
-    </section>
-    <section class="day">
-      <div class="day-head"><span class="day-name">Mercredi</span><span class="day-num display">9</span><span class="day-rule"></span></div>
-      <div class="row">
-        <span class="time">19:30 – 23:00</span>
-        <span class="rail" style="background: #d8a150"></span>
-        <div class="info">
-          <p class="name display">Tournoi Nexus</p>
-          <p class="meta">Riftbound · 10,00 €</p>
-        </div>
-        <span class="seats">14 / 24 inscrits</span>
-      </div>
-    </section>
-    <section class="day">
-      <div class="day-head"><span class="day-name">Jeudi</span><span class="day-num display">10</span><span class="day-rule"></span></div>
-      <div class="row">
-        <span class="time">19:00 – 22:00</span>
-        <span class="rail" style="background: #f87171"></span>
-        <div class="info">
-          <p class="name display">Draft Standard</p>
-          <p class="meta">One Piece Card Game · 25,00 €</p>
-        </div>
-        <span class="pill">Complet</span>
-      </div>
-    </section>
-    <section class="day">
-      <div class="day-head"><span class="day-name">Vendredi</span><span class="day-num display">11</span><span class="day-rule"></span></div>
-      <div class="row">
-        <span class="time">20:00 – 00:00</span>
-        <span class="rail" style="background: #f97316"></span>
-        <div class="info">
-          <p class="name display">Friday Night Magic</p>
-          <p class="meta">Magic: The Gathering · 15,00 €</p>
-        </div>
-        <span class="seats">18 / 32 inscrits</span>
-      </div>
-    </section>
-    <section class="day">
-      <div class="day-head"><span class="day-name">Samedi</span><span class="day-num display">12</span><span class="day-rule"></span></div>
-      <div class="row">
-        <span class="time">10:00 – 18:00</span>
-        <span class="rail" style="background: #38bdf8"></span>
-        <div class="info">
-          <p class="name display">Store Championship</p>
-          <p class="meta">Star Wars Unlimited · 15,00 €</p>
-        </div>
-        <span class="seats">21 / 40 inscrits</span>
-      </div>
-      <div class="row">
-        <span class="time">14:00 – 17:00</span>
-        <span class="rail" style="background: #d8a150"></span>
-        <div class="info">
-          <p class="name display">Initiation Riftbound</p>
-          <p class="meta">Riftbound · entrée libre</p>
-        </div>
-        <span class="seats">sans inscription</span>
-      </div>
-    </section>
-    <section class="day">
-      <div class="day-head"><span class="day-name">Dimanche</span><span class="day-num display">13</span><span class="day-rule"></span></div>
-      <div class="row">
-        <span class="time">14:00 – 18:00</span>
-        <span class="rail" style="background: #facc15"></span>
-        <div class="info">
-          <p class="name display">League Cup</p>
-          <p class="meta">Pokémon · 5,00 €</p>
-        </div>
-        <span class="seats">12 / 32 inscrits</span>
-      </div>
-    </section>
-  </main>
-  <footer class="foot">
-    <div class="foot-left">
-      <div class="wordmark"><img src="joutes.png" alt=""><span>Joutes</span></div>
-      <p class="foot-line">Inscriptions et programme complet sur joutes.app</p>
-    </div>
-    <div class="foot-right">
-      <div class="scan">
-        <span class="scan-title">Scannez pour vous inscrire</span>
-        <span class="scan-url">joutes.app/lairs/taverne-du-de</span>
-      </div>
-      <div class="qr"><svg viewBox="0 0 25 25" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="display:block;width:100%;height:100%"><rect x="0" y="0" width="1" height="1"/><rect x="1" y="0" width="1" height="1"/><rect x="2" y="0" width="1" height="1"/><rect x="3" y="0" width="1" height="1"/><rect x="4" y="0" width="1" height="1"/><rect x="5" y="0" width="1" height="1"/><rect x="6" y="0" width="1" height="1"/><rect x="8" y="0" width="1" height="1"/><rect x="10" y="0" width="1" height="1"/><rect x="11" y="0" width="1" height="1"/><rect x="14" y="0" width="1" height="1"/><rect x="18" y="0" width="1" height="1"/><rect x="19" y="0" width="1" height="1"/><rect x="20" y="0" width="1" height="1"/><rect x="21" y="0" width="1" height="1"/><rect x="22" y="0" width="1" height="1"/><rect x="23" y="0" width="1" height="1"/><rect x="24" y="0" width="1" height="1"/><rect x="0" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="11" y="1" width="1" height="1"/><rect x="12" y="1" width="1" height="1"/><rect x="15" y="1" width="1" height="1"/><rect x="17" y="1" width="1" height="1"/><rect x="18" y="1" width="1" height="1"/><rect x="24" y="1" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="10" y="2" width="1" height="1"/><rect x="18" y="2" width="1" height="1"/><rect x="20" y="2" width="1" height="1"/><rect x="21" y="2" width="1" height="1"/><rect x="22" y="2" width="1" height="1"/><rect x="24" y="2" width="1" height="1"/><rect x="0" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="8" y="3" width="1" height="1"/><rect x="9" y="3" width="1" height="1"/><rect x="11" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="13" y="3" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="15" y="3" width="1" height="1"/><rect x="18" y="3" width="1" height="1"/><rect x="20" y="3" width="1" height="1"/><rect x="21" y="3" width="1" height="1"/><rect x="22" y="3" width="1" height="1"/><rect x="24" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="14" y="4" width="1" height="1"/><rect x="15" y="4" width="1" height="1"/><rect x="17" y="4" width="1" height="1"/><rect x="18" y="4" width="1" height="1"/><rect x="20" y="4" width="1" height="1"/><rect x="21" y="4" width="1" height="1"/><rect x="22" y="4" width="1" height="1"/><rect x="24" y="4" width="1" height="1"/><rect x="0" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="5" width="1" height="1"/><rect x="13" y="5" width="1" height="1"/><rect x="14" y="5" width="1" height="1"/><rect x="15" y="5" width="1" height="1"/><rect x="16" y="5" width="1" height="1"/><rect x="17" y="5" width="1" height="1"/><rect x="18" y="5" width="1" height="1"/><rect x="24" y="5" width="1" height="1"/><rect x="0" y="6" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="11" y="6" width="1" height="1"/><rect x="13" y="6" width="1" height="1"/><rect x="18" y="6" width="1" height="1"/><rect x="19" y="6" width="1" height="1"/><rect x="20" y="6" width="1" height="1"/><rect x="21" y="6" width="1" height="1"/><rect x="22" y="6" width="1" height="1"/><rect x="23" y="6" width="1" height="1"/><rect x="24" y="6" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="10" y="8" width="1" height="1"/><rect x="13" y="8" width="1" height="1"/><rect x="15" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="17" y="8" width="1" height="1"/><rect x="18" y="8" width="1" height="1"/><rect x="20" y="8" width="1" height="1"/><rect x="22" y="8" width="1" height="1"/><rect x="23" y="8" width="1" height="1"/><rect x="0" y="9" width="1" height="1"/><rect x="8" y="9" width="1" height="1"/><rect x="9" y="9" width="1" height="1"/><rect x="10" y="9" width="1" height="1"/><rect x="11" y="9" width="1" height="1"/><rect x="12" y="9" width="1" height="1"/><rect x="14" y="9" width="1" height="1"/><rect x="18" y="9" width="1" height="1"/><rect x="20" y="9" width="1" height="1"/><rect x="21" y="9" width="1" height="1"/><rect x="23" y="9" width="1" height="1"/><rect x="0" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="11" y="10" width="1" height="1"/><rect x="12" y="10" width="1" height="1"/><rect x="13" y="10" width="1" height="1"/><rect x="15" y="10" width="1" height="1"/><rect x="20" y="10" width="1" height="1"/><rect x="21" y="10" width="1" height="1"/><rect x="23" y="10" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="9" y="11" width="1" height="1"/><rect x="12" y="11" width="1" height="1"/><rect x="13" y="11" width="1" height="1"/><rect x="14" y="11" width="1" height="1"/><rect x="17" y="11" width="1" height="1"/><rect x="20" y="11" width="1" height="1"/><rect x="22" y="11" width="1" height="1"/><rect x="23" y="11" width="1" height="1"/><rect x="24" y="11" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="8" y="12" width="1" height="1"/><rect x="14" y="12" width="1" height="1"/><rect x="15" y="12" width="1" height="1"/><rect x="16" y="12" width="1" height="1"/><rect x="22" y="12" width="1" height="1"/><rect x="24" y="12" width="1" height="1"/><rect x="0" y="13" width="1" height="1"/><rect x="2" y="13" width="1" height="1"/><rect x="4" y="13" width="1" height="1"/><rect x="5" y="13" width="1" height="1"/><rect x="8" y="13" width="1" height="1"/><rect x="9" y="13" width="1" height="1"/><rect x="16" y="13" width="1" height="1"/><rect x="21" y="13" width="1" height="1"/><rect x="22" y="13" width="1" height="1"/><rect x="23" y="13" width="1" height="1"/><rect x="24" y="13" width="1" height="1"/><rect x="0" y="14" width="1" height="1"/><rect x="1" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="5" y="14" width="1" height="1"/><rect x="6" y="14" width="1" height="1"/><rect x="9" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="12" y="14" width="1" height="1"/><rect x="15" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="17" y="14" width="1" height="1"/><rect x="18" y="14" width="1" height="1"/><rect x="21" y="14" width="1" height="1"/><rect x="24" y="14" width="1" height="1"/><rect x="0" y="15" width="1" height="1"/><rect x="2" y="15" width="1" height="1"/><rect x="3" y="15" width="1" height="1"/><rect x="4" y="15" width="1" height="1"/><rect x="10" y="15" width="1" height="1"/><rect x="11" y="15" width="1" height="1"/><rect x="12" y="15" width="1" height="1"/><rect x="13" y="15" width="1" height="1"/><rect x="14" y="15" width="1" height="1"/><rect x="15" y="15" width="1" height="1"/><rect x="16" y="15" width="1" height="1"/><rect x="17" y="15" width="1" height="1"/><rect x="21" y="15" width="1" height="1"/><rect x="2" y="16" width="1" height="1"/><rect x="3" y="16" width="1" height="1"/><rect x="15" y="16" width="1" height="1"/><rect x="19" y="16" width="1" height="1"/><rect x="20" y="16" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="2" y="17" width="1" height="1"/><rect x="3" y="17" width="1" height="1"/><rect x="5" y="17" width="1" height="1"/><rect x="12" y="17" width="1" height="1"/><rect x="16" y="17" width="1" height="1"/><rect x="18" y="17" width="1" height="1"/><rect x="19" y="17" width="1" height="1"/><rect x="20" y="17" width="1" height="1"/><rect x="22" y="17" width="1" height="1"/><rect x="0" y="18" width="1" height="1"/><rect x="1" y="18" width="1" height="1"/><rect x="2" y="18" width="1" height="1"/><rect x="3" y="18" width="1" height="1"/><rect x="4" y="18" width="1" height="1"/><rect x="5" y="18" width="1" height="1"/><rect x="6" y="18" width="1" height="1"/><rect x="8" y="18" width="1" height="1"/><rect x="11" y="18" width="1" height="1"/><rect x="12" y="18" width="1" height="1"/><rect x="14" y="18" width="1" height="1"/><rect x="15" y="18" width="1" height="1"/><rect x="16" y="18" width="1" height="1"/><rect x="17" y="18" width="1" height="1"/><rect x="20" y="18" width="1" height="1"/><rect x="21" y="18" width="1" height="1"/><rect x="24" y="18" width="1" height="1"/><rect x="0" y="19" width="1" height="1"/><rect x="6" y="19" width="1" height="1"/><rect x="8" y="19" width="1" height="1"/><rect x="10" y="19" width="1" height="1"/><rect x="14" y="19" width="1" height="1"/><rect x="15" y="19" width="1" height="1"/><rect x="24" y="19" width="1" height="1"/><rect x="0" y="20" width="1" height="1"/><rect x="2" y="20" width="1" height="1"/><rect x="3" y="20" width="1" height="1"/><rect x="4" y="20" width="1" height="1"/><rect x="6" y="20" width="1" height="1"/><rect x="8" y="20" width="1" height="1"/><rect x="10" y="20" width="1" height="1"/><rect x="12" y="20" width="1" height="1"/><rect x="13" y="20" width="1" height="1"/><rect x="17" y="20" width="1" height="1"/><rect x="19" y="20" width="1" height="1"/><rect x="21" y="20" width="1" height="1"/><rect x="0" y="21" width="1" height="1"/><rect x="2" y="21" width="1" height="1"/><rect x="3" y="21" width="1" height="1"/><rect x="4" y="21" width="1" height="1"/><rect x="6" y="21" width="1" height="1"/><rect x="8" y="21" width="1" height="1"/><rect x="12" y="21" width="1" height="1"/><rect x="18" y="21" width="1" height="1"/><rect x="20" y="21" width="1" height="1"/><rect x="21" y="21" width="1" height="1"/><rect x="24" y="21" width="1" height="1"/><rect x="0" y="22" width="1" height="1"/><rect x="2" y="22" width="1" height="1"/><rect x="3" y="22" width="1" height="1"/><rect x="4" y="22" width="1" height="1"/><rect x="6" y="22" width="1" height="1"/><rect x="8" y="22" width="1" height="1"/><rect x="9" y="22" width="1" height="1"/><rect x="13" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="15" y="22" width="1" height="1"/><rect x="16" y="22" width="1" height="1"/><rect x="18" y="22" width="1" height="1"/><rect x="19" y="22" width="1" height="1"/><rect x="21" y="22" width="1" height="1"/><rect x="22" y="22" width="1" height="1"/><rect x="23" y="22" width="1" height="1"/><rect x="24" y="22" width="1" height="1"/><rect x="0" y="23" width="1" height="1"/><rect x="6" y="23" width="1" height="1"/><rect x="9" y="23" width="1" height="1"/><rect x="14" y="23" width="1" height="1"/><rect x="22" y="23" width="1" height="1"/><rect x="23" y="23" width="1" height="1"/><rect x="0" y="24" width="1" height="1"/><rect x="1" y="24" width="1" height="1"/><rect x="2" y="24" width="1" height="1"/><rect x="3" y="24" width="1" height="1"/><rect x="4" y="24" width="1" height="1"/><rect x="5" y="24" width="1" height="1"/><rect x="6" y="24" width="1" height="1"/><rect x="9" y="24" width="1" height="1"/><rect x="11" y="24" width="1" height="1"/><rect x="13" y="24" width="1" height="1"/><rect x="14" y="24" width="1" height="1"/><rect x="15" y="24" width="1" height="1"/><rect x="16" y="24" width="1" height="1"/><rect x="17" y="24" width="1" height="1"/><rect x="18" y="24" width="1" height="1"/><rect x="20" y="24" width="1" height="1"/><rect x="21" y="24" width="1" height="1"/><rect x="22" y="24" width="1" height="1"/></svg></div>
-    </div>
-  </footer>
+  </div>
 </div>
 </x-dc>
-<script data-dc-script data-props='{"fond":{"editor":"enum","options":["sombre","clair"],"default":"sombre","section":"Affiche"},"$preview":{"width":794,"height":1123}}'>
-class Component extends DCLogic {
-  renderVals() {
-    const fond = this.props.fond === "clair" ? "clair" : "sombre";
-    return { rootClass: "poster " + fond };
-  }
-}
+<script data-dc-script data-props='{"$preview":{"width":794,"height":1123}}'>
+class Component extends DCLogic {}
 </script>
 </body>
 </html>

@@ -1,33 +1,49 @@
 {
+  "pages": [
+    { "id": "page-1", "name": "Tableau d'affichage" },
+    { "id": "page-2", "name": "Première version (écartée)" }
+  ],
   "artboards": [
-    { "file": "Main.dc.html", "title": "Affiche hebdomadaire — design Joutes", "x": 0, "y": 0, "w": 794, "h": 1123 },
-    { "file": "Mensuelle.dc.html", "title": "Affiche mensuelle — design Joutes, fond clair", "x": 900, "y": 0, "w": 794, "h": 1123 },
-    { "file": "Perso.dc.html", "title": "Affiche hebdomadaire — thème d un lieu Joutes Pro", "x": 1800, "y": 0, "w": 794, "h": 1123 },
-    { "file": "Reglages.dc.html", "title": "/lairs/:lairId/manage?tab=affiche", "x": 0, "y": 1280, "w": 1120, "h": 1500 },
-    { "file": "GrilleMensuelle.dc.html", "title": "Piste écartée — le mois en grille (croquis)", "x": 1800, "y": 1280, "w": 794, "h": 1123 }
+    { "file": "Main.dc.html", "title": "Affiche hebdomadaire — design Joutes", "page": "page-1", "x": 0, "y": 0, "w": 794, "h": 1123 },
+    { "file": "Mensuelle.dc.html", "title": "Affiche mensuelle — design Joutes", "page": "page-1", "x": 900, "y": 0, "w": 794, "h": 1123 },
+    { "file": "Perso.dc.html", "title": "Affiche hebdomadaire — thème d un lieu Joutes Pro", "page": "page-1", "x": 1800, "y": 0, "w": 794, "h": 1123 },
+    { "file": "Reglages.dc.html", "title": "/lairs/:lairId/manage?tab=affiche", "page": "page-1", "x": 0, "y": 1280, "w": 1120, "h": 1560 },
+    { "file": "NeutreHebdo.dc.html", "title": "V1 — hebdomadaire, style neutre", "page": "page-2", "x": 0, "y": 0, "w": 794, "h": 1123 },
+    { "file": "NeutreMensuelle.dc.html", "title": "V1 — mensuelle, style neutre", "page": "page-2", "x": 900, "y": 0, "w": 794, "h": 1123 }
   ],
   "annotations": [
     {
-      "id": "demande",
+      "id": "direction",
+      "page": "page-1",
       "x": 0,
-      "y": -300,
-      "w": 560,
-      "text": "La demande.\n\nUne vue « affiche » des événements d'un lieu : une page A4 portrait, prête pour un post ou pour l'impression, en deux formats — la semaine et le mois.\n\nL'affiche reprend le design de Joutes : Geist, les jetons neutres de globals.css, le violet de l'en-tête, les lignes d'événement de la vitrine (heure, filet à la couleur du jeu, nom, jeu · prix, places). Le pied porte la marque Joutes et un QR code vers la page du lieu.\n\nChaque affiche a une bascule Sombre / Clair : sombre pour les réseaux, clair pour le papier — un aplat noir sur toute une A4 boit l'encre."
+      "y": -320,
+      "w": 580,
+      "text": "La direction : un tableau d'affichage.\n\nUne feuille de cahier punaisée sur un panneau de bois, les jours sur des ardoises noires soulignées au marqueur, chaque événement sur un ticket perforé avec son horaire en pastille et son jeu à droite. L'étiquette de date est collée de travers en haut à gauche ; l'encart d'inscription, scotché en bas de la colonne de droite, porte le QR code vers la page du lieu ; le lieu signe en bas à droite, Joutes en bas à gauche.\n\nLilita One pour les titres, Poppins pour le reste. L'esprit de la référence est repris, pas ses éléments : ni son papier, ni sa typographie, ni sa marque."
     },
     {
       "id": "pro",
-      "x": 620,
-      "y": -300,
-      "w": 560,
-      "text": "Le thème d'un lieu Joutes Pro.\n\nLa planche « thème d'un lieu Pro » reprend ce que la vitrine sait déjà : le logo et l'accent (la palette fermée de lib/lairs/theme.ts, cinq couleurs vérifiées sur fond sombre). L'affiche y ajoute le choix d'une police pour les titres, parmi quatre : Geist, Bricolage Grotesque, Lora, Unbounded. Les détails restent en Geist.\n\nLes trois réglages sont des leviers au-dessus de la planche : essayez-les. En clair, l'accent des textes est assombri automatiquement — le cyan et la menthe ne tiennent pas sur blanc tels quels.\n\nProposé : logo et accent repris de la vitrine par défaut, modifiables pour l'affiche seule."
+      "page": "page-1",
+      "x": 640,
+      "y": -320,
+      "w": 580,
+      "text": "Le thème d'un lieu Joutes Pro (troisième planche).\n\nTrois leviers au-dessus de la planche, à essayer : la couleur d'accent (étiquette, pastilles, encart), la couleur du marqueur (le trait sous les jours et le numéro), et la police des titres — Lilita One, Titan One, Bangers ou Fredoka. Le logo du lieu prend place à côté de sa signature.\n\nSans Pro, l'affiche garde l'accent violet et le marqueur doré de Joutes, sans logo (les deux premières planches).\n\nÀ trancher : la palette de l'affiche est plus large que celle de la vitrine (cinq accents vérifiés sur fond sombre) — sur papier clair, d'autres teintes tiennent."
     },
     {
       "id": "trancher",
-      "x": 1240,
-      "y": -300,
+      "page": "page-1",
+      "x": 1280,
+      "y": -320,
+      "w": 580,
+      "text": "À trancher, et ce qui est un exemple.\n\n— Les mots à droite des tickets tiennent lieu de logos : la version livrée y met le logo horizontal du jeu (game.images.horizontal), et retombe sur ce mot-symbole quand le jeu n'en a pas.\n\n— Où ça vit : un onglet « Affiche » dans la gestion du lieu (planche du bas), aperçu à droite, export PNG / PDF / impression.\n\n— A4 sur les réseaux : le 1:1,41 déborde du 4:5 d'Instagram ; Facebook et Discord l'acceptent. Un format story 9:16 peut venir ensuite.\n\n— Le lieu, ses événements et le QR sont des exemples ; le QR sera encodé avec le paquet qrcode déjà présent."
+    },
+    {
+      "id": "v1",
+      "page": "page-2",
+      "x": 0,
+      "y": -200,
       "w": 560,
-      "text": "À trancher.\n\n— Où ça vit : un onglet « Affiche » dans la gestion du lieu (planche du bas), avec l'aperçu à droite. L'alternative est un bouton dans l'onglet Agenda de la vitrine, ouvert à tous.\n\n— A4 sur les réseaux : le 1:1,41 déborde du 4:5 d'Instagram ; Facebook et Discord l'acceptent. Un format story 9:16 peut venir ensuite.\n\n— Le mois en grille (croquis, en bas à droite) donne le calendrier d'un coup d'œil mais oblige des puces à 10 px, sous le plancher de 12 pt du papier. La liste par semaine est proposée.\n\n— Les événements et le lieu sont des exemples ; le QR est un motif de démonstration, la version livrée l'encodera avec le paquet qrcode déjà présent."
+      "text": "La première proposition, jugée trop neutre : Geist et les jetons de l'application tels quels. Gardée ici pour comparaison ; elle n'est plus la piste proposée."
     }
   ],
-  "launch": { "view": "canvas" }
+  "launch": { "view": "canvas", "page": "page-1" }
 }
