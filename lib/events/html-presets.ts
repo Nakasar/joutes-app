@@ -41,8 +41,9 @@ export const OASIS_PRESET: HtmlPreset = {
  * Les Animations du Gobelin : une seule page pour toutes les villes, qu'un
  * formulaire filtre en POST (`animation=Thionville.lieu`). Chaque carte donne
  * le jeu à part, la date en toutes lettres sans année, une plage horaire, les
- * places restantes, le prix et la ville. Le préréglage vise Thionville : la
- * ville se change dans les champs de formulaire et dans le filtre de lieu.
+ * places restantes, le prix et la ville. Le formulaire porte `{ville}` : une
+ * lecture par ville cochée. Le préréglage coche Thionville ; le test propose
+ * les autres villes de la page, avec leur nombre d'événements.
  */
 export const GOBELIN_PRESET: HtmlPreset = {
   key: "gobelin",
@@ -60,9 +61,10 @@ export const GOBELIN_PRESET: HtmlPreset = {
       price: { selector: ".col.text-left > div:nth-child(2)" },
       venue: { selector: ".card-footer small" },
     },
-    venue: "Thionville",
+    venues: ["Thionville"],
+    venueOptionsSelector: 'select[name="animation"] optgroup[label="Par ville"] option',
   },
-  formFields: { animation: "Thionville.lieu" },
+  formFields: { animation: "{ville}.lieu" },
 };
 
 export const HTML_PRESETS: HtmlPreset[] = [OASIS_PRESET, GOBELIN_PRESET];

@@ -26,6 +26,8 @@ export type EventSourcePreview = {
   error?: string;
   warnings: string[];
   events: Omit<SourceEvent, "addedBy" | "sourceUrl">[];
+  /** Les villes vues par une source HTML : proposées à cocher, avec leurs comptes. */
+  venues?: { available: string[]; counts: Record<string, number> };
 };
 
 export async function getLairs(): Promise<Lair[]> {
@@ -327,6 +329,7 @@ export async function previewLairEventSource(
         ok: read.ok,
         ...(read.error ? { error: read.error } : {}),
         warnings: read.warnings,
+        ...(read.venues ? { venues: read.venues } : {}),
         events: read.events.map((event) => ({
           name: event.name,
           startDateTime: event.startDateTime,

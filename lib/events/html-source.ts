@@ -56,7 +56,46 @@ export type HtmlExtraction = {
   itemCount: number;
   events: SourceEvent[];
   warnings: string[];
+  /** Combien d'éléments portent chaque ville, filtre compris : ce que le test propose à cocher. */
+  venueCounts: Record<string, number>;
 };
+
+/** Le mot qu'un champ de formulaire remplace par chaque ville à inclure. */
+export const VENUE_PLACEHOLDER = "{ville}";
+
+/** Un champ de formulaire attend-il une ville ? */
+export function hasVenuePlaceholder(formFields: Record<string, string> | undefined): boolean {
+  return Object.values(formFields ?? {}).some((value) => value.includes(VENUE_PLACEHOLDER));
+}
+
+/** Les champs de formulaire pour une ville donnée. */
+export function formFieldsForVenue(formFields: Record<string, string>, venue: string): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(formFields).map(([key, value]) => [key, value.split(VENUE_PLACEHOLDER).join(venue)]),
+  );
+}
+
+/**
+ * Les villes qu'une page sait servir, lues où la configuration le dit — les
+ * `<option>` d'un formulaire, le plus souvent. Le texte de chaque élément,
+ * sans doublon, dans l'ordre de la page.
+ */
+export function readVenueOptions(html: string, selector: string | undefined): string[] {
+  if (!selector?.trim()) return [];
+
+  const seen = new Set<string>();
+  const venues: string[] = [];
+
+  for (const element of parse(html).querySelectorAll(selector.trim())) {
+    const text = element.text.replace(/\s+/g, " ").trim();
+    const key = normalizeEventName(text);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    venues.push(text);
+  }
+
+  return venues;
+}
 
 const FRENCH_MONTHS = [
   "janvier", "fevrier", "mars", "avril", "mai", "juin",
@@ -224,12 +263,15 @@ export function extractHtmlEvents({
   source,
   games,
   now,
+  venues = config.venues ?? [],
 }: {
   html: string;
   config: EventHtmlConfig;
   source: Pick<EventSource, "url" | "gameAliases">;
   games: Pick<Game, "name">[];
   now: DateTime;
+  /** Les villes à garder pour cette page — celles de la configuration par défaut. */
+  venues?: string[];
 }): HtmlExtraction {
   const root = parse(html);
   const items = root.querySelectorAll(config.itemSelector);
@@ -239,17 +281,22 @@ export function extractHtmlEvents({
   const counts = new Map<string, number>();
   const warn = (message: string) => counts.set(message, (counts.get(message) ?? 0) + 1);
   const events: SourceEvent[] = [];
+  const venueCounts: Record<string, number> = {};
 
-  const wantedVenue = config.venue ? normalizeEventName(config.venue) : null;
+  // Le filtre ne vaut que si la page dit la ville de chaque événement : sans
+  // champ `venue`, on garde tout, et c'est le formulaire du site qui filtre.
+  const wanted = fields.venue ? new Set(venues.map(normalizeEventName).filter(Boolean)) : new Set<string>();
   let skippedVenues = 0;
 
   for (const item of items) {
-    if (wantedVenue) {
-      const venue = readHtmlField(item, fields.venue);
-      if (!venue || normalizeEventName(venue) !== wantedVenue) {
-        skippedVenues += 1;
-        continue;
-      }
+    const venue = readHtmlField(item, fields.venue);
+    if (venue) {
+      venueCounts[venue] = (venueCounts[venue] ?? 0) + 1;
+    }
+
+    if (wanted.size > 0 && (!venue || !wanted.has(normalizeEventName(venue)))) {
+      skippedVenues += 1;
+      continue;
     }
 
     const rawTitle = readHtmlField(item, fields.title);
@@ -299,14 +346,15 @@ export function extractHtmlEvents({
     });
   }
 
-  if (wantedVenue && items.length > 0 && skippedVenues === items.length) {
-    warn(`aucun événement au lieu « ${config.venue} » : vérifiez le champ venue et l'orthographe`);
+  if (wanted.size > 0 && items.length > 0 && skippedVenues === items.length) {
+    warn(`aucun événement dans les villes choisies (${venues.join(", ")}) : vérifiez le champ venue et l'orthographe`);
   }
 
   return {
     itemCount: items.length,
     events,
     warnings: [...counts.entries()].map(([message, count]) => (count > 1 ? `${count} × ${message}` : message)),
+    venueCounts,
   };
 }
 

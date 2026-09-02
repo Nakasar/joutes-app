@@ -67,7 +67,8 @@ const eventHtmlConfigSchema = z.object({
     venue: htmlFieldRuleSchema.optional(),
   }).default({}),
   titleSeparator: z.string().max(10, "Le séparateur est trop long").optional(),
-  venue: z.string().trim().max(200, "Le lieu est trop long").optional(),
+  venues: z.array(z.string().trim().min(1).max(200, "Le nom de ville est trop long")).max(50, "Trop de villes").optional(),
+  venueOptionsSelector: z.string().trim().max(300, "Le sélecteur est trop long").optional(),
 });
 
 // Schéma pour une source d'événements

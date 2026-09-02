@@ -3,7 +3,15 @@ import { describe, it } from "node:test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { DateTime } from "luxon";
-import { extractHtmlEvents, parseCompositeTitle, parseDateText, parseTimeRange } from "./html-source";
+import {
+  extractHtmlEvents,
+  formFieldsForVenue,
+  hasVenuePlaceholder,
+  parseCompositeTitle,
+  parseDateText,
+  parseTimeRange,
+  readVenueOptions,
+} from "./html-source";
 import { GOBELIN_PRESET, OASIS_PRESET } from "./html-presets";
 
 const PARIS = "Europe/Paris";
@@ -270,10 +278,14 @@ describe("page du Gobelin — Thionville", () => {
     assert.equal(byGame["Yu-Gi-Oh!"], "available");
   });
 
-  it("ne garde que la ville demandée", () => {
+  it("compte les événements de chaque ville, filtre compris", () => {
+    assert.deepEqual(extraction.venueCounts, { Thionville: 5 });
+  });
+
+  it("ne garde que les villes demandées", () => {
     const metz = extractHtmlEvents({
       html: GOBELIN_PAGE,
-      config: { ...GOBELIN_PRESET.config, venue: "Metz" },
+      config: { ...GOBELIN_PRESET.config, venues: ["Metz"] },
       source: { url: "https://www.lesanimationsdugobelin.com/animations" },
       games: GAMES,
       now: NOW,
@@ -281,6 +293,39 @@ describe("page du Gobelin — Thionville", () => {
 
     assert.equal(metz.itemCount, 5);
     assert.equal(metz.events.length, 0);
-    assert.ok(metz.warnings.some((warning) => warning.includes("« Metz »")));
+    assert.ok(metz.warnings.some((warning) => warning.includes("Metz")));
+
+    const both = extractHtmlEvents({
+      html: GOBELIN_PAGE,
+      config: { ...GOBELIN_PRESET.config, venues: ["Metz", "thionville"] },
+      source: { url: "https://www.lesanimationsdugobelin.com/animations" },
+      games: GAMES,
+      now: NOW,
+    });
+    assert.equal(both.events.length, 5, "la ville se compare à la casse près");
+
+    const all = extractHtmlEvents({
+      html: GOBELIN_PAGE,
+      config: { ...GOBELIN_PRESET.config, venues: [] },
+      source: { url: "https://www.lesanimationsdugobelin.com/animations" },
+      games: GAMES,
+      now: NOW,
+    });
+    assert.equal(all.events.length, 5, "sans ville, tout est gardé");
+  });
+
+  it("lit les villes que le formulaire de la page propose", () => {
+    assert.deepEqual(readVenueOptions(GOBELIN_PAGE, GOBELIN_PRESET.config.venueOptionsSelector), [
+      "Metz", "Nancy", "Pont-à-Mousson", "Semécourt", "Thionville", "Toul",
+    ]);
+    assert.deepEqual(readVenueOptions(GOBELIN_PAGE, undefined), []);
+    assert.deepEqual(readVenueOptions(GOBELIN_PAGE, "select.nope option"), []);
+  });
+
+  it("remplace {ville} dans les champs de formulaire", () => {
+    assert.equal(hasVenuePlaceholder(GOBELIN_PRESET.formFields), true);
+    assert.equal(hasVenuePlaceholder({ animation: "Thionville.lieu" }), false);
+    assert.equal(hasVenuePlaceholder(undefined), false);
+    assert.deepEqual(formFieldsForVenue({ animation: "{ville}.lieu", q: "" }, "Metz"), { animation: "Metz.lieu", q: "" });
   });
 });

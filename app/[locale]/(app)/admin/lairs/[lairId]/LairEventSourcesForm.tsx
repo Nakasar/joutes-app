@@ -187,11 +187,14 @@ export function LairEventSourcesForm({
   // celle d'une source retirée.
   const nextKey = useRef(0);
 
-  const patch = (key: string, next: EventSource) => {
+  const patch = (key: string, next: EventSource, { keepPreview = false }: { keepPreview?: boolean } = {}) => {
     setDrafts((previous) =>
       previous.map((draft) => (draft.key === key ? { ...draft, source: next } : draft)),
     );
-    // Un aperçu décrit la source telle qu'elle était : il ne vaut plus rien.
+    // Un aperçu décrit la source telle qu'elle était : il ne vaut plus rien —
+    // sauf quand seules les villes cochées changent, car c'est lui qui les
+    // propose, avec leurs comptes.
+    if (keepPreview) return;
     setPreviews((previous) => {
       if (!(key in previous)) return previous;
       const rest = { ...previous };
@@ -208,8 +211,13 @@ export function LairEventSourcesForm({
     patch(key, { ...source, mappingConfig: { ...emptyMapping(source), ...next } });
   };
 
-  const patchHtml = (key: string, source: EventSource, next: Partial<EventHtmlConfig>) => {
-    patch(key, { ...source, htmlConfig: { ...emptyHtml(source), ...next } });
+  const patchHtml = (
+    key: string,
+    source: EventSource,
+    next: Partial<EventHtmlConfig>,
+    options: { keepPreview?: boolean } = {},
+  ) => {
+    patch(key, { ...source, htmlConfig: { ...emptyHtml(source), ...next } }, options);
   };
 
   const patchHtmlField = (
@@ -724,26 +732,19 @@ export function LairEventSourcesForm({
                       </div>
                     </div>
 
-                    <div>
-                      <label
-                        htmlFor={`html-venue-${key}`}
-                        className="block text-xs font-medium text-muted-foreground mb-1"
-                      >
-                        Ne garder que le lieu (optionnel)
-                      </label>
-                      <input
-                        id={`html-venue-${key}`}
-                        type="text"
-                        value={source.htmlConfig?.venue ?? ""}
-                        onChange={(e) => patchHtml(key, source, { venue: e.target.value || undefined })}
-                        placeholder="Thionville"
-                        className={FIELD_CLASS}
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Quand la page liste plusieurs villes : seuls les événements dont le champ{" "}
-                        <span className="font-mono">venue</span> vaut ceci sont gardés.
-                      </p>
-                    </div>
+                    <VenuesField
+                      sourceKey={key}
+                      venues={source.htmlConfig?.venues ?? []}
+                      optionsSelector={source.htmlConfig?.venueOptionsSelector ?? ""}
+                      preview={previews[key]?.status === "done" ? previews[key].preview.venues : undefined}
+                      perVenue={/\{ville\}/.test(draft.formFieldsText)}
+                      onChange={(venues) =>
+                        patchHtml(key, source, { venues: venues.length > 0 ? venues : undefined }, { keepPreview: true })
+                      }
+                      onOptionsSelectorChange={(value) =>
+                        patchHtml(key, source, { venueOptionsSelector: value || undefined })
+                      }
+                    />
 
                     <div>
                       <p className="text-sm font-medium text-foreground mb-1">Champs</p>
@@ -806,13 +807,13 @@ export function LairEventSourcesForm({
                     rows={2}
                     value={draft.formFieldsText}
                     onChange={(e) => patchDraftText(key, { formFieldsText: e.target.value })}
-                    placeholder={"animation = Thionville.lieu"}
+                    placeholder={"animation = {ville}.lieu"}
                     className={`${FIELD_CLASS} font-mono`}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Un champ par ligne. La page est alors demandée en POST avec ces champs, comme
-                    en validant le formulaire du site : c&apos;est ainsi qu&apos;un site qui sert
-                    plusieurs villes sur la même adresse rend la bonne.
+                    en validant le formulaire du site. Écrivez <span className="font-mono">{"{ville}"}</span>{" "}
+                    là où le site attend la ville : la page est demandée une fois par ville cochée.
                   </p>
                 </div>
 
@@ -868,6 +869,137 @@ export function LairEventSourcesForm({
         <span className="text-xs text-muted-foreground">
           Une source sans URL est abandonnée à l&apos;enregistrement.
         </span>
+      </div>
+    </div>
+  );
+}
+
+/** Les villes à inclure d'une source HTML : cochées parmi celles que la page propose, ou ajoutées à la main. */
+function VenuesField({
+  sourceKey,
+  venues,
+  optionsSelector,
+  preview,
+  perVenue,
+  onChange,
+  onOptionsSelectorChange,
+}: {
+  sourceKey: string;
+  venues: string[];
+  optionsSelector: string;
+  preview: EventSourcePreview["venues"] | undefined;
+  perVenue: boolean;
+  onChange: (venues: string[]) => void;
+  onOptionsSelectorChange: (value: string) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const normalize = (value: string) => value.trim().toLowerCase();
+  const isChecked = (venue: string) => venues.some((chosen) => normalize(chosen) === normalize(venue));
+
+  // Les villes à proposer : celles cochées, celles que la page annonce, et
+  // celles vues sur les événements lus — sans doublon, à la casse près.
+  const proposed: string[] = [];
+  const seen = new Set<string>();
+  for (const venue of [...venues, ...(preview?.available ?? []), ...Object.keys(preview?.counts ?? {})]) {
+    const key = normalize(venue);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    proposed.push(venue);
+  }
+
+  const countOf = (venue: string) => {
+    const entry = Object.entries(preview?.counts ?? {}).find(([name]) => normalize(name) === normalize(venue));
+    return entry ? entry[1] : undefined;
+  };
+
+  const toggle = (venue: string) => {
+    onChange(isChecked(venue) ? venues.filter((chosen) => normalize(chosen) !== normalize(venue)) : [...venues, venue]);
+  };
+
+  const add = () => {
+    const venue = draft.trim();
+    if (!venue) return;
+    if (!isChecked(venue)) onChange([...venues, venue]);
+    setDraft("");
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-medium text-foreground">Villes à inclure</p>
+        <p className="text-xs text-muted-foreground">
+          {perVenue
+            ? "Une requête par ville cochée, le mot {ville} du formulaire remplacé. Sans ville cochée, le test sonde celles que la page propose."
+            : "Seuls les événements dont le champ venue est l'une de ces villes sont gardés. Aucune ville : tout est gardé."}
+        </p>
+      </div>
+
+      {proposed.length > 0 && (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {proposed.map((venue) => {
+            const checked = isChecked(venue);
+            const count = countOf(venue);
+            return (
+              <label
+                key={venue}
+                className={`flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm ${
+                  checked ? "border-primary bg-muted" : "border-border bg-background"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <input type="checkbox" checked={checked} onChange={() => toggle(venue)} className="size-4" />
+                  <span className={checked ? "font-medium text-foreground" : "text-foreground"}>{venue}</span>
+                </span>
+                {count !== undefined && (
+                  <span className="text-xs text-muted-foreground">
+                    {count} événement{count > 1 ? "s" : ""}
+                  </span>
+                )}
+              </label>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder={proposed.length > 0 ? "Ajouter une ville que la page ne propose pas…" : "Thionville"}
+          aria-label="Ajouter une ville"
+          className={`${FIELD_CLASS} flex-1 min-w-[12rem]`}
+        />
+        <Button type="button" size="sm" variant="outline" onClick={add} disabled={draft.trim() === ""}>
+          Ajouter
+        </Button>
+      </div>
+
+      <div>
+        <label
+          htmlFor={`html-venue-options-${sourceKey}`}
+          className="block text-xs font-medium text-muted-foreground mb-1"
+        >
+          Où la page liste ses villes (sélecteur, optionnel)
+        </label>
+        <input
+          id={`html-venue-options-${sourceKey}`}
+          type="text"
+          value={optionsSelector}
+          onChange={(e) => onOptionsSelectorChange(e.target.value)}
+          placeholder='select[name="ville"] option'
+          className={`${FIELD_CLASS} font-mono`}
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Le test y lit les villes à proposer ci-dessus, avec le nombre d&apos;événements de chacune.
+        </p>
       </div>
     </div>
   );

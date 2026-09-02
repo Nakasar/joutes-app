@@ -136,17 +136,26 @@ ligne, où les événements sont des produits.
   début complet (`startDateTime`) l'emporte sur les deux.
 - **Statut** : lu dans un texte de stock ou de disponibilité (« En stock »,
   « Rupture », « Complet », « 8 restantes », « 0 restante », « Annulé »…).
-- **Lieu** : une page qui liste plusieurs villes se filtre avec le champ
-  `venue` et la valeur à garder (« Thionville »). Si rien ne passe le filtre,
-  la source le signale.
+- **Villes à inclure** : une page qui liste plusieurs villes se filtre avec
+  le champ `venue` et la liste des villes à garder (« Thionville », « Metz »),
+  à la casse et aux accents près ; sans ville, tout est gardé. Si rien ne
+  passe le filtre, la source le signale.
 - **Champs de formulaire** (tous types de source) : quand la page attend un
-  formulaire pour afficher la bonne ville — « animation = Thionville.lieu »
-  chez le Gobelin —, ces champs sont envoyés en POST, comme le ferait le
-  navigateur.
+  formulaire pour afficher la bonne ville, ces champs sont envoyés en POST,
+  comme le ferait le navigateur. Le mot `{ville}` y est remplacé par chaque
+  ville à inclure, et la page est demandée **une fois par ville** —
+  « animation = {ville}.lieu » chez le Gobelin ; les événements sont réunis
+  et dédoublonnés (identifiant, lien, à défaut nom et date).
+- **Villes proposées** : un sélecteur (`venueOptionsSelector`) dit où la page
+  liste les villes qu'elle sait servir — les `<option>` de son formulaire.
+  Le test les propose à cocher, avec le nombre d'événements de chacune ;
+  quand le formulaire attend une ville et qu'aucune n'est cochée, le test
+  sonde chaque ville proposée (douze au plus) sans rien enregistrer. Hors du
+  test, une source qui attend une ville sans en avoir est en échec.
 - **Préréglages** : « Boutique Oasis » (la plateforme de l'Antre Temps) et
   « Animations du Gobelin » (une page pour toutes les villes, filtrée par
-  formulaire ; le préréglage vise Thionville, la ville se change dans les
-  champs de formulaire et dans le filtre de lieu). Modifiables ensuite.
+  formulaire ; le préréglage coche Thionville, les autres villes se cochent
+  après un test). Modifiables ensuite.
 
 Tous les champs lus passent par les mêmes lecteurs que la correspondance JSON
 (prix, liens relatifs, dates) ; l'identifiant, s'il y en a un (`idProduit`),

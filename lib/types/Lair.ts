@@ -74,17 +74,25 @@ export type EventHtmlConfig = {
     price?: HtmlFieldRule;
     status?: HtmlFieldRule;
     url?: HtmlFieldRule;
-    /** Le lieu ou la ville de l'événement, pour `venue`. */
+    /** Le lieu ou la ville de l'événement, pour `venues`. */
     venue?: HtmlFieldRule;
   };
   /** Ce qui sépare les segments du titre composé. « - » par défaut. */
   titleSeparator?: string;
   /**
-   * Ne garder que les événements dont le champ `venue` vaut ceci, à la casse
-   * et aux accents près : une page qui liste plusieurs villes ne donne au
-   * lieu que la sienne.
+   * Les villes à inclure, à la casse et aux accents près : une page qui liste
+   * plusieurs villes ne donne au lieu que les siennes. Vide : tout est gardé.
+   *
+   * Quand un champ de formulaire porte `{ville}`, la page est demandée une
+   * fois **par ville** de cette liste, le mot remplacé — c'est ainsi qu'un
+   * site qui ne rend qu'une ville à la fois rend toutes celles du lieu.
    */
-  venue?: string;
+  venues?: string[];
+  /**
+   * Où la page liste les villes qu'elle sait servir — les `<option>` de son
+   * formulaire, en général. Ne sert qu'au test : proposer les villes à cocher.
+   */
+  venueOptionsSelector?: string;
 };
 
 // Type pour une source d'événements

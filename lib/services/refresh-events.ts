@@ -19,7 +19,12 @@ import {
   resolveEventUrl,
   type SourceEvent,
 } from "@/lib/events/source-events";
-import { extractHtmlEvents } from "@/lib/events/html-source";
+import {
+  extractHtmlEvents,
+  formFieldsForVenue,
+  hasVenuePlaceholder,
+  readVenueOptions,
+} from "@/lib/events/html-source";
 
 /**
  * La moisson des événements d'un lieu.
@@ -63,6 +68,14 @@ const extractionSchema = z.object({
   })),
 });
 
+/** Les villes qu'une source HTML a vues, pour les proposer à cocher. */
+export type SourceVenues = {
+  /** Celles que la page dit savoir servir (son formulaire). */
+  available: string[];
+  /** Combien d'événements portent chaque ville, parmi les pages lues. */
+  counts: Record<string, number>;
+};
+
 /** Ce qu'une lecture de source rend, avant toute écriture. */
 export type SourceReadResult = {
   source: EventSource;
@@ -70,6 +83,7 @@ export type SourceReadResult = {
   error?: string;
   warnings: string[];
   events: SourceEvent[];
+  venues?: SourceVenues;
 };
 
 export type RefreshEventsResult =
@@ -141,10 +155,15 @@ export async function refreshEvents(lairId: string): Promise<RefreshEventsResult
 /**
  * Lit une source sans rien écrire : ce que le bouton « Tester » de
  * l'administration appelle, sur une source pas encore enregistrée.
+ *
+ * En mode test, une source HTML dont le formulaire attend une ville et qui
+ * n'en a encore aucune de cochée est lue **pour chaque ville que la page
+ * propose** : c'est ce qui donne à l'administration le nombre d'événements
+ * de chacune avant de choisir.
  */
 export async function previewEventSource(lair: Lair, source: EventSource): Promise<SourceReadResult> {
   const games = await getAllGames();
-  return readEventSource(source, lair, games, DateTime.now().setZone(EVENTS_TIMEZONE));
+  return readEventSource(source, lair, games, DateTime.now().setZone(EVENTS_TIMEZONE), { probeVenues: true });
 }
 
 /** Le résumé d'un rafraîchissement, en une phrase. */
@@ -173,13 +192,14 @@ async function readEventSource(
   lair: Lair,
   games: Pick<Game, "name">[],
   now: DateTime,
+  { probeVenues = false }: { probeVenues?: boolean } = {},
 ): Promise<SourceReadResult> {
   try {
     if (source.type === "MAPPING") {
       return await readMappingSource(source, games, now);
     }
     if (source.type === "HTML") {
-      return await readHtmlSource(source, games, now);
+      return await readHtmlSource(source, games, now, { probeVenues });
     }
     return await readAISource(source, lair, games, now);
   } catch (error) {
@@ -196,6 +216,11 @@ async function readEventSource(
  * une page sans événement — et tout ce que la source annonçait était retiré.
  */
 async function fetchSource(source: Pick<EventSource, "url" | "formFields">, accept: string): Promise<Response> {
+  return fetchPage(source.url, source.formFields, accept);
+}
+
+async function fetchPage(url: string, fields: Record<string, string> | undefined, accept: string): Promise<Response> {
+  const source = { url, formFields: fields };
   const parsed = new URL(source.url);
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     throw new Error("Seules les adresses http(s) sont lues");
@@ -500,32 +525,124 @@ async function readMappingSource(
 // Source HTML (sélecteurs)
 // ---------------------------------------------------------------------------
 
+/** Au-delà, le test ne sonde plus chaque ville de la page : l'administration choisit d'abord. */
+const MAX_PROBED_VENUES = 12;
+
+/**
+ * Lit une source HTML.
+ *
+ * Trois cas, selon ce que la page attend :
+ *
+ * - **une page, toutes les villes** — aucun `{ville}` dans le formulaire : une
+ *   lecture, et le champ `venue` de chaque événement fait le tri ;
+ * - **une page par ville** — un champ de formulaire porte `{ville}` : une
+ *   lecture par ville à inclure, le mot remplacé, chaque page filtrée sur sa
+ *   ville ; les événements sont réunis et dédoublonnés ;
+ * - **le test, sans ville choisie** — même formulaire, aucune ville cochée :
+ *   on sonde chaque ville que la page propose, pour rendre leur nombre
+ *   d'événements ; hors du test, c'est une erreur, pas une lecture vide.
+ */
 async function readHtmlSource(
   source: EventSource,
   games: Pick<Game, "name">[],
   now: DateTime,
+  { probeVenues }: { probeVenues: boolean },
 ): Promise<SourceReadResult> {
   const config = source.htmlConfig;
   if (!config) {
     return { source, ok: false, error: "Source HTML sans configuration", warnings: [], events: [] };
   }
 
-  const response = await fetchSource(source, "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8");
-  const html = await readResponseText(response);
+  const accept = "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8";
+  const chosen = (config.venues ?? []).map((venue) => venue.trim()).filter(Boolean);
+  const perVenue = hasVenuePlaceholder(source.formFields);
 
-  const extraction = extractHtmlEvents({ html, config, source, games, now });
+  // La première page : celle de la première ville quand le formulaire en
+  // attend une, sinon la page telle quelle. C'est sur elle qu'on lit les
+  // villes proposées.
+  const firstVenue = perVenue ? chosen[0] : undefined;
+  const firstFields = perVenue
+    ? firstVenue
+      ? formFieldsForVenue(source.formFields ?? {}, firstVenue)
+      : undefined
+    : source.formFields;
+  const firstHtml = await readResponseText(await fetchPage(source.url, firstFields, accept));
+  const available = readVenueOptions(firstHtml, config.venueOptionsSelector);
+
+  let venuesToRead: string[];
+  if (!perVenue) {
+    venuesToRead = [];
+  } else if (chosen.length > 0) {
+    venuesToRead = chosen;
+  } else if (probeVenues) {
+    venuesToRead = available.slice(0, MAX_PROBED_VENUES);
+  } else {
+    return {
+      source,
+      ok: false,
+      error: "Le formulaire de la page attend une ville ({ville}) : choisissez au moins une ville à inclure",
+      warnings: [],
+      events: [],
+      venues: { available, counts: {} },
+    };
+  }
+
+  const pages: { html: string; venues: string[] }[] = [];
+  if (!perVenue) {
+    pages.push({ html: firstHtml, venues: chosen });
+  } else {
+    for (const venue of venuesToRead) {
+      const html =
+        venue === firstVenue
+          ? firstHtml
+          : await readResponseText(await fetchPage(source.url, formFieldsForVenue(source.formFields ?? {}, venue), accept));
+      pages.push({ html, venues: [venue] });
+    }
+  }
+
+  const warnings = new Warnings();
+  const counts: Record<string, number> = {};
+  const seen = new Set<string>();
+  const events: SourceEvent[] = [];
+  let itemCount = 0;
+
+  for (const page of pages) {
+    const extraction = extractHtmlEvents({ html: page.html, config, source, games, now, venues: page.venues });
+    itemCount += extraction.itemCount;
+    for (const warning of extraction.warnings) warnings.add(warning);
+    for (const [venue, count] of Object.entries(extraction.venueCounts)) {
+      counts[venue] = (counts[venue] ?? 0) + count;
+    }
+
+    // En sondage, on compte sans garder : rien n'est coché, rien n'est à écrire.
+    if (perVenue && chosen.length === 0) continue;
+
+    for (const event of extraction.events) {
+      const key = event.externalId ?? event.url ?? `${event.name}|${event.startDateTime}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      events.push(event);
+    }
+  }
+
+  const venues: SourceVenues = { available, counts };
 
   // Un sélecteur qui ne désigne rien est bien plus souvent une mise en page
   // qui a changé qu'un agenda vide : une panne, qui ne retire rien.
-  if (extraction.itemCount === 0) {
+  if (itemCount === 0 && pages.length > 0) {
     return {
       source,
       ok: false,
       error: `Le sélecteur « ${config.itemSelector} » ne désigne aucun élément de la page`,
       warnings: [],
       events: [],
+      venues,
     };
   }
 
-  return { source, ok: true, warnings: extraction.warnings, events: extraction.events };
+  if (perVenue && chosen.length === 0) {
+    warnings.add("aucune ville cochée : les villes de la page ont été sondées, rien ne sera enregistré tant qu'aucune n'est choisie");
+  }
+
+  return { source, ok: true, warnings: warnings.list(), events, venues };
 }
