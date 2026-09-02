@@ -32,6 +32,9 @@ import LairNewsEditor from "./LairNewsEditor.tsx";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
+import LairEventsConnect from "./LairEventsConnect.tsx";
+import { getLairEventsRefreshReport, getLairEventsSourceRequest } from "@/lib/db/lairs.ts";
+import { findManagerSource } from "@/lib/events/connect.ts";
 
 /**
  * Rien de traduit ne reste dans la coquille, et c'est structurel.
@@ -168,6 +171,15 @@ async function ManageLairContent({
           .map((event) => ({ id: event.id, name: event.name, startDateTime: event.startDateTime }))
       : [];
 
+  // La connexion du site du lieu : sa source, le dernier rapport et sa
+  // demande d'aide, lus seulement pour l'onglet qui les montre — le rapport et
+  // la demande sont hors du lieu à dessein (voir `getLairEventsRefreshReport`).
+  const managerSource = tab === "events" ? findManagerSource(lair.eventsSourceUrls) : null;
+  const teamSourceCount =
+    tab === "events" ? (lair.eventsSourceUrls ?? []).filter((source) => source.managedBy !== "owner").length : 0;
+  const refreshReport = tab === "events" ? await getLairEventsRefreshReport(lairId) : null;
+  const sourceRequest = tab === "events" ? await getLairEventsSourceRequest(lairId) : null;
+
   // Le statut d'administrateur, pour la carte d'octroi réservée à l'équipe.
   // L'action serveur refait le contrôle : ceci ne décide que de l'affichage.
   const viewerIsAdmin = tab === "subscription" ? await checkAdmin() : false;
@@ -223,6 +235,26 @@ async function ManageLairContent({
             <LairNewsEditor lairId={lairId} news={lair.options?.news ?? []} />
           </CardContent>
         </Card>
+      )}
+
+      {tab === "events" && (
+        <LairEventsConnect
+          lairId={lairId}
+          address={lair.address}
+          isPrivate={Boolean(lair.isPrivate)}
+          isPro={proState.isPro}
+          userEmail={session?.user?.email ?? undefined}
+          source={managerSource}
+          frequency={lair.eventsRefreshFrequency ?? "weekly"}
+          report={refreshReport}
+          teamSourceCount={teamSourceCount}
+          games={games.map((game) => ({ name: game.name }))}
+          pendingRequest={
+            sourceRequest?.status === "pending"
+              ? { requestedAt: sourceRequest.requestedAt, ...(sourceRequest.url ? { url: sourceRequest.url } : {}) }
+              : null
+          }
+        />
       )}
 
       <div className="space-y-6">

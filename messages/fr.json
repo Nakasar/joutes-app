@@ -1394,8 +1394,218 @@
         "details": "Détails",
         "customization": "Personnalisation",
         "news": "Actualités",
+        "events": "Événements",
         "owners": "Propriétaires",
         "subscription": "Abonnement"
+      },
+      "events": {
+        "private": "Un lieu privé ne peut pas connecter de site : ses événements se créent à la main depuis sa vitrine.",
+        "team": {
+          "title": "Vos événements sont lus par l'équipe Joutes",
+          "description": "L'équipe a connecté votre agenda pour vous. Il se met à jour tout seul ; pour changer de page ou de réglage, écrivez-nous."
+        },
+        "intro": {
+          "title": "Vos événements, sur Joutes, sans rien retaper",
+          "description": "Si vos tournois et soirées sont déjà sur votre site, Joutes peut les lire pour vous. Ils apparaîtront sur votre vitrine et dans l'agenda des joueurs qui vous suivent, et resteront à jour tout seuls.",
+          "steps": {
+            "one": "Vous collez l'adresse de la page de vos événements",
+            "two": "Vous vérifiez que Joutes les a bien compris",
+            "three": "C'est tout : ils se mettent à jour chaque semaine"
+          },
+          "start": "Connecter mon site",
+          "duration": "Environ 3 minutes",
+          "previewLabel": "Ce que verront les joueurs",
+          "samples": {
+            "one": {
+              "name": "Tournoi Nexus",
+              "meta": "Riftbound · jeu. 3 sept., 19:30",
+              "status": "14 places"
+            },
+            "two": {
+              "name": "Tournoi Core Constructed",
+              "meta": "Lorcana · mer. 2 sept., 19:30",
+              "status": "10 places"
+            },
+            "three": {
+              "name": "Tournoi Standard",
+              "meta": "One Piece Card Game · sam. 5 sept., 10:00",
+              "status": "Complet"
+            }
+          }
+        },
+        "manual": {
+          "title": "Vous préférez les saisir vous-même ?",
+          "description": "Créez vos événements un par un depuis votre vitrine. Vous pourrez connecter votre site plus tard.",
+          "create": "Créer un événement"
+        },
+        "help": {
+          "introTitle": "Pas de site, ou pas sûr de vous ?",
+          "introDescription": "Envoyez-nous un lien vers vos événements (site, Facebook, Instagram…) : l'équipe Joutes fait la connexion pour vous.",
+          "title": "Besoin d'aide ?",
+          "connectedDescription": "Si la lecture ne marche plus, ou si vous changez de site, l'équipe Joutes s'en occupe.",
+          "ask": "Demander à l'équipe Joutes",
+          "askAgain": "Renvoyer une demande",
+          "pending": "Demande envoyée le {date}. L'équipe vous répond par e-mail, en général sous quelques jours.",
+          "urlLabel": "Lien vers vos événements (optionnel)",
+          "noteLabel": "Un mot pour nous aider (optionnel)",
+          "notePlaceholder": "Ex. : les événements sont dans l'onglet « Tournois », il faut cliquer sur « Voir plus » pour tous les voir…",
+          "send": "Envoyer à l'équipe Joutes",
+          "sending": "Envoi…",
+          "sent": "Demande envoyée. L'équipe Joutes revient vers vous.",
+          "failed": "L'envoi a échoué. Réessayez dans un instant, ou écrivez-nous.",
+          "invalidUrl": "Le lien doit être une adresse complète, qui commence par https://",
+          "cancel": "Annuler"
+        },
+        "contact": {
+          "lead": "Pour en parler directement :",
+          "discord": "Discord de Joutes",
+          "pro": "Avec Joutes Pro, l'équipe vous accompagne en priorité, plus vite et plus loin : configuration faite avec vous, suivi de vos lectures."
+        },
+        "wizard": {
+          "steps": {
+            "site": "Votre site",
+            "venues": "Vos villes",
+            "games": "Vos jeux",
+            "check": "Vérification"
+          },
+          "cancel": "Annuler",
+          "back": "Retour",
+          "next": "Continuer",
+          "reading": "Lecture de votre site…"
+        },
+        "site": {
+          "title": "Où sont vos événements sur internet ?",
+          "description": "Ouvrez la page de votre site qui liste vos tournois et soirées, copiez son adresse depuis la barre du navigateur, et collez-la ici.",
+          "urlLabel": "Adresse de la page",
+          "urlHint": "Par exemple : https://votreboutique.fr/evenements",
+          "check": "Vérifier",
+          "checking": "Vérification…",
+          "known": "Nous connaissons ce site : {name}",
+          "knownVenues": "Joutes sait lire ses événements. Cette page couvre plusieurs villes : nous vous demanderons lesquelles afficher à l'étape suivante.",
+          "knownSimple": "Joutes sait lire ses événements. À l'étape suivante, nous vous montrons ce que nous y avons trouvé.",
+          "nothingSaved": "Rien n'est enregistré avant la dernière étape.",
+          "unknownNote": "Continuer n'est possible qu'avec un site que Joutes sait lire."
+        },
+        "unknown": {
+          "title": "Nous ne savons pas encore lire ce site",
+          "description": "Ce n'est pas grave : envoyez-nous cette adresse, et l'équipe Joutes apprend à la lire. Vous recevrez un message quand ce sera prêt, en général sous quelques jours. En attendant, vous pouvez créer vos événements à la main.",
+          "noteLabel": "Un mot pour nous aider (optionnel)",
+          "notePlaceholder": "Ex. : les événements sont dans l'onglet « Tournois », il faut cliquer sur « Voir plus » pour tous les voir…",
+          "send": "Envoyer à l'équipe Joutes",
+          "sending": "Envoi…",
+          "notify": "Nous vous prévenons par e-mail à {email}",
+          "sent": "Adresse envoyée. L'équipe Joutes revient vers vous dès que ce site se lit.",
+          "failed": "L'envoi a échoué. Réessayez dans un instant, ou écrivez-nous.",
+          "alreadySent": "Adresse envoyée à l'équipe Joutes. Nous revenons vers vous dès que ce site se lit."
+        },
+        "venues": {
+          "title": "Quelles villes afficher ?",
+          "description": "Ce site liste les événements de plusieurs boutiques. Cochez celles qui sont les vôtres : seules leurs dates apparaîtront sur votre vitrine.",
+          "count": "{count, plural, =0 {aucun événement} one {# événement} other {# événements}}",
+          "none": "La page ne propose aucune ville pour le moment.",
+          "prechecked": "{cities} est cochée d'office : c'est la ville de votre lieu sur Joutes. Décochez-la si ce n'est pas la vôtre."
+        },
+        "games": {
+          "title": "À quels jeux correspondent vos événements ?",
+          "description": "Votre site nomme les jeux à sa façon. Joutes en a reconnu la plupart ; dites-nous simplement lesquels sont les autres, pour que les joueurs du bon jeu voient vos dates.",
+          "onSite": "Sur votre site",
+          "onJoutes": "Sur Joutes",
+          "count": "{count, plural, one {# événement} other {# événements}}",
+          "choose": "Choisir dans la liste…",
+          "chooseFor": "Jeu sur Joutes pour {name}",
+          "notOnJoutes": "Ce jeu n'est pas sur Joutes",
+          "note": "Un jeu sans correspondance n'est pas perdu : ses événements sont gardés, mais n'apparaissent dans aucun agenda tant que vous ne l'avez pas choisi. Si le jeu n'est pas dans la liste, choisissez « Ce jeu n'est pas sur Joutes » : nous l'ajouterons.",
+          "remaining": "{count, plural, one {# jeu reste à choisir} other {# jeux restent à choisir}} — vous pourrez le faire plus tard.",
+          "none": "Aucun jeu n'a été lu sur cette page."
+        },
+        "check": {
+          "title": "Est-ce que tout est bon ?",
+          "description": "Voici ce que Joutes a lu sur votre site. Comparez avec votre agenda : si les noms, les dates et les prix sont justes, vous pouvez activer.",
+          "found": "événements trouvés",
+          "foundIn": "événements trouvés à {cities}",
+          "gamesRecognized": "jeux, dont {recognized} reconnus",
+          "lastDate": "dernière date lue",
+          "listTitle": "Vos prochains événements, tels que les joueurs les verront",
+          "noEvents": "Aucun événement à venir n'a été lu sur cette page.",
+          "seeMore": "Voir les {count} autres",
+          "andMore": "… et {count} de plus, non affichés ici.",
+          "status": {
+            "available": "Places disponibles",
+            "soldOut": "Complet",
+            "cancelled": "Annulé"
+          },
+          "note": "Une fois activé, Joutes relit votre site au rythme choisi et met vos événements à jour tout seul. Les joueurs qui ont mis une date en favori la gardent, même si vous changez son nom ou son heure.",
+          "report": "Quelque chose cloche ? Dites-le nous",
+          "reportSubject": "Connexion de mon site : quelque chose cloche",
+          "activate": "Tout est bon, activer",
+          "activating": "Activation…"
+        },
+        "frequency": {
+          "title": "À quel rythme relire votre site ?",
+          "description": "Vous pourrez changer plus tard. Un bouton « Vérifier maintenant » reste disponible à tout moment.",
+          "weekly": {
+            "label": "Une fois par semaine",
+            "hint": "Recommandé. Le mercredi matin."
+          },
+          "daily": {
+            "label": "Une fois par jour",
+            "hintPro": "Chaque matin. Inclus dans votre Joutes Pro.",
+            "hintLocked": "Chaque matin. Avec Joutes Pro."
+          },
+          "discoverPro": "Découvrir Joutes Pro"
+        },
+        "connected": {
+          "activated": "Votre site est connecté. Vos événements sont en ligne.",
+          "title": "Votre site est connecté",
+          "titleFailed": "Votre site n'a pas pu être lu",
+          "lastRead": "Dernière lecture {when} : {count, plural, =0 {aucun événement} one {# événement} other {# événements}} à jour.",
+          "lastReadFailed": "Dernière lecture {when} : elle a échoué, vos événements sont laissés tels quels.",
+          "nextRead": "Prochaine lecture {when}.",
+          "refreshNow": "Vérifier maintenant",
+          "refreshing": "Lecture…",
+          "refreshed": "Votre site a été relu.",
+          "refreshFailed": "La lecture a échoué.",
+          "unknownGamesTitle": "{count, plural, one {Un jeu attend votre choix.} other {# jeux attendent votre choix.}}",
+          "unknownGames": "Les événements {names} n'apparaissent dans aucun agenda tant que vous n'avez pas dit quel jeu c'est sur Joutes.",
+          "chooseGame": "Choisir le jeu",
+          "edit": "Modifier",
+          "changePage": "Changer de page",
+          "facets": {
+            "venues": "Villes affichées",
+            "allVenues": "Toutes",
+            "games": "Jeux",
+            "gamesAuto": "Reconnus automatiquement",
+            "page": "Page lue",
+            "frequency": "Rythme de lecture",
+            "frequencyHint": "Le mercredi matin. Une fois par jour avec Joutes Pro."
+          },
+          "wrong": {
+            "title": "Un événement manque ou est faux ?",
+            "description": "Corrigez-le d'abord sur votre site : Joutes le relira à la prochaine lecture. Pour une date qui n'est pas sur votre site, créez-la ici à la main."
+          },
+          "disconnect": "Déconnecter le site",
+          "disconnectConfirm": "Oui, déconnecter",
+          "disconnecting": "Déconnexion…",
+          "disconnected": "Site déconnecté. Vos événements restent en ligne tels quels."
+        },
+        "settings": {
+          "title": "Régler la lecture de votre site",
+          "description": "Vos villes, vos jeux et le rythme. Joutes relit votre site dès que vous enregistrez.",
+          "save": "Enregistrer et relire",
+          "saving": "Enregistrement…",
+          "saved": "Réglages enregistrés. Votre site a été relu."
+        },
+        "errors": {
+          "INVALID": "L'adresse doit être complète, et commencer par https://",
+          "NOT_FOUND": "Ce lieu est introuvable.",
+          "PRIVATE": "Un lieu privé ne peut pas connecter de site.",
+          "UNKNOWN_SITE": "Joutes ne sait pas encore lire ce site.",
+          "VENUES_REQUIRED": "Cochez au moins une ville.",
+          "PRO_REQUIRED": "La lecture quotidienne demande Joutes Pro.",
+          "READ_FAILED": "Votre site n'a pas pu être lu.",
+          "NOTHING_CONNECTED": "Aucun site n'est connecté.",
+          "FAILED": "Une erreur est survenue. Réessayez dans un instant."
+        }
       },
       "customization": {
         "organizers": {

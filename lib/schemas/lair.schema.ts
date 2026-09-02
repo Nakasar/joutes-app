@@ -84,6 +84,7 @@ export const eventSourceSchema = z.object({
   gameAliases: z
     .record(z.string().trim().min(1).max(100), z.string().trim().min(1).max(200))
     .optional(),
+  managedBy: z.literal("owner").optional(),
 }).superRefine((data, ctx) => {
   // Si le type est MAPPING, mappingConfig est obligatoire
   if (data.type === 'MAPPING' && !data.mappingConfig) {
@@ -247,3 +248,57 @@ export const lairCreationSchema = z.object({
 });
 
 export type LairCreationInput = z.infer<typeof lairCreationSchema>;
+
+export const eventsRefreshFrequencySchema = z.enum(["weekly", "daily"]);
+
+/**
+ * Une adresse web, et rien d'autre : `http:` ou `https:`.
+ *
+ * `z.url()` accepte tout schéma — `javascript:`, `data:` — et ce qu'un
+ * gérant saisit ici est ensuite rendu en lien cliquable dans
+ * l'administration et dans un courriel à l'équipe. Le rendu refait le même
+ * contrôle, pour ce qui a été écrit avant cette règle.
+ */
+export function isWebUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export const webUrlSchema = z
+  .string()
+  .trim()
+  .max(2000, "L'adresse est trop longue")
+  .refine(isWebUrl, "L'adresse doit être complète et commencer par https://");
+
+/**
+ * Ce qu'un gérant envoie pour connecter la page de son site.
+ *
+ * Pas de sélecteur ni de formulaire : tout vient du préréglage que
+ * `findPresetForUrl` a reconnu, et dont on ne reçoit que la clé. Le gérant ne
+ * choisit que l'adresse, ses villes, ses alias de jeu et le rythme.
+ */
+export const managerEventSourceSchema = z.object({
+  url: webUrlSchema,
+  presetKey: z.string().trim().min(1).max(50),
+  venues: z.array(z.string().trim().min(1).max(200)).max(50, "Trop de villes").optional(),
+  gameAliases: z
+    .record(z.string().trim().min(1).max(100), z.string().trim().min(1).max(200))
+    .optional(),
+});
+
+export const managerEventSettingsSchema = z.object({
+  venues: z.array(z.string().trim().min(1).max(200)).max(50, "Trop de villes").optional(),
+  gameAliases: z
+    .record(z.string().trim().min(1).max(100), z.string().trim().min(1).max(200))
+    .optional(),
+  frequency: eventsRefreshFrequencySchema.optional(),
+});
+
+export const eventsSourceHelpRequestSchema = z.object({
+  url: webUrlSchema.optional().or(z.literal("")),
+  note: z.string().trim().max(2000, "Le message est trop long").optional(),
+});

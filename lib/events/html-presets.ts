@@ -9,6 +9,8 @@ export type HtmlPreset = {
   key: string;
   label: string;
   description: string;
+  /** Les domaines que ce préréglage sait lire : c'est ainsi qu'un gérant voit sa page reconnue. */
+  hosts: string[];
   config: EventHtmlConfig;
   /** Les champs de formulaire à envoyer, quand le site en attend — à adapter au lieu. */
   formFields?: Record<string, string>;
@@ -24,6 +26,7 @@ export const OASIS_PRESET: HtmlPreset = {
   key: "oasis",
   label: "Boutique Oasis",
   description: "Les événements vendus comme des produits, dans une grille « product_box ».",
+  hosts: ["antretemps.com"],
   config: {
     itemSelector: ".product_box",
     fields: {
@@ -49,6 +52,7 @@ export const GOBELIN_PRESET: HtmlPreset = {
   key: "gobelin",
   label: "Animations du Gobelin",
   description: "Les cartes d'animations, filtrées par ville via le formulaire du site.",
+  hosts: ["lesanimationsdugobelin.com"],
   config: {
     itemSelector: "a.row-card-link",
     fields: {

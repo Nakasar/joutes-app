@@ -6,9 +6,11 @@ import { AlertTriangle, CheckCircle2, FlaskConical, Plus, RefreshCw, X, XCircle 
 import { EventHtmlConfig, EventSource, Lair, LairEventsRefreshReport } from "@/lib/types/Lair.ts";
 import { HTML_PRESETS } from "@/lib/events/html-presets.ts";
 import { normalizeEventName } from "@/lib/events/source-events.ts";
+import { isWebUrl } from "@/lib/schemas/lair.schema.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   EventSourcePreview,
+  markEventSourceRequestDone,
   previewLairEventSource,
   refreshEvents,
   updateLairEventSources,
@@ -167,9 +169,11 @@ function formatRelative(iso: string): string {
 export function LairEventSourcesForm({
   lair,
   report: initialReport,
+  helpRequest,
 }: {
   lair: Lair;
   report: LairEventsRefreshReport | null;
+  helpRequest: HelpRequest | null;
 }) {
   const [isPending, startTransition] = useTransition();
   const [refreshing, startRefreshing] = useTransition();
@@ -317,6 +321,8 @@ export function LairEventSourcesForm({
         </div>
       )}
 
+      {helpRequest?.status === "pending" && <HelpRequestBanner lairId={lair.id} request={helpRequest} />}
+
       <RefreshReportCard report={report} />
 
       <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
@@ -370,7 +376,14 @@ export function LairEventSourcesForm({
               return (
               <div key={key} className="rounded-lg border border-border bg-muted/30 p-4 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="text-sm font-semibold text-foreground">Source #{index + 1}</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-foreground">Source #{index + 1}</span>
+                    {source.managedBy === "owner" && (
+                      <span className="rounded-full border border-primary/40 px-2 py-0.5 text-[11px] text-primary">
+                        Connectée par le gérant
+                      </span>
+                    )}
+                  </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex flex-wrap gap-2">
                       <Button
@@ -1006,6 +1019,91 @@ function VenuesField({
         </p>
       </div>
     </div>
+  );
+}
+
+/** La demande d'aide d'un gérant, telle que la page l'apporte. */
+export type HelpRequest = {
+  url?: string;
+  note?: string;
+  requestedAt: string;
+  status: "pending" | "done";
+  requesterEmail?: string;
+};
+
+/**
+ * La demande d'un gérant dont Joutes ne sait pas lire le site : en tête,
+ * pour qu'elle se voie avant tout — c'est elle qui amène ici. Le bouton la
+ * clôt une fois la source configurée, et prévient le gérant.
+ */
+function HelpRequestBanner({ lairId, request }: { lairId: string; request: HelpRequest }) {
+  const [done, setDone] = useState(false);
+  const [closing, startClosing] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  if (done) return null;
+
+  return (
+    <section className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1 text-sm text-foreground">
+          <p className="font-semibold">
+            Le gérant demande la connexion de son site ({formatRelative(request.requestedAt)})
+          </p>
+          {request.url && (
+            <p>
+              Page :{" "}
+              {/* Cliquable seulement pour une adresse web : ce texte vient du
+                  gérant, et un `javascript:` n'a pas à s'exécuter d'un clic. */}
+              {isWebUrl(request.url) ? (
+                <a
+                  href={request.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs underline break-all"
+                >
+                  {request.url}
+                </a>
+              ) : (
+                <span className="font-mono text-xs break-all">{request.url}</span>
+              )}
+            </p>
+          )}
+          {request.note && <p className="whitespace-pre-line">« {request.note} »</p>}
+          {request.requesterEmail && (
+            <p className="text-muted-foreground">
+              Demandé par{" "}
+              <a href={`mailto:${request.requesterEmail}`} className="underline">
+                {request.requesterEmail}
+              </a>
+            </p>
+          )}
+          <p className="text-muted-foreground">
+            Configurez la source ci-dessous — sélecteurs, ou IA en dernier recours —, testez-la, puis
+            marquez la demande traitée : le gérant est prévenu par courriel.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={closing}
+          onClick={() =>
+            startClosing(async () => {
+              setError(null);
+              const result = await markEventSourceRequestDone(lairId);
+              if (result.success) {
+                setDone(true);
+              } else {
+                setError(result.error ?? "La clôture a échoué");
+              }
+            })
+          }
+        >
+          {closing ? "Clôture…" : "Marquer comme traitée"}
+        </Button>
+      </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+    </section>
   );
 }
 

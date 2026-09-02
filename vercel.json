@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/refresh-events",
-      "schedule": "0 8 * * 3"
+      "schedule": "0 8 * * *"
     },
     {
       "path": "/api/cron/update-event-boards",

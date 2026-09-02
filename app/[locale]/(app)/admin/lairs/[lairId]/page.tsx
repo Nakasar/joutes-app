@@ -1,8 +1,9 @@
 import { Link } from "@/i18n/navigation.ts";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/middleware/admin.ts";
-import { getLairById, getLairEventsRefreshReport } from "@/lib/db/lairs.ts";
+import { getLairById, getLairEventsRefreshReport, getLairEventsSourceRequest } from "@/lib/db/lairs.ts";
 import { getAllGames } from "@/lib/db/games.ts";
+import { getUserById } from "@/lib/db/users.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import LairTabsBar, { readLairTab } from "./LairTabsBar.tsx";
@@ -53,6 +54,18 @@ export default async function AdminLairPage({
   // Le rapport n'est lu que pour l'onglet qui l'affiche : il est hors du lieu
   // à dessein (voir `getLairEventsRefreshReport`).
   const refreshReport = active === "sources" ? await getLairEventsRefreshReport(lair.id) : null;
+  // La demande d'aide du gérant, avec son courriel pour lui répondre.
+  const sourceRequest = active === "sources" ? await getLairEventsSourceRequest(lair.id) : null;
+  const requester = sourceRequest ? await getUserById(sourceRequest.requestedBy) : null;
+  const helpRequest = sourceRequest
+    ? {
+        ...(sourceRequest.url ? { url: sourceRequest.url } : {}),
+        ...(sourceRequest.note ? { note: sourceRequest.note } : {}),
+        requestedAt: sourceRequest.requestedAt,
+        status: sourceRequest.status,
+        ...(requester?.email ? { requesterEmail: requester.email } : {}),
+      }
+    : null;
   const declaredGames = games.filter((game) => lair.games?.includes(game.id));
   const sourcesCount = lair.eventsSourceUrls?.length ?? 0;
 
@@ -104,7 +117,9 @@ export default async function AdminLairPage({
 
         {active === "jeux" && <LairGamesForm lair={lair} games={games} />}
 
-        {active === "sources" && <LairEventSourcesForm lair={lair} report={refreshReport} />}
+        {active === "sources" && (
+          <LairEventSourcesForm lair={lair} report={refreshReport} helpRequest={helpRequest} />
+        )}
 
         {active === "vitrine" && (
           <div className="space-y-6">
