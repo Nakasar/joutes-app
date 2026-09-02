@@ -21,7 +21,7 @@ import type { Event } from "@/lib/types/Event";
 export const EVENTS_TIMEZONE = "Europe/Paris";
 
 /** Les auteurs que le rafraîchissement a le droit de réécrire. */
-export const AUTOMATED_EVENT_AUTHORS = ["AI-SCRAPPING", "JSON-MAPPING"] as const;
+export const AUTOMATED_EVENT_AUTHORS = ["AI-SCRAPPING", "JSON-MAPPING", "HTML-SCRAPPING"] as const;
 
 export type EventStatus = Event["status"];
 
@@ -311,6 +311,78 @@ export function normalizeEventName(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+}
+
+/**
+ * Le nom sous lequel la plateforme connaît un jeu, à la casse et aux accents
+ * près, en passant d'abord par les alias de la source — « MTG » → « Magic:
+ * The Gathering ». Les listes d'événements font une jointure **exacte** sur
+ * `gameName` : un « riftbound » en minuscules n'apparaîtrait sur aucun
+ * agenda. Rend `null` pour un jeu que la plateforme ne connaît pas.
+ */
+export function canonicalGameName(
+  name: string,
+  games: { name: string }[],
+  aliases: Record<string, string> = {},
+): string | null {
+  const wanted = normalizeEventName(name);
+  if (!wanted) return null;
+
+  const alias = Object.entries(aliases).find(([key]) => normalizeEventName(key) === wanted)?.[1];
+  const lookup = alias ? normalizeEventName(alias) : wanted;
+
+  return games.find((game) => normalizeEventName(game.name) === lookup)?.name ?? null;
+}
+
+/**
+ * Le jeu que mentionne un texte libre — un titre d'événement où le jeu n'est
+ * pas un segment à part : « Avant Premiere MTG Réalité Fracturée ». On cherche
+ * chaque nom de jeu et chaque alias comme mot entier, à la casse et aux
+ * accents près, et on garde le plus long. Rend le nom **canonique**.
+ */
+export function findGameInText(
+  text: string,
+  games: { name: string }[],
+  aliases: Record<string, string> = {},
+): string | null {
+  const haystack = ` ${normalizeEventName(text)} `;
+  if (haystack.trim() === "") return null;
+
+  const candidates = [
+    ...games.map((game) => ({ key: normalizeEventName(game.name), canonical: game.name })),
+    ...Object.entries(aliases).map(([key, target]) => ({ key: normalizeEventName(key), canonical: target })),
+  ].filter((candidate) => candidate.key !== "");
+
+  const found = candidates
+    .filter((candidate) => haystack.includes(` ${candidate.key} `))
+    .sort((left, right) => right.key.length - left.key.length)[0];
+
+  if (!found) return null;
+  return canonicalGameName(found.canonical, games, aliases);
+}
+
+/**
+ * Le statut que trahit un texte libre — un stock de boutique, une mention
+ * « complet », un bandeau « annulé » —, quand aucun mot exact ne l'a donné.
+ */
+export function inferStatusFromText(text: string): EventStatus | null {
+  // Avant la normalisation, qui perd le signe : « -1 restante », c'est une
+  // place de trop, pas une de libre.
+  if (/-\s*\d+\s*(restante|place|dispo)/i.test(text)) return "sold-out";
+
+  const normalized = normalizeEventName(text);
+  if (!normalized) return null;
+
+  if (/\bannul/.test(normalized)) return "cancelled";
+  if (/rupture|epuis|indisponible|complet|sold out|soldout|plus de place|ferme/.test(normalized)) return "sold-out";
+  // « 8 restantes », « 1 restante », et « 0 restante » ou « -1 restante »
+  // quand tout est pris — le signe s'est perdu dans la normalisation, mais un
+  // zéro suffit.
+  if (/\b0 (restante|place|dispo)/.test(normalized)) return "sold-out";
+  if (/\b[1-9]\d* (restante|place|dispo)/.test(normalized)) return "available";
+  if (/en stock|disponible|available|ouvert|inscription|place/.test(normalized)) return "available";
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,15 +1,17 @@
 # Sources d'événements d'un lieu
 
 Un lieu public peut déclarer des **sources** d'où ses événements sont
-moissonnés automatiquement : une page lue par un modèle, ou un JSON décrit
-champ par champ. Le cron `/api/cron/refresh-events` les relit chaque mercredi
+moissonnés automatiquement : une page lue par sélecteurs CSS, un JSON décrit
+champ par champ, ou — en dernier recours — une page lue par un modèle. Le cron `/api/cron/refresh-events` les relit chaque mercredi
 à 8 h ; le bouton **Rafraîchir** de la fiche d'administration
 (`/admin/lairs/:id?tab=sources`) fait la même chose à la demande.
 
 | Fichier | Rôle |
 | --- | --- |
 | `lib/services/refresh-events.ts` | Lit chaque source, appelle le modèle ou applique la correspondance, écrit le rapport |
-| `lib/events/source-events.ts` | Tout ce qui se décide sans la base : dates, statuts, **rapprochement** avec l'existant |
+| `lib/events/source-events.ts` | Tout ce qui se décide sans la base : dates, statuts, jeux, **rapprochement** avec l'existant |
+| `lib/events/html-source.ts` | La lecture d'une page par sélecteurs : titre composé, champs, jeu |
+| `lib/events/html-presets.ts` | Les configurations toutes faites (boutique Oasis, Animations du Gobelin) |
 | `lib/db/events.ts` — `upsertEventsForLair` | Exécute le verdict du rapprochement en une écriture groupée |
 | `lib/db/lairs.ts` — `*EventsRefreshReport` | Le compte rendu du dernier tour, lu par l'administration |
 | `app/api/cron/refresh-events/route.ts` | Le cron : les lieux qui ont une source, trois à la fois |
@@ -71,8 +73,11 @@ Ce qui a déjà commencé n'est jamais retiré ni annulé : une boutique ôte un
 
 ### Une source en panne
 
-Chaque source est lue à part, avec un délai de 25 s, un agent identifiable et
-un refus des réponses HTTP en erreur. Une source qui échoue **laisse ses
+Chaque source est lue à part, avec un délai de 25 s, un agent identifiable,
+un refus des réponses HTTP en erreur, et un décodage dans le jeu de
+caractères que la page annonce — bien des boutiques servent encore de
+l'ISO-8859-1, et lire en UTF-8 cassait les accents (« D�fis de ligue »)
+jusque dans le rapprochement par nom. Une source qui échoue **laisse ses
 événements en l'état** : ils ne sont ni retirés, ni annulés. Les autres
 sources sont traitées normalement. Un événement moissonné avant cette version,
 qui ne sait pas de quelle source il vient, n'est retiré que si toutes les
@@ -105,11 +110,75 @@ obtenus — nom, dates, jeu, prix, statut, lien, identifiant — avec les
 **avertissements** : une date illisible, un statut inconnu, un jeu que la
 plateforme ne connaît pas. C'est là qu'une correspondance se met au point.
 
+### Source HTML (sélecteurs)
+
+La lecture d'une page **sans modèle** : ni coût, ni hallucination, et un
+résultat identique d'un tour à l'autre. C'est la source à préférer dès que la
+page a une structure régulière — ce qui est le cas de toutes les boutiques en
+ligne, où les événements sont des produits.
+
+- **Sélecteur des événements** : l'élément qui entoure chaque événement
+  (`.product_box`, `li.event`…). S'il ne désigne rien, la source est en
+  panne, pas vide : une mise en page qui change ne retire rien.
+- **Champs** : pour chacun, un sélecteur relatif à l'événement (vide :
+  l'événement lui-même) et, au choix, le texte de la cible ou l'un de ses
+  attributs (`href`, `datetime`, `idProduit`…).
+- **Titre composé** : quand la page met tout dans un titre — « Riftbound -
+  Tournois Nexus - 03/09/2026 - 19h30 » —, on renseigne `title` plutôt que
+  `name`, `gameName` et `startDateTime`. La date (`JJ/MM/AAAA`, `JJ/MM/AA`,
+  « 15 mars 2026 ») et l'heure (`19h30`, `14h`, `10:30`) sont reconnues à leur
+  motif, où qu'elles soient ; le reste est coupé au séparateur (« - » par
+  défaut, un tiret ne comptant qu'entouré d'espaces) : premier segment le
+  jeu, le reste le nom. Un champ dédié, s'il est renseigné, l'emporte.
+- **Date et heure à part** : quand la page les donne dans deux éléments —
+  « mercredi 02 septembre » d'un côté, « 13:30 - 18:30 » de l'autre —, on
+  renseigne `date` et `time` ; une plage horaire donne aussi la fin. Un
+  début complet (`startDateTime`) l'emporte sur les deux.
+- **Statut** : lu dans un texte de stock ou de disponibilité (« En stock »,
+  « Rupture », « Complet », « 8 restantes », « 0 restante », « Annulé »…).
+- **Villes à inclure** : une page qui liste plusieurs villes se filtre avec
+  le champ `venue` et la liste des villes à garder (« Thionville », « Metz »),
+  à la casse et aux accents près ; sans ville, tout est gardé. Si rien ne
+  passe le filtre, la source le signale.
+- **Champs de formulaire** (tous types de source) : quand la page attend un
+  formulaire pour afficher la bonne ville, ces champs sont envoyés en POST,
+  comme le ferait le navigateur. Le mot `{ville}` y est remplacé par chaque
+  ville à inclure, et la page est demandée **une fois par ville** —
+  « animation = {ville}.lieu » chez le Gobelin ; les événements sont réunis
+  et dédoublonnés (identifiant, lien, à défaut nom et date).
+- **Villes proposées** : un sélecteur (`venueOptionsSelector`) dit où la page
+  liste les villes qu'elle sait servir — les `<option>` de son formulaire.
+  Le test les propose à cocher, avec le nombre d'événements de chacune ;
+  quand le formulaire attend une ville et qu'aucune n'est cochée, le test
+  sonde chaque ville proposée (douze au plus) sans rien enregistrer. Hors du
+  test, une source qui attend une ville sans en avoir est en échec.
+- **Préréglages** : « Boutique Oasis » (la plateforme de l'Antre Temps) et
+  « Animations du Gobelin » (une page pour toutes les villes, filtrée par
+  formulaire ; le préréglage coche Thionville, les autres villes se cochent
+  après un test). Modifiables ensuite.
+
+Tous les champs lus passent par les mêmes lecteurs que la correspondance JSON
+(prix, liens relatifs, dates) ; l'identifiant, s'il y en a un (`idProduit`),
+devient l'`externalId` du rapprochement.
+
+### Alias de jeu
+
+Pour tous les types de source : « MTG » → « Magic: The Gathering ». Les clés
+se comparent à la casse et aux accents près. Sans alias, un jeu est reconnu
+s'il porte le nom de la plateforme à la ponctuation près (« Star Wars
+Unlimited » → « Star Wars: Unlimited »), ou si ce nom apparaît **dans** le
+titre (« Avant Premiere MTG Réalité Fracturée » avec l'alias `MTG`). Un jeu
+inconnu est écrit tel quel et signalé : un alias, ou un nouveau jeu sur la
+plateforme, le réglera au tour suivant.
+
 ### Source IA
 
 Une URL, et des consignes facultatives — où sont les dates, quels blocs
 ignorer. La page est convertie en Markdown et confiée au modèle avec la date
-du jour, la liste des jeux de la plateforme et les consignes du lieu.
+du jour, la liste des jeux de la plateforme et les consignes du lieu. À
+réserver aux pages sans structure exploitable : chaque lecture coûte un appel
+au modèle, et deux lectures de la même page ne rendent pas toujours la même
+chose.
 
 ### Source en correspondance
 
@@ -154,9 +223,11 @@ La réponse détaille chaque lieu et chaque source ; `summary.failingSources`
 compte les sources en panne dans des lieux par ailleurs réussis.
 
 ```bash
-npm test -- lib/events/source-events.test.ts
+node --import ./scripts/ts-paths-hook.mjs --test lib/events/source-events.test.ts lib/events/html-source.test.ts
 ```
 
 Les tests couvrent les dates, les champs, et surtout le rapprochement : le
 scénario d'origine — un événement retrouvé par son URL, avec un favori, mis à
-jour et **pas** retiré — y est en premier.
+jour et **pas** retiré — y est en premier. La lecture HTML est testée sur des
+extraits réels des pages de l'Antre Temps et du Gobelin
+(`lib/events/__fixtures__/`).

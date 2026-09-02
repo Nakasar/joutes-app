@@ -3,7 +3,9 @@
 import { useRef, useState, useTransition } from "react";
 import { DateTime } from "luxon";
 import { AlertTriangle, CheckCircle2, FlaskConical, Plus, RefreshCw, X, XCircle } from "lucide-react";
-import { EventSource, Lair, LairEventsRefreshReport } from "@/lib/types/Lair.ts";
+import { EventHtmlConfig, EventSource, Lair, LairEventsRefreshReport } from "@/lib/types/Lair.ts";
+import { HTML_PRESETS } from "@/lib/events/html-presets.ts";
+import { normalizeEventName } from "@/lib/events/source-events.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   EventSourcePreview,
@@ -31,6 +33,74 @@ function emptyMapping(source: EventSource) {
   return source.mappingConfig ?? { eventsPath: "", eventsFieldsMapping: {} };
 }
 
+/** Les champs qu'une source HTML sait lire, et ce que chacun attend. */
+const HTML_FIELDS: { key: keyof EventHtmlConfig["fields"]; hint: string }[] = [
+  { key: "title", hint: "Titre composé : « Jeu - Nom - JJ/MM/AAAA - HHhMM »" },
+  { key: "id", hint: "Identifiant chez la source, pour le retrouver" },
+  { key: "url", hint: "Lien de l'événement (attribut href)" },
+  { key: "name", hint: "Nom seul, si la page le donne à part" },
+  { key: "gameName", hint: "Jeu seul, si la page le donne à part" },
+  { key: "date", hint: "Date seule : « mercredi 02 septembre », « 03/09/2026 »" },
+  { key: "time", hint: "Heure ou plage : « 19h30 », « 13:30 - 18:30 »" },
+  { key: "startDateTime", hint: "Début complet, si la page le donne" },
+  { key: "endDateTime", hint: "Fin complète, si la page la donne" },
+  { key: "price", hint: "Prix, en texte ou en nombre" },
+  { key: "status", hint: "Stock, places restantes ou disponibilité" },
+  { key: "venue", hint: "Ville ou lieu, pour le filtre ci-dessous" },
+];
+
+/**
+ * Les champs de formulaire, ligne par ligne : « animation = Thionville.lieu ».
+ * Même forme que les alias de jeu.
+ */
+function parseKeyValues(text: string): Record<string, string> | undefined {
+  const values: Record<string, string> = {};
+
+  for (const line of text.split("\n")) {
+    const separator = line.indexOf("=");
+    if (separator === -1) continue;
+    const key = line.slice(0, separator).trim();
+    const value = line.slice(separator + 1).trim();
+    if (key) values[key] = value;
+  }
+
+  return Object.keys(values).length > 0 ? values : undefined;
+}
+
+function formatKeyValues(values: Record<string, string> | undefined): string {
+  return Object.entries(values ?? {})
+    .map(([key, value]) => `${key} = ${value}`)
+    .join("\n");
+}
+
+function emptyHtml(source: EventSource): EventHtmlConfig {
+  return source.htmlConfig ?? { itemSelector: "", fields: {} };
+}
+
+/**
+ * Les alias de jeu, tels que le formulaire les saisit : une ligne par alias,
+ * « MTG = Magic: The Gathering ». Ce qui n'a pas de « = » est ignoré.
+ */
+function parseAliases(text: string): Record<string, string> | undefined {
+  const aliases: Record<string, string> = {};
+
+  for (const line of text.split("\n")) {
+    const separator = line.indexOf("=");
+    if (separator === -1) continue;
+    const key = line.slice(0, separator).trim();
+    const value = line.slice(separator + 1).trim();
+    if (key && value) aliases[key] = value;
+  }
+
+  return Object.keys(aliases).length > 0 ? aliases : undefined;
+}
+
+function formatAliases(aliases: Record<string, string> | undefined): string {
+  return Object.entries(aliases ?? {})
+    .map(([key, value]) => `${key} = ${value}`)
+    .join("\n");
+}
+
 /**
  * Une source en cours de saisie, et la clé qui la suit.
  *
@@ -41,7 +111,28 @@ function emptyMapping(source: EventSource) {
  * qu'on éditait. La clé vit donc le temps du formulaire, et ne part pas au
  * serveur.
  */
-type SourceDraft = { key: string; source: EventSource };
+type SourceDraft = {
+  key: string;
+  source: EventSource;
+  /** Les alias en cours de saisie, ligne par ligne ; lus au moment d'envoyer. */
+  aliasesText: string;
+  /** Les champs de formulaire en cours de saisie, même forme. */
+  formFieldsText: string;
+};
+
+/** La source telle qu'elle part au serveur : les alias et les champs saisis, lus. */
+function toSource(draft: SourceDraft): EventSource {
+  const aliases = parseAliases(draft.aliasesText);
+  const formFields = parseKeyValues(draft.formFieldsText);
+  const source: EventSource = { ...draft.source };
+  delete source.gameAliases;
+  delete source.formFields;
+  return {
+    ...source,
+    ...(aliases ? { gameAliases: aliases } : {}),
+    ...(formFields ? { formFields } : {}),
+  };
+}
 
 /** Ce que le bouton « Tester » d'une source a rendu, ou est en train de rendre. */
 type PreviewState =
@@ -85,18 +176,26 @@ export function LairEventSourcesForm({
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [report, setReport] = useState(initialReport);
   const [drafts, setDrafts] = useState<SourceDraft[]>(() =>
-    (lair.eventsSourceUrls ?? []).map((source, index) => ({ key: `source-${index}`, source })),
+    (lair.eventsSourceUrls ?? []).map((source, index) => ({
+      key: `source-${index}`,
+      source,
+      aliasesText: formatAliases(source.gameAliases),
+      formFieldsText: formatKeyValues(source.formFields),
+    })),
   );
   const [previews, setPreviews] = useState<Record<string, PreviewState>>({});
   // Les clés des sources ajoutées ici : un compteur, pour qu'aucune ne reprenne
   // celle d'une source retirée.
   const nextKey = useRef(0);
 
-  const patch = (key: string, next: EventSource) => {
+  const patch = (key: string, next: EventSource, { keepPreview = false }: { keepPreview?: boolean } = {}) => {
     setDrafts((previous) =>
       previous.map((draft) => (draft.key === key ? { ...draft, source: next } : draft)),
     );
-    // Un aperçu décrit la source telle qu'elle était : il ne vaut plus rien.
+    // Un aperçu décrit la source telle qu'elle était : il ne vaut plus rien —
+    // sauf quand seules les villes cochées changent, car c'est lui qui les
+    // propose, avec leurs comptes.
+    if (keepPreview) return;
     setPreviews((previous) => {
       if (!(key in previous)) return previous;
       const rest = { ...previous };
@@ -113,13 +212,51 @@ export function LairEventSourcesForm({
     patch(key, { ...source, mappingConfig: { ...emptyMapping(source), ...next } });
   };
 
+  const patchHtml = (
+    key: string,
+    source: EventSource,
+    next: Partial<EventHtmlConfig>,
+    options: { keepPreview?: boolean } = {},
+  ) => {
+    patch(key, { ...source, htmlConfig: { ...emptyHtml(source), ...next } }, options);
+  };
+
+  const patchHtmlField = (
+    key: string,
+    source: EventSource,
+    field: keyof EventHtmlConfig["fields"],
+    next: { selector?: string; attribute?: string },
+  ) => {
+    const current = emptyHtml(source);
+    const rule = { ...current.fields[field], ...next };
+    const fields = { ...current.fields };
+    if (!rule.selector?.trim() && !rule.attribute?.trim()) {
+      delete fields[field];
+    } else {
+      fields[field] = rule;
+    }
+    patchHtml(key, source, { fields });
+  };
+
+  const patchDraftText = (key: string, next: Partial<Pick<SourceDraft, "aliasesText" | "formFieldsText">>) => {
+    setDrafts((previous) =>
+      previous.map((draft) => (draft.key === key ? { ...draft, ...next } : draft)),
+    );
+    setPreviews((previous) => {
+      if (!(key in previous)) return previous;
+      const rest = { ...previous };
+      delete rest[key];
+      return rest;
+    });
+  };
+
   const submit = () => {
     setMessage(null);
 
     startTransition(async () => {
       const result = await updateLairEventSources(
         lair.id,
-        drafts.map((draft) => draft.source).filter((source) => source.url.trim() !== ""),
+        drafts.map(toSource).filter((source) => source.url.trim() !== ""),
       );
 
       setMessage(
@@ -145,10 +282,11 @@ export function LairEventSourcesForm({
     });
   };
 
-  const preview = async (key: string, source: EventSource) => {
+  const preview = async (draft: SourceDraft) => {
+    const { key } = draft;
     setPreviews((previous) => ({ ...previous, [key]: { status: "loading" } }));
 
-    const result = await previewLairEventSource(lair.id, source);
+    const result = await previewLairEventSource(lair.id, toSource(draft));
 
     setPreviews((previous) => ({
       ...previous,
@@ -186,9 +324,11 @@ export function LairEventSourcesForm({
           <div>
             <h2 className="text-lg font-semibold text-foreground">Sources d&apos;événements</h2>
             <p className="text-sm text-muted-foreground">
-              D&apos;où viennent les événements du lieu. Une source lue par l&apos;IA n&apos;a
-              besoin que d&apos;une URL ; une source en correspondance décrit un JSON champ par
-              champ. Testez une source pour voir ce qu&apos;elle rend avant de l&apos;enregistrer.
+              D&apos;où viennent les événements du lieu. Une source par sélecteurs lit une page
+              sans modèle ; une source en correspondance décrit un JSON champ par champ ; une
+              source lue par l&apos;IA n&apos;a besoin que d&apos;une URL, mais coûte un appel et se
+              trompe parfois. Testez une source pour voir ce qu&apos;elle rend avant de
+              l&apos;enregistrer.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -206,7 +346,9 @@ export function LairEventSourcesForm({
                   ...drafts,
                   {
                     key: `ajoutee-${(nextKey.current += 1)}`,
-                    source: { url: "", type: "IA", instructions: "" },
+                    source: { url: "", type: "HTML", htmlConfig: { itemSelector: "", fields: {} } },
+                    aliasesText: "",
+                    formFieldsText: "",
                   },
                 ])
               }
@@ -223,12 +365,28 @@ export function LairEventSourcesForm({
           </p>
         ) : (
           <div className="space-y-4">
-            {drafts.map(({ key, source }, index) => (
+            {drafts.map((draft, index) => {
+              const { key, source } = draft;
+              return (
               <div key={key} className="rounded-lg border border-border bg-muted/30 p-4 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-sm font-semibold text-foreground">Source #{index + 1}</span>
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={source.type === "HTML" ? "default" : "outline"}
+                        onClick={() =>
+                          patch(key, {
+                            url: source.url,
+                            type: "HTML",
+                            htmlConfig: emptyHtml(source),
+                          })
+                        }
+                      >
+                        Sélecteurs
+                      </Button>
                       <Button
                         type="button"
                         size="sm"
@@ -510,12 +668,183 @@ export function LairEventSourcesForm({
                   </div>
                 )}
 
+                {source.type === "HTML" && (
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Préremplir :</span>
+                      {HTML_PRESETS.map((preset) => (
+                        <Button
+                          key={preset.key}
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          title={preset.description}
+                          onClick={() => {
+                            patch(key, { ...source, htmlConfig: preset.config });
+                            patchDraftText(key, { formFieldsText: formatKeyValues(preset.formFields) });
+                          }}
+                        >
+                          {preset.label}
+                        </Button>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label
+                          htmlFor={`html-items-${key}`}
+                          className="block text-xs font-medium text-muted-foreground mb-1"
+                        >
+                          Sélecteur des événements
+                        </label>
+                        <input
+                          id={`html-items-${key}`}
+                          type="text"
+                          value={source.htmlConfig?.itemSelector ?? ""}
+                          onChange={(e) => patchHtml(key, source, { itemSelector: e.target.value })}
+                          placeholder=".product_box"
+                          className={`${FIELD_CLASS} font-mono`}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          L&apos;élément qui entoure chaque événement de la page.
+                        </p>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor={`html-separator-${key}`}
+                          className="block text-xs font-medium text-muted-foreground mb-1"
+                        >
+                          Séparateur du titre composé
+                        </label>
+                        <input
+                          id={`html-separator-${key}`}
+                          type="text"
+                          value={source.htmlConfig?.titleSeparator ?? ""}
+                          onChange={(e) =>
+                            patchHtml(key, source, { titleSeparator: e.target.value || undefined })
+                          }
+                          placeholder="-"
+                          className={`${FIELD_CLASS} font-mono`}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Ce qui sépare le jeu, le nom, la date et l&apos;heure dans le titre. Un
+                          tiret par défaut.
+                        </p>
+                      </div>
+                    </div>
+
+                    <VenuesField
+                      sourceKey={key}
+                      venues={source.htmlConfig?.venues ?? []}
+                      optionsSelector={source.htmlConfig?.venueOptionsSelector ?? ""}
+                      preview={previews[key]?.status === "done" ? previews[key].preview.venues : undefined}
+                      perVenue={/\{ville\}/.test(draft.formFieldsText)}
+                      onChange={(venues) =>
+                        patchHtml(key, source, { venues: venues.length > 0 ? venues : undefined }, { keepPreview: true })
+                      }
+                      onOptionsSelectorChange={(value) =>
+                        patchHtml(key, source, { venueOptionsSelector: value || undefined })
+                      }
+                    />
+
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Champs</p>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Pour chaque champ, un sélecteur relatif à l&apos;événement (vide :
+                        l&apos;événement lui-même) et, au besoin, l&apos;attribut à lire plutôt que
+                        le texte. Le titre composé suffit quand la page y met tout.
+                      </p>
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        {HTML_FIELDS.map(({ key: field, hint }) => (
+                          <div key={field} className="rounded-md border border-border/60 p-2">
+                            <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+                              <label
+                                htmlFor={`html-${field}-selector-${key}`}
+                                className="font-mono text-xs text-foreground"
+                              >
+                                {field}
+                              </label>
+                              <span className="text-[11px] text-muted-foreground">{hint}</span>
+                            </div>
+                            <div className="grid grid-cols-[2fr_1fr] gap-2">
+                              <input
+                                id={`html-${field}-selector-${key}`}
+                                type="text"
+                                value={source.htmlConfig?.fields?.[field]?.selector ?? ""}
+                                onChange={(e) =>
+                                  patchHtmlField(key, source, field, { selector: e.target.value })
+                                }
+                                placeholder="sélecteur"
+                                className={`${FIELD_CLASS} font-mono`}
+                              />
+                              <input
+                                id={`html-${field}-attribute-${key}`}
+                                type="text"
+                                aria-label={`Attribut pour ${field}`}
+                                value={source.htmlConfig?.fields?.[field]?.attribute ?? ""}
+                                onChange={(e) =>
+                                  patchHtmlField(key, source, field, { attribute: e.target.value })
+                                }
+                                placeholder="attribut"
+                                className={`${FIELD_CLASS} font-mono`}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label
+                    htmlFor={`source-form-${key}`}
+                    className="block text-xs font-medium text-muted-foreground mb-1"
+                  >
+                    Champs de formulaire (optionnel)
+                  </label>
+                  <textarea
+                    id={`source-form-${key}`}
+                    rows={2}
+                    value={draft.formFieldsText}
+                    onChange={(e) => patchDraftText(key, { formFieldsText: e.target.value })}
+                    placeholder={"animation = {ville}.lieu"}
+                    className={`${FIELD_CLASS} font-mono`}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Un champ par ligne. La page est alors demandée en POST avec ces champs, comme
+                    en validant le formulaire du site. Écrivez <span className="font-mono">{"{ville}"}</span>{" "}
+                    là où le site attend la ville : la page est demandée une fois par ville cochée.
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor={`source-aliases-${key}`}
+                    className="block text-xs font-medium text-muted-foreground mb-1"
+                  >
+                    Alias de jeu (optionnel)
+                  </label>
+                  <textarea
+                    id={`source-aliases-${key}`}
+                    rows={2}
+                    value={draft.aliasesText}
+                    onChange={(e) => patchDraftText(key, { aliasesText: e.target.value })}
+                    placeholder={"MTG = Magic: The Gathering\nPokemon TCG = Pokémon"}
+                    className={`${FIELD_CLASS} font-mono`}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Un alias par ligne : le nom que la source donne, puis celui de la plateforme.
+                    Un jeu que le test signale comme inconnu se règle ici.
+                  </p>
+                </div>
+
                 <div className="flex flex-wrap items-center gap-3">
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => preview(key, source)}
+                    onClick={() => preview(draft)}
                     disabled={source.url.trim() === "" || previews[key]?.status === "loading"}
                   >
                     <FlaskConical className="size-4" aria-hidden />
@@ -528,7 +857,8 @@ export function LairEventSourcesForm({
 
                 {previews[key] && <PreviewPanel state={previews[key]} />}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
@@ -540,6 +870,140 @@ export function LairEventSourcesForm({
         <span className="text-xs text-muted-foreground">
           Une source sans URL est abandonnée à l&apos;enregistrement.
         </span>
+      </div>
+    </div>
+  );
+}
+
+/** Les villes à inclure d'une source HTML : cochées parmi celles que la page propose, ou ajoutées à la main. */
+function VenuesField({
+  sourceKey,
+  venues,
+  optionsSelector,
+  preview,
+  perVenue,
+  onChange,
+  onOptionsSelectorChange,
+}: {
+  sourceKey: string;
+  venues: string[];
+  optionsSelector: string;
+  preview: EventSourcePreview["venues"] | undefined;
+  perVenue: boolean;
+  onChange: (venues: string[]) => void;
+  onOptionsSelectorChange: (value: string) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  // La même égalité que le filtre côté lecture : sans casse, sans accent,
+  // sans ponctuation. Sinon « Pokemon » et « Pokémon » feraient deux cases,
+  // et une ville cochée sous une autre orthographe ne se décocherait plus.
+  const normalize = normalizeEventName;
+  const isChecked = (venue: string) => venues.some((chosen) => normalize(chosen) === normalize(venue));
+
+  // Les villes à proposer : celles cochées, celles que la page annonce, et
+  // celles vues sur les événements lus — sans doublon, à la casse près.
+  const proposed: string[] = [];
+  const seen = new Set<string>();
+  for (const venue of [...venues, ...(preview?.available ?? []), ...Object.keys(preview?.counts ?? {})]) {
+    const key = normalize(venue);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    proposed.push(venue);
+  }
+
+  const countOf = (venue: string) => {
+    const entry = Object.entries(preview?.counts ?? {}).find(([name]) => normalize(name) === normalize(venue));
+    return entry ? entry[1] : undefined;
+  };
+
+  const toggle = (venue: string) => {
+    onChange(isChecked(venue) ? venues.filter((chosen) => normalize(chosen) !== normalize(venue)) : [...venues, venue]);
+  };
+
+  const add = () => {
+    const venue = draft.trim();
+    if (!venue) return;
+    if (!isChecked(venue)) onChange([...venues, venue]);
+    setDraft("");
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-medium text-foreground">Villes à inclure</p>
+        <p className="text-xs text-muted-foreground">
+          {perVenue
+            ? "Une requête par ville cochée, le mot {ville} du formulaire remplacé. Sans ville cochée, le test sonde celles que la page propose."
+            : "Seuls les événements dont le champ venue est l'une de ces villes sont gardés. Aucune ville : tout est gardé."}
+        </p>
+      </div>
+
+      {proposed.length > 0 && (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {proposed.map((venue) => {
+            const checked = isChecked(venue);
+            const count = countOf(venue);
+            return (
+              <label
+                key={venue}
+                className={`flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm ${
+                  checked ? "border-primary bg-muted" : "border-border bg-background"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <input type="checkbox" checked={checked} onChange={() => toggle(venue)} className="size-4" />
+                  <span className={checked ? "font-medium text-foreground" : "text-foreground"}>{venue}</span>
+                </span>
+                {count !== undefined && (
+                  <span className="text-xs text-muted-foreground">
+                    {count} événement{count > 1 ? "s" : ""}
+                  </span>
+                )}
+              </label>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder={proposed.length > 0 ? "Ajouter une ville que la page ne propose pas…" : "Thionville"}
+          aria-label="Ajouter une ville"
+          className={`${FIELD_CLASS} flex-1 min-w-[12rem]`}
+        />
+        <Button type="button" size="sm" variant="outline" onClick={add} disabled={draft.trim() === ""}>
+          Ajouter
+        </Button>
+      </div>
+
+      <div>
+        <label
+          htmlFor={`html-venue-options-${sourceKey}`}
+          className="block text-xs font-medium text-muted-foreground mb-1"
+        >
+          Où la page liste ses villes (sélecteur, optionnel)
+        </label>
+        <input
+          id={`html-venue-options-${sourceKey}`}
+          type="text"
+          value={optionsSelector}
+          onChange={(e) => onOptionsSelectorChange(e.target.value)}
+          placeholder='select[name="ville"] option'
+          className={`${FIELD_CLASS} font-mono`}
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Le test y lit les villes à proposer ci-dessus, avec le nombre d&apos;événements de chacune.
+        </p>
       </div>
     </div>
   );

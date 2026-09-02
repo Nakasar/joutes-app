@@ -9,6 +9,7 @@ import { getAllGames } from "@/lib/db/games";
 import { EventSource, EventSourceRefreshResult, Lair, LairEventsRefreshReport } from "@/lib/types/Lair";
 import { Game } from "@/lib/types/Game";
 import {
+  canonicalGameName,
   EVENTS_TIMEZONE,
   getNestedValue,
   normalizeEventName,
@@ -19,12 +20,19 @@ import {
   resolveEventUrl,
   type SourceEvent,
 } from "@/lib/events/source-events";
+import {
+  extractHtmlEvents,
+  formFieldsForVenue,
+  hasVenuePlaceholder,
+  readVenueOptions,
+} from "@/lib/events/html-source";
 
 /**
  * La moisson des événements d'un lieu.
  *
- * Deux sortes de sources : une page lue par un modèle (`IA`), un JSON décrit
- * champ par champ (`MAPPING`). Chacune est lue **séparément** et rend son
+ * Trois sortes de sources : une page lue par un modèle (`IA`), un JSON décrit
+ * champ par champ (`MAPPING`), une page lue par sélecteurs CSS (`HTML`, sans
+ * modèle — voir `lib/events/html-source.ts`). Chacune est lue **séparément** et rend son
  * propre résultat — succès ou échec, événements, avertissements —, pour trois
  * raisons :
  *
@@ -61,6 +69,14 @@ const extractionSchema = z.object({
   })),
 });
 
+/** Les villes qu'une source HTML a vues, pour les proposer à cocher. */
+export type SourceVenues = {
+  /** Celles que la page dit savoir servir (son formulaire). */
+  available: string[];
+  /** Combien d'événements portent chaque ville, parmi les pages lues. */
+  counts: Record<string, number>;
+};
+
 /** Ce qu'une lecture de source rend, avant toute écriture. */
 export type SourceReadResult = {
   source: EventSource;
@@ -68,6 +84,7 @@ export type SourceReadResult = {
   error?: string;
   warnings: string[];
   events: SourceEvent[];
+  venues?: SourceVenues;
 };
 
 export type RefreshEventsResult =
@@ -139,10 +156,15 @@ export async function refreshEvents(lairId: string): Promise<RefreshEventsResult
 /**
  * Lit une source sans rien écrire : ce que le bouton « Tester » de
  * l'administration appelle, sur une source pas encore enregistrée.
+ *
+ * En mode test, une source HTML dont le formulaire attend une ville et qui
+ * n'en a encore aucune de cochée est lue **pour chaque ville que la page
+ * propose** : c'est ce qui donne à l'administration le nombre d'événements
+ * de chacune avant de choisir.
  */
 export async function previewEventSource(lair: Lair, source: EventSource): Promise<SourceReadResult> {
   const games = await getAllGames();
-  return readEventSource(source, lair, games, DateTime.now().setZone(EVENTS_TIMEZONE));
+  return readEventSource(source, lair, games, DateTime.now().setZone(EVENTS_TIMEZONE), { probeVenues: true });
 }
 
 /** Le résumé d'un rafraîchissement, en une phrase. */
@@ -171,10 +193,14 @@ async function readEventSource(
   lair: Lair,
   games: Pick<Game, "name">[],
   now: DateTime,
+  { probeVenues = false }: { probeVenues?: boolean } = {},
 ): Promise<SourceReadResult> {
   try {
     if (source.type === "MAPPING") {
       return await readMappingSource(source, games, now);
+    }
+    if (source.type === "HTML") {
+      return await readHtmlSource(source, games, now, { probeVenues });
     }
     return await readAISource(source, lair, games, now);
   } catch (error) {
@@ -190,15 +216,31 @@ async function readEventSource(
  * cela, une page en 503 rendait une page d'erreur que le modèle lisait comme
  * une page sans événement — et tout ce que la source annonçait était retiré.
  */
-async function fetchSource(url: string, accept: string): Promise<Response> {
-  const parsed = new URL(url);
+async function fetchSource(source: Pick<EventSource, "url" | "formFields">, accept: string): Promise<Response> {
+  return fetchPage(source.url, source.formFields, accept);
+}
+
+async function fetchPage(url: string, fields: Record<string, string> | undefined, accept: string): Promise<Response> {
+  const source = { url, formFields: fields };
+  const parsed = new URL(source.url);
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     throw new Error("Seules les adresses http(s) sont lues");
   }
 
-  const response = await fetch(url, {
+  // Des champs de formulaire : la page se demande en POST, comme le ferait
+  // le navigateur en validant le formulaire — c'est ainsi qu'un site qui
+  // sert plusieurs villes sur la même adresse rend celle qu'on veut.
+  const formFields = source.formFields && Object.keys(source.formFields).length > 0 ? source.formFields : null;
+
+  const response = await fetch(source.url, {
+    method: formFields ? "POST" : "GET",
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    headers: { "User-Agent": USER_AGENT, Accept: accept },
+    headers: {
+      "User-Agent": USER_AGENT,
+      Accept: accept,
+      ...(formFields ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
+    },
+    ...(formFields ? { body: new URLSearchParams(formFields).toString() } : {}),
     redirect: "follow",
   });
 
@@ -209,6 +251,33 @@ async function fetchSource(url: string, accept: string): Promise<Response> {
   return response;
 }
 
+/**
+ * Le texte d'une réponse, dans son encodage à elle.
+ *
+ * `response.text()` décode toujours en UTF-8. Or bien des sites de boutique
+ * servent encore de l'ISO-8859-1 : les accents arrivaient cassés — « D�fis de
+ * ligue » —, s'écrivaient tels quels en base, et faisaient échouer le
+ * rapprochement par nom au tour suivant. On lit donc le jeu de caractères de
+ * l'en-tête, à défaut de la balise `<meta>`, et on décode avec.
+ */
+async function readResponseText(response: Response): Promise<string> {
+  const bytes = new Uint8Array(await response.arrayBuffer());
+
+  const fromHeader = /charset=["']?([^;"'\s]+)/i.exec(response.headers.get("content-type") ?? "")?.[1];
+  const head = new TextDecoder("latin1").decode(bytes.subarray(0, 4096));
+  const fromMeta =
+    /<meta[^>]+charset=["']?([^;"'\s>]+)/i.exec(head)?.[1] ??
+    /<meta[^>]+content=["'][^"']*charset=([^;"'\s]+)/i.exec(head)?.[1];
+
+  const charset = (fromHeader ?? fromMeta ?? "utf-8").trim().toLowerCase();
+
+  try {
+    return new TextDecoder(charset).decode(bytes);
+  } catch {
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+}
+
 function describeError(error: unknown): string {
   if (error instanceof Error) {
     if (error.name === "TimeoutError" || error.name === "AbortError") {
@@ -217,17 +286,6 @@ function describeError(error: unknown): string {
     return error.message || error.name;
   }
   return String(error);
-}
-
-/**
- * Le nom sous lequel la plateforme connaît un jeu, à la casse et aux accents
- * près. Les listes d'événements font une jointure **exacte** sur `gameName` :
- * un « riftbound » en minuscules n'apparaîtrait sur aucun agenda.
- */
-function canonicalGameName(name: string, games: Pick<Game, "name">[]): string | null {
-  const wanted = normalizeEventName(name);
-  if (!wanted) return null;
-  return games.find((game) => normalizeEventName(game.name) === wanted)?.name ?? null;
 }
 
 /** Regroupe les avertissements identiques : « 3 × date de début illisible ». */
@@ -253,8 +311,8 @@ async function readAISource(
   games: Pick<Game, "name">[],
   now: DateTime,
 ): Promise<SourceReadResult> {
-  const response = await fetchSource(source.url, "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8");
-  const html = await response.text();
+  const response = await fetchSource(source, "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8");
+  const html = await readResponseText(response);
   const content = NodeHtmlMarkdown.translate(html).trim();
 
   if (!content) {
@@ -292,10 +350,10 @@ async function readAISource(
     // Jamais une chaîne vide : la jointure des agendas est exacte, et un
     // événement sans nom de jeu n'apparaîtrait nulle part.
     const rawGame = extracted.gameName.trim();
-    const gameName = rawGame ? canonicalGameName(rawGame, games) ?? rawGame : "Jeu non spécifié";
+    const gameName = rawGame ? canonicalGameName(rawGame, games, source.gameAliases) ?? rawGame : "Jeu non spécifié";
     if (!rawGame) {
       warnings.add(`jeu absent pour « ${name} », « Jeu non spécifié » écrit à la place`);
-    } else if (!canonicalGameName(rawGame, games)) {
+    } else if (!canonicalGameName(rawGame, games, source.gameAliases)) {
       warnings.add(`jeu inconnu de la plateforme : « ${rawGame} »`);
     }
 
@@ -377,8 +435,8 @@ async function readMappingSource(
     return { source, ok: false, error: "Source en correspondance sans configuration", warnings: [], events: [] };
   }
 
-  const response = await fetchSource(source.url, "application/json,text/json;q=0.9,*/*;q=0.8");
-  const text = await response.text();
+  const response = await fetchSource(source, "application/json,text/json;q=0.9,*/*;q=0.8");
+  const text = await readResponseText(response);
 
   let data: unknown;
   try {
@@ -424,10 +482,10 @@ async function readMappingSource(
     }
 
     const rawGame = overrides.gameName || read(item, mapping.gameName);
-    const gameName = typeof rawGame === "string" && rawGame.trim() ? canonicalGameName(rawGame, games) ?? rawGame.trim() : null;
+    const gameName = typeof rawGame === "string" && rawGame.trim() ? canonicalGameName(rawGame, games, source.gameAliases) ?? rawGame.trim() : null;
     if (!gameName) {
       warnings.add(`jeu absent au chemin « ${mapping.gameName || "(non renseigné)"} », « Jeu non spécifié » écrit à la place`);
-    } else if (!canonicalGameName(gameName, games)) {
+    } else if (!canonicalGameName(gameName, games, source.gameAliases)) {
       warnings.add(`jeu inconnu de la plateforme : « ${gameName} »`);
     }
 
@@ -462,4 +520,146 @@ async function readMappingSource(
   }
 
   return { source, ok: true, warnings: warnings.list(), events };
+}
+
+// ---------------------------------------------------------------------------
+// Source HTML (sélecteurs)
+// ---------------------------------------------------------------------------
+
+/** Au-delà, le test ne sonde plus chaque ville de la page : l'administration choisit d'abord. */
+const MAX_PROBED_VENUES = 12;
+
+/** Les villes sans doublon, à la casse, aux accents et à la ponctuation près. */
+function uniqueVenues(venues: string[]): string[] {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const venue of venues) {
+    const trimmed = venue.trim();
+    const key = normalizeEventName(trimmed);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(trimmed);
+  }
+  return unique;
+}
+
+/**
+ * Lit une source HTML.
+ *
+ * Trois cas, selon ce que la page attend :
+ *
+ * - **une page, toutes les villes** — aucun `{ville}` dans le formulaire : une
+ *   lecture, et le champ `venue` de chaque événement fait le tri ;
+ * - **une page par ville** — un champ de formulaire porte `{ville}` : une
+ *   lecture par ville à inclure, le mot remplacé, chaque page filtrée sur sa
+ *   ville ; les événements sont réunis et dédoublonnés ;
+ * - **le test, sans ville choisie** — même formulaire, aucune ville cochée :
+ *   on sonde chaque ville que la page propose, pour rendre leur nombre
+ *   d'événements ; hors du test, c'est une erreur, pas une lecture vide.
+ */
+async function readHtmlSource(
+  source: EventSource,
+  games: Pick<Game, "name">[],
+  now: DateTime,
+  { probeVenues }: { probeVenues: boolean },
+): Promise<SourceReadResult> {
+  const config = source.htmlConfig;
+  if (!config) {
+    return { source, ok: false, error: "Source HTML sans configuration", warnings: [], events: [] };
+  }
+
+  const accept = "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8";
+  // Une ville par orthographe normalisée : « Metz » et « metz » ne font
+  // qu'une lecture.
+  const chosen = uniqueVenues(config.venues ?? []);
+  const perVenue = hasVenuePlaceholder(source.formFields);
+
+  // La première page : celle de la première ville quand le formulaire en
+  // attend une, sinon la page telle quelle. C'est sur elle qu'on lit les
+  // villes proposées.
+  const firstVenue = perVenue ? chosen[0] : undefined;
+  const firstFields = perVenue
+    ? firstVenue
+      ? formFieldsForVenue(source.formFields ?? {}, firstVenue)
+      : undefined
+    : source.formFields;
+  const firstHtml = await readResponseText(await fetchPage(source.url, firstFields, accept));
+  const available = readVenueOptions(firstHtml, config.venueOptionsSelector);
+
+  let venuesToRead: string[];
+  if (!perVenue) {
+    venuesToRead = [];
+  } else if (chosen.length > 0) {
+    venuesToRead = chosen;
+  } else if (probeVenues) {
+    venuesToRead = available.slice(0, MAX_PROBED_VENUES);
+  } else {
+    return {
+      source,
+      ok: false,
+      error: "Le formulaire de la page attend une ville ({ville}) : choisissez au moins une ville à inclure",
+      warnings: [],
+      events: [],
+      venues: { available, counts: {} },
+    };
+  }
+
+  const pages: { html: string; venues: string[] }[] = [];
+  if (!perVenue) {
+    pages.push({ html: firstHtml, venues: chosen });
+  } else {
+    for (const venue of venuesToRead) {
+      const html =
+        venue === firstVenue
+          ? firstHtml
+          : await readResponseText(await fetchPage(source.url, formFieldsForVenue(source.formFields ?? {}, venue), accept));
+      pages.push({ html, venues: [venue] });
+    }
+  }
+
+  const warnings = new Warnings();
+  const counts: Record<string, number> = {};
+  const seen = new Set<string>();
+  const events: SourceEvent[] = [];
+  let itemCount = 0;
+
+  for (const page of pages) {
+    const extraction = extractHtmlEvents({ html: page.html, config, source, games, now, venues: page.venues });
+    itemCount += extraction.itemCount;
+    for (const warning of extraction.warnings) warnings.add(warning);
+    for (const [venue, count] of Object.entries(extraction.venueCounts)) {
+      counts[venue] = (counts[venue] ?? 0) + count;
+    }
+
+    // En sondage, on compte sans garder : rien n'est coché, rien n'est à écrire.
+    if (perVenue && chosen.length === 0) continue;
+
+    for (const event of extraction.events) {
+      const key = event.externalId ?? event.url ?? `${event.name}|${event.startDateTime}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      events.push(event);
+    }
+  }
+
+  const venues: SourceVenues = { available, counts };
+
+  // Un sélecteur qui ne désigne rien est bien plus souvent une mise en page
+  // qui a changé qu'un agenda vide : une panne, qui ne retire rien.
+  if (itemCount === 0 && pages.length > 0) {
+    return {
+      source,
+      ok: false,
+      error: `Le sélecteur « ${config.itemSelector} » ne désigne aucun élément de la page`,
+      warnings: [],
+      events: [],
+      venues,
+    };
+  }
+
+  if (perVenue && chosen.length === 0) {
+    warnings.add("aucune ville cochée : les villes de la page ont été sondées, rien ne sera enregistré tant qu'aucune n'est choisie");
+  }
+
+  return { source, ok: true, warnings: warnings.list(), events, venues };
 }

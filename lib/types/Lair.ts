@@ -39,12 +39,82 @@ export type EventMappingConfig = {
   eventsFieldsValues?: EventFieldsValues;
 };
 
+/**
+ * Où lire un champ dans l'élément d'un événement : un sélecteur CSS relatif à
+ * cet élément (vide : l'élément lui-même), et le texte de la cible ou l'un
+ * de ses attributs.
+ */
+export type HtmlFieldRule = {
+  selector?: string;
+  attribute?: string;
+};
+
+/**
+ * Une page lue par sélecteurs, sans modèle.
+ *
+ * `title` est le titre composé de l'événement — « Jeu - Nom - JJ/MM/AAAA -
+ * HHhMM » — d'où se lisent le jeu, le nom, la date et l'heure quand la page
+ * ne les donne pas champ par champ. Un champ dédié, s'il est renseigné,
+ * l'emporte sur ce que le titre en dit.
+ */
+export type EventHtmlConfig = {
+  /** Le sélecteur de chaque événement de la page. */
+  itemSelector: string;
+  fields: {
+    id?: HtmlFieldRule;
+    title?: HtmlFieldRule;
+    name?: HtmlFieldRule;
+    gameName?: HtmlFieldRule;
+    /** Une date seule — « mercredi 02 septembre », « 03/09/2026 » — quand la page la donne à part. */
+    date?: HtmlFieldRule;
+    /** Une heure, ou une plage — « 19h30 », « 13:30 - 18:30 » — quand la page la donne à part. */
+    time?: HtmlFieldRule;
+    startDateTime?: HtmlFieldRule;
+    endDateTime?: HtmlFieldRule;
+    price?: HtmlFieldRule;
+    status?: HtmlFieldRule;
+    url?: HtmlFieldRule;
+    /** Le lieu ou la ville de l'événement, pour `venues`. */
+    venue?: HtmlFieldRule;
+  };
+  /** Ce qui sépare les segments du titre composé. « - » par défaut. */
+  titleSeparator?: string;
+  /**
+   * Les villes à inclure, à la casse et aux accents près : une page qui liste
+   * plusieurs villes ne donne au lieu que les siennes. Vide : tout est gardé.
+   *
+   * Quand un champ de formulaire porte `{ville}`, la page est demandée une
+   * fois **par ville** de cette liste, le mot remplacé — c'est ainsi qu'un
+   * site qui ne rend qu'une ville à la fois rend toutes celles du lieu.
+   */
+  venues?: string[];
+  /**
+   * Où la page liste les villes qu'elle sait servir — les `<option>` de son
+   * formulaire, en général. Ne sert qu'au test : proposer les villes à cocher.
+   */
+  venueOptionsSelector?: string;
+};
+
 // Type pour une source d'événements
 export type EventSource = {
   url: string;
-  type: 'IA' | 'MAPPING';
+  type: 'IA' | 'MAPPING' | 'HTML';
   instructions?: string;
   mappingConfig?: EventMappingConfig;
+  htmlConfig?: EventHtmlConfig;
+  /**
+   * Les champs d'un formulaire à envoyer pour obtenir la page — la ville à
+   * afficher, un filtre. Quand ils sont là, la page est demandée en POST
+   * (`application/x-www-form-urlencoded`) plutôt qu'en GET. Vaut pour tous
+   * les types de source.
+   */
+  formFields?: Record<string, string>;
+  /**
+   * Les noms de jeu de la source qui ne sont pas ceux de la plateforme :
+   * « MTG » → « Magic: The Gathering ». Les clés se comparent à la casse et
+   * aux accents près. Vaut pour tous les types de source.
+   */
+  gameAliases?: Record<string, string>;
 };
 
 /** Ce qu'une source a rendu au dernier rafraîchissement. */
