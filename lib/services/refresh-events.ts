@@ -12,6 +12,7 @@ import {
   canonicalGameName,
   EVENTS_TIMEZONE,
   getNestedValue,
+  normalizeEventName,
   normalizeEventPrice,
   normalizeEventStatus,
   readEventsCollection,
@@ -528,6 +529,20 @@ async function readMappingSource(
 /** Au-delà, le test ne sonde plus chaque ville de la page : l'administration choisit d'abord. */
 const MAX_PROBED_VENUES = 12;
 
+/** Les villes sans doublon, à la casse, aux accents et à la ponctuation près. */
+function uniqueVenues(venues: string[]): string[] {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const venue of venues) {
+    const trimmed = venue.trim();
+    const key = normalizeEventName(trimmed);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(trimmed);
+  }
+  return unique;
+}
+
 /**
  * Lit une source HTML.
  *
@@ -554,7 +569,9 @@ async function readHtmlSource(
   }
 
   const accept = "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8";
-  const chosen = (config.venues ?? []).map((venue) => venue.trim()).filter(Boolean);
+  // Une ville par orthographe normalisée : « Metz » et « metz » ne font
+  // qu'une lecture.
+  const chosen = uniqueVenues(config.venues ?? []);
   const perVenue = hasVenuePlaceholder(source.formFields);
 
   // La première page : celle de la première ville quand le formulaire en

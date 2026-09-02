@@ -5,6 +5,7 @@ import { DateTime } from "luxon";
 import { AlertTriangle, CheckCircle2, FlaskConical, Plus, RefreshCw, X, XCircle } from "lucide-react";
 import { EventHtmlConfig, EventSource, Lair, LairEventsRefreshReport } from "@/lib/types/Lair.ts";
 import { HTML_PRESETS } from "@/lib/events/html-presets.ts";
+import { normalizeEventName } from "@/lib/events/source-events.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   EventSourcePreview,
@@ -894,7 +895,10 @@ function VenuesField({
 }) {
   const [draft, setDraft] = useState("");
 
-  const normalize = (value: string) => value.trim().toLowerCase();
+  // La même égalité que le filtre côté lecture : sans casse, sans accent,
+  // sans ponctuation. Sinon « Pokemon » et « Pokémon » feraient deux cases,
+  // et une ville cochée sous une autre orthographe ne se décocherait plus.
+  const normalize = normalizeEventName;
   const isChecked = (venue: string) => venues.some((chosen) => normalize(chosen) === normalize(venue));
 
   // Les villes à proposer : celles cochées, celles que la page annonce, et
