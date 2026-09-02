@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle2, FlaskConical, Plus, RefreshCw, X, XCircle 
 import { EventHtmlConfig, EventSource, Lair, LairEventsRefreshReport } from "@/lib/types/Lair.ts";
 import { HTML_PRESETS } from "@/lib/events/html-presets.ts";
 import { normalizeEventName } from "@/lib/events/source-events.ts";
+import { isWebUrl } from "@/lib/schemas/lair.schema.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   EventSourcePreview,
@@ -1052,9 +1053,20 @@ function HelpRequestBanner({ lairId, request }: { lairId: string; request: HelpR
           {request.url && (
             <p>
               Page :{" "}
-              <a href={request.url} target="_blank" rel="noreferrer" className="font-mono text-xs underline break-all">
-                {request.url}
-              </a>
+              {/* Cliquable seulement pour une adresse web : ce texte vient du
+                  gérant, et un `javascript:` n'a pas à s'exécuter d'un clic. */}
+              {isWebUrl(request.url) ? (
+                <a
+                  href={request.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs underline break-all"
+                >
+                  {request.url}
+                </a>
+              ) : (
+                <span className="font-mono text-xs break-all">{request.url}</span>
+              )}
             </p>
           )}
           {request.note && <p className="whitespace-pre-line">« {request.note} »</p>}

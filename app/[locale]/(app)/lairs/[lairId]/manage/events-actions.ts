@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
-import { z } from "zod";
 
 import { requireAdminOrOwner } from "@/lib/middleware/admin.ts";
 import {
@@ -11,6 +10,7 @@ import {
   lairIdSchema,
   managerEventSettingsSchema,
   managerEventSourceSchema,
+  webUrlSchema,
 } from "@/lib/schemas/lair.schema.ts";
 import * as lairsDb from "@/lib/db/lairs.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
@@ -116,7 +116,7 @@ export async function recognizeEventPage(
     const { lair } = await guard(lairId);
     if (!lair) return { success: false, error: "NOT_FOUND" };
 
-    const parsed = z.string().trim().url().safeParse(url);
+    const parsed = webUrlSchema.safeParse(url);
     if (!parsed.success) return { success: false, error: "INVALID" };
 
     const preset = findPresetForUrl(parsed.data);

@@ -1,5 +1,6 @@
 import "server-only";
 import { Resend } from "resend";
+import { isWebUrl } from "@/lib/schemas/lair.schema";
 
 /**
  * Les courriels autour d'une demande d'aide à la connexion d'un site.
@@ -46,7 +47,13 @@ export async function notifyTeamOfSourceRequest(input: {
 }): Promise<void> {
   const lines = [
     `<p><strong>${escapeHtml(input.lairName)}</strong> demande la connexion de son site.</p>`,
-    input.url ? `<p>Page : <a href="${escapeHtml(input.url)}">${escapeHtml(input.url)}</a></p>` : "",
+    // Un lien seulement pour une adresse web : le texte vient du gérant, et
+    // un `javascript:` ou un `data:` reste cliquable dans bien des clients.
+    input.url
+      ? isWebUrl(input.url)
+        ? `<p>Page : <a href="${escapeHtml(input.url)}">${escapeHtml(input.url)}</a></p>`
+        : `<p>Page : ${escapeHtml(input.url)}</p>`
+      : "",
     input.note ? `<p>Mot du gérant :</p><blockquote>${escapeHtml(input.note)}</blockquote>` : "",
     input.requesterEmail ? `<p>Demandé par ${escapeHtml(input.requesterEmail)}.</p>` : "",
     `<p><a href="${escapeHtml(`${input.appUrl}/admin/lairs/${input.lairId}?tab=sources`)}">Configurer la source</a></p>`,
