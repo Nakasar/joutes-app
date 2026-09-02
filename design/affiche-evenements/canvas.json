@@ -1,48 +1,52 @@
 {
   "pages": [
-    { "id": "page-1", "name": "Tableau d'affichage" },
-    { "id": "page-2", "name": "Première version (écartée)" }
+    { "id": "page-1", "name": "Sept styles" },
+    { "id": "page-2", "name": "Versions précédentes" }
   ],
   "artboards": [
-    { "file": "Main.dc.html", "title": "Affiche hebdomadaire — design Joutes", "page": "page-1", "x": 0, "y": 0, "w": 794, "h": 1123 },
-    { "file": "Mensuelle.dc.html", "title": "Affiche mensuelle — design Joutes", "page": "page-1", "x": 900, "y": 0, "w": 794, "h": 1123 },
-    { "file": "Perso.dc.html", "title": "Affiche hebdomadaire — thème d un lieu Joutes Pro", "page": "page-1", "x": 1800, "y": 0, "w": 794, "h": 1123 },
-    { "file": "Reglages.dc.html", "title": "/lairs/:lairId/manage?tab=affiche", "page": "page-1", "x": 0, "y": 1280, "w": 1120, "h": 1560 },
-    { "file": "NeutreHebdo.dc.html", "title": "V1 — hebdomadaire, style neutre", "page": "page-2", "x": 0, "y": 0, "w": 794, "h": 1123 },
-    { "file": "NeutreMensuelle.dc.html", "title": "V1 — mensuelle, style neutre", "page": "page-2", "x": 900, "y": 0, "w": 794, "h": 1123 }
+    { "file": "Main.dc.html", "title": "1 · Joutes (par défaut)", "page": "page-1", "x": 0, "y": 0, "w": 794, "h": 1123 },
+    { "file": "Affichage.dc.html", "title": "2 · Tableau d affichage", "page": "page-1", "x": 900, "y": 0, "w": 794, "h": 1123 },
+    { "file": "JoutesMedievales.dc.html", "title": "3 · Tableau de joutes médiévales", "page": "page-1", "x": 1800, "y": 0, "w": 794, "h": 1123 },
+    { "file": "Cyberpunk.dc.html", "title": "4 · Cyberpunk (Joutes Pro)", "page": "page-1", "x": 2700, "y": 0, "w": 794, "h": 1123 },
+    { "file": "Taverne.dc.html", "title": "5 · Taverne médiéval-fantastique (Joutes Pro)", "page": "page-1", "x": 0, "y": 1280, "w": 794, "h": 1123 },
+    { "file": "ScienceFiction.dc.html", "title": "6 · Science-fiction (Joutes Pro)", "page": "page-1", "x": 900, "y": 1280, "w": 794, "h": 1123 },
+    { "file": "Grimoire.dc.html", "title": "7 · Grimoire (Joutes Pro)", "page": "page-1", "x": 1800, "y": 1280, "w": 794, "h": 1123 },
+    { "file": "Reglages.dc.html", "title": "/lairs/:lairId/manage?tab=affiche", "page": "page-1", "x": 2700, "y": 1280, "w": 1120, "h": 1720 },
+    { "file": "NeutreHebdo.dc.html", "title": "V1 — style neutre (écarté)", "page": "page-2", "x": 0, "y": 0, "w": 794, "h": 1123 },
+    { "file": "V2Affichage.dc.html", "title": "V2 — tableau d affichage, trop proche de la référence (écarté)", "page": "page-2", "x": 900, "y": 0, "w": 794, "h": 1123 }
   ],
   "annotations": [
     {
-      "id": "direction",
+      "id": "styles",
       "page": "page-1",
       "x": 0,
-      "y": -320,
-      "w": 580,
-      "text": "La direction : un tableau d'affichage.\n\nUne feuille de cahier punaisée sur un panneau de bois, les jours sur des ardoises noires soulignées au marqueur, chaque événement sur un ticket perforé avec son horaire en pastille et son jeu à droite. L'étiquette de date est collée de travers en haut à gauche ; l'encart d'inscription, scotché en bas de la colonne de droite, porte le QR code vers la page du lieu ; le lieu signe en bas à droite, Joutes en bas à gauche.\n\nLilita One pour les titres, Poppins pour le reste. L'esprit de la référence est repris, pas ses éléments : ni son papier, ni sa typographie, ni sa marque."
+      "y": -340,
+      "w": 620,
+      "text": "Sept styles pour la même semaine.\n\nLes trois premiers sont ouverts à tous : Joutes (par défaut), Tableau d'affichage, Tableau de joutes médiévales. Les quatre suivants sont réservés aux lieux Joutes Pro : Cyberpunk, Taverne médiéval-fantastique, Science-fiction, Grimoire.\n\nChaque style a ses propres polices, sa palette et sa composition ; ce qui ne change pas, c'est le contenu (jours, événements, jeu, horaire, prix et places), le QR code vers la page du lieu et la signature Joutes."
     },
     {
-      "id": "pro",
+      "id": "affichage",
       "page": "page-1",
-      "x": 1800,
-      "y": -320,
-      "w": 580,
-      "text": "Le thème d'un lieu Joutes Pro (troisième planche).\n\nTrois leviers au-dessus de la planche, à essayer : la couleur d'accent (étiquette, pastilles, encart), la couleur du marqueur (le trait sous les jours et le numéro), et la police des titres — Lilita One, Titan One, Bangers ou Fredoka. Le logo du lieu prend place à côté de sa signature.\n\nSans Pro, l'affiche garde l'accent violet et le marqueur doré de Joutes, sans logo (les deux premières planches).\n\nÀ trancher : la palette de l'affiche est plus large que celle de la vitrine (cinq accents vérifiés sur fond sombre) — sur papier clair, d'autres teintes tiennent."
+      "x": 900,
+      "y": -340,
+      "w": 620,
+      "text": "Le tableau d'affichage, repris de zéro.\n\nUn panneau de liège, des post-it de couleurs différentes punaisés ou scotchés de travers, l'écriture manuscrite pour les jours, une fiche cartonnée en tête et une bande de papier déchiré en pied. Plus d'ardoises noires, de tickets perforés ni de pastilles : rien de commun avec l'affiche de référence, si ce n'est l'idée du panneau."
     },
     {
       "id": "trancher",
       "page": "page-1",
-      "x": 640,
-      "y": -320,
-      "w": 580,
-      "text": "À trancher, et ce qui est un exemple.\n\n— Les mots à droite des tickets tiennent lieu de logos : la version livrée y met le logo horizontal du jeu (game.images.horizontal), et retombe sur ce mot-symbole quand le jeu n'en a pas.\n\n— Où ça vit : un onglet « Affiche » dans la gestion du lieu (planche du bas), aperçu à droite, export PNG / PDF / impression.\n\n— A4 sur les réseaux : le 1:1,41 déborde du 4:5 d'Instagram ; Facebook et Discord l'acceptent. Un format story 9:16 peut venir ensuite.\n\n— Le lieu, ses événements et le QR sont des exemples ; le QR sera encodé avec le paquet qrcode déjà présent."
+      "x": 1800,
+      "y": -340,
+      "w": 620,
+      "text": "À trancher, et ce qui est un exemple.\n\n— Le mode mensuel : chaque style devra en avoir une déclinaison ; les planches ici montrent la semaine.\n\n— Les noms de jeu tiennent lieu de logos : la version livrée y met le logo horizontal du jeu (game.images.horizontal) là où le style s'y prête.\n\n— La personnalisation Pro (logo du lieu, couleur d'accent) vient par-dessus le style choisi ; l'écran de réglages en bas à droite montre le sélecteur de style avec le verrou Pro.\n\n— Le lieu, ses événements et le QR sont des exemples. La peinture du style Taverne est l'illustration déjà présente dans public/joutes.png."
     },
     {
-      "id": "v1",
+      "id": "anciennes",
       "page": "page-2",
       "x": 0,
       "y": -200,
-      "w": 560,
-      "text": "La première proposition, jugée trop neutre : Geist et les jetons de l'application tels quels. Gardée ici pour comparaison ; elle n'est plus la piste proposée."
+      "w": 620,
+      "text": "Les deux premières propositions, gardées pour mémoire : la V1 jugée trop neutre, la V2 trop proche de l'affiche de référence."
     }
   ],
   "launch": { "view": "canvas", "page": "page-1" }
