@@ -7,6 +7,7 @@ import { passkey } from "@better-auth/passkey";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import db from "@/lib/mongodb";
 import { getOwnBadges, NO_BADGES } from "@/lib/db/user-badges";
+import { getUserDisplayAvatar } from "@/lib/db/users";
 import {customAlphabet} from "nanoid";
 
 const generateOTP = customAlphabet("0123456789", 6);
@@ -125,6 +126,46 @@ function streamSocialProviders() {
   return providers;
 }
 
+/**
+ * Les badges et l'avatar du compte connecté, ajoutés à sa session.
+ *
+ * L'en-tête est un composant client : il ne tient que la session, et n'a aucun
+ * moyen d'aller lire un abonnement ni un document de compte. Sans cela, l'avatar
+ * du compte connecté serait le seul de l'application à porter le contour d'un
+ * compte sans abonnement — y compris pour qui en paie un, sur le seul écran
+ * qu'il regarde tout le temps —, et à ignorer l'image de profil que son
+ * propriétaire a téléversée.
+ *
+ * `avatar` et non `image` : better-auth écrit `user.image` à la connexion, et
+ * l'écraser ferait mentir le champ que le fournisseur d'identité renseigne.
+ * C'est aussi le nom que le reste de l'application donne déjà à l'avatar
+ * affiché (`PublicUser.avatar`).
+ *
+ * **Le coût est réel** : tout cela se relit à chaque lecture de session, soit
+ * quatre requêtes de plus (abonnements, catalogue des statuts, déblocages, et
+ * les champs d'image du compte). Les deux lectures partent ensemble, et
+ * `getBadgesForUser` est mémoïsé le temps d'une requête : un rendu qui lit la
+ * session plusieurs fois ne les paie qu'une.
+ *
+ * Une lecture qui échoue est une décoration en moins, jamais une session
+ * perdue : un incident de base de données déconnecterait sinon toute
+ * l'application.
+ */
+async function accountDecorations(userId: string) {
+  const [badges, avatar] = await Promise.all([
+    getOwnBadges(userId).catch((error) => {
+      console.error("Erreur lors de la lecture des badges de session:", error);
+      return NO_BADGES;
+    }),
+    getUserDisplayAvatar(userId).catch((error) => {
+      console.error("Erreur lors de la lecture de l'avatar de session:", error);
+      return undefined;
+    }),
+  ]);
+
+  return { badges, avatar };
+}
+
 export const auth = betterAuth({
   database: mongodbAdapter(db),
   emailAndPassword: {
@@ -192,36 +233,15 @@ export const auth = betterAuth({
       },
     }),
     /**
-     * Le palier et les statuts, portés par la session.
-     *
-     * L'en-tête est un composant client : il ne tient que la session, et n'a
-     * aucun moyen d'aller lire un abonnement. Sans cela, l'avatar du compte
-     * connecté serait le seul de l'application à porter le contour d'un compte
-     * sans abonnement, y compris pour qui en paie un — un défaut que seul
-     * l'abonné remarque, et sur le seul écran qu'il regarde tout le temps.
+     * Ce que la session porte en plus du compte : de quoi dessiner son avatar.
      *
      * **En dernier de la liste** : `customSession` enveloppe la session que les
      * autres greffons ont fini de composer, et se placer avant eux perdrait ce
      * qu'ils y ajoutent.
-     *
-     * Le coût est réel — les badges se relisent à chaque lecture de session,
-     * soit trois requêtes de plus (abonnements, catalogue des statuts,
-     * déblocages). `getBadgesForUser` est mémoïsé le temps d'une requête, si
-     * bien qu'un rendu qui lit la session plusieurs fois ne les paie qu'une.
-     *
-     * Une lecture qui échoue rend `NO_BADGES` plutôt que de faire échouer la
-     * session : un badge est une décoration, et un incident de base de données
-     * déconnecterait sinon toute l'application.
      */
     customSession(async ({ user, session }) => ({
       session,
-      user: {
-        ...user,
-        badges: await getOwnBadges(user.id).catch((error) => {
-          console.error("Erreur lors de la lecture des badges de session:", error);
-          return NO_BADGES;
-        }),
-      },
+      user: { ...user, ...(await accountDecorations(user.id)) },
     })),
   ],
   session: {

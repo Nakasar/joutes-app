@@ -634,7 +634,7 @@ export default function Header() {
                         aria-label={t('menu.myAccount')}
                       >
                         <ProfileAvatar
-                          src={session.user.image ?? undefined}
+                          src={session.user.avatar}
                           name={session.user.name || session.user.email}
                           plan={session.user.badges.plan}
                           size={28}
@@ -698,7 +698,7 @@ export default function Header() {
                       aria-label={t('menu.myAccount')}
                     >
                       <ProfileAvatar
-                        src={session.user.image ?? undefined}
+                        src={session.user.avatar}
                         name={session.user.name || session.user.email}
                         plan={session.user.badges.plan}
                         size={28}
