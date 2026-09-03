@@ -26,16 +26,20 @@ const optionalText = (max: number, label: string) =>
  * code. Même règle que la vitrine : `url()` seul laisse passer `javascript:`
  * et `data:`, et ces valeurs finissent dans un `src` et dans un QR code que
  * l'on scanne sans le lire.
+ *
+ * Le rognage précède le contrôle, et le vide y est admis avec le reste plutôt
+ * que dans une branche à lui : deux espaces collés dans le champ sont un champ
+ * vidé, comme partout ailleurs dans ce formulaire, et non un enregistrement
+ * refusé en bloc.
  */
 const optionalUrl = z
-  .union([
-    z
-      .string()
-      .trim()
-      .refine((value) => externalUrl(value) !== null, "L'URL doit être une adresse http(s) valide"),
-    z.literal(""),
-  ])
-  .transform((value) => (value ? value : undefined))
+  .string()
+  .trim()
+  .refine(
+    (value) => value.length === 0 || externalUrl(value) !== null,
+    "L'URL doit être une adresse http(s) valide",
+  )
+  .transform((value) => (value.length > 0 ? value : undefined))
   .optional();
 
 /** La signature du pied d'affiche, à la place du bloc Joutes. */

@@ -22,6 +22,16 @@ describe("lairPosterSettingsSchema", () => {
     assert.deepEqual(result.data?.cta, { title: undefined, text: undefined, url: undefined });
   });
 
+  it("vide une URL faite d'espaces, plutôt que de refuser l'enregistrement entier", () => {
+    // Deux espaces collés dans le champ sont un champ vidé, comme pour un
+    // texte : les refuser faisait échouer la sauvegarde de toute l'affiche.
+    const result = lairPosterSettingsSchema.safeParse({ branding: { logo: "  " }, cta: { url: " \t " } });
+
+    assert.equal(result.success, true);
+    assert.equal(result.data?.branding?.logo, undefined);
+    assert.equal(result.data?.cta?.url, undefined);
+  });
+
   it("garde la signature et l'appel à l'action d'un lieu, espaces rognés", () => {
     const result = lairPosterSettingsSchema.safeParse({
       branding: { logo: "https://exemple.fr/logo.png", title: " La Taverne ", text: "Tout sur taverne.fr" },
