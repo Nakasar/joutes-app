@@ -9,6 +9,9 @@ import { posterDayView, posterEvent, posterLabels, posterWeekView } from "@/lib/
 import type { PosterOptions } from "@/lib/posters/styles";
 import { POSTER_VIEWS, type PosterStrings } from "./PosterStyles.tsx";
 
+/** L'emblème Joutes, tant qu'un lieu Pro n'a pas posé le sien. */
+const BRAND_ICON = "/logo/android-chrome-192x192.png";
+
 /** L'origine publique du site, pour l'adresse que le QR code encode. */
 export function siteOrigin(): string {
   return (process.env.NEXT_PUBLIC_BASE_URL?.trim() || "https://joutes.app").replace(/\/$/, "");
@@ -45,11 +48,32 @@ export default async function Poster({ lair, events, games, range, options, loca
   const labels = posterLabels(range, locale);
 
   const origin = siteOrigin();
-  const qr = await QRCode.toString(`${origin}/lairs/${lair.id}`, { type: "svg", margin: 0 });
 
   const styleStrings: PosterStrings = {
     s: (key, values) => t(`styles.${options.style}.${key}`, values),
     t,
+  };
+
+  // Ce que le QR code encode : la page du lieu, ou l'adresse qu'un lieu Pro a
+  // mise à la place — sa billetterie, son site. Elle est repassée par
+  // `externalUrl` avant d'être encodée : un QR code se scanne sans se lire, et
+  // ce qui en sort ouvre un navigateur.
+  const target = externalUrl(options.cta.url) ?? `${origin}/lairs/${lair.id}`;
+  const qr = await QRCode.toString(target, { type: "svg", margin: 0 });
+  const shortUrl = target.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+  // La signature du pied de page et l'appel à l'action : ceux du lieu, champ
+  // par champ, ceux de Joutes et du style pour tout le reste.
+  const brand = {
+    logo: externalUrl(options.branding.logo) ?? BRAND_ICON,
+    name: options.branding.title ?? "Joutes",
+    line: options.branding.text ?? styleStrings.s("brandLine"),
+  };
+  const cta = {
+    title: options.cta.title ?? styleStrings.s("cta"),
+    // Le cyberpunk n'écrit pas de phrase sous son appel à l'action, mais
+    // l'adresse elle-même : il n'a pas de `ctaSub` à traduire.
+    text: options.cta.text ?? (options.style === "cyberpunk" ? shortUrl : styleStrings.s("ctaSub")),
   };
 
   const View = POSTER_VIEWS[options.style];
@@ -67,8 +91,8 @@ export default async function Poster({ lair, events, games, range, options, loca
         days={days}
         weeks={weeks}
         qr={qr}
-        url={`${origin.replace(/^https?:\/\//, "")}/lairs/${lair.id}`}
-        brandIcon="/logo/android-chrome-192x192.png"
+        brand={brand}
+        cta={cta}
         strings={styleStrings}
         monthName={range.start.setLocale(locale).toFormat("MMMM").replace(/^./, (c) => c.toLocaleUpperCase())}
       />

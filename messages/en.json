@@ -1523,9 +1523,29 @@
             "description": "Three styles open to everyone, four reserved for Joutes Pro venues.",
             "pro": "Pro"
           },
+          "footer": {
+            "title": "Sign-off and QR code",
+            "description": "The foot of the poster: your call to action, your QR code, and your sign-off in place of the Joutes one.",
+            "locked": "Reserved for Joutes Pro venues. Without a subscription, the poster keeps the Joutes sign-off.",
+            "cta": {
+              "label": "Call to action",
+              "title": "Title",
+              "text": "Text",
+              "url": "QR code address",
+              "urlPlaceholder": "The venue page on Joutes",
+              "urlHint": "An https address — your ticketing, your website. Left empty, the QR code opens the venue page on Joutes."
+            },
+            "brand": {
+              "label": "Sign-off",
+              "logoLabel": "drop the logo",
+              "title": "Title",
+              "text": "Text",
+              "hint": "Every field left empty keeps what the poster writes on its own: the Joutes emblem, name and line."
+            }
+          },
           "export": {
             "title": "Export",
-            "description": "A4 portrait. The QR code opens the venue page on Joutes.",
+            "description": "A4 portrait. The QR code opens the venue page on Joutes, or the address you chose.",
             "open": "Open the poster",
             "print": "Print or save as PDF",
             "hint": "In the print dialog, choose “Save as PDF” to get a file; a PNG image is made from the PDF."
@@ -1539,7 +1559,7 @@
           "errors": {
             "invalid": "Some settings are invalid.",
             "notFound": "This venue could not be found.",
-            "proRequired": "This style requires a Joutes Pro subscription.",
+            "proRequired": "This setting requires a Joutes Pro subscription.",
             "failed": "Saving failed. Try again in a moment."
           }
         },

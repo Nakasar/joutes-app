@@ -1523,9 +1523,29 @@
             "description": "Trois styles ouverts à tous, quatre réservés aux lieux Joutes Pro.",
             "pro": "Pro"
           },
+          "footer": {
+            "title": "Signature et QR code",
+            "description": "Le pied de l'affiche : votre appel à l'action, votre QR code, et votre signature à la place de celle de Joutes.",
+            "locked": "Réservé aux lieux Joutes Pro. Sans abonnement, l'affiche garde la signature Joutes.",
+            "cta": {
+              "label": "Appel à l'action",
+              "title": "Titre",
+              "text": "Texte",
+              "url": "Adresse du QR code",
+              "urlPlaceholder": "La page du lieu sur Joutes",
+              "urlHint": "Une adresse en https — votre billetterie, votre site. Laissée vide, le QR code ouvre la page du lieu sur Joutes."
+            },
+            "brand": {
+              "label": "Signature",
+              "logoLabel": "déposer le logo",
+              "title": "Titre",
+              "text": "Texte",
+              "hint": "Chaque champ laissé vide garde ce que l'affiche écrit d'elle-même : l'emblème, le nom et la ligne de Joutes."
+            }
+          },
           "export": {
             "title": "Exporter",
-            "description": "A4 portrait. Le QR code mène à la page du lieu sur Joutes.",
+            "description": "A4 portrait. Le QR code mène à la page du lieu sur Joutes, ou à l'adresse que vous avez choisie.",
             "open": "Ouvrir l'affiche",
             "print": "Imprimer ou enregistrer en PDF",
             "hint": "Dans la boîte d'impression, choisissez « Enregistrer au format PDF » pour obtenir un fichier ; une image PNG se fait depuis le PDF."
@@ -1539,7 +1559,7 @@
           "errors": {
             "invalid": "Certains réglages sont invalides.",
             "notFound": "Ce lieu est introuvable.",
-            "proRequired": "Ce style demande un abonnement Joutes Pro.",
+            "proRequired": "Ce réglage demande un abonnement Joutes Pro.",
             "failed": "L'enregistrement a échoué. Réessayez dans un instant."
           }
         },

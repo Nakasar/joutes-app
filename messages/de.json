@@ -1523,9 +1523,29 @@
             "description": "Drei Stile für alle, vier nur für Joutes-Pro-Orte.",
             "pro": "Pro"
           },
+          "footer": {
+            "title": "Signatur und QR-Code",
+            "description": "Der Fuß des Plakats: euer Aufruf, euer QR-Code und eure Signatur anstelle der von Joutes.",
+            "locked": "Nur für Joutes-Pro-Orte. Ohne Abo behält das Plakat die Joutes-Signatur.",
+            "cta": {
+              "label": "Aufruf",
+              "title": "Titel",
+              "text": "Text",
+              "url": "Adresse des QR-Codes",
+              "urlPlaceholder": "Die Seite des Ortes auf Joutes",
+              "urlHint": "Eine https-Adresse — euer Ticketshop, eure Website. Leer gelassen, führt der QR-Code zur Seite des Ortes auf Joutes."
+            },
+            "brand": {
+              "label": "Signatur",
+              "logoLabel": "Logo ablegen",
+              "title": "Titel",
+              "text": "Text",
+              "hint": "Jedes leere Feld behält das, was das Plakat von sich aus schreibt: Emblem, Name und Zeile von Joutes."
+            }
+          },
           "export": {
             "title": "Exportieren",
-            "description": "A4 Hochformat. Der QR-Code führt zur Seite des Ortes auf Joutes.",
+            "description": "A4 Hochformat. Der QR-Code führt zur Seite des Ortes auf Joutes oder zu der Adresse, die ihr gewählt habt.",
             "open": "Plakat öffnen",
             "print": "Drucken oder als PDF speichern",
             "hint": "Im Druckdialog „Als PDF speichern“ wählen, um eine Datei zu erhalten; ein PNG entsteht aus dem PDF."
@@ -1539,7 +1559,7 @@
           "errors": {
             "invalid": "Einige Einstellungen sind ungültig.",
             "notFound": "Dieser Ort wurde nicht gefunden.",
-            "proRequired": "Dieser Stil erfordert ein Joutes-Pro-Abo.",
+            "proRequired": "Diese Einstellung erfordert ein Joutes-Pro-Abo.",
             "failed": "Speichern fehlgeschlagen. Versuche es gleich noch einmal."
           }
         },

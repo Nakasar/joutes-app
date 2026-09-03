@@ -32,10 +32,13 @@ export type PosterViewProps = {
   weeks: PosterWeekView[];
   /** Le QR code, en SVG, vers la page du lieu. */
   qr: string;
-  /** L'adresse courte imprimée sous le QR : « joutes.app/lairs/… ». */
-  url: string;
-  /** L'emblème Joutes, pour la signature. */
-  brandIcon: string;
+  /**
+   * La signature du pied de page — celle de Joutes, ou celle qu'un lieu Pro a
+   * mise à sa place. Elle est déjà résolue : le style l'écrit telle quelle.
+   */
+  brand: { logo: string; name: string; line: string };
+  /** L'appel à l'action, résolu de la même façon. */
+  cta: { title: string; text: string };
   strings: PosterStrings;
   /** Le mois de la période en toutes lettres, pour les styles qui l'écrivent. */
   monthName: string;
@@ -109,7 +112,7 @@ function JoutesPoster(p: PosterViewProps) {
     <div className="poster joutes">
       <header className="hd">
         {/* eslint-disable-next-line @next/next/no-img-element -- filigrane décoratif */}
-        <img className="wm" src={p.brandIcon} alt="" />
+        <img className="wm" src={p.brand.logo} alt="" />
         <span className="kicker">{s(isWeek ? "kickerWeek" : "kickerMonth")}</span>
         <h1 className="period">
           {p.labels.big}
@@ -174,17 +177,17 @@ function JoutesPoster(p: PosterViewProps) {
       )}
       <footer className="ft">
         <div className="brand">
-          {/* eslint-disable-next-line @next/next/no-img-element -- emblème Joutes */}
-          <img src={p.brandIcon} alt="" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- l'emblème de la signature, celui du lieu s'il en a posé un */}
+          <img src={p.brand.logo} alt="" />
           <div>
-            <div className="brand-name">Joutes</div>
-            <div className="brand-line">{s("brandLine")}</div>
+            <div className="brand-name">{p.brand.name}</div>
+            <div className="brand-line">{p.brand.line}</div>
           </div>
         </div>
         <div className="cta">
           <div>
-            <span className="cta-btn">{s("cta")}</span>
-            <p className="cta-sub">{s("ctaSub")}</p>
+            <span className="cta-btn">{p.cta.title}</span>
+            <p className="cta-sub">{p.cta.text}</p>
           </div>
           <QR svg={p.qr} />
         </div>
@@ -302,17 +305,17 @@ function BoardPoster(p: PosterViewProps) {
       )}
       <footer className="ft">
         <div className="brand">
-          {/* eslint-disable-next-line @next/next/no-img-element -- emblème Joutes */}
-          <img src={p.brandIcon} alt="" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- l'emblème de la signature, celui du lieu s'il en a posé un */}
+          <img src={p.brand.logo} alt="" />
           <div>
-            <div className="brand-name">Joutes</div>
-            <div className="brand-line">{s("brandLine")}</div>
+            <div className="brand-name">{p.brand.name}</div>
+            <div className="brand-line">{p.brand.line}</div>
           </div>
         </div>
         <div className="cta">
           <div className="cta-text">
-            <div className="cta-title">{s("cta")}</div>
-            <div className="cta-sub">{s("ctaSub")}</div>
+            <div className="cta-title">{p.cta.title}</div>
+            <div className="cta-sub">{p.cta.text}</div>
           </div>
           <QR svg={p.qr} />
         </div>
@@ -405,17 +408,17 @@ function TournamentPoster(p: PosterViewProps) {
       )}
       <footer className="ft">
         <div className="brand">
-          {/* eslint-disable-next-line @next/next/no-img-element -- emblème Joutes */}
-          <img src={p.brandIcon} alt="" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- l'emblème de la signature, celui du lieu s'il en a posé un */}
+          <img src={p.brand.logo} alt="" />
           <div>
-            <div className="brand-name">Joutes</div>
-            <div className="brand-line">{s("brandLine")}</div>
+            <div className="brand-name">{p.brand.name}</div>
+            <div className="brand-line">{p.brand.line}</div>
           </div>
         </div>
         <div className="cta">
           <div className="cta-text">
-            <div className="cta-title">{s("cta")}</div>
-            <div className="cta-sub">{s("ctaSub")}</div>
+            <div className="cta-title">{p.cta.title}</div>
+            <div className="cta-sub">{p.cta.text}</div>
           </div>
           <div className="shield">
             <QR svg={p.qr} />
@@ -509,17 +512,17 @@ function CyberpunkPoster(p: PosterViewProps) {
       )}
       <footer className="ft">
         <div className="brand">
-          {/* eslint-disable-next-line @next/next/no-img-element -- emblème Joutes */}
-          <img src={p.brandIcon} alt="" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- l'emblème de la signature, celui du lieu s'il en a posé un */}
+          <img src={p.brand.logo} alt="" />
           <div>
-            <div className="brand-name glow-c">JOUTES</div>
-            <div className="brand-line">{s("brandLine")}</div>
+            <div className="brand-name glow-c">{p.brand.name}</div>
+            <div className="brand-line">{p.brand.line}</div>
           </div>
         </div>
         <div className="cta">
           <div className="cta-text">
-            <div className="cta-title glow-m">{s("cta")}</div>
-            <div className="cta-sub">{p.url}</div>
+            <div className="cta-title glow-m">{p.cta.title}</div>
+            <div className="cta-sub">{p.cta.text}</div>
           </div>
           <QR svg={p.qr} />
         </div>
@@ -614,17 +617,17 @@ function TavernPoster(p: PosterViewProps) {
       </div>
       <footer className="ft">
         <div className="brand">
-          {/* eslint-disable-next-line @next/next/no-img-element -- emblème Joutes */}
-          <img src={p.brandIcon} alt="" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- l'emblème de la signature, celui du lieu s'il en a posé un */}
+          <img src={p.brand.logo} alt="" />
           <div>
-            <div className="brand-name med">Joutes</div>
-            <div className="brand-line">{s("brandLine")}</div>
+            <div className="brand-name med">{p.brand.name}</div>
+            <div className="brand-line">{p.brand.line}</div>
           </div>
         </div>
         <div className="cta">
           <div className="cta-text">
-            <div className="cta-title med">{s("cta")}</div>
-            <div className="cta-sub">{s("ctaSub")}</div>
+            <div className="cta-title med">{p.cta.title}</div>
+            <div className="cta-sub">{p.cta.text}</div>
           </div>
           <QR svg={p.qr} />
         </div>
@@ -726,17 +729,17 @@ function SciFiPoster(p: PosterViewProps) {
       )}
       <footer className="ft">
         <div className="brand">
-          {/* eslint-disable-next-line @next/next/no-img-element -- emblème Joutes */}
-          <img src={p.brandIcon} alt="" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- l'emblème de la signature, celui du lieu s'il en a posé un */}
+          <img src={p.brand.logo} alt="" />
           <div>
-            <div className="brand-name">Joutes</div>
-            <div className="brand-line">{s("brandLine")}</div>
+            <div className="brand-name">{p.brand.name}</div>
+            <div className="brand-line">{p.brand.line}</div>
           </div>
         </div>
         <div className="cta">
           <div className="cta-text">
-            <div className="cta-title">{s("cta")}</div>
-            <div className="cta-sub">{s("ctaSub")}</div>
+            <div className="cta-title">{p.cta.title}</div>
+            <div className="cta-sub">{p.cta.text}</div>
           </div>
           <QR svg={p.qr} />
         </div>
@@ -832,17 +835,17 @@ function GrimoirePoster(p: PosterViewProps) {
         )}
         <footer className="ft">
           <div className="brand">
-            {/* eslint-disable-next-line @next/next/no-img-element -- emblème Joutes */}
-            <img src={p.brandIcon} alt="" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- l'emblème de la signature, celui du lieu s'il en a posé un */}
+            <img src={p.brand.logo} alt="" />
             <div>
-              <div className="brand-name">Joutes</div>
-              <div className="brand-line">{s("brandLine")}</div>
+              <div className="brand-name">{p.brand.name}</div>
+              <div className="brand-line">{p.brand.line}</div>
             </div>
           </div>
           <div className="cta">
             <div className="cta-text">
-              <div className="cta-title">{s("cta")}</div>
-              <div className="cta-sub">{s("ctaSub")}</div>
+              <div className="cta-title">{p.cta.title}</div>
+              <div className="cta-sub">{p.cta.text}</div>
             </div>
             <div className="seal">J</div>
             <QR svg={p.qr} />

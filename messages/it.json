@@ -1523,9 +1523,29 @@
             "description": "Tre stili aperti a tutti, quattro riservati ai luoghi Joutes Pro.",
             "pro": "Pro"
           },
+          "footer": {
+            "title": "Firma e codice QR",
+            "description": "Il piede della locandina: il vostro invito, il vostro codice QR e la vostra firma al posto di quella di Joutes.",
+            "locked": "Riservato ai luoghi Joutes Pro. Senza abbonamento la locandina conserva la firma Joutes.",
+            "cta": {
+              "label": "Invito all'azione",
+              "title": "Titolo",
+              "text": "Testo",
+              "url": "Indirizzo del codice QR",
+              "urlPlaceholder": "La pagina del luogo su Joutes",
+              "urlHint": "Un indirizzo https — la vostra biglietteria, il vostro sito. Lasciato vuoto, il codice QR apre la pagina del luogo su Joutes."
+            },
+            "brand": {
+              "label": "Firma",
+              "logoLabel": "depositare il logo",
+              "title": "Titolo",
+              "text": "Testo",
+              "hint": "Ogni campo lasciato vuoto conserva ciò che la locandina scrive da sé: l'emblema, il nome e la riga di Joutes."
+            }
+          },
           "export": {
             "title": "Esportare",
-            "description": "A4 verticale. Il codice QR porta alla pagina del luogo su Joutes.",
+            "description": "A4 verticale. Il codice QR porta alla pagina del luogo su Joutes, o all'indirizzo che avete scelto.",
             "open": "Aprire la locandina",
             "print": "Stampare o salvare in PDF",
             "hint": "Nella finestra di stampa scegliete «Salva come PDF» per ottenere un file; un'immagine PNG si ricava dal PDF."
@@ -1539,7 +1559,7 @@
           "errors": {
             "invalid": "Alcune impostazioni non sono valide.",
             "notFound": "Questo luogo è introvabile.",
-            "proRequired": "Questo stile richiede un abbonamento Joutes Pro.",
+            "proRequired": "Questa impostazione richiede un abbonamento Joutes Pro.",
             "failed": "Il salvataggio non è riuscito. Riprovate tra un istante."
           }
         },
