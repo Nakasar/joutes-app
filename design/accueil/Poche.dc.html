@@ -85,17 +85,17 @@
      * seule chose que la nuit change à la palette.
      */
     .board.nuit {
-      --fond: oklch(0.222 0.018 62);
-      --fond-creux: oklch(0.185 0.015 62);
-      --grain-clair: oklch(0.252 0.020 66);
-      --grain-sombre: oklch(0.192 0.015 60);
-      --papier: oklch(0.352 0.016 68);
-      --papier-2: oklch(0.312 0.018 66);
+      --fond: oklch(0.248 0.019 62);
+      --fond-creux: oklch(0.205 0.016 62);
+      --grain-clair: oklch(0.275 0.021 66);
+      --grain-sombre: oklch(0.215 0.016 60);
+      --papier: oklch(0.318 0.015 68);
+      --papier-2: oklch(0.285 0.017 66);
       --encre: oklch(0.938 0.014 84);
       --encre-2: oklch(0.742 0.019 80);
       --trait: oklch(0.435 0.021 68);
       --hachure: rgba(255, 246, 232, 0.06);
-      --liseré: rgba(255, 246, 232, 0.22);
+      --liseré: rgba(255, 246, 232, 0.14);
 
       --rouge: oklch(0.655 0.195 27);
       --vert: oklch(0.715 0.135 152);
@@ -296,6 +296,57 @@
 
     .ico { width: 16px; height: 16px; flex-shrink: 0; }
     .ico-sm { width: 13px; height: 13px; flex-shrink: 0; }
+
+    /*
+     * Le panneau dans la poche. Un panneau de 390 px n'est plus un panneau :
+     * les fiches ne peuvent plus se ranger côte à côte. Elles s'empilent, et
+     * c'est l'empilement qui rend la matière — chacune mord de huit pixels sur
+     * la précédente, comme une pile qu'on a punaisée au même endroit.
+     *
+     * Le chevauchement reste vertical et faible : au-delà, on cacherait du
+     * texte au lieu de suggérer une épaisseur.
+     */
+    .enseigne-inner { padding: 0 16px; height: 56px; gap: 12px; }
+    .marque { font-size: 21px; }
+    .page { padding: 22px 16px 40px; }
+
+    .accroche { margin-bottom: 20px; }
+    .accroche h1 { font-size: 34px; line-height: 37px; }
+    .accroche p { margin-top: 10px; font-size: 14px; }
+
+    .onglets-jeux { margin-bottom: 18px; }
+    .onglet-jeu { height: 38px; padding: 0 15px; }
+    .onglet-jeu.actif { height: 42px; }
+    .btn { height: 44px; }
+
+    .direct-mot { padding: 16px; margin-bottom: 34px; }
+    .direct-entete { gap: 10px; margin-bottom: 14px; }
+    .direct-titre-section { font-size: 16px; }
+    .directs-grille { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    .direct-carte .titre { font-size: 15px; line-height: 20px; }
+
+    .annonces { grid-template-columns: minmax(0, 1fr); padding-top: 16px; margin-bottom: 38px; }
+    .annonce { padding: 24px 18px 18px; }
+    .annonce:nth-child(1) { --r: -1.4deg; z-index: 3; margin: 0; }
+    .annonce:nth-child(2) { --r: 1deg; z-index: 2; margin: -8px 0 0; }
+    .annonce:nth-child(3) { --r: -0.8deg; z-index: 1; margin: -8px 0 0; }
+    .annonce:nth-child(1) .date .jour { font-size: 50px; line-height: 44px; }
+    .annonce .titre { font-size: 17px; line-height: 22px; }
+
+    .colonnes { display: flex; flex-direction: column; gap: 38px; }
+    .colonne-droite { padding-top: 0; gap: 34px; }
+
+    .bandeau-section { flex-wrap: wrap; gap: 12px; }
+    .bascule { width: 100%; }
+    .bascule-item { flex-grow: 1; justify-content: center; height: 40px; padding: 0 8px; }
+
+    .coupures { gap: 18px; padding-top: 14px; }
+    .coupure { padding: 14px; gap: 13px; }
+    .coupure .titre { font-size: 17px; line-height: 22px; }
+    .coupure .meta { font-size: 12.5px; }
+
+    .papier { padding: 18px; }
+    .fanion { top: 12px; right: -6px; }
   </style>
 </helmet>
 
@@ -303,29 +354,23 @@
 
   <header class="enseigne">
     <div class="enseigne-inner">
-      <div style="display: flex; align-items: center; gap: 34px; min-width: 0">
-        <span class="marque">Joutes
-          <svg viewBox="0 0 100 7" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M1 4.6C18 2.2 42 1.7 61 3.1c14 1 26 2.4 38 1.1"></path></svg>
+      <div style="display: flex; align-items: center; gap: 10px; min-width: 0">
+        <span class="icone-bouton" style="margin-left: -8px">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path></svg>
         </span>
-        <nav class="nav">
-          <span class="nav-lien actif">Le panneau</span>
-          <span class="nav-lien">Événements</span>
-          <span class="nav-lien">Lieux</span>
-          <span class="nav-lien">Jeux</span>
-          <span class="nav-lien">Contenus</span>
-          <span class="nav-lien">Amis</span>
-        </nav>
+        <span class="marque">Joutes
+          <svg viewBox="0 0 100 7" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M1 4.6C18 2.2 42 1.7 61 3.1c14 1 26 2.4 38 1.1"></path></svg>
+        </span>
       </div>
-      <div class="enseigne-droite">
-        <span class="recherche">
+      <div class="enseigne-droite" style="gap: 2px">
+        <span class="icone-bouton">
           <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
-          Chercher
         </span>
         <span class="icone-bouton">
           <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
           <span class="pastille-notif"></span>
         </span>
-        <span class="avatar">KT</span>
+        <span class="avatar" style="margin-left: 6px">KT</span>
       </div>
     </div>
   </header>
@@ -334,18 +379,8 @@
 
     <div class="accroche">
       <div>
-        <h1 class="titre-affiche">Bonsoir, <em>Kévin<svg viewBox="0 0 100 10" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M2 7.4C22 3.6 52 2.4 74 4.2c9 .7 17 2 24 1.4"></path></svg></em></h1>
+        <h1 class="titre-affiche">Bonsoir, <em>Kévin<svg viewBox="0 0 100 10" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M2 7.4C22 3.6 52 2.4 74 4.2c9 .7 17 2 24 1.4"></path></svg></em></h1>
         <p>{{ resume }}</p>
-      </div>
-      <div class="actions">
-        <span class="btn contour">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
-          Autour de moi
-        </span>
-        <span class="btn primaire">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-          Punaiser un événement
-        </span>
       </div>
     </div>
 
@@ -360,21 +395,20 @@
         <div class="direct-entete">
           <span class="pastille-direct"><span class="point-direct"></span>En ce moment</span>
           <span class="direct-titre-section">{{ titreDirects }}</span>
-          <span class="lien-section" style="margin-left: auto">Tous les directs</span>
         </div>
         <div class="directs-grille">
           <sc-for list="{{ directs }}" as="d" hint-placeholder-count="2">
             <div class="direct-carte">
-              <span class="tirage direct" style="width: 150px; height: 92px"><span class="image"></span></span>
+              <span class="tirage direct" style="width: 108px; height: 68px"><span class="image"></span></span>
               <span class="corps">
                 <span class="titre">{{ d.titre }}</span>
-                <span class="meta">{{ d.lieu }} <span class="sep">·</span> {{ d.plateforme }}</span>
-                <span class="meta">{{ d.audience }}</span>
-                <span class="lien-section" style="align-self: flex-start; margin-top: 3px">Regarder</span>
+                <span class="meta">{{ d.lieu }}</span>
+                <span class="meta">{{ d.plateforme }} · {{ d.audience }}</span>
               </span>
             </div>
           </sc-for>
         </div>
+        <span class="lien-section" style="align-self: flex-start; margin-top: 12px; display: inline-block">Tous les directs</span>
       </section>
     </sc-if>
 
@@ -383,9 +417,7 @@
         <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="1"></rect><path d="M3 10h18"></path></svg>
         Ce qui m&apos;attend
       </span>
-      <span class="lien-section">Tout l&apos;agenda
-        <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
-      </span>
+      <span class="lien-section">Agenda</span>
     </div>
 
     <sc-if value="{{ aDesEvenements }}" hint-placeholder-val="{{ true }}">
@@ -419,7 +451,7 @@
       </div>
     </sc-if>
     <sc-if value="{{ sansEvenement }}" hint-placeholder-val="{{ false }}">
-      <p class="vide" style="margin: 22px 0 50px">{{ videEvenements }}</p>
+      <p class="vide" style="margin: 20px 0 38px">{{ videEvenements }}</p>
     </sc-if>
 
     <div class="colonnes">
@@ -430,6 +462,9 @@
             <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M8 10h8"></path><path d="M8 14h5"></path></svg>
             Le fil
           </span>
+          <span class="lien-section">Tout voir</span>
+        </div>
+        <div style="padding-top: 14px">
           <span class="bascule">
             <sc-for list="{{ onglets }}" as="o" hint-placeholder-count="4">
               <span class="bascule-item {{ o.classe }}" onClick="{{ o.choisir }}">{{ o.nom }}<span class="nb">{{ o.nombre }}</span></span>
@@ -442,13 +477,13 @@
             <sc-for list="{{ fil }}" as="f" hint-placeholder-count="6">
               <div class="fiche coupure">
                 <span class="liseré"></span>
-                <span class="ruban attache-ruban" style="left: 34px; width: 74px; transform: rotate(-2.6deg)"></span>
-                <svg class="punaise attache-punaise" viewBox="0 0 22 22" fill="none" style="left: 44px">
+                <span class="ruban attache-ruban" style="left: 26px; width: 62px; transform: rotate(-2.6deg)"></span>
+                <svg class="punaise attache-punaise" viewBox="0 0 22 22" fill="none" style="left: 34px">
                   <ellipse cx="11" cy="18" rx="5" ry="1.6" fill="var(--ombre-punaise)" opacity="0.4"></ellipse>
                   <circle cx="11" cy="9" r="7" fill="var(--papier)" stroke="var(--liseré)"></circle>
                   <circle cx="8.8" cy="6.8" r="2.2" fill="var(--reflet)"></circle>
                 </svg>
-                <span class="tirage {{ f.type }}" style="width: 148px; height: 100px">
+                <span class="tirage {{ f.type }}" style="width: 96px; height: 72px">
                   <span class="image"></span>
                   <sc-if value="{{ f.duree }}" hint-placeholder-val="{{ true }}">
                     <span class="duree">{{ f.duree }}</span>
@@ -463,29 +498,23 @@
                   </span>
                   <span class="titre">{{ f.titre }}</span>
                   <span class="filet"></span>
-                  <span class="meta">
-                    {{ f.source }}
-                    <span class="sep">·</span>
-                    {{ f.nomJeu }}
-                    <span class="sep">·</span>
-                    {{ f.quand }}
-                  </span>
+                  <span class="meta">{{ f.source }} <span class="sep">·</span> {{ f.quand }}</span>
                 </span>
               </div>
             </sc-for>
           </div>
         </sc-if>
         <sc-if value="{{ filVide }}" hint-placeholder-val="{{ false }}">
-          <p class="vide" style="margin: 22px 0 0">{{ videFil }}</p>
+          <p class="vide" style="margin: 20px 0 0">{{ videFil }}</p>
         </sc-if>
       </div>
 
-      <aside class="colonne-droite">
+      <div class="colonne-droite">
 
         <section class="fiche papier">
           <span class="dessous"></span>
           <span class="liseré"></span>
-          <span class="ruban" style="left: 50%; margin-left: -46px; width: 92px; transform: rotate(1.8deg)"></span>
+          <span class="ruban" style="left: 50%; margin-left: -40px; width: 80px; transform: rotate(1.8deg)"></span>
           <div class="papier-titre">
             <h2>Mes lieux</h2>
             <span class="lien">Découvrir</span>
@@ -497,15 +526,10 @@
                 <span class="corps">
                   <span class="nom">{{ l.nom }}</span>
                   <span class="etat">
-                    <sc-if value="{{ l.ouvert }}" hint-placeholder-val="{{ true }}">
-                      <span class="point ouvert"></span>
-                    </sc-if>
-                    <sc-if value="{{ l.ferme }}" hint-placeholder-val="{{ false }}">
-                      <span class="point ferme"></span>
-                    </sc-if>
+                    <sc-if value="{{ l.ouvert }}" hint-placeholder-val="{{ true }}"><span class="point ouvert"></span></sc-if>
+                    <sc-if value="{{ l.ferme }}" hint-placeholder-val="{{ false }}"><span class="point ferme"></span></sc-if>
                     {{ l.etat }}
                   </span>
-                  <span class="etat">{{ l.agenda }}</span>
                 </span>
               </div>
             </sc-for>
@@ -514,7 +538,7 @@
 
         <section class="fiche papier">
           <span class="liseré"></span>
-          <span class="ruban" style="left: 26px; width: 78px; transform: rotate(-2.2deg)"></span>
+          <span class="ruban" style="left: 22px; width: 68px; transform: rotate(-2.2deg)"></span>
           <div class="papier-titre">
             <h2>Mes decks</h2>
             <span class="lien">Nouveau</span>
@@ -534,7 +558,7 @@
 
         <section class="fiche papier">
           <span class="liseré"></span>
-          <span class="ruban" style="right: 22px; width: 70px; transform: rotate(2.4deg)"></span>
+          <span class="ruban" style="right: 18px; width: 62px; transform: rotate(2.4deg)"></span>
           <div class="papier-titre">
             <h2>Les Joueurs du Jeudi</h2>
             <span class="tampon-statut attention" style="transform: rotate(1.4deg)">À répondre</span>
@@ -562,14 +586,13 @@
           <span class="btn primaire large">Envoyer mes disponibilités</span>
         </section>
 
-      </aside>
-
+      </div>
     </div>
   </div>
 </div>
 </x-dc>
 
-<script data-dc-script data-props='{"$preview":{"width":1440,"height":2060}}'>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":3000}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);

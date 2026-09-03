@@ -522,7 +522,14 @@ class Component extends DCLogic {
     }));
 
     const directs = this.tousLesDirects().filter(duJeu);
-    const evenements = this.tousLesEvenements().filter(duJeu);
+    /*
+     * Le fanion « prochain » se calcule après le filtre, jamais dans les
+     * données : filtrer sur Magic doit le déplacer sur le premier événement
+     * Magic, pas le faire disparaître avec le tournoi Riftbound.
+     */
+    const evenements = this.tousLesEvenements()
+      .filter(duJeu)
+      .map((e, i) => ({ ...e, prochain: i === 0 }));
     const filDuJeu = this.toutLeFil().filter(duJeu);
     const fil = filDuJeu.filter((f) => onglet === 'tout' || f.type === onglet);
 
