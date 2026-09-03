@@ -5754,6 +5754,42 @@
       "locked": "Drei Stile für alle; die vier anderen erfordern Joutes Expert oder Joutes Pro.",
       "pro": "Expert"
     },
+    "library": {
+      "title": "Eure Plakate",
+      "description": "Ein gespeichertes Plakat wieder aufnehmen: Orte und Stil kommen zurück, der Zeitraum beginnt heute.",
+      "summary": "{lairs, plural, one {# Ort} other {# Orte}} · {period} · {style}",
+      "delete": "{name} löschen",
+      "startFresh": "Ein neues Plakat gestalten",
+      "saved": "Plakat gespeichert.",
+      "updated": "Plakat aktualisiert.",
+      "deleted": "Plakat gelöscht.",
+      "save": {
+        "title": "Dieses Plakat behalten",
+        "description": "Es wartet hier auf euch — aktuell für die Woche, in der ihr es wieder öffnet.",
+        "limited": "Ein gespeichertes Plakat ohne Abo; Joutes Expert und Joutes Pro behalten so viele sie wollen.",
+        "name": "Name des Plakats",
+        "placeholder": "Meine Läden am Donnerstag",
+        "action": "Plakat speichern",
+        "update": "Aktualisieren",
+        "asNew": "Als neues speichern",
+        "reached": "Ihr behaltet bereits {limit, plural, one {# Plakat} other {# Plakate}}. Bearbeitet eines, oder wechselt zu Joutes Expert, um mehrere zu behalten.",
+        "needLair": "Wählt mindestens einen Ort und gebt dem Plakat einen Namen."
+      },
+      "confirm": {
+        "title": "Dieses Plakat löschen?",
+        "description": "„{name}“ ist dann nicht mehr in euren Plakaten. Die Orte und Veranstaltungen selbst bleiben unberührt.",
+        "cancel": "Abbrechen",
+        "action": "Löschen"
+      },
+      "errors": {
+        "unauthenticated": "Meldet euch an, um ein Plakat zu behalten.",
+        "invalid": "Dieses Plakat lässt sich so nicht speichern.",
+        "limit": "Ihr habt die Anzahl der Plakate erreicht, die ihr behalten könnt.",
+        "nameTaken": "Ihr habt bereits ein Plakat mit diesem Namen.",
+        "notFound": "Dieses Plakat wurde nicht gefunden.",
+        "failed": "Speichern fehlgeschlagen. Versucht es gleich noch einmal."
+      }
+    },
     "export": {
       "title": "Exportieren",
       "description": "A4 Hochformat. Der QR-Code führt zu joutes.app.",

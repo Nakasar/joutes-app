@@ -5754,6 +5754,42 @@
       "locked": "Three styles open to everyone; the other four require Joutes Expert or Joutes Pro.",
       "pro": "Expert"
     },
+    "library": {
+      "title": "Your posters",
+      "description": "Pick up a saved poster: its venues and style come back, the period starts from today.",
+      "summary": "{lairs, plural, one {# venue} other {# venues}} · {period} · {style}",
+      "delete": "Delete {name}",
+      "startFresh": "Compose a new poster",
+      "saved": "Poster saved.",
+      "updated": "Poster updated.",
+      "deleted": "Poster deleted.",
+      "save": {
+        "title": "Keep this poster",
+        "description": "It will wait for you here, current with the week you reopen it.",
+        "limited": "One saved poster without a subscription; Joutes Expert and Joutes Pro keep as many as they like.",
+        "name": "Poster name",
+        "placeholder": "My Thursday shops",
+        "action": "Save the poster",
+        "update": "Update",
+        "asNew": "Save as new",
+        "reached": "You already keep {limit, plural, one {# poster} other {# posters}}. Edit one, or move to Joutes Expert to keep several.",
+        "needLair": "Choose at least one venue, and give the poster a name."
+      },
+      "confirm": {
+        "title": "Delete this poster?",
+        "description": "“{name}” will no longer be in your posters. The venues and events themselves are untouched.",
+        "cancel": "Cancel",
+        "action": "Delete"
+      },
+      "errors": {
+        "unauthenticated": "Sign in to keep a poster.",
+        "invalid": "This poster cannot be saved as it stands.",
+        "limit": "You have reached the number of posters you can keep.",
+        "nameTaken": "You already have a poster with this name.",
+        "notFound": "This poster could not be found.",
+        "failed": "Saving failed. Try again in a moment."
+      }
+    },
     "export": {
       "title": "Export",
       "description": "A4 portrait. The QR code opens joutes.app.",

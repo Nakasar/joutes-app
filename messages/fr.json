@@ -5754,6 +5754,42 @@
       "locked": "Trois styles ouverts à tous ; les quatre autres demandent Joutes Expert ou Joutes Pro.",
       "pro": "Expert"
     },
+    "library": {
+      "title": "Vos affiches",
+      "description": "Reprenez une affiche gardée : ses lieux et son style reviennent, la période repart d'aujourd'hui.",
+      "summary": "{lairs, plural, one {# lieu} other {# lieux}} · {period} · {style}",
+      "delete": "Supprimer {name}",
+      "startFresh": "Composer une nouvelle affiche",
+      "saved": "Affiche enregistrée.",
+      "updated": "Affiche mise à jour.",
+      "deleted": "Affiche supprimée.",
+      "save": {
+        "title": "Garder cette affiche",
+        "description": "Elle vous attendra ici, à jour de la semaine où vous la rouvrirez.",
+        "limited": "Une affiche gardée sans abonnement ; Joutes Expert et Joutes Pro en gardent autant qu'ils veulent.",
+        "name": "Nom de l'affiche",
+        "placeholder": "Mes boutiques du jeudi",
+        "action": "Enregistrer l'affiche",
+        "update": "Mettre à jour",
+        "asNew": "Enregistrer comme nouvelle",
+        "reached": "Vous gardez déjà {limit, plural, one {# affiche} other {# affiches}}. Modifiez-en une, ou passez à Joutes Expert pour en garder plusieurs.",
+        "needLair": "Choisissez au moins un lieu, et donnez un nom à l'affiche."
+      },
+      "confirm": {
+        "title": "Supprimer cette affiche ?",
+        "description": "« {name} » ne sera plus dans vos affiches. Les lieux et les événements, eux, ne changent pas.",
+        "cancel": "Annuler",
+        "action": "Supprimer"
+      },
+      "errors": {
+        "unauthenticated": "Connectez-vous pour garder une affiche.",
+        "invalid": "Cette affiche ne peut pas être enregistrée telle quelle.",
+        "limit": "Vous avez atteint le nombre d'affiches que vous pouvez garder.",
+        "nameTaken": "Vous avez déjà une affiche portant ce nom.",
+        "notFound": "Cette affiche est introuvable.",
+        "failed": "L'enregistrement a échoué. Réessayez dans un instant."
+      }
+    },
     "export": {
       "title": "Exporter",
       "description": "A4 portrait. Le QR code mène à joutes.app.",
