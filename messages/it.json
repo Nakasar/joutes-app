@@ -5064,6 +5064,24 @@
           "Server MCP e strumenti WebMCP: i tuoi eventi rispondono agli assistenti IA compatibili"
         ]
       },
+      "posters": {
+        "title": "Il calendario diventa una locandina, senza software di impaginazione",
+        "description": "La tua settimana o il tuo mese si compongono da soli in una locandina A4: i tuoi eventi, i loro orari, i posti rimasti. Da stampare per la vetrina, da pubblicare sui tuoi social — e la settimana dopo si rifà con un clic.",
+        "bullets": [
+          "Locandina A4 verticale della settimana o del mese, composta dal tuo calendario",
+          "Sempre giusta: un evento aggiunto, spostato o annullato, e la locandina segue",
+          "Tre stili aperti a tutti, dalla bacheca alla pergamena da torneo",
+          "Pronta per la vetrina come per i tuoi social: A4 senza margini, o PDF",
+          "Un QR code verso la pagina del tuo locale: ci si iscrive dalla locandina",
+          "Affluenza e loghi dei giochi mostrati o no, come preferisci",
+          "Anteprima nella schermata di gestione prima di stampare qualsiasi cosa"
+        ],
+        "pro": [
+          "Quattro stili in più: cyberpunk, taverna, fantascienza, grimorio",
+          "Il tuo logo, il tuo nome e la tua firma al posto di quella di Joutes",
+          "Il tuo invito all'azione, e l'indirizzo che il QR code fa scansionare"
+        ]
+      },
       "registrations": {
         "title": "Le iscrizioni, senza rileggere una chat",
         "description": "Chi è iscritto, chi resta da confermare, chi è arrivato, chi ha consegnato la lista: tutto si legge su una sola pagina, e i partecipanti vengono avvisati appena qualcosa cambia.",
@@ -5170,6 +5188,18 @@
         "push": "Notifica inviata · {count} giocatori",
         "ai": "Assistente IA · «tornei questo fine settimana?»"
       },
+      "posters": {
+        "name": "La Tana del Drago",
+        "period": "Settimana dal 3 al 9 marzo",
+        "event1": "Venerdì · Draft",
+        "event2": "Sabato · Torneo",
+        "event3": "Domenica · Iniziazione",
+        "hour1": "20:00",
+        "hour2": "14:00",
+        "hour3": "15:00",
+        "brand": "La tua firma",
+        "format": "A4 · pronta da stampare"
+      },
       "registrations": {
         "title": "Iscrizioni",
         "registered": "Iscritto",
@@ -5259,6 +5289,7 @@
           "Un sistema di prenotazione per i tuoi eventi",
           "I tuoi eventi messi in primo piano",
           "La personalizzazione della pagina del tuo locale",
+          "Le locandine del tuo calendario con il tuo marchio, stili riservati compresi",
           "Un canale di assistenza"
         ],
         "billingNote": "Disponibile anche su fattura, per negozi e associazioni."

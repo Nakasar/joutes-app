@@ -12,6 +12,7 @@ import {
   Medal,
   Megaphone,
   Plug,
+  Printer,
   Store,
   Trophy,
   UserRound,
@@ -23,6 +24,7 @@ import {
   IntegrationsMockup,
   LairPageMockup,
   LeaguesMockup,
+  PostersMockup,
   RegistrationsMockup,
   TournamentsMockup,
 } from "./Mockups.tsx";
@@ -43,6 +45,8 @@ export async function generateMetadata(): Promise<Metadata> {
       "ligue",
       "inscriptions",
       "calendrier d'événements",
+      "affiche d'événements",
+      "programme à imprimer",
       "joutes",
     ],
     openGraph: {
@@ -63,6 +67,7 @@ const FEATURES = [
   { id: "lairPage", icon: LayoutDashboard, accent: "from-cyan-500 to-blue-500", Mockup: LairPageMockup },
   { id: "calendar", icon: CalendarDays, accent: "from-blue-500 to-cyan-500", Mockup: CalendarMockup },
   { id: "engagement", icon: Megaphone, accent: "from-violet-500 to-fuchsia-500", Mockup: EngagementMockup },
+  { id: "posters", icon: Printer, accent: "from-rose-500 to-pink-500", Mockup: PostersMockup },
   { id: "registrations", icon: ClipboardList, accent: "from-emerald-500 to-teal-500", Mockup: RegistrationsMockup },
   { id: "tournaments", icon: Trophy, accent: "from-orange-500 to-red-500", Mockup: TournamentsMockup },
   { id: "leagues", icon: Medal, accent: "from-indigo-500 to-violet-500", Mockup: LeaguesMockup },

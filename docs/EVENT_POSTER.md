@@ -221,6 +221,20 @@ retrouver. Une adresse partagée montre par conséquent le style par défaut à 
 n'est pas abonné — le même repli que pour un lieu dont l'abonnement s'arrête,
 et jamais une page en erreur.
 
+## Ce qu'en dit la page de vente
+
+`/features/organizers` porte une section `posters` — texte sous
+`FeaturesOrganizers.items.posters`, illustration `PostersMockup` —, placée après
+la diffusion : l'affiche est un canal de plus, à côté de Discord et des
+notifications. Ses sept lignes n'annoncent que ce qui existe, et la
+personnalisation du pied de page comme les quatre styles réservés vivent dans
+la clé `pro`, qui leur pose le badge « Joutes Pro » plutôt qu'une note de bas de
+page. La grille de `/pricing` porte la même promesse en une ligne, dans le plan
+Pro.
+
+Rien de tout cela ne parle d'un format vertical pour les stories : l'affiche est
+A4, et la page de vente ne promet pas ce que la section suivante laisse ouvert.
+
 ## Ce qui est décidé, et ce qui reste ouvert
 
 - Le mois liste chaque semaine ; un mois très chargé déborde de la page,

@@ -5064,6 +5064,24 @@
           "MCP server and WebMCP tools: your events answer compatible AI assistants"
         ]
       },
+      "posters": {
+        "title": "Your agenda becomes a poster, no layout tool needed",
+        "description": "Your week or your month lays itself out as an A4 poster: your events, their times, their remaining seats. Print it for the window, post it on your socials — and next week's is one click away.",
+        "bullets": [
+          "A4 portrait poster of the week or the month, composed from your agenda",
+          "Always right: add, move or cancel an event and the poster follows",
+          "Three styles open to everyone, from cork board to tournament parchment",
+          "Ready for the window as for your socials: borderless A4, or PDF",
+          "A QR code to your venue's page: people register straight from the poster",
+          "Attendance and game logos shown or hidden, your call",
+          "Preview it in your management screen before printing anything"
+        ],
+        "pro": [
+          "Four more styles: cyberpunk, tavern, sci-fi, grimoire",
+          "Your logo, your name and your sign-off in place of the Joutes one",
+          "Your own call to action, and the address the QR code carries"
+        ]
+      },
       "registrations": {
         "title": "Registrations, without rereading a chat thread",
         "description": "Who is registered, who is still waiting for approval, who has arrived, who has handed in a decklist: it all reads from a single page, and your participants are told as soon as anything changes.",
@@ -5170,6 +5188,18 @@
         "push": "Notification sent · {count} players",
         "ai": "AI assistant · “any tournaments this weekend?”"
       },
+      "posters": {
+        "name": "The Dragon's Lair",
+        "period": "Week of 3–9 March",
+        "event1": "Friday · Draft",
+        "event2": "Saturday · Tournament",
+        "event3": "Sunday · Beginners",
+        "hour1": "8:00pm",
+        "hour2": "2:00pm",
+        "hour3": "3:00pm",
+        "brand": "Your sign-off",
+        "format": "A4 · ready to print"
+      },
       "registrations": {
         "title": "Registrations",
         "registered": "Registered",
@@ -5259,6 +5289,7 @@
           "A registration system for your events",
           "Your events put front and centre",
           "Customization of your venue page",
+          "Your agenda posters in your own brand, reserved styles included",
           "A support channel"
         ],
         "billingNote": "Also available on invoice, for stores and associations."

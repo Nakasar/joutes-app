@@ -5064,6 +5064,24 @@
           "MCP-Server und WebMCP-Werkzeuge: deine Veranstaltungen antworten kompatiblen KI-Assistenten"
         ]
       },
+      "posters": {
+        "title": "Der Kalender wird zum Plakat, ganz ohne Layout-Programm",
+        "description": "Deine Woche oder dein Monat setzen sich von selbst zu einem A4-Plakat zusammen: deine Veranstaltungen, ihre Zeiten, ihre freien Plätze. Zum Ausdrucken fürs Schaufenster, zum Posten in deinen Netzwerken — und nächste Woche ist es ein Klick.",
+        "bullets": [
+          "A4-Plakat im Hochformat für die Woche oder den Monat, aus deinem Kalender gesetzt",
+          "Immer stimmig: eine Veranstaltung ergänzt, verschoben oder abgesagt, das Plakat zieht mit",
+          "Drei Stile für alle offen, vom Anschlagbrett bis zum Turnier-Pergament",
+          "Bereit fürs Schaufenster wie für deine Netzwerke: A4 randlos, oder PDF",
+          "Ein QR-Code zur Seite deines Spielorts: angemeldet wird direkt vom Plakat aus",
+          "Auslastung und Spiel-Logos gezeigt oder nicht, ganz wie du willst",
+          "Vorschau in deinem Verwaltungsbildschirm, bevor überhaupt etwas gedruckt wird"
+        ],
+        "pro": [
+          "Vier weitere Stile: Cyberpunk, Taverne, Science-Fiction, Foliant",
+          "Dein Logo, dein Name und deine Signatur anstelle der von Joutes",
+          "Dein eigener Aufruf, und die Adresse, die der QR-Code zum Scannen gibt"
+        ]
+      },
       "registrations": {
         "title": "Anmeldungen, ohne einen Chatverlauf nachzulesen",
         "description": "Wer angemeldet ist, wer noch bestätigt werden muss, wer da ist, wer eine Deckliste abgegeben hat: alles auf einer einzigen Seite — und deine Teilnehmenden erfahren jede Änderung sofort.",
@@ -5170,6 +5188,18 @@
         "push": "Benachrichtigung gesendet · {count} Spieler",
         "ai": "KI-Assistent · „Turniere am Wochenende?“"
       },
+      "posters": {
+        "name": "Die Drachenhöhle",
+        "period": "Woche vom 3. bis 9. März",
+        "event1": "Freitag · Draft",
+        "event2": "Samstag · Turnier",
+        "event3": "Sonntag · Einführung",
+        "hour1": "20:00",
+        "hour2": "14:00",
+        "hour3": "15:00",
+        "brand": "Deine Signatur",
+        "format": "A4 · druckfertig"
+      },
       "registrations": {
         "title": "Anmeldungen",
         "registered": "Angemeldet",
@@ -5259,6 +5289,7 @@
           "Ein Anmeldesystem für deine Veranstaltungen",
           "Deine Veranstaltungen nach vorn geholt",
           "Anpassung deiner Spielort-Seite",
+          "Deine Programmplakate in deiner Marke, vorbehaltene Stile inbegriffen",
           "Ein Support-Kanal"
         ],
         "billingNote": "Auch auf Rechnung erhältlich, für Läden und Vereine."
