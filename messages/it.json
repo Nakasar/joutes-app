@@ -1030,6 +1030,108 @@
     }
   },
   "Lairs": {
+      "poster": {
+        "free": "ingresso libero",
+        "seats": "{registered}/{capacity} posti",
+        "count": "{count, plural, =0 {nessun evento} one {# evento} other {# eventi}}",
+        "empty": "Nessun evento in questo periodo.",
+        "weekOf": "Settimana del {range}",
+        "weekNumber": "Settimana {number}",
+        "scanUrl": "joutes.app/lairs/{lairId}",
+        "styles": {
+          "joutes": {
+            "name": "Joutes",
+            "hint": "Predefinito",
+            "kickerWeek": "Programma della settimana",
+            "kickerMonth": "Programma del mese",
+            "full": "Completo",
+            "cta": "Iscriviti su joutes.app",
+            "ctaSub": "Scansiona per aprire la pagina del luogo",
+            "brandLine": "Programma completo e iscrizioni su joutes.app"
+          },
+          "board": {
+            "name": "Bacheca",
+            "hint": "Sughero e post-it",
+            "titleWeek": "Questa settimana",
+            "titleMonth": "Questo mese",
+            "subWeek": "{range}",
+            "subMonth": "{month} · {count}",
+            "full": "Completo!",
+            "cta": "Mi iscrivo!",
+            "ctaSub": "Scansiona per prenotare il tuo posto",
+            "brandLine": "Programma completo su joutes.app"
+          },
+          "tournament": {
+            "name": "Tabellone di giostre medievali",
+            "hint": "Stendardi e pergamena",
+            "titleWeek": "Giostre della settimana",
+            "titleMonth": "Giostre di {month}",
+            "subWeek": "{range}",
+            "subMonth": "l'anno {year} · {count}",
+            "dayOf": "il {number}",
+            "full": "lizza chiusa: completo",
+            "cta": "Entra in lizza",
+            "ctaSub": "Iscrizioni su joutes.app",
+            "brandLine": "Il programma completo su joutes.app"
+          },
+          "cyberpunk": {
+            "name": "Cyberpunk",
+            "hint": "Neon e griglia",
+            "node": "// {name} · NODE {address}",
+            "titleWeek": "Programma//Settimana",
+            "titleMonth": "Programma//Mese",
+            "subMonth": "{start} :: {count}",
+            "week": "Settimana",
+            "full": "FULL",
+            "cta": "Scan // iscriviti",
+            "brandLine": "programma completo :: joutes.app"
+          },
+          "tavern": {
+            "name": "Taverna",
+            "hint": "Legno, insegna e pergamena",
+            "titleWeek": "Settimana del {range}",
+            "subWeek": "Gli incontri della taverna, nell'anno {year}",
+            "titleMonth": "{month} {year}",
+            "subMonth": "Gli incontri della taverna · {count}",
+            "dayOf": "il {number} {month}",
+            "week": "Settimana",
+            "weekOf": "del {range}",
+            "full": "tavolo al completo",
+            "cta": "Prenota il tuo posto",
+            "ctaSub": "Scansiona, o vai su joutes.app",
+            "brandLine": "Il programma completo su joutes.app"
+          },
+          "scifi": {
+            "name": "Fantascienza",
+            "hint": "Diario di bordo",
+            "log": "Diario di missione · {name}",
+            "titleWeek": "Settimana {week}",
+            "titleMonth": "{month} {year}",
+            "subMonth": "Sol {start} → {end}",
+            "sol": "Sol {number}",
+            "weekNumber": "Settimana {number}",
+            "full": "Capienza raggiunta",
+            "cta": "Accesso · iscrizioni",
+            "ctaSub": "Scansiona per unirti all'equipaggio",
+            "brandLine": "Programma completo su joutes.app"
+          },
+          "grimoire": {
+            "name": "Grimorio",
+            "hint": "Cuoio, pagina e sigillo",
+            "titleWeek": "Grimorio degli incontri",
+            "titleMonth": "Grimorio di {month}",
+            "subWeek": "Settimana del {range} dell'anno {year}",
+            "subMonth": "Il mese intero, dell'anno {year} · {count}",
+            "daySub": "{month}, il {number}",
+            "week": "Settimana",
+            "weekOf": "del {range}",
+            "full": "il cerchio è chiuso",
+            "cta": "Scrivi il tuo nome",
+            "ctaSub": "Scansiona il sigillo, o vai su joutes.app",
+            "brandLine": "Il programma completo su joutes.app"
+          }
+        }
+      },
     "portal": {
       "openUntil": "Aperto oggi fino alle {time}",
       "closedNow": "Attualmente chiuso",
@@ -1396,8 +1498,52 @@
         "news": "Notizie",
         "events": "Eventi",
         "owners": "Proprietari",
-        "subscription": "Abbonamento"
+        "subscription": "Abbonamento",
+        "poster": "Locandina"
       },
+        "poster": {
+          "title": "Locandina degli eventi",
+          "description": "Una pagina A4 generata dalla vostra agenda, pronta da pubblicare o stampare.",
+          "period": {
+            "label": "Periodo",
+            "week": "Settimana",
+            "month": "Mese",
+            "previous": "Periodo precedente",
+            "next": "Periodo successivo",
+            "today": "Oggi"
+          },
+          "content": {
+            "label": "Contenuto",
+            "attendance": "Mostrare l'affluenza",
+            "attendanceHint": "I posti rimasti e la dicitura «completo».",
+            "logos": "Loghi dei giochi",
+            "logosHint": "Il nome del gioco sostituisce il logo quando manca. Disattivato: solo il nome, ovunque."
+          },
+          "style": {
+            "title": "Stile della locandina",
+            "description": "Tre stili aperti a tutti, quattro riservati ai luoghi Joutes Pro.",
+            "pro": "Pro"
+          },
+          "export": {
+            "title": "Esportare",
+            "description": "A4 verticale. Il codice QR porta alla pagina del luogo su Joutes.",
+            "open": "Aprire la locandina",
+            "print": "Stampare o salvare in PDF",
+            "hint": "Nella finestra di stampa scegliete «Salva come PDF» per ottenere un file; un'immagine PNG si ricava dal PDF."
+          },
+          "preview": {
+            "title": "Anteprima",
+            "size": "A4 · 210 × 297 mm"
+          },
+          "save": "Salvare le impostazioni",
+          "saved": "Impostazioni della locandina salvate.",
+          "errors": {
+            "invalid": "Alcune impostazioni non sono valide.",
+            "notFound": "Questo luogo è introvabile.",
+            "proRequired": "Questo stile richiede un abbonamento Joutes Pro.",
+            "failed": "Il salvataggio non è riuscito. Riprovate tra un istante."
+          }
+        },
       "events": {
         "private": "Un luogo privato non può collegare un sito: i suoi eventi si creano a mano dalla sua pagina.",
         "team": {

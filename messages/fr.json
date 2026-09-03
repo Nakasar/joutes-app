@@ -1030,6 +1030,108 @@
     }
   },
   "Lairs": {
+      "poster": {
+        "free": "entrée libre",
+        "seats": "{registered}/{capacity} places",
+        "count": "{count, plural, =0 {aucun événement} one {# événement} other {# événements}}",
+        "empty": "Aucun événement sur cette période.",
+        "weekOf": "Semaine du {range}",
+        "weekNumber": "Semaine {number}",
+        "scanUrl": "joutes.app/lairs/{lairId}",
+        "styles": {
+          "joutes": {
+            "name": "Joutes",
+            "hint": "Par défaut",
+            "kickerWeek": "Programme de la semaine",
+            "kickerMonth": "Programme du mois",
+            "full": "Complet",
+            "cta": "S'inscrire sur joutes.app",
+            "ctaSub": "Scannez pour ouvrir la page du lieu",
+            "brandLine": "Programme complet et inscriptions sur joutes.app"
+          },
+          "board": {
+            "name": "Tableau d'affichage",
+            "hint": "Liège et post-it",
+            "titleWeek": "Cette semaine",
+            "titleMonth": "Ce mois-ci",
+            "subWeek": "du {range}",
+            "subMonth": "{month} · {count}",
+            "full": "Complet !",
+            "cta": "Je m'inscris !",
+            "ctaSub": "Scannez pour réserver votre place",
+            "brandLine": "Programme complet sur joutes.app"
+          },
+          "tournament": {
+            "name": "Tableau de joutes médiévales",
+            "hint": "Bannières et parchemin",
+            "titleWeek": "Joutes de la semaine",
+            "titleMonth": "Joutes de {month}",
+            "subWeek": "du {range}",
+            "subMonth": "l'an {year} · {count}",
+            "dayOf": "le {number}",
+            "full": "lice close : complet",
+            "cta": "Entrez en lice",
+            "ctaSub": "Inscriptions sur joutes.app",
+            "brandLine": "Le programme complet sur joutes.app"
+          },
+          "cyberpunk": {
+            "name": "Cyberpunk",
+            "hint": "Néons et grille",
+            "node": "// {name} · NODE {address}",
+            "titleWeek": "Programme//Semaine",
+            "titleMonth": "Programme//Mois",
+            "subMonth": "{start} :: {count}",
+            "week": "Semaine",
+            "full": "FULL",
+            "cta": "Scan // s'inscrire",
+            "brandLine": "programme complet :: joutes.app"
+          },
+          "tavern": {
+            "name": "Taverne",
+            "hint": "Bois, enseigne et parchemin",
+            "titleWeek": "Semaine du {range}",
+            "subWeek": "Les rencontres de la taverne, de l'an {year}",
+            "titleMonth": "{month} {year}",
+            "subMonth": "Les rencontres de la taverne · {count}",
+            "dayOf": "le {number} {month}",
+            "week": "Semaine",
+            "weekOf": "du {range}",
+            "full": "table comble",
+            "cta": "Réservez votre place",
+            "ctaSub": "Scannez, ou rendez-vous sur joutes.app",
+            "brandLine": "Le programme complet sur joutes.app"
+          },
+          "scifi": {
+            "name": "Science-fiction",
+            "hint": "Journal de bord",
+            "log": "Journal de mission · {name}",
+            "titleWeek": "Semaine {week}",
+            "titleMonth": "{month} {year}",
+            "subMonth": "Sol {start} → {end}",
+            "sol": "Sol {number}",
+            "weekNumber": "Semaine {number}",
+            "full": "Capacité atteinte",
+            "cta": "Accès · inscriptions",
+            "ctaSub": "Scannez pour rejoindre l'équipage",
+            "brandLine": "Programme complet sur joutes.app"
+          },
+          "grimoire": {
+            "name": "Grimoire",
+            "hint": "Cuir, page et sceau",
+            "titleWeek": "Grimoire des rencontres",
+            "titleMonth": "Grimoire de {month}",
+            "subWeek": "Semaine du {range} de l'an {year}",
+            "subMonth": "Le mois entier, de l'an {year} · {count}",
+            "daySub": "{month}, le {number}",
+            "week": "Semaine",
+            "weekOf": "du {range}",
+            "full": "le cercle est clos",
+            "cta": "Inscrivez votre nom",
+            "ctaSub": "Scannez le sceau, ou rendez-vous sur joutes.app",
+            "brandLine": "Le programme complet sur joutes.app"
+          }
+        }
+      },
     "portal": {
       "openUntil": "Ouvert aujourd'hui jusqu'à {time}",
       "closedNow": "Fermé actuellement",
@@ -1396,8 +1498,52 @@
         "news": "Actualités",
         "events": "Événements",
         "owners": "Propriétaires",
-        "subscription": "Abonnement"
+        "subscription": "Abonnement",
+        "poster": "Affiche"
       },
+        "poster": {
+          "title": "Affiche des événements",
+          "description": "Une page A4 générée depuis votre agenda, prête à publier ou à imprimer.",
+          "period": {
+            "label": "Période",
+            "week": "Semaine",
+            "month": "Mois",
+            "previous": "Période précédente",
+            "next": "Période suivante",
+            "today": "Aujourd'hui"
+          },
+          "content": {
+            "label": "Contenu",
+            "attendance": "Afficher la fréquentation",
+            "attendanceHint": "Les places restantes et la mention « complet ».",
+            "logos": "Logos des jeux",
+            "logosHint": "Le nom du jeu prend le relais quand il n'a pas de logo. Désactivé : le nom seul, partout."
+          },
+          "style": {
+            "title": "Style de l'affiche",
+            "description": "Trois styles ouverts à tous, quatre réservés aux lieux Joutes Pro.",
+            "pro": "Pro"
+          },
+          "export": {
+            "title": "Exporter",
+            "description": "A4 portrait. Le QR code mène à la page du lieu sur Joutes.",
+            "open": "Ouvrir l'affiche",
+            "print": "Imprimer ou enregistrer en PDF",
+            "hint": "Dans la boîte d'impression, choisissez « Enregistrer au format PDF » pour obtenir un fichier ; une image PNG se fait depuis le PDF."
+          },
+          "preview": {
+            "title": "Aperçu",
+            "size": "A4 · 210 × 297 mm"
+          },
+          "save": "Enregistrer les réglages",
+          "saved": "Réglages de l'affiche enregistrés.",
+          "errors": {
+            "invalid": "Certains réglages sont invalides.",
+            "notFound": "Ce lieu est introuvable.",
+            "proRequired": "Ce style demande un abonnement Joutes Pro.",
+            "failed": "L'enregistrement a échoué. Réessayez dans un instant."
+          }
+        },
       "events": {
         "private": "Un lieu privé ne peut pas connecter de site : ses événements se créent à la main depuis sa vitrine.",
         "team": {

@@ -33,6 +33,8 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
 import LairEventsConnect from "./LairEventsConnect.tsx";
+import LairPosterSettings from "./LairPosterSettings.tsx";
+import { readPosterOptions } from "@/lib/posters/styles.ts";
 import { getLairEventsRefreshReport, getLairEventsSourceRequest } from "@/lib/db/lairs.ts";
 import { findManagerSource } from "@/lib/events/connect.ts";
 
@@ -254,6 +256,14 @@ async function ManageLairContent({
               ? { requestedAt: sourceRequest.requestedAt, ...(sourceRequest.url ? { url: sourceRequest.url } : {}) }
               : null
           }
+        />
+      )}
+
+      {tab === "poster" && (
+        <LairPosterSettings
+          lairId={lairId}
+          isPro={proState.isPro}
+          saved={readPosterOptions(lair, proState.isPro)}
         />
       )}
 

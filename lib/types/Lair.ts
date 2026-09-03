@@ -1,6 +1,7 @@
 import {Game} from "@/lib/types/Game";
 import {User} from "@/lib/types/User";
 import type {LairSectionKey} from "@/lib/lairs/sections";
+import type {LairPosterSettings} from "@/lib/posters/styles";
 
 // Type GeoJSON Point pour MongoDB
 export type GeoJSONPoint = {
@@ -383,5 +384,11 @@ export type Lair = {
     openingHours?: LairOpeningHours[];
 
     about?: LairAbout;
+
+    /**
+     * Les réglages de l'affiche des événements : style, fréquentation, logos.
+     * Voir `lib/posters/styles.ts` et `docs/EVENT_POSTER.md`.
+     */
+    poster?: LairPosterSettings;
   };
 };
