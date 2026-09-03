@@ -55,7 +55,7 @@ export async function generateMetadata({
   await connection();
 
   const [lairs, t] = await Promise.all([
-    visibleLairsAmong(readLairIds(search.lairs)),
+    visibleLairsAmong(...readLairIds(search.lairs)),
     getTranslations({ locale, namespace: "Lairs.poster" }),
   ]);
 
@@ -113,7 +113,7 @@ async function FreePoster({ params, searchParams }: { params: PosterParams; sear
   setRequestLocale(locale);
   await connection();
 
-  const lairs = await visibleLairsAmong(readLairIds(search.lairs));
+  const lairs = await visibleLairsAmong(...readLairIds(search.lairs));
 
   // Aucun lieu qu'on ait le droit de voir : il n'y a pas d'affiche à rendre.
   // Une sélection vide et une sélection entièrement privée se répondent de la

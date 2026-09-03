@@ -24,8 +24,14 @@ import type { Lair } from "@/lib/types/Lair";
  *
  * L'ordre demandé est rendu tel quel : c'est celui que l'affiche écrit sous son
  * titre, et il appartient à qui l'a composée.
+ *
+ * Les identifiants sont pris **un par un** et non en tableau : `cache` de React
+ * compare ses arguments par identité, si bien qu'un tableau reconstruit à
+ * chaque appel — ce que rend `readLairIds` — ne retombe jamais sur la même clé.
+ * La mémoïsation était donc nulle, et la page relisait les lieux une fois pour
+ * son titre et une fois pour son corps.
  */
-export const visibleLairsAmong = cache(async (ids: string[]): Promise<Lair[]> => {
+export const visibleLairsAmong = cache(async (...ids: string[]): Promise<Lair[]> => {
   if (ids.length === 0) {
     return [];
   }

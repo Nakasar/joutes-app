@@ -140,23 +140,31 @@ export default function PosterBuilder({
         });
         const payload = await response.json();
 
-        setResults(
-          Array.isArray(payload?.lairs)
-            ? payload.lairs.map((lair: BuilderLair) => ({
-                id: lair.id,
-                name: lair.name,
-                address: lair.address,
-                games: lair.games ?? [],
-              }))
-            : [],
-        );
+        if (abort.current === controller) {
+          setResults(
+            Array.isArray(payload?.lairs)
+              ? payload.lairs.map((lair: BuilderLair) => ({
+                  id: lair.id,
+                  name: lair.name,
+                  address: lair.address,
+                  games: lair.games ?? [],
+                }))
+              : [],
+          );
+        }
       } catch (error) {
         // Une frappe de plus a annulé celle-ci : ce n'est pas un échec.
-        if (!(error instanceof DOMException && error.name === "AbortError")) {
+        if (!(error instanceof DOMException && error.name === "AbortError") && abort.current === controller) {
           setResults([]);
         }
       } finally {
-        setIsSearching(false);
+        // Seule la recherche encore en cours décide de l'indicateur. Celle
+        // qu'une frappe vient d'annuler se termine **après** que la suivante a
+        // démarré : l'éteindre ici arrêtait le rouet alors qu'on cherchait
+        // encore, et la liste semblait complète avant de l'être.
+        if (abort.current === controller) {
+          setIsSearching(false);
+        }
       }
     }, SEARCH_DELAY_MS);
 
@@ -518,6 +526,12 @@ export default function PosterBuilder({
               height={POSTER_HEIGHT}
               className="absolute left-0 top-0 border-0"
               style={{ transform: `scale(${scale})`, transformOrigin: "top left", pointerEvents: "none" }}
+              // Ni au clavier, ni à la synthèse vocale : la souris n'y touche
+              // déjà pas, et une tabulation y tombait sans rien pouvoir y
+              // faire. L'affiche ne redit d'ailleurs que ce que les réglages
+              // ci-contre annoncent déjà.
+              tabIndex={-1}
+              aria-hidden
             />
           ) : (
             <p className="flex h-full items-center justify-center p-6 text-center text-[13px] text-muted-foreground">

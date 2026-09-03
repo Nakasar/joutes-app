@@ -421,6 +421,10 @@ export default function LairPosterSettings({
             height={POSTER_HEIGHT}
             className="absolute left-0 top-0 border-0"
             style={{ transform: `scale(${scale})`, transformOrigin: "top left", pointerEvents: "none" }}
+            // Ni au clavier, ni à la synthèse vocale : la souris n'y touche
+            // déjà pas, et une tabulation y tombait sans rien pouvoir y faire.
+            tabIndex={-1}
+            aria-hidden
           />
         </div>
       </aside>
