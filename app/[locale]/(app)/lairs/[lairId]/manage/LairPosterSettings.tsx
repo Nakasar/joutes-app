@@ -75,8 +75,9 @@ export default function LairPosterSettings({
       return localized.toFormat("LLLL yyyy");
     }
 
-    const first = localized.startOf("week");
-    const last = localized.endOf("week");
+    // Des semaines ISO, du lundi au dimanche, comme l'affiche.
+    const first = localized.startOf("week", { useLocaleWeeks: false });
+    const last = localized.endOf("week", { useLocaleWeeks: false });
 
     return `${first.toFormat("d")} – ${last.toFormat("d LLLL yyyy")}`;
   }, [period, start, locale]);

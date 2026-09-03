@@ -54,24 +54,34 @@ export function readPosterStart(
   return (parsed.isValid ? parsed : now).startOf("day");
 }
 
+/**
+ * Les semaines sont ISO, du lundi au dimanche, quelle que soit la langue :
+ * Luxon les compte ainsi par défaut, l'option le dit explicitement.
+ */
+const ISO_WEEKS = { useLocaleWeeks: false } as const;
+
 export function posterRange(period: PosterPeriod, start: DateTime): PosterRange {
   const unit = period === "week" ? "week" : "month";
-  const first = start.startOf(unit);
+  const first = start.startOf(unit, ISO_WEEKS);
 
-  return { period, start: first, end: first.endOf(unit).startOf("day") };
+  return { period, start: first, end: first.endOf(unit, ISO_WEEKS).startOf("day") };
 }
 
 /** Les événements de la période, sans les annulés, du plus tôt au plus tard. */
 export function eventsInRange(events: Event[], range: PosterRange, zone?: string): Event[] {
   const interval = Interval.fromDateTimes(range.start, range.end.endOf("day"));
 
+  // Le tri se fait sur l'instant, non sur la chaîne ISO : deux événements
+  // écrits avec des décalages différents se comparent mal lettre à lettre.
+  const startOf = (event: Event) => DateTime.fromISO(event.startDateTime, zone ? { zone } : undefined);
+
   return events
     .filter((event) => event.status !== "cancelled")
     .filter((event) => {
-      const start = DateTime.fromISO(event.startDateTime, zone ? { zone } : undefined);
+      const start = startOf(event);
       return start.isValid && interval.contains(start);
     })
-    .sort((a, b) => a.startDateTime.localeCompare(b.startDateTime));
+    .sort((a, b) => startOf(a).toMillis() - startOf(b).toMillis());
 }
 
 /**
@@ -100,8 +110,8 @@ export function groupByDay(events: Event[], range: PosterRange, zone?: string): 
 export function groupByWeek(events: Event[], range: PosterRange, zone?: string): PosterWeek[] {
   const weeks: PosterWeek[] = [];
 
-  for (let cursor = range.start; cursor <= range.end; cursor = cursor.plus({ weeks: 1 }).startOf("week")) {
-    const weekEnd = cursor.endOf("week").startOf("day");
+  for (let cursor = range.start; cursor <= range.end; cursor = cursor.plus({ weeks: 1 }).startOf("week", ISO_WEEKS)) {
+    const weekEnd = cursor.endOf("week", ISO_WEEKS).startOf("day");
     const end = weekEnd < range.end ? weekEnd : range.end;
     const interval = Interval.fromDateTimes(cursor, end.endOf("day"));
     const inWeek = events.filter((event) =>

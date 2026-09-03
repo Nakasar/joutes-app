@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
@@ -24,6 +25,30 @@ type PosterSearchParams = Promise<{
   logos?: string;
   print?: string;
 }>;
+
+/**
+ * Le titre du document — c'est le nom de fichier que propose le navigateur à
+ * l'enregistrement en PDF. `requireVisibleLair` est mémorisé par requête :
+ * la page ne relit pas le lieu.
+ */
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: PosterParams;
+  searchParams: PosterSearchParams;
+}): Promise<Metadata> {
+  const [{ locale, lairId }, search] = await Promise.all([params, searchParams]);
+
+  // Même piège Mongo que dans la page : la lecture du lieu touche à l'horloge.
+  await connection();
+
+  const lair = await requireVisibleLair(lairId);
+  const period = isPosterPeriod(search.period) ? search.period : "week";
+  const range = posterRange(period, readPosterStart(search.start, POSTER_ZONE));
+
+  return { title: posterDocumentTitle(lair.name, range, locale) };
+}
 
 /**
  * L'affiche d'un lieu, page nue au format A4.
@@ -82,7 +107,6 @@ async function LairPoster({ params, searchParams }: { params: PosterParams; sear
 
   return (
     <>
-      <title>{posterDocumentTitle(lair.name, range, locale)}</title>
       {/* Même mécanique que le layout principal : `lang` est un attribut de la
           coquille, qui ne connaît pas la langue ; il se pose depuis la
           frontière, une fois la langue lue. */}
