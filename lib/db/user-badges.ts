@@ -6,6 +6,7 @@ import type { ObjectId } from "mongodb";
 import type { SubscriptionPlanKey } from "@/lib/constants/subscription-plans";
 import { visibleStatuses, type StatusView } from "@/lib/achievements/status";
 import { displayPlan } from "@/lib/subscriptions/entitlements";
+import { devForcedPlans } from "@/lib/patreon/config";
 import { effectivePlans, grantedPlanKeys } from "@/lib/subscriptions/grants";
 import type { GrantedPlan } from "@/lib/types/Subscription";
 import type { Achievement, AchievementWithUnlockInfo } from "@/lib/types/Achievement";
@@ -65,6 +66,26 @@ export const getBadgesForUser = cache(async (userId: string): Promise<UserBadges
   const badges = await getUserBadges([userId]);
   return badges[userId] ?? NO_BADGES;
 });
+
+/**
+ * Les badges du compte connecté, tels que la session les transporte.
+ *
+ * Même lecture que pour n'importe quel autre compte, à une nuance près : le
+ * forçage de développement s'applique ici. C'est la distinction que pose déjà
+ * l'en-tête de ce module — il vaut pour « mes » droits, pas pour ceux des
+ * autres. Un compte de développement voit donc son propre palier forcé sur son
+ * avatar comme sur ses écrans de compte, et le palier réel des autres partout
+ * où on les affiche.
+ *
+ * `readForcedPlans` refuse de rien forcer en production : hors développement et
+ * aperçus, cette fonction rend exactement `getBadgesForUser`.
+ */
+export async function getOwnBadges(userId: string): Promise<UserBadges> {
+  const badges = await getBadgesForUser(userId);
+  const forced = devForcedPlans();
+
+  return forced.length > 0 ? { ...badges, plan: displayPlan(forced) } : badges;
+}
 
 async function plansByUser(userIds: string[]): Promise<Record<string, SubscriptionPlanKey | null>> {
   const docs = await db

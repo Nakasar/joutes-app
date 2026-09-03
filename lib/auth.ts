@@ -1,11 +1,12 @@
 import { betterAuth } from "better-auth";
-import { emailOTP, jwt } from "better-auth/plugins";
+import { customSession, emailOTP, jwt } from "better-auth/plugins";
 import { genericOAuth, patreon } from "better-auth/plugins/generic-oauth";
 import { Resend } from "resend";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { passkey } from "@better-auth/passkey";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import db from "@/lib/mongodb";
+import { getOwnBadges, NO_BADGES } from "@/lib/db/user-badges";
 import {customAlphabet} from "nanoid";
 
 const generateOTP = customAlphabet("0123456789", 6);
@@ -190,6 +191,38 @@ export const auth = betterAuth({
         oauthAuthServerConfig: true,
       },
     }),
+    /**
+     * Le palier et les statuts, portés par la session.
+     *
+     * L'en-tête est un composant client : il ne tient que la session, et n'a
+     * aucun moyen d'aller lire un abonnement. Sans cela, l'avatar du compte
+     * connecté serait le seul de l'application à porter le contour d'un compte
+     * sans abonnement, y compris pour qui en paie un — un défaut que seul
+     * l'abonné remarque, et sur le seul écran qu'il regarde tout le temps.
+     *
+     * **En dernier de la liste** : `customSession` enveloppe la session que les
+     * autres greffons ont fini de composer, et se placer avant eux perdrait ce
+     * qu'ils y ajoutent.
+     *
+     * Le coût est réel — les badges se relisent à chaque lecture de session,
+     * soit trois requêtes de plus (abonnements, catalogue des statuts,
+     * déblocages). `getBadgesForUser` est mémoïsé le temps d'une requête, si
+     * bien qu'un rendu qui lit la session plusieurs fois ne les paie qu'une.
+     *
+     * Une lecture qui échoue rend `NO_BADGES` plutôt que de faire échouer la
+     * session : un badge est une décoration, et un incident de base de données
+     * déconnecterait sinon toute l'application.
+     */
+    customSession(async ({ user, session }) => ({
+      session,
+      user: {
+        ...user,
+        badges: await getOwnBadges(user.id).catch((error) => {
+          console.error("Erreur lors de la lecture des badges de session:", error);
+          return NO_BADGES;
+        }),
+      },
+    })),
   ],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 jours

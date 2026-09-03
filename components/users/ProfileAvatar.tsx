@@ -1,6 +1,7 @@
 import { UserRound } from "lucide-react";
 
 import { appearanceForPlan } from "@/lib/subscriptions/tone.ts";
+import { accountInitials } from "@/lib/users/initials.ts";
 import type { SubscriptionPlanKey } from "@/lib/constants/subscription-plans.ts";
 import { cn } from "@/lib/utils.ts";
 
@@ -13,7 +14,7 @@ import { cn } from "@/lib/utils.ts";
  * dans la couleur de la maison. Un compte gratuit n'est pas un palier zéro,
  * c'est simplement un compte.
  *
- * Sans image, l'initiale du pseudonyme, et une silhouette à défaut de
+ * Sans image, les initiales du pseudonyme, et une silhouette à défaut de
  * pseudonyme : trois replis, parce qu'un rond vide dans une liste de fiches est
  * impossible à distinguer du suivant.
  */
@@ -32,7 +33,7 @@ export function ProfileAvatar({
   className?: string;
 }) {
   const appearance = appearanceForPlan(plan);
-  const initial = name?.trim().charAt(0).toUpperCase();
+  const initials = accountInitials(name);
 
   // 2 px jusqu'à 56, 3 au-delà, 4 à partir de 92 : un anneau de 2 px autour
   // d'un avatar de 112 disparaîtrait, et de 4 px autour d'un de 24 le mangerait.
@@ -53,13 +54,13 @@ export function ProfileAvatar({
         // `next.config.ts` ne déclare qu'un hôte distant.
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt="" className="h-full w-full object-cover" />
-      ) : initial ? (
+      ) : initials ? (
         <span
           aria-hidden
           className="font-semibold text-muted-foreground"
           style={{ fontSize: Math.round(size * 0.42) }}
         >
-          {initial}
+          {initials}
         </span>
       ) : (
         <UserRound

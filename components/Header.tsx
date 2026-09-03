@@ -37,7 +37,8 @@ import {
 import {useTranslations} from "next-intl";
 import LocaleSwitcher from "@/components/locale-switcher";
 import { CommandBox } from "@/components/CommandBox";
-import { AccountAvatar } from "@/components/users/AccountAvatar.tsx";
+import { ProfileAvatar } from "@/components/users/ProfileAvatar.tsx";
+import { UserBadges } from "@/components/UserBadges";
 import { cn } from "@/lib/utils";
 
 /**
@@ -628,14 +629,15 @@ export default function Header() {
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="icon-lg"
                         className="rounded-full"
                         aria-label={t('menu.myAccount')}
                       >
-                        <AccountAvatar
-                          src={session.user.image}
+                        <ProfileAvatar
+                          src={session.user.image ?? undefined}
                           name={session.user.name || session.user.email}
-                          size={32}
+                          plan={session.user.badges.plan}
+                          size={28}
                         />
                       </Button>
                     </DropdownMenuTrigger>
@@ -646,6 +648,7 @@ export default function Header() {
                           <p className="truncate text-xs font-normal text-muted-foreground">
                             {session.user.email}
                           </p>
+                          <UserBadges badges={session.user.badges} interactive={false} />
                         </div>
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator />
@@ -690,14 +693,15 @@ export default function Header() {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="icon-lg"
                       className="rounded-full"
                       aria-label={t('menu.myAccount')}
                     >
-                      <AccountAvatar
-                        src={session.user.image}
+                      <ProfileAvatar
+                        src={session.user.image ?? undefined}
                         name={session.user.name || session.user.email}
-                        size={32}
+                        plan={session.user.badges.plan}
+                        size={28}
                       />
                     </Button>
                   </DropdownMenuTrigger>
@@ -707,6 +711,7 @@ export default function Header() {
                         <p className="text-xs text-muted-foreground truncate">
                           {session.user.email}
                         </p>
+                        <UserBadges badges={session.user.badges} interactive={false} />
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
