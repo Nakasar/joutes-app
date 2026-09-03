@@ -208,7 +208,9 @@
 .cyber .ft { position: relative; margin-top: auto; display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; border-top: 1px solid rgba(255, 43, 214, 0.6); padding-top: 16px; }
 .cyber .brand { display: flex; align-items: center; gap: 10px; }
 .cyber .brand img { width: 34px; height: 34px; border-radius: 50%; filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.7)); }
-.cyber .brand-name { font-family: var(--font-orbitron), sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 0.08em; }
+/* Les capitales de la signature sont posées ici, et non dans le texte : le nom
+   qu'un lieu Pro saisit les prend comme celui de Joutes. */
+.cyber .brand-name { font-family: var(--font-orbitron), sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .cyber .brand-line { font-family: var(--font-share-tech-mono), monospace; font-size: 12px; color: rgba(230, 247, 255, 0.65); }
 .cyber .cta { display: flex; align-items: center; gap: 14px; }
 .cyber .cta-text { text-align: right; }

@@ -8,8 +8,10 @@ import { ChevronLeft, ChevronRight, ExternalLink, Loader2, Lock, Printer } from 
 
 import { getPathname } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
+import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
+import ImageDropzone from "@/components/ImageDropzone.tsx";
 import { cn } from "@/lib/utils.ts";
 import { POSTER_ZONE } from "@/lib/posters/period.ts";
 import {
@@ -44,7 +46,9 @@ const PREVIEW_WIDTH = 420;
  * L'aperçu est la vraie page, dans une `iframe` réduite, et il suit chaque
  * réglage avant même son enregistrement : les paramètres d'URL de l'affiche
  * passent par-dessus ce qui est en base. Ce qui est enregistré ne sert donc
- * qu'à l'affiche ouverte sans ces paramètres — celle qu'un lieu partage.
+ * qu'à l'affiche ouverte sans ces paramètres — celle qu'un lieu partage. Les
+ * champs libres de la signature n'y sont d'ailleurs relus que pour l'équipe du
+ * lieu : l'affiche publique, elle, ne dit que ce qui est enregistré.
  */
 export default function LairPosterSettings({
   lairId,
@@ -57,6 +61,7 @@ export default function LairPosterSettings({
 }) {
   const t = useTranslations("Lairs.manage.poster");
   const tStyles = useTranslations("Lairs.poster.styles");
+  const tUpload = useTranslations("Lairs.manage.customization.upload");
   const locale = useLocale();
   const [isPending, startTransition] = useTransition();
 
@@ -92,11 +97,38 @@ export default function LairPosterSettings({
       style: settings.style,
       attendance: settings.showAttendance ? "1" : "0",
       logos: settings.gameLogos ? "1" : "0",
+      // Les six champs sont toujours transmis, vides compris : c'est ainsi que
+      // l'aperçu montre un champ qu'on vient d'effacer, plutôt que celui qui
+      // est encore enregistré.
+      brandLogo: settings.branding.logo ?? "",
+      brandTitle: settings.branding.title ?? "",
+      brandText: settings.branding.text ?? "",
+      ctaTitle: settings.cta.title ?? "",
+      ctaText: settings.cta.text ?? "",
+      ctaUrl: settings.cta.url ?? "",
       ...extra,
     });
 
     return `${getPathname({ locale, href: `/lairs/${lairId}/affiche` })}?${query.toString()}`;
   };
+
+  const uploadLabels = { failed: tUpload("failed"), remove: tUpload("remove") };
+
+  /**
+   * Ce que le style écrit de lui-même, en indication de saisie : le champ
+   * laissé vide n'efface rien de l'affiche, il rend la main au style. Le
+   * cyberpunk, qui écrit l'adresse plutôt qu'une phrase sous son appel à
+   * l'action, n'a pas de `ctaSub` — d'où le `has`.
+   */
+  const styleText = (key: string) =>
+    tStyles.has(`${settings.style}.${key}`) ? tStyles(`${settings.style}.${key}`) : "";
+
+  /** Un champ de la signature : le vide y vaut « non renseigné ». */
+  const setBranding = (key: "logo" | "title" | "text", value: string | undefined) =>
+    setSettings((current) => ({ ...current, branding: { ...current.branding, [key]: value || undefined } }));
+
+  const setCta = (key: "title" | "text" | "url", value: string) =>
+    setSettings((current) => ({ ...current, cta: { ...current.cta, [key]: value || undefined } }));
 
   const save = () => {
     startTransition(async () => {
@@ -230,14 +262,122 @@ export default function LairPosterSettings({
               );
             })}
           </div>
+        </section>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" onClick={save} disabled={isPending || !isDirty}>
-              {isPending && <Loader2 className="animate-spin" aria-hidden />}
-              {t("save")}
-            </Button>
+        {/* La signature du pied d'affiche et l'appel à l'action — Joutes Pro. */}
+        <section className="flex flex-col gap-5 rounded-xl border bg-card p-5">
+          <header className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-semibold">{t("footer.title")}</h3>
+              <span className="inline-flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+                <Lock className="size-3" aria-hidden />
+                {t("style.pro")}
+              </span>
+            </div>
+            <p className="text-[13px] text-muted-foreground">{isPro ? t("footer.description") : t("footer.locked")}</p>
+          </header>
+
+          {/* L'appel à l'action, à droite du pied de page, et son QR code. */}
+          <div className="flex flex-col gap-3">
+            <Label>{t("footer.cta.label")}</Label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="poster-cta-title" className="text-[13px] font-normal text-muted-foreground">
+                  {t("footer.cta.title")}
+                </Label>
+                <Input
+                  id="poster-cta-title"
+                  value={settings.cta.title ?? ""}
+                  onChange={(event) => setCta("title", event.target.value)}
+                  placeholder={styleText("cta")}
+                  maxLength={60}
+                  disabled={!isPro}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="poster-cta-text" className="text-[13px] font-normal text-muted-foreground">
+                  {t("footer.cta.text")}
+                </Label>
+                <Input
+                  id="poster-cta-text"
+                  value={settings.cta.text ?? ""}
+                  onChange={(event) => setCta("text", event.target.value)}
+                  placeholder={styleText("ctaSub")}
+                  maxLength={120}
+                  disabled={!isPro}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="poster-cta-url" className="text-[13px] font-normal text-muted-foreground">
+                {t("footer.cta.url")}
+              </Label>
+              <Input
+                id="poster-cta-url"
+                type="url"
+                inputMode="url"
+                value={settings.cta.url ?? ""}
+                onChange={(event) => setCta("url", event.target.value)}
+                placeholder={t("footer.cta.urlPlaceholder")}
+                disabled={!isPro}
+              />
+              <p className="text-[13px] text-muted-foreground">{t("footer.cta.urlHint")}</p>
+            </div>
+          </div>
+
+          {/* La signature, à la place du bloc Joutes. */}
+          <div className="flex flex-col gap-3">
+            <Label>{t("footer.brand.label")}</Label>
+            <div className="flex flex-wrap items-start gap-4">
+              <ImageDropzone
+                uploadUrl={`/api/lairs/${lairId}/upload`}
+                labels={uploadLabels}
+                value={settings.branding.logo}
+                onChange={(url) => setBranding("logo", url)}
+                label={t("footer.brand.logoLabel")}
+                disabled={!isPro}
+                className="w-[84px]"
+                previewClassName="h-[84px] rounded-xl"
+              />
+              <div className="flex min-w-[16rem] flex-1 flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="poster-brand-title" className="text-[13px] font-normal text-muted-foreground">
+                    {t("footer.brand.title")}
+                  </Label>
+                  <Input
+                    id="poster-brand-title"
+                    value={settings.branding.title ?? ""}
+                    onChange={(event) => setBranding("title", event.target.value)}
+                    placeholder="Joutes"
+                    maxLength={40}
+                    disabled={!isPro}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="poster-brand-text" className="text-[13px] font-normal text-muted-foreground">
+                    {t("footer.brand.text")}
+                  </Label>
+                  <Input
+                    id="poster-brand-text"
+                    value={settings.branding.text ?? ""}
+                    onChange={(event) => setBranding("text", event.target.value)}
+                    placeholder={styleText("brandLine")}
+                    maxLength={120}
+                    disabled={!isPro}
+                  />
+                </div>
+              </div>
+            </div>
+            <p className="text-[13px] text-muted-foreground">{t("footer.brand.hint")}</p>
           </div>
         </section>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" onClick={save} disabled={isPending || !isDirty}>
+            {isPending && <Loader2 className="animate-spin" aria-hidden />}
+            {t("save")}
+          </Button>
+        </div>
 
         {/* L'export. */}
         <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">

@@ -40,6 +40,33 @@ export const POSTER_PERIODS = ["week", "month"] as const;
 
 export type PosterPeriod = (typeof POSTER_PERIODS)[number];
 
+/**
+ * La signature du pied d'affiche, à la place du bloc Joutes — Joutes Pro.
+ *
+ * Chaque champ est indépendant : un lieu qui ne pose que son logo garde le
+ * nom et la ligne de Joutes sous celui-ci. Ce qui n'est pas renseigné reste
+ * ce que le style écrit.
+ */
+export type PosterBranding = {
+  /** L'image ronde, à la place de l'emblème Joutes. */
+  logo?: string;
+  title?: string;
+  text?: string;
+};
+
+/**
+ * L'appel à l'action et le QR code — Joutes Pro.
+ *
+ * `url` est ce que le QR code encode, et l'adresse écrite sous lui : la page
+ * du lieu sur Joutes par défaut, la billetterie ou le site du lieu s'il en
+ * décide autrement.
+ */
+export type PosterCallToAction = {
+  title?: string;
+  text?: string;
+  url?: string;
+};
+
 /** Ce que le lieu règle, et que la base conserve sous `options.poster`. */
 export type LairPosterSettings = {
   style?: PosterStyleKey;
@@ -47,13 +74,23 @@ export type LairPosterSettings = {
   showAttendance?: boolean;
   /** Les logos des jeux — le nom prend le relais quand un jeu n'en a pas. */
   gameLogos?: boolean;
+  branding?: PosterBranding;
+  cta?: PosterCallToAction;
 };
 
-/** Les mêmes réglages, résolus : plus rien de facultatif. */
+/**
+ * Les mêmes réglages, résolus : plus rien de facultatif.
+ *
+ * Sauf la signature et l'appel à l'action, qui restent partiels — un champ
+ * vide n'y vaut pas « rien », il vaut « ce que le style écrit », et cette
+ * décision-là appartient au rendu, qui seul connaît les textes du style.
+ */
 export type PosterOptions = {
   style: PosterStyleKey;
   showAttendance: boolean;
   gameLogos: boolean;
+  branding: PosterBranding;
+  cta: PosterCallToAction;
 };
 
 export function isPosterStyleKey(value: unknown): value is PosterStyleKey {
@@ -81,6 +118,71 @@ export function resolvePosterStyle(requested: unknown, isPro: boolean): PosterSt
 }
 
 /**
+ * Le texte s'il en est un, `undefined` sinon.
+ *
+ * Une chaîne vide traverse la base comme l'URL de l'aperçu : elle vaut « rien
+ * de renseigné », donc le texte du style, et non un pied d'affiche muet.
+ */
+function text(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/**
+ * Un champ de la personnalisation : celui que l'aperçu demande, sinon celui de
+ * la base.
+ *
+ * Un champ **présent mais vide** dans la demande vaut « vidé », et non « pas
+ * demandé » : sans quoi l'aperçu de l'écran de gestion ne saurait pas montrer
+ * un champ qu'on vient d'effacer — il ressortirait ce qui est encore
+ * enregistré, jusqu'à la sauvegarde.
+ */
+function field(asked: unknown, stored: unknown): string | undefined {
+  return asked === undefined ? text(stored) : text(asked);
+}
+
+/**
+ * La personnalisation du pied d'affiche, réservée aux lieux Pro.
+ *
+ * Un lieu qui ne l'est plus retombe sur la signature Joutes, exactement comme
+ * un style Pro retombe sur le style par défaut : l'affiche déjà partagée reste
+ * lisible, et les réglages, eux, restent en base pour le jour où
+ * l'abonnement reprend.
+ */
+function readBranding(stored: PosterBranding | undefined, overrides: unknown, isPro: boolean): PosterBranding {
+  if (!isPro) {
+    return {};
+  }
+
+  const asked = (overrides ?? {}) as PosterBranding;
+
+  return {
+    logo: field(asked.logo, stored?.logo),
+    title: field(asked.title, stored?.title),
+    text: field(asked.text, stored?.text),
+  };
+}
+
+function readCallToAction(stored: PosterCallToAction | undefined, overrides: unknown, isPro: boolean): PosterCallToAction {
+  if (!isPro) {
+    return {};
+  }
+
+  const asked = (overrides ?? {}) as PosterCallToAction;
+
+  return {
+    title: field(asked.title, stored?.title),
+    text: field(asked.text, stored?.text),
+    url: field(asked.url, stored?.url),
+  };
+}
+
+/**
  * Les réglages du lieu, complétés de leurs valeurs par défaut.
  *
  * `overrides` porte ce qu'une URL demande par-dessus les réglages
@@ -104,5 +206,7 @@ export function readPosterOptions(
     style: resolvePosterStyle(overrides.style ?? stored.style, isPro),
     showAttendance: bool(overrides.showAttendance, stored.showAttendance),
     gameLogos: bool(overrides.gameLogos, stored.gameLogos),
+    branding: readBranding(stored.branding, overrides.branding, isPro),
+    cta: readCallToAction(stored.cta, overrides.cta, isPro),
   };
 }

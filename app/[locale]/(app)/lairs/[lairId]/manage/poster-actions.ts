@@ -16,11 +16,11 @@ export type LairPosterResult = { success: true } | { success: false; error: Lair
 /**
  * Enregistre les réglages de l'affiche du lieu.
  *
- * Le contrôle Pro est refait ici : un style réservé demandé par un lieu qui
- * n'est pas abonné est refusé en bloc, plutôt que silencieusement remplacé —
- * l'écran grise ces styles, et une demande qui passe outre est une erreur à
- * dire, pas à corriger en douce. Les deux interrupteurs, eux, sont ouverts à
- * tous.
+ * Le contrôle Pro est refait ici : un style réservé — comme la signature du
+ * pied d'affiche et l'appel à l'action — demandé par un lieu qui n'est pas
+ * abonné est refusé en bloc, plutôt que silencieusement remplacé : l'écran
+ * grise ces réglages, et une demande qui passe outre est une erreur à dire,
+ * pas à corriger en douce. Les deux interrupteurs, eux, sont ouverts à tous.
  */
 export async function updateLairPosterSettings(
   lairId: string,
@@ -40,10 +40,19 @@ export async function updateLairPosterSettings(
       return { success: false, error: "NOT_FOUND" };
     }
 
-    const { style, showAttendance, gameLogos } = parsed.data;
+    const { style, showAttendance, gameLogos, branding, cta } = parsed.data;
 
-    if (style && POSTER_STYLES[style].pro && !(await isLairPro(validatedId))) {
-      return { success: false, error: "PRO_REQUIRED" };
+    // Une personnalisation vide n'est pas une personnalisation : un lieu qui
+    // n'est plus Pro doit pouvoir effacer ce qu'il avait posé, et enregistrer
+    // le reste de son affiche sans se heurter au verrou.
+    const wantsCustomFooter = [branding, cta].some(
+      (block) => block && Object.values(block).some((value) => value !== undefined),
+    );
+
+    if ((style && POSTER_STYLES[style].pro) || wantsCustomFooter) {
+      if (!(await isLairPro(validatedId))) {
+        return { success: false, error: "PRO_REQUIRED" };
+      }
     }
 
     // Seuls les champs envoyés changent : le schéma les admet tous facultatifs,
@@ -55,6 +64,10 @@ export async function updateLairPosterSettings(
       ...(style !== undefined ? { style } : {}),
       ...(showAttendance !== undefined ? { showAttendance } : {}),
       ...(gameLogos !== undefined ? { gameLogos } : {}),
+      // La signature et l'appel à l'action, eux, se remplacent en bloc : le
+      // formulaire les envoie entiers, et un champ absent y veut dire vidé.
+      ...(branding !== undefined ? { branding } : {}),
+      ...(cta !== undefined ? { cta } : {}),
     };
 
     await lairsDb.updateLair(validatedId, {
