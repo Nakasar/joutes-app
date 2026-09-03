@@ -21,7 +21,7 @@
     },
     {
       "file": "Affichage.dc.html",
-      "title": "2 · Tableau d affichage — semaine",
+      "title": "2 · Tableau d'affichage — semaine",
       "page": "page-1",
       "x": 900,
       "y": 0,
@@ -84,7 +84,7 @@
     },
     {
       "file": "AffichageMois.dc.html",
-      "title": "2 · Tableau d affichage — mois",
+      "title": "2 · Tableau d'affichage — mois",
       "page": "page-1",
       "x": 900,
       "y": 1300,
@@ -156,7 +156,7 @@
     },
     {
       "file": "V2Affichage.dc.html",
-      "title": "V2 — tableau d affichage, trop proche de la référence (écarté)",
+      "title": "V2 — tableau d'affichage, trop proche de la référence (écarté)",
       "page": "page-2",
       "x": 900,
       "y": 0,
@@ -179,7 +179,7 @@
       "x": 900,
       "y": -340,
       "w": 620,
-      "text": "Deux réglages du lieu, sur chaque planche.\n\nAu-dessus de chaque affiche, deux leviers reprennent les interrupteurs de l'écran de réglages : « frequentation » (les places restantes et la mention « complet ») et « jeux » (logos, ou noms seulement). Essayez-les : chaque style les respecte.\n\nLa tuile colorée à l'initiale du jeu tient lieu de logo (game.images.icon) ; quand un jeu n'en a pas, l'affiche montre son nom, comme en mode « noms »."
+      "text": "Deux réglages du lieu, sur chaque planche.\n\nAu-dessus de chaque affiche, deux leviers reprennent les interrupteurs de l'écran de réglages : « frequentation » (les places restantes et la mention « complet ») et « jeux » (logos, ou noms seulement). Essayez-les : chaque style les respecte.\n\nLa tuile colorée à l'initiale du jeu tient lieu de logo (game.images.icon). Star Wars Unlimited n'en a pas dans l'exemple : son nom s'affiche tel quel, même en mode « logos » — c'est le repli."
     },
     {
       "id": "trancher",
