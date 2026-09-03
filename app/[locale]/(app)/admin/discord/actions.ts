@@ -102,6 +102,20 @@ export async function registerDiscordCommands() {
           .setRequired(true)
       ),
     new SlashCommandBuilder()
+      .setName('affiche')
+      .setDescription('Post the poster of one of your posters or followed venues')
+      .setDescriptionLocalization('fr', "Publier l'affiche d'une de vos affiches ou d'un lieu que vous suivez")
+      .addStringOption(option =>
+        option.setName('affiche')
+          .setDescription('One of your saved posters, or a venue you follow')
+          .setDescriptionLocalization('fr', 'Une de vos affiches enregistrées, ou un lieu que vous suivez')
+          .setRequired(true)
+          // La liste vient du compte Joutes lié : ses affiches gardées, puis
+          // les lieux qu'il suit. Sans liaison, elle est vide et la commande
+          // le dit.
+          .setAutocomplete(true)
+      ),
+    new SlashCommandBuilder()
       .setName('events')
       .setDescription("Manage events")
       .setDescriptionLocalization('fr', 'Gérer les évènements')

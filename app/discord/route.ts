@@ -1,5 +1,6 @@
-import {REST} from "@discordjs/rest";
+import {REST, type RawFile} from "@discordjs/rest";
 import {
+  APIApplicationCommandAutocompleteInteraction,
   APIApplicationCommandInteraction,
   APIChatInputApplicationCommandInteraction,
   APIContextMenuInteraction,
@@ -58,6 +59,15 @@ import {
 import {parseDeckList, serializeDeckList} from "@/app/[locale]/(app)/games/riftbound/deck-checker/utils";
 import {getLairById, LairDocument} from "@/lib/db/lairs";
 import {DiscordEmojis} from "@/app/discord/utils";
+import {renderPosterImage} from "@/lib/posters/image";
+import {listAccountPosters, resolveAccountPoster} from "@/lib/posters/library";
+import {
+  formatPosterRef,
+  matchPosterChoices,
+  type PosterChoice,
+  type PosterRefKind
+} from "@/lib/posters/references";
+import {POSTER_BOT_LOCALE, posterStrings, posterVenueStrings} from "@/lib/posters/strings";
 import {inspect} from "node:util";
 
 const agentId = "yGypfIpDEb";
@@ -110,6 +120,13 @@ export async function POST(req: Request) {
       );
     } else if (body.type === InteractionType.ModalSubmit) {
       return handleModalSubmitInteraction(body as APIModalSubmitInteraction)
+    } else if (body.type === InteractionType.ApplicationCommandAutocomplete) {
+      // L'autocomplétion répond dans la réponse HTTP elle-même, et non par un
+      // appel à l'API : Discord ferme la fenêtre au bout de trois secondes, et
+      // un aller-retour de plus se voit à la frappe.
+      return handleAutocompleteInteraction(
+        body as APIApplicationCommandAutocompleteInteraction,
+      );
     }
   } catch (error) {
     console.error(inspect(error, false, 20));
@@ -717,6 +734,26 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
       },
     );
     return NextResponse.json({success: true}, {status: 200});
+  } else if (interaction.data.custom_id.startsWith(REFRESH_AFFICHE_PREFIX)) {
+    // Une nouvelle affiche, postée en réponse au clic : le message d'origine
+    // reste ce qu'il était le jour où on l'a posté, et le fil garde la trace
+    // des deux semaines plutôt que d'en réécrire une.
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: 4,
+          data: {
+            content: "Génération de l'affiche...",
+          },
+        },
+      },
+    );
+
+    return replyWithAffiche(
+      interaction,
+      interaction.data.custom_id.slice(REFRESH_AFFICHE_PREFIX.length),
+    );
   } else if (interaction.data.custom_id.startsWith('refresh-events-board-')) {
     await rest.post(
       Routes.interactionCallback(interaction.id, interaction.token),
@@ -825,6 +862,8 @@ async function handleApplicationCommand(
         return handleVerifyDeckSlashCommand(body);
       case 'events-board':
         return handleEventsBoardCommand(body);
+      case 'affiche':
+        return handleAfficheCommand(body);
     }
   } else if (isApplicationCommandContextMenuInteraction(body)) {
     return handleContextualMessageCommand(body);
@@ -1862,6 +1901,249 @@ async function handleAskCommand(
       },
     },
   );
+
+  return NextResponse.json({success: true}, {status: 200});
+}
+
+/* --------------------------------------------------------------------------
+ * /affiche — l'affiche d'un compte, en image, dans le salon
+ * ------------------------------------------------------------------------ */
+
+/** Le préfixe du bouton « Actualiser » ; ce qui suit est la référence. */
+const REFRESH_AFFICHE_PREFIX = 'refresh-affiche-';
+
+/** Comment l'autocomplétion qualifie ce qu'elle propose. */
+const AFFICHE_KIND_LABELS: Record<PosterRefKind, string> = {
+  poster: 'affiche',
+  lair: 'lieu suivi',
+};
+
+/**
+ * Le compte Joutes lié à cette identité Discord, ou `null`.
+ *
+ * La liaison est celle de better-auth : un document de `account` portant le
+ * fournisseur et l'identifiant Discord. C'est déjà ainsi que les boutons
+ * d'inscription à un évènement retrouvent leur utilisateur.
+ */
+async function findLinkedJoutesUserId(discordUserId: string | undefined): Promise<string | null> {
+  if (!discordUserId) {
+    return null;
+  }
+
+  const account = await db.collection<{ userId: ObjectId }>('account').findOne({
+    providerId: 'discord',
+    accountId: discordUserId,
+  });
+
+  return account?.userId ? account.userId.toString() : null;
+}
+
+/** Un choix de l'autocomplétion : « Ma semaine · affiche ». Cent caractères au plus. */
+function afficheChoiceName(choice: PosterChoice): string {
+  const suffix = ` · ${AFFICHE_KIND_LABELS[choice.kind]}`;
+  const room = 100 - suffix.length;
+  const name = choice.name.length > room ? `${choice.name.slice(0, room - 1)}…` : choice.name;
+
+  return `${name}${suffix}`;
+}
+
+/**
+ * Un nom de fichier lisible dans le fil, et sans surprise pour Discord.
+ *
+ * Le nom de l'affiche y passe : c'est ce qu'on lit sous l'image et ce qu'on
+ * retrouve dans ses téléchargements.
+ */
+function afficheFileName(name: string): string {
+  const slug = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 60);
+
+  return `affiche-${slug || 'joutes'}.png`;
+}
+
+function autocompleteResponse(choices: { name: string; value: string }[]) {
+  return NextResponse.json(
+    {
+      type: InteractionResponseType.ApplicationCommandAutocompleteResult,
+      data: {choices},
+    },
+    {status: 200},
+  );
+}
+
+/**
+ * Ce que `/affiche` propose : les affiches gardées du compte, puis les lieux
+ * qu'il suit.
+ *
+ * Une liste vide est la bonne réponse à tout ce qui cloche — compte non lié,
+ * commande inconnue, option qui n'est pas celle qu'on croit : l'autocomplétion
+ * n'a pas d'endroit où dire une erreur, et la commande, elle, le dira.
+ */
+async function handleAutocompleteInteraction(interaction: APIApplicationCommandAutocompleteInteraction) {
+  const focused = interaction.data.options?.find(
+    (option: { type: number; focused?: boolean }) => option.type === 3 && option.focused,
+  ) as { name: string; value: string } | undefined;
+
+  if (interaction.data.name !== 'affiche' || focused?.name !== 'affiche') {
+    return autocompleteResponse([]);
+  }
+
+  const userId = await findLinkedJoutesUserId(interaction.user?.id ?? interaction.member?.user?.id);
+  if (!userId) {
+    return autocompleteResponse([]);
+  }
+
+  const choices = matchPosterChoices(await listAccountPosters(userId), focused.value ?? '');
+
+  return autocompleteResponse(
+    choices.map(choice => ({name: afficheChoiceName(choice), value: formatPosterRef(choice)})),
+  );
+}
+
+async function handleAfficheCommand(interaction: APIChatInputApplicationCommandInteraction) {
+  await rest.post(
+    Routes.interactionCallback(interaction.id, interaction.token),
+    {
+      body: {
+        type: 4,
+        data: {
+          content: "Génération de l'affiche...",
+        },
+      },
+    },
+  );
+
+  const asked = interaction.data.options?.find(
+    (option: { name: string; type: number }) => option.name === 'affiche' && option.type === 3,
+  ) as { value: string } | undefined;
+
+  return replyWithAffiche(interaction, asked?.value ?? '');
+}
+
+/**
+ * L'affiche demandée, dessinée puis jointe à la réponse.
+ *
+ * La même fonction sert la commande et le bouton « Actualiser » : les deux ont
+ * déjà répondu « génération en cours » et n'ont plus qu'à remplacer ce message
+ * par l'image. Rien n'est enregistré entre les deux — le bouton porte la
+ * référence de l'affiche, et l'affiche se recompose de la base à chaque fois,
+ * ce qui est exactement ce qu'on attend d'un « actualiser ».
+ *
+ * L'image part en pièce jointe, et non par une adresse que Discord irait
+ * chercher : une affiche peut réunir des lieux privés, et une URL publique
+ * poserait une question — « qui a le droit de voir ceci ? » — à laquelle
+ * personne ne saurait répondre hors session. La pièce jointe, elle, ne va
+ * qu'au salon où la commande a été tapée.
+ */
+async function replyWithAffiche(
+  interaction: APIChatInputApplicationCommandInteraction | APIMessageComponentButtonInteraction,
+  asked: string,
+) {
+  const patch = (body: Record<string, unknown>, files?: RawFile[]) =>
+    rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {body, files},
+    );
+
+  const userId = await findLinkedJoutesUserId(interaction.user?.id ?? interaction.member?.user?.id);
+  if (!userId) {
+    await patch({
+      content: "Liez votre compte Discord à votre compte Joutes pour afficher vos affiches.",
+      components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setLabel("Lier mon compte")
+            .setURL(`https://joutes.app/account/security`)
+            .setStyle(ButtonStyle.Link),
+        ),
+      ],
+    });
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  const t = posterStrings();
+  const resolved = await resolveAccountPoster(userId, asked, posterVenueStrings(t));
+
+  if (resolved === 'unknown') {
+    await patch({
+      content: "Aucune affiche de ce nom parmi vos affiches et les lieux que vous suivez.",
+      components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setLabel("Mes affiches")
+            .setURL(`https://joutes.app/affiches`)
+            .setStyle(ButtonStyle.Link),
+        ),
+      ],
+    });
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  if (resolved === 'empty') {
+    await patch({
+      content: "Cette affiche ne réunit plus aucun lieu que vous pouvez voir.",
+    });
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  try {
+    const image = await renderPosterImage({
+      subject: resolved.subject,
+      events: resolved.events,
+      games: resolved.games,
+      range: resolved.range,
+      options: resolved.options,
+      locale: POSTER_BOT_LOCALE,
+      t,
+    });
+
+    await patch(
+      {
+        content: `Voici l'affiche **${resolved.name}**.`,
+        components: [
+          new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+              .setLabel("Actualiser")
+              .setCustomId(`${REFRESH_AFFICHE_PREFIX}${formatPosterRef(resolved.ref)}`)
+              .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+              .setLabel("Ouvrir l'affiche")
+              .setURL(resolved.url)
+              .setStyle(ButtonStyle.Link),
+          ),
+        ],
+      },
+      [
+        {
+          name: afficheFileName(resolved.name),
+          data: Buffer.from(image),
+          contentType: "image/png",
+        },
+      ],
+    );
+  } catch (error) {
+    console.error("Impossible de générer l'affiche:", inspect(error, false, 20));
+
+    await patch({
+      content: "Impossible de générer cette affiche pour le moment. Vous pouvez l'ouvrir sur Joutes.",
+      components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setLabel("Ouvrir l'affiche")
+            .setURL(resolved.url)
+            .setStyle(ButtonStyle.Link),
+        ),
+      ],
+    });
+  }
 
   return NextResponse.json({success: true}, {status: 200});
 }

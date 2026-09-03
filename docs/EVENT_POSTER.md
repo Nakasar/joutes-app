@@ -265,6 +265,110 @@ retrouver. Une adresse partagée montre par conséquent le style par défaut à 
 n'est pas abonné — le même repli que pour un lieu dont l'abonnement s'arrête,
 et jamais une page en erreur.
 
+## L'affiche dans Discord — `/affiche`
+
+Le bot poste l'affiche **en image**, dans le salon où on la lui demande :
+`/affiche <nom>`, une pièce jointe PNG au format de la page — 794 × 1123, soit
+la même A4 —, et deux boutons sous elle.
+
+```
+/affiche affiche: Ma semaine · affiche
+```
+
+### Ce que l'autocomplétion propose
+
+Ce que le compte a **déjà choisi**, et rien d'autre : ses affiches gardées
+d'abord (la dernière touchée en tête, comme `/affiches`), puis les lieux qu'il
+suit. La liaison entre l'identité Discord et le compte Joutes est celle de
+better-auth — le document `account` du fournisseur `discord` —, la même par
+laquelle les boutons d'inscription retrouvent leur utilisateur. Sans liaison,
+la liste est vide et la commande le dit, avec le lien pour lier son compte :
+une autocomplétion n'a pas d'endroit où écrire une erreur.
+
+La saisie se compare sans accents ni casse (« cafe » trouve « Café des Jeux »),
+ce qui commence par elle passe avant ce qui la contient, et un nom tapé à la
+main sans choisir de suggestion est cherché de la même façon
+(`lib/posters/references.ts`, pur et testé).
+
+| Ce qu'on demande | Ce que l'affiche rend |
+| --- | --- |
+| une affiche gardée | ses lieux, ses jeux, sa période, son habillage — jamais sa date : la semaine ou le mois **d'aujourd'hui** |
+| un lieu | son programme de la semaine, avec ses réglages et sa signature Pro |
+
+Les droits sont refaits **sans session**, à partir du seul identifiant de
+compte (`lib/posters/library.ts`) : une affiche gardée n'est lisible que par
+son propriétaire, un lieu privé que par ceux qui le suivent, son équipe et
+l'administration ; le verrou `sub:poster-styles` se lit sur le compte qui
+demande, et le style réservé d'un lieu sur l'abonnement du lieu. Un lieu devenu
+privé disparaît de l'affiche comme sur le site, et une affiche qui n'a plus
+aucun lieu visible le dit plutôt que de rendre une page vide.
+
+### L'image n'est pas la page
+
+La page HTML n'existe que dans un navigateur : sept polices, des textures, des
+dégradés, et l'impression pour l'exporter. Le bot n'a pas de navigateur, et
+Vercel n'en fournit pas. L'image est donc **la même affiche, dessinée
+autrement** (`lib/posters/image.tsx`, `next/og`) :
+
+- les mêmes données et les mêmes libellés — période, groupes, heures, prix,
+  places, mention « complet » —, calculés par les fonctions qu'appelle déjà
+  `components/posters/Poster.tsx`. Une divergence entre l'image et le document
+  imprimé serait un bug, pas une variante ;
+- le style choisi s'y lit à sa **palette** (`POSTER_IMAGE_THEMES`, reprise de
+  `poster.css`) et non à son décor : pas de liège, pas de parchemin, pas de
+  néons, et une seule police pour les sept ;
+- **aucune image distante** : les logos des jeux cèdent la place au nom et à la
+  couleur, et le QR code est encodé sur place. Satori abandonne tout le dessin
+  quand une image ne répond pas, et une affiche sans logo vaut mieux qu'une
+  affiche qui n'existe pas.
+
+Le texte des styles reste celui des messages (`Lairs.poster.styles.*`), lu hors
+requête par `createTranslator` : le bot parle français, comme toutes ses autres
+réponses (`lib/posters/strings.ts`).
+
+### Ce qui ne tient pas se compte
+
+Une A4 imprimée déborde en silence — la page coupe, et le gérant le voit à
+l'aperçu. Une image postée dans un fil n'a pas d'aperçu : ce qui dépasse est
+perdu sans que personne le sache. `lib/posters/layout.ts` décide donc avant de
+dessiner : il estime la place que l'en-tête laisse au corps — un nom de lieu
+qui se replie sur deux lignes la réduit d'autant —, réduit tout à l'échelle qui
+fait tenir la période, et, quand cette échelle atteindrait l'illisible
+(`MIN_SCALE`), écrit ce qu'il peut et annonce le reste : « + 3 événements ».
+Les hauteurs y sont estimées, jamais mesurées — satori mesure le texte au
+rendu, pas nous —, d'où la réserve de `HEIGHT_SAFETY`.
+
+### Le bouton « Actualiser »
+
+Il porte la référence de l'affiche (`poster:<id>` ou `lair:<id>`), et rien de
+plus : rien n'est enregistré entre deux clics. L'affiche se recompose de la
+base à chaque fois, ce qui est exactement ce qu'on attend d'un « actualiser » —
+une affiche gardée est une recette, et la recette rendue lundi prochain montre
+lundi prochain.
+
+La nouvelle affiche est **postée en réponse** à l'interaction, et ne remplace
+pas le message d'origine : le fil garde la trace des deux semaines, et le
+message posté un jour reste ce qu'il était ce jour-là. Les droits sont refaits
+sur celui qui clique, et non sur celui qui a tapé la commande : un salon
+partagé ne fait pas de l'affiche d'un compte celle de tout le monde.
+
+### Pourquoi une pièce jointe, et non une adresse
+
+Une image servie à une adresse publique poserait la question à laquelle
+personne ne sait répondre hors session — « qui a le droit de voir ces
+lieux ? » —, et une affiche peut réunir des lieux privés. La pièce jointe ne va
+qu'au salon où la commande a été tapée. Le second bouton, lui, ouvre l'affiche
+sur le site : c'est là qu'on l'imprime.
+
+### Ce qui reste ouvert
+
+- Les sept styles se distinguent par leurs couleurs, pas par leurs polices :
+  charger sept familles dans satori est possible, et coûte autant de fichiers
+  à embarquer. À faire si les styles réservés paraissent trop proches.
+- La commande poste la période courante. Une option « mois » ou une date
+  viendraient sans peine — la résolution les accepte déjà — mais aucune ne
+  s'est encore fait demander.
+
 ## Ce qu'en dit la page de vente
 
 `/features/organizers` porte une section `posters` — texte sous
@@ -292,3 +396,6 @@ A4, et la page de vente ne promet pas ce que la section suivante laisse ouvert.
   sur l'adresse, pas un document à ajouter en base.
 - Huit lieux au plus, et rien ne prévient quand la page déborde : c'est la même
   limite que le mois très chargé ci-dessus, et elle se traitera avec lui.
+  L'image du bot, elle, sait le dire (« + 3 événements ») : le jour où la page
+  HTML devra le faire aussi, le calcul de `lib/posters/layout.ts` est le
+  point de départ.
