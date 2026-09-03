@@ -30,7 +30,10 @@ reste vide — son nom est déjà en tête — et la ligne garde exactement la f
 qu'elle avait.
 
 Ce nom **ne se coupe jamais** : c'est l'information qu'on vient chercher. Il se
-replie sur deux lignes, et la rangée d'un mois se replie avec lui. La première
+replie sur autant de lignes qu'il en faut — aucune ne les borne, un `line-clamp`
+ramènerait le rognage par une autre porte — et la rangée d'un mois se replie
+avec lui. Seule sa largeur est bornée, pour qu'un nom fleuve ne prenne pas la
+rangée entière. La première
 version le rognait à l'ellipse pour tenir dans une colonne de 150 px, et rendait
 « Caverne du Gobeli… ». Le style cyberpunk, seul à le poser en quatrième colonne
 d'une rangée qui n'en fait que 532, l'a rejoint sur la ligne des métadonnées où
