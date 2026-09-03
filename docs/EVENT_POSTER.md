@@ -29,6 +29,14 @@ sans dire où elles ont lieu ne sert à rien. Sur l'affiche d'un lieu, le champ
 reste vide — son nom est déjà en tête — et la ligne garde exactement la forme
 qu'elle avait.
 
+Ce nom **ne se coupe jamais** : c'est l'information qu'on vient chercher. Il se
+replie sur deux lignes, et la rangée d'un mois se replie avec lui. La première
+version le rognait à l'ellipse pour tenir dans une colonne de 150 px, et rendait
+« Caverne du Gobeli… ». Le style cyberpunk, seul à le poser en quatrième colonne
+d'une rangée qui n'en fait que 532, l'a rejoint sur la ligne des métadonnées où
+les six autres l'écrivent déjà — sans quoi il ne restait que 116 px au nom de
+l'événement.
+
 ## La page de l'affiche
 
 `app/[locale]/(poster)/lairs/[lairId]/affiche/page.tsx`, dans un groupe de

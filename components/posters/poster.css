@@ -20,13 +20,34 @@
 .poster .glogo img { width: 18px; height: 18px; border-radius: 5px; object-fit: cover; flex-shrink: 0; }
 .poster .gname { white-space: nowrap; }
 /*
+ * Le nom d'un événement coupe un mot en dernier recours. Sa colonne est
+ * étroite quand la rangée porte aussi le jeu, et un mot plus large qu'elle
+ * sortait par-dessous l'étiquette voisine — « TOURNOI SKIRMI[COMPLET] ».
+ * `break-word` et non `anywhere` : le second entre dans le calcul de la
+ * largeur minimale, si bien que la colonne se réduisait à un mot et découpait
+ * « TOURNOI » en quatre morceaux.
+ */
+.poster .name, .poster .mname { overflow-wrap: break-word; }
+/*
  * Le lieu d'un événement, sur une affiche qui en réunit plusieurs. Discret par
  * l'opacité et non par une couleur : sept styles, dont trois sur fond sombre,
- * et une couleur fixe en trahirait la moitié. Il se laisse rogner plutôt que
- * pousser la ligne, une rangée de mois n'ayant pas de quoi s'élargir.
+ * et une couleur fixe en trahirait la moitié.
+ *
+ * Il ne se coupe **jamais**. Une première version le rognait à l'ellipse pour
+ * tenir dans 150 px — « Caverne du Gobeli… » —, ce qui sacrifiait précisément
+ * ce qu'on vient lire sur une affiche qui réunit plusieurs lieux : où aller.
+ * Il se replie donc sur deux lignes ; la borne haute n'est plus là que pour
+ * qu'un nom fleuve ne prenne pas la rangée entière.
+ *
+ * `inline-block` et non `inline` : la bordure que certains styles lui posent
+ * ne grandit pas la ligne d'un élément en ligne, et l'étiquette venait
+ * chevaucher le texte de la ligne suivante.
  */
-.poster .evenue { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; opacity: 0.75; }
-.poster .meta .evenue { max-width: 260px; }
+.poster .evenue { display: inline-block; vertical-align: middle; max-width: 260px; overflow-wrap: break-word; opacity: 0.75; }
+/* La rangée d'un mois porte le lieu en colonne, entre le jeu et le prix : elle
+   se replie plutôt que de l'écraser, une A4 ayant plus de hauteur que de
+   largeur à donner. */
+.poster .mrow { flex-wrap: wrap; }
 .jeux-noms .glogo { display: none; }
 .jeux-logos .gname { display: none; }
 .sans-freq .seats, .sans-freq .full { display: none; }
