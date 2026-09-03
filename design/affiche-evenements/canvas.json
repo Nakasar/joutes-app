@@ -1,0 +1,205 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Sept styles"
+    },
+    {
+      "id": "page-2",
+      "name": "Versions précédentes"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "1 · Joutes (par défaut) — semaine",
+      "page": "page-1",
+      "x": 0,
+      "y": 0,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "Affichage.dc.html",
+      "title": "2 · Tableau d'affichage — semaine",
+      "page": "page-1",
+      "x": 900,
+      "y": 0,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "JoutesMedievales.dc.html",
+      "title": "3 · Tableau de joutes médiévales — semaine",
+      "page": "page-1",
+      "x": 1800,
+      "y": 0,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "Cyberpunk.dc.html",
+      "title": "4 · Cyberpunk (Joutes Pro) — semaine",
+      "page": "page-1",
+      "x": 2700,
+      "y": 0,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "Taverne.dc.html",
+      "title": "5 · Taverne médiéval-fantastique (Joutes Pro) — semaine",
+      "page": "page-1",
+      "x": 3600,
+      "y": 0,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "ScienceFiction.dc.html",
+      "title": "6 · Science-fiction (Joutes Pro) — semaine",
+      "page": "page-1",
+      "x": 4500,
+      "y": 0,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "Grimoire.dc.html",
+      "title": "7 · Grimoire (Joutes Pro) — semaine",
+      "page": "page-1",
+      "x": 5400,
+      "y": 0,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "MainMois.dc.html",
+      "title": "1 · Joutes (par défaut) — mois",
+      "page": "page-1",
+      "x": 0,
+      "y": 1300,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "AffichageMois.dc.html",
+      "title": "2 · Tableau d'affichage — mois",
+      "page": "page-1",
+      "x": 900,
+      "y": 1300,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "JoutesMedievalesMois.dc.html",
+      "title": "3 · Tableau de joutes médiévales — mois",
+      "page": "page-1",
+      "x": 1800,
+      "y": 1300,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "CyberpunkMois.dc.html",
+      "title": "4 · Cyberpunk (Joutes Pro) — mois",
+      "page": "page-1",
+      "x": 2700,
+      "y": 1300,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "TaverneMois.dc.html",
+      "title": "5 · Taverne médiéval-fantastique (Joutes Pro) — mois",
+      "page": "page-1",
+      "x": 3600,
+      "y": 1300,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "ScienceFictionMois.dc.html",
+      "title": "6 · Science-fiction (Joutes Pro) — mois",
+      "page": "page-1",
+      "x": 4500,
+      "y": 1300,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "GrimoireMois.dc.html",
+      "title": "7 · Grimoire (Joutes Pro) — mois",
+      "page": "page-1",
+      "x": 5400,
+      "y": 1300,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "Reglages.dc.html",
+      "title": "/lairs/:lairId/manage?tab=affiche",
+      "page": "page-1",
+      "x": 0,
+      "y": 2600,
+      "w": 1120,
+      "h": 1900
+    },
+    {
+      "file": "NeutreHebdo.dc.html",
+      "title": "V1 — style neutre (écarté)",
+      "page": "page-2",
+      "x": 0,
+      "y": 0,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "V2Affichage.dc.html",
+      "title": "V2 — tableau d'affichage, trop proche de la référence (écarté)",
+      "page": "page-2",
+      "x": 900,
+      "y": 0,
+      "w": 794,
+      "h": 1123
+    }
+  ],
+  "annotations": [
+    {
+      "id": "styles",
+      "page": "page-1",
+      "x": 0,
+      "y": -340,
+      "w": 620,
+      "text": "Sept styles, chacun en semaine (rangée du haut) et en mois (rangée du bas).\n\nLes trois premiers sont ouverts à tous : Joutes (par défaut), Tableau d'affichage, Tableau de joutes médiévales. Les quatre suivants sont réservés aux lieux Joutes Pro : Cyberpunk, Taverne médiéval-fantastique, Science-fiction, Grimoire.\n\nCe qui ne change pas d'un style à l'autre : le contenu (jours, événements, jeu, horaire, prix et places), le QR code vers la page du lieu et la signature Joutes."
+    },
+    {
+      "id": "affichage",
+      "page": "page-1",
+      "x": 900,
+      "y": -340,
+      "w": 620,
+      "text": "Deux réglages du lieu, sur chaque planche.\n\nAu-dessus de chaque affiche, deux leviers reprennent les interrupteurs de l'écran de réglages : « frequentation » (les places restantes et la mention « complet ») et « jeux » (logos, ou noms seulement). Essayez-les : chaque style les respecte.\n\nLa tuile colorée à l'initiale du jeu tient lieu de logo (game.images.icon). Star Wars Unlimited n'en a pas dans l'exemple : son nom s'affiche tel quel, même en mode « logos » — c'est le repli."
+    },
+    {
+      "id": "trancher",
+      "page": "page-1",
+      "x": 1800,
+      "y": -340,
+      "w": 620,
+      "text": "À trancher, et ce qui est un exemple.\n\n— Le mois liste chaque semaine ; un mois à trente événements demandera une seconde page, ou de couper les lignes secondaires.\n\n— La personnalisation Pro (logo du lieu, couleur d'accent) vient par-dessus le style choisi ; l'écran de réglages (tout en bas) montre le sélecteur de style avec le verrou Pro et les deux nouveaux interrupteurs.\n\n— Le lieu, ses événements et le QR sont des exemples. La peinture du style Taverne est l'illustration déjà présente dans public/joutes.png, réduite en JPEG pour l'affiche."
+    },
+    {
+      "id": "anciennes",
+      "page": "page-2",
+      "x": 0,
+      "y": -200,
+      "w": 620,
+      "text": "Les deux premières propositions, gardées pour mémoire : la V1 jugée trop neutre, la V2 trop proche de l'affiche de référence."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}

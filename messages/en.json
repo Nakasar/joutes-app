@@ -1030,6 +1030,107 @@
     }
   },
   "Lairs": {
+      "poster": {
+        "free": "free entry",
+        "seats": "{registered}/{capacity} seats",
+        "count": "{count, plural, =0 {no events} one {# event} other {# events}}",
+        "empty": "No events in this period.",
+        "weekOf": "Week of {range}",
+        "weekNumber": "Week {number}",
+        "styles": {
+          "joutes": {
+            "name": "Joutes",
+            "hint": "Default",
+            "kickerWeek": "This week's programme",
+            "kickerMonth": "This month's programme",
+            "full": "Sold out",
+            "cta": "Sign up on joutes.app",
+            "ctaSub": "Scan to open the venue page",
+            "brandLine": "Full programme and sign-ups on joutes.app"
+          },
+          "board": {
+            "name": "Notice board",
+            "hint": "Cork and sticky notes",
+            "titleWeek": "This week",
+            "titleMonth": "This month",
+            "subWeek": "{range}",
+            "subMonth": "{month} · {count}",
+            "full": "Sold out!",
+            "cta": "Count me in!",
+            "ctaSub": "Scan to book your seat",
+            "brandLine": "Full programme on joutes.app"
+          },
+          "tournament": {
+            "name": "Medieval tournament board",
+            "hint": "Banners and parchment",
+            "titleWeek": "Jousts of the week",
+            "titleMonth": "Jousts of {month}",
+            "subWeek": "{range}",
+            "subMonth": "the year {year} · {count}",
+            "dayOf": "the {number}",
+            "full": "lists closed: sold out",
+            "cta": "Enter the lists",
+            "ctaSub": "Sign-ups on joutes.app",
+            "brandLine": "The full programme on joutes.app"
+          },
+          "cyberpunk": {
+            "name": "Cyberpunk",
+            "hint": "Neon and grid",
+            "node": "// {name} · NODE {address}",
+            "titleWeek": "Schedule//Week",
+            "titleMonth": "Schedule//Month",
+            "subMonth": "{start} :: {count}",
+            "week": "Week",
+            "full": "FULL",
+            "cta": "Scan // sign up",
+            "brandLine": "full schedule :: joutes.app"
+          },
+          "tavern": {
+            "name": "Tavern",
+            "hint": "Wood, sign and parchment",
+            "titleWeek": "Week of {range}",
+            "subWeek": "The tavern's gatherings, in the year {year}",
+            "titleMonth": "{month} {year}",
+            "subMonth": "The tavern's gatherings · {count}",
+            "dayOf": "the {number} of {month}",
+            "week": "Week",
+            "weekOf": "of {range}",
+            "full": "table full",
+            "cta": "Book your seat",
+            "ctaSub": "Scan, or visit joutes.app",
+            "brandLine": "The full programme on joutes.app"
+          },
+          "scifi": {
+            "name": "Science fiction",
+            "hint": "Mission log",
+            "log": "Mission log · {name}",
+            "titleWeek": "Week {week}",
+            "titleMonth": "{month} {year}",
+            "subMonth": "Sol {start} → {end}",
+            "sol": "Sol {number}",
+            "weekNumber": "Week {number}",
+            "full": "Capacity reached",
+            "cta": "Access · sign-ups",
+            "ctaSub": "Scan to join the crew",
+            "brandLine": "Full programme on joutes.app"
+          },
+          "grimoire": {
+            "name": "Grimoire",
+            "hint": "Leather, page and seal",
+            "titleWeek": "Grimoire of gatherings",
+            "titleMonth": "Grimoire of {month}",
+            "subWeek": "Week of {range}, in the year {year}",
+            "subMonth": "The whole month, in the year {year} · {count}",
+            "daySub": "{month}, the {number}",
+            "week": "Week",
+            "weekOf": "of {range}",
+            "full": "the circle is closed",
+            "cta": "Write your name",
+            "ctaSub": "Scan the seal, or visit joutes.app",
+            "brandLine": "The full programme on joutes.app"
+          }
+        }
+      },
     "portal": {
       "openUntil": "Open today until {time}",
       "closedNow": "Currently closed",
@@ -1396,8 +1497,52 @@
         "news": "News",
         "events": "Events",
         "owners": "Owners",
-        "subscription": "Subscription"
+        "subscription": "Subscription",
+        "poster": "Poster"
       },
+        "poster": {
+          "title": "Events poster",
+          "description": "An A4 page generated from your calendar, ready to post or print.",
+          "period": {
+            "label": "Period",
+            "week": "Week",
+            "month": "Month",
+            "previous": "Previous period",
+            "next": "Next period",
+            "today": "Today"
+          },
+          "content": {
+            "label": "Content",
+            "attendance": "Show attendance",
+            "attendanceHint": "Remaining seats and the “sold out” mention.",
+            "logos": "Game logos",
+            "logosHint": "The game name takes over when it has no logo. Off: names only, everywhere."
+          },
+          "style": {
+            "title": "Poster style",
+            "description": "Three styles open to everyone, four reserved for Joutes Pro venues.",
+            "pro": "Pro"
+          },
+          "export": {
+            "title": "Export",
+            "description": "A4 portrait. The QR code opens the venue page on Joutes.",
+            "open": "Open the poster",
+            "print": "Print or save as PDF",
+            "hint": "In the print dialog, choose “Save as PDF” to get a file; a PNG image is made from the PDF."
+          },
+          "preview": {
+            "title": "Preview",
+            "size": "A4 · 210 × 297 mm"
+          },
+          "save": "Save settings",
+          "saved": "Poster settings saved.",
+          "errors": {
+            "invalid": "Some settings are invalid.",
+            "notFound": "This venue could not be found.",
+            "proRequired": "This style requires a Joutes Pro subscription.",
+            "failed": "Saving failed. Try again in a moment."
+          }
+        },
       "events": {
         "private": "A private venue cannot connect a website: its events are created by hand from its page.",
         "team": {

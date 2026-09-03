@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=MedievalSharp&amp;family=Crimson+Pro:ital,wght@0,500;0,600;0,700;1,500&amp;display=swap">
+  <style>
+    body { margin: 0; background: #2d1a0e; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .poster { position: relative; box-sizing: border-box; width: 794px; height: 1123px; overflow: hidden; -webkit-font-smoothing: antialiased; line-height: normal; font-size: 16px; }
+    .poster * { box-sizing: border-box; }
+    .poster p, .poster h1, .poster h2, .poster h3 { margin: 0; }
+    .body { flex: 1; min-height: 0; overflow: hidden; }
+    .qr { width: 84px; height: 84px; padding: 6px; background: #fff; color: #111; flex-shrink: 0; }
+    .glogo { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; white-space: nowrap; }
+    .glogo i { width: 18px; height: 18px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-style: normal; font-weight: 800; flex-shrink: 0; }
+    .gname { white-space: nowrap; }
+    .jeux-noms .glogo { display: none; }
+    .jeux-logos .glogo + .gname { display: none; }
+    .sans-freq .seats, .sans-freq .full { display: none; }
+
+
+    .poster.tav {
+      font-family: 'Crimson Pro', Georgia, serif; color: #f1e3c3;
+      background: radial-gradient(ellipse at 50% 12%, rgba(255, 170, 60, 0.28), transparent 55%), repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0 118px, rgba(0, 0, 0, 0.35) 118px 122px), repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 3px, rgba(0, 0, 0, 0.05) 3px 9px), linear-gradient(180deg, #4a2c17, #2d1a0e);
+      padding: 26px 44px 30px; display: flex; flex-direction: column; gap: 16px;
+    }
+    .tav .med { font-family: 'MedievalSharp', 'Times New Roman', serif; }
+    .tav .sign-wrap { display: flex; flex-direction: column; align-items: center; }
+    .tav .chains { color: #8a8a8a; }
+    .tav .sign { background: linear-gradient(180deg, #8a5a2b, #5e3a1a); border: 3px solid #3a2311; border-radius: 10px; padding: 12px 34px 14px; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6), inset 0 0 0 2px rgba(255, 220, 150, 0.25); text-align: center; }
+    .tav .sign-name { font-size: 40px; line-height: 1; color: #f2cf7a; text-shadow: 0 2px 0 #3a2311; }
+    .tav .sign-sub { font-size: 16px; font-style: italic; color: #f1e3c3; margin-top: 4px; }
+    .tav .banner { position: relative; height: 190px; border: 3px solid #3a2311; border-radius: 6px; overflow: hidden; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); flex-shrink: 0; }
+    .tav .month-banner { height: 150px; }
+    .tav .banner img { width: 100%; height: 100%; object-fit: cover; object-position: center 40%; display: block; }
+    .tav .banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20, 10, 5, 0.05) 30%, rgba(20, 10, 5, 0.92)); }
+    .tav .banner .period { position: absolute; z-index: 1; left: 22px; bottom: 16px; font-size: 36px; color: #f2cf7a; text-shadow: 0 2px 6px #000, 0 0 18px rgba(0, 0, 0, 0.9); }
+    .tav .banner .period small { display: block; font-family: 'Crimson Pro', serif; font-size: 16px; font-style: italic; color: #f1e3c3; }
+    .tav .scroll { position: relative; background: linear-gradient(180deg, #d9c7a0, #f1e3c3 6%, #f1e3c3 94%, #d9c7a0); color: #3a2414; border-radius: 6px; padding: 16px 30px 14px; box-shadow: 0 10px 22px rgba(0, 0, 0, 0.5); }
+    .tav .scroll::before, .tav .scroll::after { content: ""; position: absolute; left: -8px; right: -8px; height: 14px; border-radius: 7px; background: linear-gradient(180deg, #e9dcbb, #b9a377); box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4); }
+    .tav .scroll::before { top: -6px; } .tav .scroll::after { bottom: -6px; }
+    .tav .body { display: flex; flex-direction: column; gap: 4px; }
+    .tav .day { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 2px 16px; padding: 13px 0; border-bottom: 1px solid rgba(58, 36, 20, 0.28); align-items: start; }
+    .tav .month .day { padding: 9px 0; }
+    .tav .day:last-child { border-bottom: 0; }
+    .tav .dname { font-size: 26px; color: #7a3a12; line-height: 1.1; padding-top: 2px; }
+    .tav .dname small { display: block; font-family: 'Crimson Pro', serif; font-size: 13px; font-style: italic; color: #6b5033; }
+    .tav .evs { display: flex; flex-direction: column; gap: 9px; }
+    .tav .month .evs { gap: 5px; }
+    .tav .ev { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+    .tav .time { font-weight: 700; font-size: 15px; color: #7a3a12; white-space: nowrap; }
+    .tav .name { font-size: 21px; font-weight: 600; }
+    .tav .meta { width: 100%; font-size: 15px; font-style: italic; color: #6b5033; display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; }
+    .tav .game { font-style: normal; font-variant: small-caps; letter-spacing: 0.04em; font-weight: 700; color: #7a3a12; }
+    .tav .full { font-style: normal; font-weight: 700; color: #8b1e2d; }
+    .tav .mrow { display: flex; align-items: baseline; gap: 10px; font-size: 14.5px; font-style: italic; color: #6b5033; }
+    .tav .mdate { font-style: normal; font-weight: 700; color: #7a3a12; width: 60px; flex-shrink: 0; }
+    .tav .mtime { font-style: normal; font-weight: 700; color: #7a3a12; width: 46px; flex-shrink: 0; }
+    .tav .mname { font-style: normal; font-size: 18px; font-weight: 600; color: #3a2414; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tav .mmeta { margin-left: auto; white-space: nowrap; flex-shrink: 0; }
+    .tav .ft { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .tav .brand { display: flex; align-items: center; gap: 12px; }
+    .tav .brand img { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #b58a3a; }
+    .tav .brand-name { font-size: 26px; color: #f2cf7a; line-height: 1; }
+    .tav .brand-line { font-size: 14px; font-style: italic; color: #d9c7a0; }
+    .tav .cta { display: flex; align-items: center; gap: 14px; }
+    .tav .cta-text { text-align: right; }
+    .tav .cta-title { font-size: 20px; color: #f2cf7a; line-height: 1; }
+    .tav .cta-sub { font-size: 14px; font-style: italic; color: #d9c7a0; margin-top: 4px; }
+    .tav .qr { border: 4px solid #b58a3a; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5); }
+  
+  </style>
+</helmet>
+<div class="{{modes}}">
+  <header class="sign-wrap">
+    <svg class="chains" width="360" height="26" viewBox="0 0 360 26" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M60 0v26M300 0v26" stroke-dasharray="6 4"></path></svg>
+    <div class="sign"><h1 class="sign-name med">La Taverne du Dé</h1><p class="sign-sub">14 rue des Capucins, 69001 Lyon</p></div>
+  </header>
+  <div class="banner "><img src="taverne.jpg" alt=""><p class="period med">Semaine du 7 au 13 septembre<small>Les rencontres de la taverne, de l&#39;an 2026</small></p></div>
+  <div class="scroll">
+    <main class="body">
+      <section class="day">
+        <h2 class="dname med">Lundi<small>le 7 septembre</small></h2>
+        <div class="evs">
+          <div class="ev"><span class="time">19h30 – 23h00</span><span class="name">Soirée Commander</span><span class="meta"><span class="game"><span class="glogo" style="color: #d9482b"><i style="background: #d9482b">M</i><b>Magic</b></span><span class="gname">Magic: The Gathering</span></span><span>— entrée libre</span></span></div>
+        </div>
+      </section>
+      <section class="day">
+        <h2 class="dname med">Mardi<small>le 8 septembre</small></h2>
+        <div class="evs">
+          <div class="ev"><span class="time">19h00 – 22h30</span><span class="name">Tournoi Core Constructed</span><span class="meta"><span class="game"><span class="glogo" style="color: #6d4fc4"><i style="background: #6d4fc4">L</i><b>Lorcana</b></span><span class="gname">Lorcana</span></span><span>— 8 €</span><span class="seats">· 6/16 places</span></span></div>
+        </div>
+      </section>
+      <section class="day">
+        <h2 class="dname med">Mercredi<small>le 9 septembre</small></h2>
+        <div class="evs">
+          <div class="ev"><span class="time">19h30 – 23h00</span><span class="name">Tournoi Nexus</span><span class="meta"><span class="game"><span class="glogo" style="color: #c8842a"><i style="background: #c8842a">R</i><b>Riftbound</b></span><span class="gname">Riftbound</span></span><span>— 10 €</span><span class="seats">· 14/24 places</span></span></div>
+        </div>
+      </section>
+      <section class="day">
+        <h2 class="dname med">Jeudi<small>le 10 septembre</small></h2>
+        <div class="evs">
+          <div class="ev"><span class="time">19h00 – 22h00</span><span class="name">Draft Standard</span><span class="meta"><span class="game"><span class="glogo" style="color: #3b7dd8"><i style="background: #3b7dd8">O</i><b>One Piece</b></span><span class="gname">One Piece Card Game</span></span><span>— 25 €</span><span class="full">· table comble</span></span></div>
+        </div>
+      </section>
+      <section class="day">
+        <h2 class="dname med">Vendredi<small>le 11 septembre</small></h2>
+        <div class="evs">
+          <div class="ev"><span class="time">20h00 – 00h00</span><span class="name">Friday Night Magic</span><span class="meta"><span class="game"><span class="glogo" style="color: #d9482b"><i style="background: #d9482b">M</i><b>Magic</b></span><span class="gname">Magic: The Gathering</span></span><span>— 15 €</span><span class="seats">· 18/32 places</span></span></div>
+        </div>
+      </section>
+      <section class="day">
+        <h2 class="dname med">Samedi<small>le 12 septembre</small></h2>
+        <div class="evs">
+          <div class="ev"><span class="time">10h00 – 18h00</span><span class="name">Store Championship</span><span class="meta"><span class="game"><span class="gname" style="color: #1d6fb8">Star Wars Unlimited</span></span><span>— 15 €</span><span class="seats">· 21/40 places</span></span></div>
+          <div class="ev"><span class="time">14h00 – 17h00</span><span class="name">Initiation Riftbound</span><span class="meta"><span class="game"><span class="glogo" style="color: #c8842a"><i style="background: #c8842a">R</i><b>Riftbound</b></span><span class="gname">Riftbound</span></span><span>— entrée libre</span></span></div>
+        </div>
+      </section>
+      <section class="day">
+        <h2 class="dname med">Dimanche<small>le 13 septembre</small></h2>
+        <div class="evs">
+          <div class="ev"><span class="time">14h00 – 18h00</span><span class="name">League Cup</span><span class="meta"><span class="game"><span class="glogo" style="color: #e0b300"><i style="background: #e0b300">P</i><b>Pokémon</b></span><span class="gname">Pokémon</span></span><span>— 5 €</span><span class="seats">· 12/32 places</span></span></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <footer class="ft">
+    <div class="brand"><img src="joutes.png" alt=""><div><div class="brand-name med">Joutes</div><div class="brand-line">Le programme complet sur joutes.app</div></div></div>
+    <div class="cta"><div class="cta-text"><div class="cta-title med">Réservez votre place</div><div class="cta-sub">Scannez, ou rendez-vous sur joutes.app</div></div><div class="qr"><svg viewBox="0 0 25 25" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="display:block;width:100%;height:100%"><rect x="0" y="0" width="1" height="1"/><rect x="1" y="0" width="1" height="1"/><rect x="2" y="0" width="1" height="1"/><rect x="3" y="0" width="1" height="1"/><rect x="4" y="0" width="1" height="1"/><rect x="5" y="0" width="1" height="1"/><rect x="6" y="0" width="1" height="1"/><rect x="8" y="0" width="1" height="1"/><rect x="10" y="0" width="1" height="1"/><rect x="11" y="0" width="1" height="1"/><rect x="14" y="0" width="1" height="1"/><rect x="18" y="0" width="1" height="1"/><rect x="19" y="0" width="1" height="1"/><rect x="20" y="0" width="1" height="1"/><rect x="21" y="0" width="1" height="1"/><rect x="22" y="0" width="1" height="1"/><rect x="23" y="0" width="1" height="1"/><rect x="24" y="0" width="1" height="1"/><rect x="0" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="11" y="1" width="1" height="1"/><rect x="12" y="1" width="1" height="1"/><rect x="15" y="1" width="1" height="1"/><rect x="17" y="1" width="1" height="1"/><rect x="18" y="1" width="1" height="1"/><rect x="24" y="1" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="10" y="2" width="1" height="1"/><rect x="18" y="2" width="1" height="1"/><rect x="20" y="2" width="1" height="1"/><rect x="21" y="2" width="1" height="1"/><rect x="22" y="2" width="1" height="1"/><rect x="24" y="2" width="1" height="1"/><rect x="0" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="8" y="3" width="1" height="1"/><rect x="9" y="3" width="1" height="1"/><rect x="11" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="13" y="3" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="15" y="3" width="1" height="1"/><rect x="18" y="3" width="1" height="1"/><rect x="20" y="3" width="1" height="1"/><rect x="21" y="3" width="1" height="1"/><rect x="22" y="3" width="1" height="1"/><rect x="24" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="14" y="4" width="1" height="1"/><rect x="15" y="4" width="1" height="1"/><rect x="17" y="4" width="1" height="1"/><rect x="18" y="4" width="1" height="1"/><rect x="20" y="4" width="1" height="1"/><rect x="21" y="4" width="1" height="1"/><rect x="22" y="4" width="1" height="1"/><rect x="24" y="4" width="1" height="1"/><rect x="0" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="5" width="1" height="1"/><rect x="13" y="5" width="1" height="1"/><rect x="14" y="5" width="1" height="1"/><rect x="15" y="5" width="1" height="1"/><rect x="16" y="5" width="1" height="1"/><rect x="17" y="5" width="1" height="1"/><rect x="18" y="5" width="1" height="1"/><rect x="24" y="5" width="1" height="1"/><rect x="0" y="6" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="11" y="6" width="1" height="1"/><rect x="13" y="6" width="1" height="1"/><rect x="18" y="6" width="1" height="1"/><rect x="19" y="6" width="1" height="1"/><rect x="20" y="6" width="1" height="1"/><rect x="21" y="6" width="1" height="1"/><rect x="22" y="6" width="1" height="1"/><rect x="23" y="6" width="1" height="1"/><rect x="24" y="6" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="10" y="8" width="1" height="1"/><rect x="13" y="8" width="1" height="1"/><rect x="15" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="17" y="8" width="1" height="1"/><rect x="18" y="8" width="1" height="1"/><rect x="20" y="8" width="1" height="1"/><rect x="22" y="8" width="1" height="1"/><rect x="23" y="8" width="1" height="1"/><rect x="0" y="9" width="1" height="1"/><rect x="8" y="9" width="1" height="1"/><rect x="9" y="9" width="1" height="1"/><rect x="10" y="9" width="1" height="1"/><rect x="11" y="9" width="1" height="1"/><rect x="12" y="9" width="1" height="1"/><rect x="14" y="9" width="1" height="1"/><rect x="18" y="9" width="1" height="1"/><rect x="20" y="9" width="1" height="1"/><rect x="21" y="9" width="1" height="1"/><rect x="23" y="9" width="1" height="1"/><rect x="0" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="11" y="10" width="1" height="1"/><rect x="12" y="10" width="1" height="1"/><rect x="13" y="10" width="1" height="1"/><rect x="15" y="10" width="1" height="1"/><rect x="20" y="10" width="1" height="1"/><rect x="21" y="10" width="1" height="1"/><rect x="23" y="10" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="9" y="11" width="1" height="1"/><rect x="12" y="11" width="1" height="1"/><rect x="13" y="11" width="1" height="1"/><rect x="14" y="11" width="1" height="1"/><rect x="17" y="11" width="1" height="1"/><rect x="20" y="11" width="1" height="1"/><rect x="22" y="11" width="1" height="1"/><rect x="23" y="11" width="1" height="1"/><rect x="24" y="11" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="8" y="12" width="1" height="1"/><rect x="14" y="12" width="1" height="1"/><rect x="15" y="12" width="1" height="1"/><rect x="16" y="12" width="1" height="1"/><rect x="22" y="12" width="1" height="1"/><rect x="24" y="12" width="1" height="1"/><rect x="0" y="13" width="1" height="1"/><rect x="2" y="13" width="1" height="1"/><rect x="4" y="13" width="1" height="1"/><rect x="5" y="13" width="1" height="1"/><rect x="8" y="13" width="1" height="1"/><rect x="9" y="13" width="1" height="1"/><rect x="16" y="13" width="1" height="1"/><rect x="21" y="13" width="1" height="1"/><rect x="22" y="13" width="1" height="1"/><rect x="23" y="13" width="1" height="1"/><rect x="24" y="13" width="1" height="1"/><rect x="0" y="14" width="1" height="1"/><rect x="1" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="5" y="14" width="1" height="1"/><rect x="6" y="14" width="1" height="1"/><rect x="9" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="12" y="14" width="1" height="1"/><rect x="15" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="17" y="14" width="1" height="1"/><rect x="18" y="14" width="1" height="1"/><rect x="21" y="14" width="1" height="1"/><rect x="24" y="14" width="1" height="1"/><rect x="0" y="15" width="1" height="1"/><rect x="2" y="15" width="1" height="1"/><rect x="3" y="15" width="1" height="1"/><rect x="4" y="15" width="1" height="1"/><rect x="10" y="15" width="1" height="1"/><rect x="11" y="15" width="1" height="1"/><rect x="12" y="15" width="1" height="1"/><rect x="13" y="15" width="1" height="1"/><rect x="14" y="15" width="1" height="1"/><rect x="15" y="15" width="1" height="1"/><rect x="16" y="15" width="1" height="1"/><rect x="17" y="15" width="1" height="1"/><rect x="21" y="15" width="1" height="1"/><rect x="2" y="16" width="1" height="1"/><rect x="3" y="16" width="1" height="1"/><rect x="15" y="16" width="1" height="1"/><rect x="19" y="16" width="1" height="1"/><rect x="20" y="16" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="2" y="17" width="1" height="1"/><rect x="3" y="17" width="1" height="1"/><rect x="5" y="17" width="1" height="1"/><rect x="12" y="17" width="1" height="1"/><rect x="16" y="17" width="1" height="1"/><rect x="18" y="17" width="1" height="1"/><rect x="19" y="17" width="1" height="1"/><rect x="20" y="17" width="1" height="1"/><rect x="22" y="17" width="1" height="1"/><rect x="0" y="18" width="1" height="1"/><rect x="1" y="18" width="1" height="1"/><rect x="2" y="18" width="1" height="1"/><rect x="3" y="18" width="1" height="1"/><rect x="4" y="18" width="1" height="1"/><rect x="5" y="18" width="1" height="1"/><rect x="6" y="18" width="1" height="1"/><rect x="8" y="18" width="1" height="1"/><rect x="11" y="18" width="1" height="1"/><rect x="12" y="18" width="1" height="1"/><rect x="14" y="18" width="1" height="1"/><rect x="15" y="18" width="1" height="1"/><rect x="16" y="18" width="1" height="1"/><rect x="17" y="18" width="1" height="1"/><rect x="20" y="18" width="1" height="1"/><rect x="21" y="18" width="1" height="1"/><rect x="24" y="18" width="1" height="1"/><rect x="0" y="19" width="1" height="1"/><rect x="6" y="19" width="1" height="1"/><rect x="8" y="19" width="1" height="1"/><rect x="10" y="19" width="1" height="1"/><rect x="14" y="19" width="1" height="1"/><rect x="15" y="19" width="1" height="1"/><rect x="24" y="19" width="1" height="1"/><rect x="0" y="20" width="1" height="1"/><rect x="2" y="20" width="1" height="1"/><rect x="3" y="20" width="1" height="1"/><rect x="4" y="20" width="1" height="1"/><rect x="6" y="20" width="1" height="1"/><rect x="8" y="20" width="1" height="1"/><rect x="10" y="20" width="1" height="1"/><rect x="12" y="20" width="1" height="1"/><rect x="13" y="20" width="1" height="1"/><rect x="17" y="20" width="1" height="1"/><rect x="19" y="20" width="1" height="1"/><rect x="21" y="20" width="1" height="1"/><rect x="0" y="21" width="1" height="1"/><rect x="2" y="21" width="1" height="1"/><rect x="3" y="21" width="1" height="1"/><rect x="4" y="21" width="1" height="1"/><rect x="6" y="21" width="1" height="1"/><rect x="8" y="21" width="1" height="1"/><rect x="12" y="21" width="1" height="1"/><rect x="18" y="21" width="1" height="1"/><rect x="20" y="21" width="1" height="1"/><rect x="21" y="21" width="1" height="1"/><rect x="24" y="21" width="1" height="1"/><rect x="0" y="22" width="1" height="1"/><rect x="2" y="22" width="1" height="1"/><rect x="3" y="22" width="1" height="1"/><rect x="4" y="22" width="1" height="1"/><rect x="6" y="22" width="1" height="1"/><rect x="8" y="22" width="1" height="1"/><rect x="9" y="22" width="1" height="1"/><rect x="13" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="15" y="22" width="1" height="1"/><rect x="16" y="22" width="1" height="1"/><rect x="18" y="22" width="1" height="1"/><rect x="19" y="22" width="1" height="1"/><rect x="21" y="22" width="1" height="1"/><rect x="22" y="22" width="1" height="1"/><rect x="23" y="22" width="1" height="1"/><rect x="24" y="22" width="1" height="1"/><rect x="0" y="23" width="1" height="1"/><rect x="6" y="23" width="1" height="1"/><rect x="9" y="23" width="1" height="1"/><rect x="14" y="23" width="1" height="1"/><rect x="22" y="23" width="1" height="1"/><rect x="23" y="23" width="1" height="1"/><rect x="0" y="24" width="1" height="1"/><rect x="1" y="24" width="1" height="1"/><rect x="2" y="24" width="1" height="1"/><rect x="3" y="24" width="1" height="1"/><rect x="4" y="24" width="1" height="1"/><rect x="5" y="24" width="1" height="1"/><rect x="6" y="24" width="1" height="1"/><rect x="9" y="24" width="1" height="1"/><rect x="11" y="24" width="1" height="1"/><rect x="13" y="24" width="1" height="1"/><rect x="14" y="24" width="1" height="1"/><rect x="15" y="24" width="1" height="1"/><rect x="16" y="24" width="1" height="1"/><rect x="17" y="24" width="1" height="1"/><rect x="18" y="24" width="1" height="1"/><rect x="20" y="24" width="1" height="1"/><rect x="21" y="24" width="1" height="1"/><rect x="22" y="24" width="1" height="1"/></svg></div></div>
+  </footer>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"frequentation":{"editor":"boolean","default":true,"section":"Réglages du lieu"},"jeux":{"editor":"enum","options":["logos","noms"],"default":"logos","section":"Réglages du lieu"},"$preview":{"width":794,"height":1123}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const freq = this.props.frequentation === false ? " sans-freq" : "";
+    const jeux = this.props.jeux === "noms" ? " jeux-noms" : " jeux-logos";
+    return { modes: "poster " + "tav" + jeux + freq };
+  }
+}
+</script>
+</body>
+</html>

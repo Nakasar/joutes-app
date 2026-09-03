@@ -1030,6 +1030,107 @@
     }
   },
   "Lairs": {
+      "poster": {
+        "free": "Eintritt frei",
+        "seats": "{registered}/{capacity} Plätze",
+        "count": "{count, plural, =0 {keine Veranstaltung} one {# Veranstaltung} other {# Veranstaltungen}}",
+        "empty": "Keine Veranstaltungen in diesem Zeitraum.",
+        "weekOf": "Woche vom {range}",
+        "weekNumber": "Woche {number}",
+        "styles": {
+          "joutes": {
+            "name": "Joutes",
+            "hint": "Standard",
+            "kickerWeek": "Programm der Woche",
+            "kickerMonth": "Programm des Monats",
+            "full": "Ausgebucht",
+            "cta": "Anmelden auf joutes.app",
+            "ctaSub": "Scannen, um die Seite des Ortes zu öffnen",
+            "brandLine": "Ganzes Programm und Anmeldung auf joutes.app"
+          },
+          "board": {
+            "name": "Pinnwand",
+            "hint": "Kork und Haftnotizen",
+            "titleWeek": "Diese Woche",
+            "titleMonth": "Dieser Monat",
+            "subWeek": "{range}",
+            "subMonth": "{month} · {count}",
+            "full": "Ausgebucht!",
+            "cta": "Ich bin dabei!",
+            "ctaSub": "Scannen und Platz sichern",
+            "brandLine": "Ganzes Programm auf joutes.app"
+          },
+          "tournament": {
+            "name": "Mittelalterliches Turniertableau",
+            "hint": "Banner und Pergament",
+            "titleWeek": "Turniere der Woche",
+            "titleMonth": "Turniere im {month}",
+            "subWeek": "{range}",
+            "subMonth": "Anno {year} · {count}",
+            "dayOf": "der {number}.",
+            "full": "Schranken geschlossen: ausgebucht",
+            "cta": "In die Schranken",
+            "ctaSub": "Anmeldung auf joutes.app",
+            "brandLine": "Das ganze Programm auf joutes.app"
+          },
+          "cyberpunk": {
+            "name": "Cyberpunk",
+            "hint": "Neon und Raster",
+            "node": "// {name} · NODE {address}",
+            "titleWeek": "Programm//Woche",
+            "titleMonth": "Programm//Monat",
+            "subMonth": "{start} :: {count}",
+            "week": "Woche",
+            "full": "FULL",
+            "cta": "Scan // anmelden",
+            "brandLine": "ganzes programm :: joutes.app"
+          },
+          "tavern": {
+            "name": "Taverne",
+            "hint": "Holz, Schild und Pergament",
+            "titleWeek": "Woche vom {range}",
+            "subWeek": "Die Runden der Taverne, anno {year}",
+            "titleMonth": "{month} {year}",
+            "subMonth": "Die Runden der Taverne · {count}",
+            "dayOf": "der {number}. {month}",
+            "week": "Woche",
+            "weekOf": "vom {range}",
+            "full": "Tisch voll",
+            "cta": "Platz reservieren",
+            "ctaSub": "Scannen oder joutes.app besuchen",
+            "brandLine": "Das ganze Programm auf joutes.app"
+          },
+          "scifi": {
+            "name": "Science-Fiction",
+            "hint": "Logbuch",
+            "log": "Missionslogbuch · {name}",
+            "titleWeek": "Woche {week}",
+            "titleMonth": "{month} {year}",
+            "subMonth": "Sol {start} → {end}",
+            "sol": "Sol {number}",
+            "weekNumber": "Woche {number}",
+            "full": "Kapazität erreicht",
+            "cta": "Zugang · Anmeldung",
+            "ctaSub": "Scannen und der Crew beitreten",
+            "brandLine": "Ganzes Programm auf joutes.app"
+          },
+          "grimoire": {
+            "name": "Grimoire",
+            "hint": "Leder, Seite und Siegel",
+            "titleWeek": "Grimoire der Begegnungen",
+            "titleMonth": "Grimoire des {month}",
+            "subWeek": "Woche vom {range}, anno {year}",
+            "subMonth": "Der ganze Monat, anno {year} · {count}",
+            "daySub": "{month}, der {number}.",
+            "week": "Woche",
+            "weekOf": "vom {range}",
+            "full": "der Kreis ist geschlossen",
+            "cta": "Tragt euren Namen ein",
+            "ctaSub": "Siegel scannen oder joutes.app besuchen",
+            "brandLine": "Das ganze Programm auf joutes.app"
+          }
+        }
+      },
     "portal": {
       "openUntil": "Heute geöffnet bis {time}",
       "closedNow": "Derzeit geschlossen",
@@ -1396,8 +1497,52 @@
         "news": "Neuigkeiten",
         "events": "Veranstaltungen",
         "owners": "Eigentümer",
-        "subscription": "Abonnement"
+        "subscription": "Abonnement",
+        "poster": "Plakat"
       },
+        "poster": {
+          "title": "Veranstaltungsplakat",
+          "description": "Eine A4-Seite aus eurem Kalender, bereit zum Teilen oder Drucken.",
+          "period": {
+            "label": "Zeitraum",
+            "week": "Woche",
+            "month": "Monat",
+            "previous": "Vorheriger Zeitraum",
+            "next": "Nächster Zeitraum",
+            "today": "Heute"
+          },
+          "content": {
+            "label": "Inhalt",
+            "attendance": "Auslastung anzeigen",
+            "attendanceHint": "Freie Plätze und der Hinweis „ausgebucht“.",
+            "logos": "Spiel-Logos",
+            "logosHint": "Ohne Logo steht der Name des Spiels. Aus: überall nur der Name."
+          },
+          "style": {
+            "title": "Stil des Plakats",
+            "description": "Drei Stile für alle, vier nur für Joutes-Pro-Orte.",
+            "pro": "Pro"
+          },
+          "export": {
+            "title": "Exportieren",
+            "description": "A4 Hochformat. Der QR-Code führt zur Seite des Ortes auf Joutes.",
+            "open": "Plakat öffnen",
+            "print": "Drucken oder als PDF speichern",
+            "hint": "Im Druckdialog „Als PDF speichern“ wählen, um eine Datei zu erhalten; ein PNG entsteht aus dem PDF."
+          },
+          "preview": {
+            "title": "Vorschau",
+            "size": "A4 · 210 × 297 mm"
+          },
+          "save": "Einstellungen speichern",
+          "saved": "Plakat-Einstellungen gespeichert.",
+          "errors": {
+            "invalid": "Einige Einstellungen sind ungültig.",
+            "notFound": "Dieser Ort wurde nicht gefunden.",
+            "proRequired": "Dieser Stil erfordert ein Joutes-Pro-Abo.",
+            "failed": "Speichern fehlgeschlagen. Versuche es gleich noch einmal."
+          }
+        },
       "events": {
         "private": "Ein privater Ort kann keine Website verbinden: seine Veranstaltungen werden von Hand auf seiner Seite angelegt.",
         "team": {
