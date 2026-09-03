@@ -46,11 +46,19 @@ export async function updateLairPosterSettings(
       return { success: false, error: "PRO_REQUIRED" };
     }
 
+    // Seuls les champs envoyés changent : le schéma les admet tous facultatifs,
+    // et un appel partiel ne doit pas effacer le reste — même mécanique que la
+    // personnalisation de la vitrine.
+    const previous = lair.options?.poster ?? {};
+    const poster = {
+      ...previous,
+      ...(style !== undefined ? { style } : {}),
+      ...(showAttendance !== undefined ? { showAttendance } : {}),
+      ...(gameLogos !== undefined ? { gameLogos } : {}),
+    };
+
     await lairsDb.updateLair(validatedId, {
-      options: {
-        ...(lair.options ?? {}),
-        poster: { style, showAttendance, gameLogos },
-      },
+      options: { ...(lair.options ?? {}), poster },
     });
 
     revalidatePath(`/lairs/${validatedId}/manage`);

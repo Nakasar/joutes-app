@@ -39,9 +39,10 @@ describe("readPosterStart", () => {
   it("retombe sur aujourd'hui quand la date est absente ou illisible", () => {
     const now = DateTime.fromISO("2026-09-02T15:00", { zone: ZONE });
 
-    assert.equal(readPosterStart(undefined, now).toISODate(), "2026-09-02");
-    assert.equal(readPosterStart("pas-une-date", now).toISODate(), "2026-09-02");
-    assert.equal(readPosterStart("2026-09-20", now).toISODate(), "2026-09-20");
+    assert.equal(readPosterStart(undefined, ZONE, now).toISODate(), "2026-09-02");
+    assert.equal(readPosterStart("pas-une-date", ZONE, now).toISODate(), "2026-09-02");
+    assert.equal(readPosterStart("2026-09-20", ZONE, now).toISODate(), "2026-09-20");
+    assert.equal(readPosterStart("2026-09-20", ZONE, now).zoneName, ZONE);
   });
 });
 

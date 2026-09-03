@@ -3,15 +3,14 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
-import { getLairById } from "@/lib/db/lairs.ts";
 import { getEventsByLairId } from "@/lib/db/events.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { isLairPro } from "@/lib/lairs/pro.ts";
 import { readViewer, requireVisibleLair } from "@/app/[locale]/(app)/lairs/[lairId]/lair-data.ts";
 import { isPosterPeriod, readPosterOptions } from "@/lib/posters/styles.ts";
-import { posterRange, readPosterStart } from "@/lib/posters/period.ts";
+import { POSTER_ZONE, posterRange, readPosterStart } from "@/lib/posters/period.ts";
 import { locales, type Locale } from "@/i18n/config.ts";
-import Poster, { POSTER_ZONE, posterDocumentTitle } from "@/components/posters/Poster.tsx";
+import Poster, { posterDocumentTitle } from "@/components/posters/Poster.tsx";
 import type { Game } from "@/lib/types/Game";
 
 import PrintOnLoad from "./PrintOnLoad.tsx";
@@ -62,16 +61,15 @@ async function LairPoster({ params, searchParams }: { params: PosterParams; sear
   await connection();
 
   const lair = await requireVisibleLair(lairId);
-  const [{ session }, t, isPro, fullLair] = await Promise.all([
+  const [{ session }, t, isPro] = await Promise.all([
     readViewer(lairId),
     getTranslations("Lairs.poster"),
     isLairPro(lairId),
-    getLairById(lairId),
   ]);
 
   const period = isPosterPeriod(search.period) ? search.period : "week";
-  const range = posterRange(period, readPosterStart(search.start).setZone(POSTER_ZONE, { keepLocalTime: true }));
-  const options = readPosterOptions(fullLair ?? lair, isPro, {
+  const range = posterRange(period, readPosterStart(search.start, POSTER_ZONE));
+  const options = readPosterOptions(lair, isPro, {
     style: search.style,
     showAttendance: search.attendance,
     gameLogos: search.logos,
@@ -85,8 +83,12 @@ async function LairPoster({ params, searchParams }: { params: PosterParams; sear
   return (
     <>
       <title>{posterDocumentTitle(lair.name, range, locale)}</title>
+      {/* Même mécanique que le layout principal : `lang` est un attribut de la
+          coquille, qui ne connaît pas la langue ; il se pose depuis la
+          frontière, une fois la langue lue. */}
+      <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang=${JSON.stringify(locale)}` }} />
       <Poster
-        lair={fullLair ?? lair}
+        lair={lair}
         events={events}
         games={games.filter((game): game is Game => game !== null)}
         range={range}

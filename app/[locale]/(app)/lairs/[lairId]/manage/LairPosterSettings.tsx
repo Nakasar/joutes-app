@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
 import { cn } from "@/lib/utils.ts";
+import { POSTER_ZONE } from "@/lib/posters/period.ts";
 import {
   POSTER_STYLE_KEYS,
   POSTER_STYLES,
@@ -60,7 +61,9 @@ export default function LairPosterSettings({
   const [isPending, startTransition] = useTransition();
 
   const [period, setPeriod] = useState<PosterPeriod>("week");
-  const [start, setStart] = useState(() => DateTime.now().startOf("day"));
+  // Dans le fuseau des lieux, pas celui du navigateur : un gérant en voyage
+  // doit voir la même semaine que son affiche.
+  const [start, setStart] = useState(() => DateTime.now().setZone(POSTER_ZONE).startOf("day"));
   const [settings, setSettings] = useState<PosterOptions>(saved);
   const [stored, setStored] = useState(saved);
   const isDirty = JSON.stringify(settings) !== JSON.stringify(stored);
@@ -146,7 +149,7 @@ export default function LairPosterSettings({
               <Button type="button" variant="outline" size="icon-sm" onClick={() => shift(1)} aria-label={t("period.next")}>
                 <ChevronRight />
               </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setStart(DateTime.now().startOf("day"))}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setStart(DateTime.now().setZone(POSTER_ZONE).startOf("day"))}>
                 {t("period.today")}
               </Button>
             </div>

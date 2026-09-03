@@ -1037,7 +1037,6 @@
         "empty": "Keine Veranstaltungen in diesem Zeitraum.",
         "weekOf": "Woche vom {range}",
         "weekNumber": "Woche {number}",
-        "scanUrl": "joutes.app/lairs/{lairId}",
         "styles": {
           "joutes": {
             "name": "Joutes",

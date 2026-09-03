@@ -1037,7 +1037,6 @@
         "empty": "Nessun evento in questo periodo.",
         "weekOf": "Settimana del {range}",
         "weekNumber": "Settimana {number}",
-        "scanUrl": "joutes.app/lairs/{lairId}",
         "styles": {
           "joutes": {
             "name": "Joutes",

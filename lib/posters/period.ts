@@ -3,6 +3,9 @@ import { DateTime, Interval } from "luxon";
 import type { Event } from "@/lib/types/Event";
 import type { PosterPeriod } from "@/lib/posters/styles";
 
+/** Le fuseau des lieux : ils sont en France, leurs horaires aussi. */
+export const POSTER_ZONE = "Europe/Paris";
+
 /**
  * La fenêtre que couvre une affiche.
  *
@@ -42,8 +45,12 @@ export type PosterWeek = {
  * Une date illisible vaut aujourd'hui : l'affiche se rend toujours, et le
  * gérant voit tout de suite ce qu'il a plutôt qu'une erreur.
  */
-export function readPosterStart(value: string | undefined, now: DateTime = DateTime.now()): DateTime {
-  const parsed = value ? DateTime.fromISO(value) : DateTime.invalid("absent");
+export function readPosterStart(
+  value: string | undefined,
+  zone: string = POSTER_ZONE,
+  now: DateTime = DateTime.now().setZone(zone),
+): DateTime {
+  const parsed = value ? DateTime.fromISO(value, { zone }) : DateTime.invalid("absent");
   return (parsed.isValid ? parsed : now).startOf("day");
 }
 

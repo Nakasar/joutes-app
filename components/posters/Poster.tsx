@@ -4,13 +4,10 @@ import type { Event } from "@/lib/types/Event";
 import type { Game } from "@/lib/types/Game";
 import type { Lair } from "@/lib/types/Lair";
 import { externalUrl } from "@/lib/lairs/urls";
-import { eventsInRange, groupByDay, groupByWeek, type PosterRange } from "@/lib/posters/period";
+import { eventsInRange, groupByDay, groupByWeek, POSTER_ZONE, type PosterRange } from "@/lib/posters/period";
 import { posterDayView, posterEvent, posterLabels, posterWeekView } from "@/lib/posters/format";
 import type { PosterOptions } from "@/lib/posters/styles";
 import { POSTER_VIEWS, type PosterStrings } from "./PosterStyles.tsx";
-
-/** Le fuseau des lieux : ils sont en France, leurs horaires aussi. */
-export const POSTER_ZONE = "Europe/Paris";
 
 /** L'origine publique du site, pour l'adresse que le QR code encode. */
 export function siteOrigin(): string {
@@ -70,7 +67,7 @@ export default async function Poster({ lair, events, games, range, options, loca
         days={days}
         weeks={weeks}
         qr={qr}
-        url={t("scanUrl", { lairId: lair.id })}
+        url={`${origin.replace(/^https?:\/\//, "")}/lairs/${lair.id}`}
         brandIcon="/logo/android-chrome-192x192.png"
         strings={styleStrings}
         monthName={range.start.setLocale(locale).toFormat("MMMM").replace(/^./, (c) => c.toLocaleUpperCase())}
