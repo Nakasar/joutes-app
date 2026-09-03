@@ -23,6 +23,7 @@
       "Parties": "Matches",
       "AllGames": "All Games",
       "Calendrier": "Calendar",
+      "Affiches": "Posters",
       "Tournois": "Tournaments",
       "OrganizeTournament": "Organize a tournament",
       "OrganizeEvent": "Organize an event",
@@ -1037,6 +1038,8 @@
         "empty": "No events in this period.",
         "weekOf": "Week of {range}",
         "weekNumber": "Week {number}",
+        "venues": "{count, plural, one {# venue} other {# venues}}",
+        "more": "+{count}",
         "styles": {
           "joutes": {
             "name": "Joutes",
@@ -5702,6 +5705,66 @@
         "LIMIT": "You have reached the maximum number of publications.",
         "FAILED": "Saving did not work."
       }
+    }
+  },
+  "Posters": {
+    "metadata": {
+      "title": "Build a poster",
+      "description": "An A4 poster of the events at the venues and games you pick, ready to print or share."
+    },
+    "title": "Build a poster",
+    "description": "Pick venues and games: the poster builds itself, and its address is all you need to share it.",
+    "lairs": {
+      "title": "Venues",
+      "description": "Up to {max} venues on one poster.",
+      "search": "Search for a venue",
+      "searchPlaceholder": "A venue name…",
+      "results": "Results",
+      "noResults": "No venue matches that search.",
+      "mine": "Your venues",
+      "remove": "Remove {name}",
+      "empty": "Pick at least one venue to see the poster.",
+      "full": "You have reached the {max} venues a poster holds. Remove one to add another."
+    },
+    "games": {
+      "title": "Games",
+      "description": "Keep only some of the games played at the chosen venues.",
+      "empty": "Games will show up here once a venue is chosen.",
+      "all": "No game ticked: the poster shows them all."
+    },
+    "period": {
+      "title": "Period",
+      "label": "Period",
+      "week": "Week",
+      "month": "Month",
+      "previous": "Previous period",
+      "next": "Next period",
+      "today": "Today"
+    },
+    "content": {
+      "label": "Content",
+      "attendance": "Show attendance",
+      "attendanceHint": "Remaining seats and the “sold out” mention.",
+      "logos": "Game logos",
+      "logosHint": "The game name takes over when it has no logo. Off: names only, everywhere."
+    },
+    "style": {
+      "title": "Poster style",
+      "description": "Seven styles, four of them opened by your subscription.",
+      "locked": "Three styles open to everyone; the other four require Joutes Expert or Joutes Pro.",
+      "pro": "Expert"
+    },
+    "export": {
+      "title": "Export",
+      "description": "A4 portrait. The QR code opens joutes.app.",
+      "open": "Open the poster",
+      "print": "Print or save as PDF",
+      "hint": "The poster's address is all you need to share it or find it again: it carries every choice."
+    },
+    "preview": {
+      "title": "Preview",
+      "size": "A4 · 210 × 297 mm",
+      "empty": "Pick a venue to see the poster."
     }
   }
 }

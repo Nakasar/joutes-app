@@ -23,6 +23,7 @@
       "Parties": "Partien",
       "AllGames": "Alle Spiele",
       "Calendrier": "Kalender",
+      "Affiches": "Plakate",
       "Tournois": "Turniere",
       "OrganizeTournament": "Turnier organisieren",
       "OrganizeEvent": "Veranstaltung organisieren",
@@ -1037,6 +1038,8 @@
         "empty": "Keine Veranstaltungen in diesem Zeitraum.",
         "weekOf": "Woche vom {range}",
         "weekNumber": "Woche {number}",
+        "venues": "{count, plural, one {# Ort} other {# Orte}}",
+        "more": "+{count}",
         "styles": {
           "joutes": {
             "name": "Joutes",
@@ -5702,6 +5705,66 @@
         "LIMIT": "Du hast die Höchstzahl an Beiträgen erreicht.",
         "FAILED": "Das Speichern hat nicht geklappt."
       }
+    }
+  },
+  "Posters": {
+    "metadata": {
+      "title": "Plakat zusammenstellen",
+      "description": "Ein A4-Plakat der Veranstaltungen der Orte und Spiele eurer Wahl, bereit zum Drucken oder Teilen."
+    },
+    "title": "Plakat zusammenstellen",
+    "description": "Wählt Orte und Spiele: das Plakat setzt sich von selbst zusammen, und seine Adresse genügt zum Teilen.",
+    "lairs": {
+      "title": "Die Orte",
+      "description": "Bis zu {max} Orte auf einem Plakat.",
+      "search": "Einen Ort suchen",
+      "searchPlaceholder": "Der Name eines Ortes…",
+      "results": "Ergebnisse",
+      "noResults": "Kein Ort passt zu dieser Suche.",
+      "mine": "Eure Orte",
+      "remove": "{name} entfernen",
+      "empty": "Wählt mindestens einen Ort, um das Plakat zu sehen.",
+      "full": "Ihr habt die {max} Orte eines Plakats erreicht. Entfernt einen, um einen anderen hinzuzufügen."
+    },
+    "games": {
+      "title": "Die Spiele",
+      "description": "Nur bestimmte Spiele der gewählten Orte behalten.",
+      "empty": "Die Spiele erscheinen hier, sobald ein Ort gewählt ist.",
+      "all": "Kein Spiel angehakt: das Plakat zeigt alle."
+    },
+    "period": {
+      "title": "Der Zeitraum",
+      "label": "Zeitraum",
+      "week": "Woche",
+      "month": "Monat",
+      "previous": "Vorheriger Zeitraum",
+      "next": "Nächster Zeitraum",
+      "today": "Heute"
+    },
+    "content": {
+      "label": "Inhalt",
+      "attendance": "Auslastung anzeigen",
+      "attendanceHint": "Freie Plätze und der Hinweis „ausgebucht“.",
+      "logos": "Spiel-Logos",
+      "logosHint": "Ohne Logo steht der Name des Spiels. Aus: überall nur der Name."
+    },
+    "style": {
+      "title": "Stil des Plakats",
+      "description": "Sieben Stile, vier davon durch euer Abo geöffnet.",
+      "locked": "Drei Stile für alle; die vier anderen erfordern Joutes Expert oder Joutes Pro.",
+      "pro": "Expert"
+    },
+    "export": {
+      "title": "Exportieren",
+      "description": "A4 Hochformat. Der QR-Code führt zu joutes.app.",
+      "open": "Plakat öffnen",
+      "print": "Drucken oder als PDF speichern",
+      "hint": "Die Adresse des Plakats genügt zum Teilen und Wiederfinden: sie trägt alle eure Entscheidungen."
+    },
+    "preview": {
+      "title": "Vorschau",
+      "size": "A4 · 210 × 297 mm",
+      "empty": "Wählt einen Ort, um das Plakat zu sehen."
     }
   }
 }
