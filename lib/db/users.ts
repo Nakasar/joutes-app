@@ -47,6 +47,34 @@ export async function getUsersByIds(userIds: string[]): Promise<User[]> {
   return users.map(toUser);
 }
 
+/**
+ * L'avatar à afficher pour un compte, en une lecture projetée.
+ *
+ * La session le relit à chaque lecture (`customSession`, dans `lib/auth.ts`) :
+ * elle n'a que faire du document entier, dont la vitrine, les jeux suivis et la
+ * liste d'amis pèsent bien plus que trois champs d'image.
+ *
+ * Le repli est celui de `toPublicUserProfile`, et l'ordre y est une règle :
+ * l'image de profil personnalisée d'abord — c'est la seule des trois que le
+ * compte a choisie —, puis celle du fournisseur d'identité (`image`, que
+ * better-auth écrit à la connexion), puis le champ historique (`avatar`), que
+ * portent encore les comptes créés avant lui.
+ */
+export async function getUserDisplayAvatar(userId: string): Promise<string | undefined> {
+  if (!ObjectId.isValid(userId)) {
+    return undefined;
+  }
+
+  const doc = await db
+    .collection(COLLECTION_NAME)
+    .findOne(
+      { _id: ObjectId.createFromHexString(userId) },
+      { projection: { profileImage: 1, image: 1, avatar: 1 } }
+    );
+
+  return doc?.profileImage || doc?.image || doc?.avatar || undefined;
+}
+
 export async function getUserByEmail(email: string): Promise<User | null> {
 
   const user = await db.collection(COLLECTION_NAME).findOne({ email: email.toLowerCase() });
