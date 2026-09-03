@@ -333,18 +333,7 @@ async function handleComponentInteraction(
 async function handleComponentButtonInteraction(interaction: APIMessageComponentButtonInteraction) {
   if (interaction.data.custom_id.startsWith("event-registration-")) {
     const discordUserId = interaction.user?.id || interaction.member?.user?.id;
-    const user = discordUserId ? await db.collection<{ userId: ObjectId }>('account').findOne({
-      providerId: 'discord',
-      accountId: discordUserId,
-    }).then(discordUser => {
-      if (discordUser?.userId) {
-        return db.collection<{ displayName?: string; discriminator?: string }>('user').findOne({
-          _id: discordUser.userId,
-        })
-      } else {
-        return null;
-      }
-    }) : null;
+    const user = await findLinkedJoutesUser(discordUserId);
     if (!user) {
       await rest.post(
         Routes.interactionCallback(interaction.id, interaction.token),
@@ -525,18 +514,7 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
     }
   } else if (interaction.data.custom_id.startsWith("event-unregister-")) {
     const discordUserId = interaction.user?.id || interaction.member?.user?.id;
-    const user = discordUserId ? await db.collection<{ userId: ObjectId }>('account').findOne({
-      providerId: 'discord',
-      accountId: discordUserId,
-    }).then(discordUser => {
-      if (discordUser?.userId) {
-        return db.collection<{ displayName?: string; discriminator?: string }>('user').findOne({
-          _id: discordUser.userId,
-        })
-      } else {
-        return null;
-      }
-    }) : null;
+    const user = await findLinkedJoutesUser(discordUserId);
     if (!user) {
       await rest.post(
         Routes.interactionCallback(interaction.id, interaction.token),
@@ -1922,10 +1900,12 @@ const AFFICHE_KIND_LABELS: Record<PosterRefKind, string> = {
  * Le compte Joutes lié à cette identité Discord, ou `null`.
  *
  * La liaison est celle de better-auth : un document de `account` portant le
- * fournisseur et l'identifiant Discord. C'est déjà ainsi que les boutons
- * d'inscription à un évènement retrouvent leur utilisateur.
+ * fournisseur et l'identifiant Discord. Cette requête est la seule du fichier
+ * à la connaître — les boutons d'inscription à un évènement passent par ici
+ * comme la commande `/affiche` —, ce qui évite qu'un changement de schéma ou
+ * de fournisseur n'en corrige qu'une copie sur trois.
  */
-async function findLinkedJoutesUserId(discordUserId: string | undefined): Promise<string | null> {
+async function findLinkedJoutesUserId(discordUserId: string | undefined): Promise<ObjectId | null> {
   if (!discordUserId) {
     return null;
   }
@@ -1935,7 +1915,26 @@ async function findLinkedJoutesUserId(discordUserId: string | undefined): Promis
     accountId: discordUserId,
   });
 
-  return account?.userId ? account.userId.toString() : null;
+  return account?.userId ?? null;
+}
+
+/**
+ * Le même compte, avec de quoi le saluer par son nom.
+ *
+ * Une lecture de plus que `findLinkedJoutesUserId`, et c'est pourquoi les deux
+ * existent : les réponses qui écrivent « Bonjour untel » ont besoin du
+ * document, l'affiche n'a besoin que de l'identifiant.
+ */
+async function findLinkedJoutesUser(discordUserId: string | undefined) {
+  const userId = await findLinkedJoutesUserId(discordUserId);
+
+  if (!userId) {
+    return null;
+  }
+
+  return db.collection<{ displayName?: string; discriminator?: string }>('user').findOne({
+    _id: userId,
+  });
 }
 
 /** Un choix de l'autocomplétion : « Ma semaine · affiche ». Cent caractères au plus. */
@@ -1997,7 +1996,7 @@ async function handleAutocompleteInteraction(interaction: APIApplicationCommandA
     return autocompleteResponse([]);
   }
 
-  const choices = matchPosterChoices(await listAccountPosters(userId), focused.value ?? '');
+  const choices = matchPosterChoices(await listAccountPosters(userId.toString()), focused.value ?? '');
 
   return autocompleteResponse(
     choices.map(choice => ({name: afficheChoiceName(choice), value: formatPosterRef(choice)})),
@@ -2070,7 +2069,7 @@ async function replyWithAffiche(
   }
 
   const t = posterStrings();
-  const resolved = await resolveAccountPoster(userId, asked, posterVenueStrings(t));
+  const resolved = await resolveAccountPoster(userId.toString(), asked, posterVenueStrings(t));
 
   if (resolved === 'unknown') {
     await patch({

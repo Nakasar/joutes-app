@@ -60,7 +60,7 @@ type PosterImageTheme = {
   accent: string;
   /** Le nom d'un jour, au-dessus de ses événements. */
   accentText: string;
-  /** Vrai : les libellés courts se écrivent en capitales, comme dans le CSS. */
+  /** Vrai : les libellés courts s'écrivent en capitales, comme dans le CSS. */
   uppercase: boolean;
 };
 
@@ -331,8 +331,8 @@ async function posterImageElement({ subject, events, games, range, options, loca
             .map((week, index) => ({ ...week, events: plan.kept[index] }))
             .filter((week) => week.events.length > 0)
             .map((week) => (
-            <WeekCard key={week.isoWeek} week={week} theme={theme} px={px} full={style("full")} />
-          ))
+              <WeekCard key={week.isoWeek} week={week} theme={theme} px={px} full={style("full")} />
+            ))
         )}
         {/* Ce qui ne tient pas se compte plutôt que de disparaître : la page
             HTML, elle, laisse la A4 couper en silence. */}
