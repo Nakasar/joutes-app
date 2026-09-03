@@ -282,11 +282,29 @@ export default function PosterBuilder({
     setName(poster.name);
   };
 
-  /** Repartir d'une page blanche, sans toucher à ce qui est enregistré. */
+  /**
+   * Repartir d'une page blanche, sans toucher à ce qui est enregistré.
+   *
+   * Tout l'écran revient à son état initial, et pas seulement le nom : le
+   * bouton dit « composer une nouvelle affiche », et garder les lieux de la
+   * précédente aurait fait enregistrer sans le vouloir une copie sous un autre
+   * nom. Reprendre une affiche pour en tirer une variante a déjà son geste —
+   * « enregistrer comme nouvelle ».
+   */
   const unload = () => {
+    setSelected([]);
+    setGameIds([]);
+    setPeriod("week");
+    setStart(DateTime.now().setZone(POSTER_ZONE).startOf("day"));
+    setStyle(DEFAULT_POSTER_STYLE);
+    setShowAttendance(true);
+    setGameLogos(true);
     setEditing(null);
     setName("");
   };
+
+  /** Ce que l'écran dit quand une action serveur n'aboutit pas du tout. */
+  const failed = () => toast.error(t("library.errors.failed"));
 
   const save = async (mode: "update" | "create") => {
     setIsSaving(mode);
@@ -325,6 +343,11 @@ export default function PosterBuilder({
       setEditing(poster.id);
       setStyle(poster.style);
       toast.success(t(mode === "update" ? "library.updated" : "library.saved"));
+    } catch {
+      // Une action serveur peut échouer avant de rendre son code — le réseau
+      // coupe, le serveur tombe. Sans ce rattrapage, l'exception remontait dans
+      // le vide et l'écran ne disait rien.
+      failed();
     } finally {
       setIsSaving(null);
     }
@@ -348,6 +371,8 @@ export default function PosterBuilder({
       }
 
       toast.success(t("library.deleted"));
+    } catch {
+      failed();
     } finally {
       setIsDeleting(null);
     }
@@ -766,7 +791,10 @@ export default function PosterBuilder({
             {!canSaveMore && limit !== null && (
               <p className="text-[13px] text-muted-foreground">{t("library.save.reached", { limit })}</p>
             )}
-            {!hasSelection && <p className="text-[13px] text-muted-foreground">{t("library.save.needLair")}</p>}
+            {/* Elle nomme les deux conditions : elle se montre donc dès que
+                l'une manque, et pas seulement quand aucun lieu n'est choisi —
+                un nom vide grisait les boutons sans rien expliquer. */}
+            {!canSave && <p className="text-[13px] text-muted-foreground">{t("library.save.needLair")}</p>}
           </section>
         )}
 

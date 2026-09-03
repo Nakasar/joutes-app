@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth.ts";
+import { locales } from "@/i18n/config.ts";
 import {
   createPoster,
   deletePoster,
@@ -36,6 +37,19 @@ export type DeletePosterResult = { success: true } | { success: false; error: Sa
  * voulu : réécrire n'ajoute rien au compte, si bien qu'un abonnement arrêté
  * laisse ses affiches modifiables (voir `lib/posters/limits.ts`).
  */
+
+/**
+ * La revalidation **boucle sur les locales**.
+ *
+ * `revalidatePath("/affiches")` nu n'invalide que le français : les trois
+ * autres langues garderaient leur bibliothèque en cache après un
+ * enregistrement. Même motif, et même raison, que `account/showcase-actions.ts`.
+ */
+function revalidateLibrary() {
+  for (const locale of locales) {
+    revalidatePath(`/${locale}/affiches`);
+  }
+}
 export async function saveMyPoster(
   input: SavedPosterFormInput,
   posterId?: string,
@@ -72,7 +86,7 @@ export async function saveMyPoster(
       return { success: false, error: "NOT_FOUND" };
     }
 
-    revalidatePath("/affiches");
+    revalidateLibrary();
 
     return { success: true, poster };
   } catch (error) {
@@ -104,7 +118,7 @@ export async function deleteMyPoster(posterId: string): Promise<DeletePosterResu
       return { success: false, error: "NOT_FOUND" };
     }
 
-    revalidatePath("/affiches");
+    revalidateLibrary();
 
     return { success: true };
   } catch (error) {
