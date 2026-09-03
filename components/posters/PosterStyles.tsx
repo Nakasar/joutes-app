@@ -488,14 +488,17 @@ function CyberpunkPoster(p: PosterViewProps) {
                     <span className="time">{e.time}</span>
                     <p className="name">
                       {e.name}
+                      {/* Le lieu sur la ligne des métadonnées, comme les six
+                          autres styles : en quatrième colonne d'une rangée qui
+                          n'en fait que 532, il ne laissait au nom que 116 px. */}
                       <small>
                         {e.price}
                         {e.seats && <span className="seats"> · {e.seats}</span>}
+                        <VenueTag venue={e.venue} />
                       </small>
                     </p>
                     {e.full && <span className="full">{s("full")}</span>}
                     <GameMark game={e.game} />
-                    <VenueTag venue={e.venue} />
                   </div>
                 ))}
               </div>
