@@ -37,6 +37,7 @@ import {
 import {useTranslations} from "next-intl";
 import LocaleSwitcher from "@/components/locale-switcher";
 import { CommandBox } from "@/components/CommandBox";
+import { AccountAvatar } from "@/components/users/AccountAvatar.tsx";
 import { cn } from "@/lib/utils";
 
 /**
@@ -625,15 +626,28 @@ export default function Header() {
                   <NotificationDropdown userId={session.user.id} />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="gap-2">
-                        <User className="h-4 w-4" />
-                        <span className="max-w-[150px] truncate">
-                          {session.user.email}
-                        </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full"
+                        aria-label={t('menu.myAccount')}
+                      >
+                        <AccountAvatar
+                          src={session.user.image}
+                          name={session.user.name || session.user.email}
+                          size={32}
+                        />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>{t('menu.myAccount')}</DropdownMenuLabel>
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium">{t('menu.myAccount')}</p>
+                          <p className="truncate text-xs font-normal text-muted-foreground">
+                            {session.user.email}
+                          </p>
+                        </div>
+                      </DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
                         <Link href="/account" className="flex w-full cursor-pointer">
@@ -674,8 +688,17 @@ export default function Header() {
                   <NotificationDropdown userId={session.user.id} />
                   <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <User className="h-5 w-5" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full"
+                      aria-label={t('menu.myAccount')}
+                    >
+                      <AccountAvatar
+                        src={session.user.image}
+                        name={session.user.name || session.user.email}
+                        size={32}
+                      />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
