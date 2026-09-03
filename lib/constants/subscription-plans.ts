@@ -80,7 +80,7 @@ export const SUBSCRIPTION_PLANS = {
     // Un abonnement joueur ne parraine aucun lieu.
     lairSeats: 0,
     includes: ["supporter"],
-    entitlements: ["sub:poster-styles"],
+    entitlements: ["sub:poster-styles", "sub:poster-library"],
     permissions: ["trades:full_history", "collection:advanced"],
     tone: "amethyst",
   },
@@ -90,10 +90,11 @@ export const SUBSCRIPTION_PLANS = {
     monthlyCents: 1900,
     lairSeats: 1,
     includes: ["supporter"],
-    // `sub:poster-styles` est répété et non hérité : Pro n'inclut pas Expert.
-    // Une boutique compose ses affiches comme un joueur les siennes, et se
-    // verrait sinon refuser sur son propre compte les styles que son lieu tient.
-    entitlements: ["sub:lair-pro", "sub:poster-styles"],
+    // Les deux droits d'affiche sont répétés et non hérités : Pro n'inclut pas
+    // Expert. Une boutique compose ses affiches comme un joueur les siennes, et
+    // se verrait sinon refuser sur son propre compte les styles que son lieu
+    // tient, et une seule affiche gardée là où elle en suit plusieurs.
+    entitlements: ["sub:lair-pro", "sub:poster-styles", "sub:poster-library"],
     // Répétées et non héritées : Pro n'inclut pas Expert (deux publics, pas deux
     // barreaux). Une boutique qui tient l'historique de ses échanges, ou
     // plusieurs listes de souhaits, y a droit au même titre qu'un joueur.

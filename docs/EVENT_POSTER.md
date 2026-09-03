@@ -10,8 +10,9 @@ mènent, et rendent le même document :
   montre en aperçu et ouvre pour l'impression. Un lieu Joutes Pro y signe le
   pied de page ;
 - **l'affiche composée**, `/affiche?lairs=…`, qu'un joueur assemble depuis
-  `/affiches` en choisissant des lieux et des jeux. Le pied de page y reste
-  celui de Joutes.
+  `/affiches` en choisissant des lieux et des jeux, et qu'il peut **garder** pour
+  la reprendre chaque semaine — une sans abonnement, autant qu'on veut avec
+  Joutes Expert ou Joutes Pro. Le pied de page y reste celui de Joutes.
 
 Les maquettes qui ont fixé les styles sont sous `design/affiche-evenements/`.
 
@@ -171,11 +172,12 @@ rastérisation, et le PDF se convertit sans perte.
 ## L'affiche composée par un joueur
 
 `/affiches` (`(app)/affiches/PosterBuilder.tsx`) : des lieux, des jeux, une
-période, les deux interrupteurs, un style, l'aperçu et l'export. **Rien ne
-s'enregistre.** L'affiche *est* son adresse — tous les choix tiennent dans la
-requête —, ce qui la rend partageable telle quelle, réimprimable la semaine
-suivante en changeant un paramètre, et dispense la base d'un document de plus.
-L'écran n'a donc ni bouton « enregistrer », ni état à réconcilier.
+période, les deux interrupteurs, un style, l'aperçu et l'export.
+
+**L'affiche reste son adresse.** Tous les choix tiennent dans la requête, ce qui
+la rend partageable telle quelle et réimprimable la semaine suivante en
+changeant un paramètre. Ce que la base garde, c'est la *recette* qui produit
+cette adresse — pas l'affiche.
 
 | Paramètre | Rôle |
 | --- | --- |
@@ -213,10 +215,52 @@ l'emblème Joutes, ses textes, et un QR code vers `joutes.app`. Rien n'est
 passé pour l'obtenir — la page appelle `readPosterOptions(undefined, …)` sans
 dérogation de signature, et les champs absents suffisent.
 
+### Garder une affiche
+
+Recomposer chaque semaine la même sélection de lieux est le travail que cette
+bibliothèque supprime. Une affiche gardée vit dans la collection `posters`
+(`lib/db/posters.ts`), attachée à un compte, et porte les lieux, les jeux, la
+période et l'habillage.
+
+**Jamais la date.** Une affiche gardée est une *recette*, pas un instantané :
+enregistrée en septembre et rouverte en novembre, elle montre la semaine de
+novembre. Garder `start` en ferait un document périmé au premier lundi suivant,
+et l'aurait rendue inutile pour son seul usage — revenir chaque semaine.
+
+| Règle | Où elle vit |
+| --- | --- |
+| Une affiche sans abonnement, autant qu'on veut avec | `lib/posters/limits.ts` (`canSavePoster`) |
+| Le droit d'en garder plusieurs | `sub:poster-library`, sur Joutes Expert **et** Joutes Pro |
+| La forme de ce qu'on enregistre | `lib/schemas/saved-poster.schema.ts` |
+| La décision d'écrire | `createPoster`, qui lève `PosterLimitError` |
+
+Trois choix méritent d'être dits :
+
+- **La limite ne mord qu'à la création.** Réécrire une affiche qu'on possède
+  n'en ajoute pas une de plus : un compte qui en garde trois et perd son
+  abonnement continue de les ouvrir, de les corriger et de les supprimer — seule
+  la quatrième lui est fermée. C'est plus doux que la règle des listes de
+  souhaits, qui gèle les listes surnuméraires, et la raison en est le rapport de
+  taille : une affiche est une poignée d'identifiants, pas un inventaire qu'on
+  remplit carte à carte.
+- **Un style réservé enregistré sans le droit retombe sur le style par défaut**
+  plutôt que de faire échouer l'enregistrement (`resolvePosterStyle` dans
+  l'action). C'est déjà ce que fait le rendu ; deux réponses différentes à la
+  même question seraient incompréhensibles.
+- **La place restante se calcule dans l'écran**, sur la bibliothèque affichée,
+  et non sur un booléen que le serveur aurait figé au chargement : supprimer une
+  affiche libère la place aussitôt. La règle est la même des deux côtés — la
+  fonction pure `canSavePoster` — et c'est le serveur qui tranche à l'écriture.
+
+Les lieux d'une affiche gardée sont résolus par la page, par
+`visibleLairsAmong` : un lieu devenu privé depuis l'enregistrement disparaît de
+l'affiche **et** de sa fiche, plutôt que d'y laisser un nom qu'on n'a plus le
+droit de lire.
+
 ### Le verrou se lit sur le visiteur
 
-`sub:poster-styles` est vérifié sur **le compte qui regarde**, non sur celui
-qui a composé l'affiche : rien n'est enregistré, il n'y a donc pas d'auteur à
+`sub:poster-styles` est vérifié sur **le compte qui regarde** une affiche, non
+sur celui qui l'a composée : rien n'est enregistré, il n'y a donc pas d'auteur à
 retrouver. Une adresse partagée montre par conséquent le style par défaut à qui
 n'est pas abonné — le même repli que pour un lieu dont l'abonnement s'arrête,
 et jamais une page en erreur.

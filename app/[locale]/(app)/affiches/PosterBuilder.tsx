@@ -3,16 +3,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
-import { ChevronLeft, ChevronRight, ExternalLink, Loader2, Lock, MapPin, Plus, Printer, Search, X } from "lucide-react";
+import { BookMarked, ChevronLeft, ChevronRight, ExternalLink, Loader2, Lock, MapPin, Plus, Printer, Save, Search, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
 
 import { getPathname } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Switch } from "@/components/ui/switch.tsx";
 import { cn } from "@/lib/utils.ts";
 import { POSTER_ZONE } from "@/lib/posters/period.ts";
 import { MAX_POSTER_LAIRS } from "@/lib/posters/selection.ts";
+import { canSavePoster, MAX_POSTER_NAME, posterLimitFor } from "@/lib/posters/limits.ts";
 import {
   DEFAULT_POSTER_STYLE,
   POSTER_STYLE_KEYS,
@@ -20,6 +33,8 @@ import {
   type PosterPeriod,
   type PosterStyleKey,
 } from "@/lib/posters/styles.ts";
+
+import { deleteMyPoster, saveMyPoster, type SavePosterError } from "./poster-actions.ts";
 
 /** Un lieu, réduit à ce que l'écran en montre et en envoie. */
 export type BuilderLair = {
@@ -42,6 +57,34 @@ export type BuilderGame = {
   slug?: string;
   name: string;
   color?: string;
+};
+
+/**
+ * Une affiche gardée, telle que l'écran la reprend.
+ *
+ * Ses lieux sont résolus par le serveur, et non ses seuls identifiants : c'est
+ * ce qui permet de la rouvrir d'un clic, sans aller redemander leurs noms. La
+ * date n'y est pas — une affiche gardée est une recette, et rouvrir la sienne
+ * doit montrer la semaine où l'on est, pas celle où on l'a enregistrée.
+ */
+export type BuilderPoster = {
+  id: string;
+  name: string;
+  lairs: BuilderLair[];
+  gameIds: string[];
+  period: PosterPeriod;
+  style: PosterStyleKey;
+  showAttendance: boolean;
+  gameLogos: boolean;
+};
+
+const SAVE_ERROR_KEYS: Record<SavePosterError, string> = {
+  UNAUTHENTICATED: "library.errors.unauthenticated",
+  INVALID: "library.errors.invalid",
+  LIMIT_REACHED: "library.errors.limit",
+  NAME_TAKEN: "library.errors.nameTaken",
+  NOT_FOUND: "library.errors.notFound",
+  FAILED: "library.errors.failed",
 };
 
 /** L'affiche est dessinée à cette taille ; l'aperçu la réduit à sa colonne. */
@@ -69,11 +112,17 @@ export default function PosterBuilder({
   myLairs,
   games,
   unlocked,
+  saved,
+  unlimited,
 }: {
   myLairs: BuilderLair[];
   games: BuilderGame[];
   /** Joutes Expert ou Joutes Pro : les quatre styles réservés s'ouvrent. */
   unlocked: boolean;
+  /** Les affiches gardées, ou `null` quand personne n'est connecté. */
+  saved: BuilderPoster[] | null;
+  /** Joutes Expert ou Joutes Pro : le compte en garde autant qu'il veut. */
+  unlimited: boolean;
 }) {
   const t = useTranslations("Posters");
   const tStyles = useTranslations("Lairs.poster.styles");
@@ -92,6 +141,17 @@ export default function PosterBuilder({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<BuilderLair[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // La bibliothèque, tenue localement à partir de ce que le serveur a rendu :
+  // l'action renvoie l'affiche écrite, et la liste se corrige sans recharger la
+  // page. `revalidatePath` la refera de toute façon au prochain rendu.
+  const [library, setLibrary] = useState<BuilderPoster[]>(saved ?? []);
+  /** L'affiche gardée qu'on est en train de reprendre, s'il y en a une. */
+  const [editing, setEditing] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  /** Le geste en cours, pour que le rouet ne tourne que sur le bouton pressé. */
+  const [isSaving, setIsSaving] = useState<"update" | "create" | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const isFull = selected.length >= MAX_POSTER_LAIRS;
 
@@ -205,6 +265,119 @@ export default function PosterBuilder({
   const shift = (direction: 1 | -1) =>
     setStart((current) => (period === "week" ? current.plus({ weeks: direction }) : current.plus({ months: direction })));
 
+  /**
+   * Reprendre une affiche gardée : ses lieux, ses jeux, son habillage — mais
+   * la période part d'aujourd'hui. C'est ce qui fait qu'on la rouvre chaque
+   * semaine sans rien retoucher.
+   */
+  const load = (poster: BuilderPoster) => {
+    setSelected(poster.lairs);
+    setGameIds(poster.gameIds);
+    setPeriod(poster.period);
+    setStart(DateTime.now().setZone(POSTER_ZONE).startOf("day"));
+    setStyle(poster.style);
+    setShowAttendance(poster.showAttendance);
+    setGameLogos(poster.gameLogos);
+    setEditing(poster.id);
+    setName(poster.name);
+  };
+
+  /**
+   * Repartir d'une page blanche, sans toucher à ce qui est enregistré.
+   *
+   * Tout l'écran revient à son état initial, et pas seulement le nom : le
+   * bouton dit « composer une nouvelle affiche », et garder les lieux de la
+   * précédente aurait fait enregistrer sans le vouloir une copie sous un autre
+   * nom. Reprendre une affiche pour en tirer une variante a déjà son geste —
+   * « enregistrer comme nouvelle ».
+   */
+  const unload = () => {
+    setSelected([]);
+    setGameIds([]);
+    setPeriod("week");
+    setStart(DateTime.now().setZone(POSTER_ZONE).startOf("day"));
+    setStyle(DEFAULT_POSTER_STYLE);
+    setShowAttendance(true);
+    setGameLogos(true);
+    setEditing(null);
+    setName("");
+  };
+
+  /** Ce que l'écran dit quand une action serveur n'aboutit pas du tout. */
+  const failed = () => toast.error(t("library.errors.failed"));
+
+  const save = async (mode: "update" | "create") => {
+    setIsSaving(mode);
+
+    try {
+      const result = await saveMyPoster(
+        {
+          name,
+          lairIds: selected.map((lair) => lair.id),
+          gameIds: keptGameIds,
+          period,
+          style,
+          showAttendance,
+          gameLogos,
+        },
+        mode === "update" ? (editing ?? undefined) : undefined,
+      );
+
+      if (!result.success) {
+        toast.error(t(SAVE_ERROR_KEYS[result.error]));
+        return;
+      }
+
+      const poster: BuilderPoster = {
+        id: result.poster.id,
+        name: result.poster.name,
+        lairs: selected,
+        gameIds: result.poster.gameIds,
+        period: result.poster.period,
+        style: result.poster.style,
+        showAttendance: result.poster.showAttendance,
+        gameLogos: result.poster.gameLogos,
+      };
+
+      setLibrary((current) => [poster, ...current.filter((entry) => entry.id !== poster.id)]);
+      setEditing(poster.id);
+      setStyle(poster.style);
+      toast.success(t(mode === "update" ? "library.updated" : "library.saved"));
+    } catch {
+      // Une action serveur peut échouer avant de rendre son code — le réseau
+      // coupe, le serveur tombe. Sans ce rattrapage, l'exception remontait dans
+      // le vide et l'écran ne disait rien.
+      failed();
+    } finally {
+      setIsSaving(null);
+    }
+  };
+
+  const forget = async (poster: BuilderPoster) => {
+    setIsDeleting(poster.id);
+
+    try {
+      const result = await deleteMyPoster(poster.id);
+
+      if (!result.success) {
+        toast.error(t(SAVE_ERROR_KEYS[result.error]));
+        return;
+      }
+
+      setLibrary((current) => current.filter((entry) => entry.id !== poster.id));
+
+      if (editing === poster.id) {
+        unload();
+      }
+
+      toast.success(t("library.deleted"));
+    } catch {
+      failed();
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
   const posterHref = (extra: Record<string, string> = {}) => {
     const params = new URLSearchParams({
       lairs: selected.map((lair) => lair.id).join(","),
@@ -224,6 +397,17 @@ export default function PosterBuilder({
 
   const scale = PREVIEW_WIDTH / POSTER_WIDTH;
   const hasSelection = selected.length > 0;
+  /** Une affiche se garde quand elle a un nom et au moins un lieu. */
+  const canSave = hasSelection && name.trim().length > 0;
+  /**
+   * La place restante se calcule **ici**, sur la bibliothèque qu'on a sous les
+   * yeux, et non sur un booléen que le serveur aurait figé au chargement :
+   * supprimer une affiche libère la place aussitôt. La règle est la même des
+   * deux côtés — `canSavePoster` —, et c'est bien le serveur qui tranche à
+   * l'écriture ; l'écran ne fait que ne pas mentir en attendant.
+   */
+  const canSaveMore = canSavePoster({ existing: library.length, unlimited });
+  const limit = posterLimitFor(unlimited);
   // Une frappe assez longue pour que l'annuaire ait été interrogé.
   const searching = query.trim().length >= 2;
   const suggestions = myLairs.filter((lair) => !selected.some((entry) => entry.id === lair.id));
@@ -232,6 +416,98 @@ export default function PosterBuilder({
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_460px]">
       <div className="flex flex-col gap-6">
+        {/* La bibliothèque : ce qu'on a gardé, et par quoi on revient. Elle ne
+            s'affiche que pour un visiteur connecté — sans compte, il n'y a rien
+            à garder ni personne à qui l'attribuer. */}
+        {saved !== null && library.length > 0 && (
+          <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
+            <header className="flex flex-col gap-1">
+              <h3 className="inline-flex items-center gap-2 text-base font-semibold">
+                <BookMarked className="size-4 text-muted-foreground" aria-hidden />
+                {t("library.title")}
+              </h3>
+              <p className="text-[13px] text-muted-foreground">{t("library.description")}</p>
+            </header>
+
+            <ul className="flex flex-col gap-2">
+              {library.map((poster) => {
+                const current = editing === poster.id;
+
+                return (
+                  <li
+                    key={poster.id}
+                    className={cn(
+                      "flex flex-wrap items-center gap-3 rounded-lg border p-3",
+                      current && "border-primary/50 bg-primary/5",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => load(poster)}
+                      aria-pressed={current}
+                      className="flex min-w-0 flex-1 flex-col items-start text-left"
+                    >
+                      <span className="truncate text-[13px] font-medium">{poster.name}</span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {t("library.summary", {
+                          lairs: poster.lairs.length,
+                          period: t(`period.${poster.period}`),
+                          style: tStyles(`${poster.style}.name`),
+                        })}
+                      </span>
+                    </button>
+                    {/* Une affiche gardée ne se perd pas d'un clic : ne pas
+                        avoir à la recomposer est tout ce qu'elle sert. */}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon-sm"
+                          className="text-destructive hover:text-destructive"
+                          disabled={isDeleting === poster.id}
+                          aria-label={t("library.delete", { name: poster.name })}
+                        >
+                          {isDeleting === poster.id ? (
+                            <Loader2 className="animate-spin" aria-hidden />
+                          ) : (
+                            <Trash2 className="size-3.5" aria-hidden />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{t("library.confirm.title")}</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t("library.confirm.description", { name: poster.name })}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{t("library.confirm.cancel")}</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => forget(poster)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {t("library.confirm.action")}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {editing !== null && (
+              <div className="flex flex-wrap items-center gap-3">
+                <Button type="button" variant="outline" size="sm" onClick={unload}>
+                  {t("library.startFresh")}
+                </Button>
+              </div>
+            )}
+          </section>
+        )}
+
         {/* Les lieux. */}
         <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
           <header className="flex flex-col gap-1">
@@ -465,6 +741,62 @@ export default function PosterBuilder({
             })}
           </div>
         </section>
+
+        {/* Garder l'affiche. Sous l'export, parce qu'on règle d'abord et qu'on
+            garde ensuite ; au-dessus, parce qu'on y revient plus souvent qu'on
+            n'imprime. */}
+        {saved !== null && (
+          <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
+            <header className="flex flex-col gap-1">
+              <h3 className="text-base font-semibold">{t("library.save.title")}</h3>
+              <p className="text-[13px] text-muted-foreground">
+                {limit === null ? t("library.save.description") : t("library.save.limited")}
+              </p>
+            </header>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="poster-name">{t("library.save.name")}</Label>
+              <Input
+                id="poster-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder={t("library.save.placeholder")}
+                maxLength={MAX_POSTER_NAME}
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Reprendre une affiche gardée offre les deux gestes : la
+                  corriger, ou en tirer une seconde. Sans elle, il n'y en a
+                  qu'un. */}
+              {editing !== null && (
+                <Button type="button" disabled={!canSave || isSaving !== null} onClick={() => save("update")}>
+                  {isSaving === "update" ? <Loader2 className="animate-spin" aria-hidden /> : <Save aria-hidden />}
+                  {t("library.save.update")}
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant={editing === null ? "default" : "outline"}
+                disabled={!canSave || isSaving !== null || !canSaveMore}
+                onClick={() => save("create")}
+              >
+                {isSaving === "create" ? <Loader2 className="animate-spin" aria-hidden /> : <Save aria-hidden />}
+                {editing === null ? t("library.save.action") : t("library.save.asNew")}
+              </Button>
+            </div>
+
+            {/* La limite se dit là où elle s'applique, et seulement quand elle
+                mord : le bouton grisé sans explication laisserait chercher. */}
+            {!canSaveMore && limit !== null && (
+              <p className="text-[13px] text-muted-foreground">{t("library.save.reached", { limit })}</p>
+            )}
+            {/* Elle nomme les deux conditions : elle se montre donc dès que
+                l'une manque, et pas seulement quand aucun lieu n'est choisi —
+                un nom vide grisait les boutons sans rien expliquer. */}
+            {!canSave && <p className="text-[13px] text-muted-foreground">{t("library.save.needLair")}</p>}
+          </section>
+        )}
 
         {/* L'export. */}
         <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">

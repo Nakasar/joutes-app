@@ -5785,6 +5785,42 @@
       "locked": "Tre stili aperti a tutti; gli altri quattro richiedono Joutes Expert o Joutes Pro.",
       "pro": "Expert"
     },
+    "library": {
+      "title": "Le vostre locandine",
+      "description": "Riprendete una locandina salvata: i luoghi e lo stile tornano, il periodo riparte da oggi.",
+      "summary": "{lairs, plural, one {# luogo} other {# luoghi}} · {period} · {style}",
+      "delete": "Eliminare {name}",
+      "startFresh": "Comporre una nuova locandina",
+      "saved": "Locandina salvata.",
+      "updated": "Locandina aggiornata.",
+      "deleted": "Locandina eliminata.",
+      "save": {
+        "title": "Conservare questa locandina",
+        "description": "Vi aspetterà qui, aggiornata alla settimana in cui la riaprirete.",
+        "limited": "Una locandina conservata senza abbonamento; Joutes Expert e Joutes Pro ne conservano quante vogliono.",
+        "name": "Nome della locandina",
+        "placeholder": "I miei negozi del giovedì",
+        "action": "Salvare la locandina",
+        "update": "Aggiornare",
+        "asNew": "Salvare come nuova",
+        "reached": "Conservate già {limit, plural, one {# locandina} other {# locandine}}. Modificatene una, o passate a Joutes Expert per conservarne diverse.",
+        "needLair": "Scegliete almeno un luogo e date un nome alla locandina."
+      },
+      "confirm": {
+        "title": "Eliminare questa locandina?",
+        "description": "«{name}» non sarà più tra le vostre locandine. I luoghi e gli eventi, invece, non cambiano.",
+        "cancel": "Annullare",
+        "action": "Eliminare"
+      },
+      "errors": {
+        "unauthenticated": "Accedete per conservare una locandina.",
+        "invalid": "Questa locandina non può essere salvata così com'è.",
+        "limit": "Avete raggiunto il numero di locandine che potete conservare.",
+        "nameTaken": "Avete già una locandina con questo nome.",
+        "notFound": "Questa locandina è introvabile.",
+        "failed": "Il salvataggio non è riuscito. Riprovate tra un istante."
+      }
+    },
     "export": {
       "title": "Esportare",
       "description": "A4 verticale. Il codice QR porta a joutes.app.",
