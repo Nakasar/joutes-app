@@ -263,7 +263,7 @@ async function ManageLairContent({
         <LairPosterSettings
           lairId={lairId}
           isPro={proState.isPro}
-          saved={readPosterOptions(lair, proState.isPro)}
+          saved={readPosterOptions(lair.options?.poster, proState.isPro)}
         />
       )}
 

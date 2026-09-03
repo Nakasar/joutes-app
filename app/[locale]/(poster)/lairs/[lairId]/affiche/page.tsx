@@ -11,10 +11,10 @@ import { readViewer, requireVisibleLair } from "@/app/[locale]/(app)/lairs/[lair
 import { isPosterPeriod, readPosterOptions } from "@/lib/posters/styles.ts";
 import { POSTER_ZONE, posterRange, readPosterStart } from "@/lib/posters/period.ts";
 import { locales, type Locale } from "@/i18n/config.ts";
-import Poster, { posterDocumentTitle } from "@/components/posters/Poster.tsx";
+import Poster, { posterDocumentTitle, siteOrigin } from "@/components/posters/Poster.tsx";
 import type { Game } from "@/lib/types/Game";
 
-import PrintOnLoad from "./PrintOnLoad.tsx";
+import PrintOnLoad from "@/components/posters/PrintOnLoad.tsx";
 
 type PosterParams = Promise<{ locale: string; lairId: string }>;
 type PosterSearchParams = Promise<{
@@ -114,7 +114,7 @@ async function LairPoster({ params, searchParams }: { params: PosterParams; sear
       }
     : {};
 
-  const options = readPosterOptions(lair, isPro, {
+  const options = readPosterOptions(lair.options?.poster, isPro, {
     style: search.style,
     showAttendance: search.attendance,
     gameLogos: search.logos,
@@ -133,7 +133,13 @@ async function LairPoster({ params, searchParams }: { params: PosterParams; sear
           frontière, une fois la langue lue. */}
       <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang=${JSON.stringify(locale)}` }} />
       <Poster
-        lair={lair}
+        subject={{
+          venue: { name: lair.name, address: lair.address || undefined },
+          url: `${siteOrigin()}/lairs/${lair.id}`,
+          // Un seul lieu : son nom est déjà en tête, chaque ligne n'a pas à le
+          // répéter.
+          showVenues: false,
+        }}
         events={events}
         games={games.filter((game): game is Game => game !== null)}
         range={range}

@@ -23,6 +23,7 @@
       "Parties": "Partite",
       "AllGames": "Tutti i Giochi",
       "Calendrier": "Calendario",
+      "Affiches": "Locandine",
       "Tournois": "Tornei",
       "OrganizeTournament": "Organizza un torneo",
       "OrganizeEvent": "Organizza un evento",
@@ -1037,6 +1038,8 @@
         "empty": "Nessun evento in questo periodo.",
         "weekOf": "Settimana del {range}",
         "weekNumber": "Settimana {number}",
+        "venues": "{count, plural, one {# luogo} other {# luoghi}}",
+        "more": "+{count}",
         "styles": {
           "joutes": {
             "name": "Joutes",
@@ -5702,6 +5705,66 @@
         "LIMIT": "Hai raggiunto il numero massimo di pubblicazioni.",
         "FAILED": "Il salvataggio non è riuscito."
       }
+    }
+  },
+  "Posters": {
+    "metadata": {
+      "title": "Comporre una locandina",
+      "description": "Una locandina A4 degli eventi dei luoghi e dei giochi che scegliete, pronta da stampare o condividere."
+    },
+    "title": "Comporre una locandina",
+    "description": "Scegliete luoghi e giochi: la locandina si compone da sé, e il suo indirizzo basta a condividerla.",
+    "lairs": {
+      "title": "I luoghi",
+      "description": "Fino a {max} luoghi su una stessa locandina.",
+      "search": "Cercare un luogo",
+      "searchPlaceholder": "Il nome di un luogo…",
+      "results": "Risultati",
+      "noResults": "Nessun luogo corrisponde a questa ricerca.",
+      "mine": "I vostri luoghi",
+      "remove": "Togliere {name}",
+      "empty": "Scegliete almeno un luogo per vedere la locandina.",
+      "full": "Avete raggiunto i {max} luoghi di una locandina. Toglietene uno per aggiungerne un altro."
+    },
+    "games": {
+      "title": "I giochi",
+      "description": "Tenere solo alcuni giochi dei luoghi scelti.",
+      "empty": "I giochi appariranno qui una volta scelto un luogo.",
+      "all": "Nessun gioco selezionato: la locandina li mostra tutti."
+    },
+    "period": {
+      "title": "Il periodo",
+      "label": "Periodo",
+      "week": "Settimana",
+      "month": "Mese",
+      "previous": "Periodo precedente",
+      "next": "Periodo successivo",
+      "today": "Oggi"
+    },
+    "content": {
+      "label": "Contenuto",
+      "attendance": "Mostrare l'affluenza",
+      "attendanceHint": "I posti rimasti e la dicitura «completo».",
+      "logos": "Loghi dei giochi",
+      "logosHint": "Il nome del gioco sostituisce il logo quando manca. Disattivato: solo il nome, ovunque."
+    },
+    "style": {
+      "title": "Stile della locandina",
+      "description": "Sette stili, quattro dei quali aperti dal vostro abbonamento.",
+      "locked": "Tre stili aperti a tutti; gli altri quattro richiedono Joutes Expert o Joutes Pro.",
+      "pro": "Expert"
+    },
+    "export": {
+      "title": "Esportare",
+      "description": "A4 verticale. Il codice QR porta a joutes.app.",
+      "open": "Aprire la locandina",
+      "print": "Stampare o salvare in PDF",
+      "hint": "L'indirizzo della locandina basta a condividerla o ritrovarla: porta tutte le vostre scelte."
+    },
+    "preview": {
+      "title": "Anteprima",
+      "size": "A4 · 210 × 297 mm",
+      "empty": "Scegliete un luogo per vedere la locandina."
     }
   }
 }

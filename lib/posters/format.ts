@@ -33,6 +33,13 @@ export type PosterEvent = {
   /** « 6/16 places », quand l'événement a une capacité. */
   seats?: string;
   full: boolean;
+  /**
+   * Le lieu, quand l'affiche en réunit plusieurs.
+   *
+   * Absent sur l'affiche d'un lieu : le nom y est déjà en tête, et le répéter
+   * à chaque ligne ne dirait rien de plus.
+   */
+  venue?: string;
 };
 
 export type PosterDayView = {
@@ -79,6 +86,11 @@ export type PosterStrings = {
 export type PosterGameOptions = {
   /** Faux : jamais d'image, le nom seul. */
   logos: boolean;
+};
+
+export type PosterEventOptions = PosterGameOptions & {
+  /** Vrai : chaque événement dit son lieu — une affiche en réunit plusieurs. */
+  venues: boolean;
 };
 
 const capitalize = (value: string) => value.charAt(0).toLocaleUpperCase() + value.slice(1);
@@ -136,7 +148,7 @@ export function posterEvent(
   zone: string,
   games: Record<string, Pick<Game, "color" | "images">>,
   strings: PosterStrings,
-  options: PosterGameOptions,
+  options: PosterEventOptions,
 ): PosterEvent {
   const start = DateTime.fromISO(event.startDateTime, { zone }).setLocale(locale);
   const end = DateTime.fromISO(event.endDateTime, { zone }).setLocale(locale);
@@ -155,6 +167,7 @@ export function posterEvent(
     price: formatPrice(event.price, locale, strings),
     seats: event.maxParticipants ? strings.seats(registered, event.maxParticipants) : undefined,
     full: event.status === "sold-out",
+    venue: options.venues ? event.lair?.name : undefined,
   };
 }
 

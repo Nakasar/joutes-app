@@ -23,6 +23,7 @@
       "Parties": "Parties",
       "AllGames": "Tous les Jeux",
       "Calendrier": "Calendrier",
+      "Affiches": "Affiches",
       "Tournois": "Tournois",
       "OrganizeTournament": "Organiser un tournoi",
       "OrganizeEvent": "Organiser un évènement",
@@ -1037,6 +1038,8 @@
         "empty": "Aucun événement sur cette période.",
         "weekOf": "Semaine du {range}",
         "weekNumber": "Semaine {number}",
+        "venues": "{count, plural, one {# lieu} other {# lieux}}",
+        "more": "+{count}",
         "styles": {
           "joutes": {
             "name": "Joutes",
@@ -5702,6 +5705,66 @@
         "LIMIT": "Vous avez atteint le nombre maximal de publications.",
         "FAILED": "L'enregistrement a échoué."
       }
+    }
+  },
+  "Posters": {
+    "metadata": {
+      "title": "Composer une affiche",
+      "description": "Une affiche A4 des événements des lieux et des jeux que vous choisissez, prête à imprimer ou à partager."
+    },
+    "title": "Composer une affiche",
+    "description": "Choisissez des lieux et des jeux : l'affiche se compose toute seule, et son adresse suffit à la partager.",
+    "lairs": {
+      "title": "Les lieux",
+      "description": "Jusqu'à {max} lieux sur une même affiche.",
+      "search": "Chercher un lieu",
+      "searchPlaceholder": "Le nom d'un lieu…",
+      "results": "Résultats",
+      "noResults": "Aucun lieu ne correspond à cette recherche.",
+      "mine": "Vos lieux",
+      "remove": "Retirer {name}",
+      "empty": "Choisissez au moins un lieu pour voir l'affiche.",
+      "full": "Vous avez atteint les {max} lieux d'une affiche. Retirez-en un pour en ajouter un autre."
+    },
+    "games": {
+      "title": "Les jeux",
+      "description": "Ne garder que certains jeux des lieux choisis.",
+      "empty": "Les jeux apparaîtront ici une fois un lieu choisi.",
+      "all": "Aucun jeu coché : l'affiche les montre tous."
+    },
+    "period": {
+      "title": "La période",
+      "label": "Période",
+      "week": "Semaine",
+      "month": "Mois",
+      "previous": "Période précédente",
+      "next": "Période suivante",
+      "today": "Aujourd'hui"
+    },
+    "content": {
+      "label": "Contenu",
+      "attendance": "Afficher la fréquentation",
+      "attendanceHint": "Les places restantes et la mention « complet ».",
+      "logos": "Logos des jeux",
+      "logosHint": "Le nom du jeu prend le relais quand il n'a pas de logo. Désactivé : le nom seul, partout."
+    },
+    "style": {
+      "title": "Style de l'affiche",
+      "description": "Sept styles, dont quatre ouverts par votre abonnement.",
+      "locked": "Trois styles ouverts à tous ; les quatre autres demandent Joutes Expert ou Joutes Pro.",
+      "pro": "Expert"
+    },
+    "export": {
+      "title": "Exporter",
+      "description": "A4 portrait. Le QR code mène à joutes.app.",
+      "open": "Ouvrir l'affiche",
+      "print": "Imprimer ou enregistrer en PDF",
+      "hint": "L'adresse de l'affiche suffit à la partager ou à la retrouver : elle porte tous vos choix."
+    },
+    "preview": {
+      "title": "Aperçu",
+      "size": "A4 · 210 × 297 mm",
+      "empty": "Choisissez un lieu pour voir l'affiche."
     }
   }
 }

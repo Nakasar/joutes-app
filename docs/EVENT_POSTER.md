@@ -1,14 +1,33 @@
-# L'affiche des événements d'un lieu
+# L'affiche des événements
 
 ## Vue d'ensemble
 
-Un lieu génère depuis son écran de gestion une **affiche A4 portrait** de ses
-événements, prête à publier sur ses réseaux ou à imprimer : la semaine ou le
-mois, dans l'un de sept styles. L'affiche est une page à part entière,
-`/lairs/[lairId]/affiche`, que l'écran de gestion montre en aperçu et ouvre
-pour l'impression.
+Une **affiche A4 portrait** d'événements, prête à publier sur ses réseaux ou à
+imprimer : la semaine ou le mois, dans l'un de sept styles. Deux chemins y
+mènent, et rendent le même document :
+
+- **l'affiche d'un lieu**, `/lairs/[lairId]/affiche`, que son écran de gestion
+  montre en aperçu et ouvre pour l'impression. Un lieu Joutes Pro y signe le
+  pied de page ;
+- **l'affiche composée**, `/affiche?lairs=…`, qu'un joueur assemble depuis
+  `/affiches` en choisissant des lieux et des jeux. Le pied de page y reste
+  celui de Joutes.
 
 Les maquettes qui ont fixé les styles sont sous `design/affiche-evenements/`.
+
+## Ce que l'affiche connaît de son sujet
+
+`components/posters/Poster.tsx` ne reçoit pas un lieu mais un **sujet**
+(`PosterSubject`) : le bloc d'identité de l'en-tête, l'adresse que le QR code
+encode, et le fait que plusieurs lieux s'y mêlent ou non. C'est ce qui permet
+aux deux chemins de partager le rendu entier sans que les styles sachent lequel
+les emploie — et ce qui interdit à l'affiche de lire un lieu pour son compte.
+
+Quand le sujet réunit plusieurs lieux, chaque événement écrit le sien
+(`PosterEvent.venue`, classe `.evenue`) : une affiche qui annonce des soirées
+sans dire où elles ont lieu ne sert à rien. Sur l'affiche d'un lieu, le champ
+reste vide — son nom est déjà en tête — et la ligne garde exactement la forme
+qu'elle avait.
 
 ## La page de l'affiche
 
@@ -63,8 +82,12 @@ style sur `.poster`.
 | `scifi` | Journal de mission clair, modules à équerres | Joutes Pro |
 | `grimoire` | Cuir, page vieillie, rubriques rouges, sceau | Joutes Pro |
 
-Un style Pro demandé par un lieu qui ne l'est plus retombe sur `joutes` au
-rendu : un abonnement arrêté ne casse pas une affiche déjà partagée.
+Le verrou des quatre styles réservés se lève de deux façons, et
+`resolvePosterStyle` ne sait pas laquelle : le lieu tient **Joutes Pro** pour
+l'affiche qu'il publie, le compte tient **Joutes Expert ou Joutes Pro**
+(`sub:poster-styles`) pour celle qu'un joueur compose. Un style réservé demandé
+sans ce verrou retombe sur `joutes` au rendu : un abonnement arrêté ne casse
+pas une affiche déjà partagée.
 
 ## Les réglages du lieu
 
@@ -119,7 +142,7 @@ réglages restent en base pour le jour où il reprend. L'action refuse en bloc
 laisse ce lieu **effacer** la sienne : sans quoi le verrou emprisonnerait ce
 qu'il garde.
 
-## L'écran de gestion
+## L'écran de gestion d'un lieu
 
 Onglet **Affiche** (`?tab=poster`), `LairPosterSettings.tsx` : la période et
 sa navigation, les deux interrupteurs, le sélecteur de style avec le verrou
@@ -134,6 +157,59 @@ l'affiche avec `print=1`. Le format d'impression est fixé à l'A4 sans marge
 demanderait un moteur de rendu côté serveur ou une dépendance de
 rastérisation, et le PDF se convertit sans perte.
 
+## L'affiche composée par un joueur
+
+`/affiches` (`(app)/affiches/PosterBuilder.tsx`) : des lieux, des jeux, une
+période, les deux interrupteurs, un style, l'aperçu et l'export. **Rien ne
+s'enregistre.** L'affiche *est* son adresse — tous les choix tiennent dans la
+requête —, ce qui la rend partageable telle quelle, réimprimable la semaine
+suivante en changeant un paramètre, et dispense la base d'un document de plus.
+L'écran n'a donc ni bouton « enregistrer », ni état à réconcilier.
+
+| Paramètre | Rôle |
+| --- | --- |
+| `lairs` | Les lieux, séparés par des virgules. Huit au plus (`MAX_POSTER_LAIRS`). |
+| `games` | Les jeux à garder — identifiant ou limace. Absent : tous les jeux. |
+
+Les autres paramètres — `period`, `start`, `style`, `attendance`, `logos`,
+`print` — sont ceux de l'affiche d'un lieu.
+
+`lib/posters/selection.ts` lit cette requête, et rien de plus : un identifiant
+qui n'a pas la forme d'un `ObjectId` est **écarté**, faute de quoi
+`new ObjectId("bonjour")` lèverait et rendrait 500 — « le serveur est en
+panne » — là où la bonne réponse est de n'en rien faire.
+
+Le choix des lieux passe par `visibleLairsAmong` (`lib/lairs/visible.ts`), qui
+porte la même règle que `requireVisibleLair` : public pour tous, privé pour
+ceux qui le suivent, son équipe et l'administration. La différence est ce qu'on
+en fait — la vitrine d'un lieu privé rend 404, l'affiche **écarte** le lieu
+qu'on n'a pas le droit de voir et rend le reste. Refuser la page entière
+apprendrait au passage qu'un lieu privé existe à cette adresse. Plus aucun lieu
+visible, et la page rend 404 : une sélection vide et une sélection entièrement
+privée se répondent de la même façon.
+
+Le filtre par jeu se fait sur le **nom** que porte l'événement — le seul lien
+entre un événement et un jeu en base —, et non par une conversion en `ObjectId`
+d'une clé venue de l'URL. Le composeur, lui, ne propose que les jeux des lieux
+retenus : un catalogue entier ferait cocher des jeux qu'aucun lieu ne propose,
+donc une affiche vide sans qu'on comprenne pourquoi.
+
+### Le pied de page n'y est pas réglable
+
+L'affiche d'un lieu Pro porte sa signature parce que c'est son programme ;
+celle-ci réunit les lieux d'autrui et ne signe donc au nom de personne :
+l'emblème Joutes, ses textes, et un QR code vers `joutes.app`. Rien n'est
+passé pour l'obtenir — la page appelle `readPosterOptions(undefined, …)` sans
+dérogation de signature, et les champs absents suffisent.
+
+### Le verrou se lit sur le visiteur
+
+`sub:poster-styles` est vérifié sur **le compte qui regarde**, non sur celui
+qui a composé l'affiche : rien n'est enregistré, il n'y a donc pas d'auteur à
+retrouver. Une adresse partagée montre par conséquent le style par défaut à qui
+n'est pas abonné — le même repli que pour un lieu dont l'abonnement s'arrête,
+et jamais une page en erreur.
+
 ## Ce qui est décidé, et ce qui reste ouvert
 
 - Le mois liste chaque semaine ; un mois très chargé déborde de la page,
@@ -142,3 +218,8 @@ rastérisation, et le PDF se convertit sans perte.
 - Le format A4 déborde du 4:5 d'Instagram ; un format story pourra venir
   ensuite.
 - Les événements annulés ne figurent pas sur l'affiche.
+- L'affiche composée ne s'enregistre pas. Si le besoin d'une affiche
+  « de la semaine » qu'on retrouve d'un clic apparaît, c'est un favori à poser
+  sur l'adresse, pas un document à ajouter en base.
+- Huit lieux au plus, et rien ne prévient quand la page déborde : c'est la même
+  limite que le mois très chargé ci-dessus, et elle se traitera avec lui.

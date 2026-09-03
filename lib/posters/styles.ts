@@ -1,12 +1,12 @@
-import type { Lair } from "@/lib/types/Lair";
-
 /**
  * Les styles de l'affiche des événements.
  *
  * Sept habillages pour la même page A4 : les trois premiers sont ouverts à
- * tous les lieux, les quatre suivants demandent Joutes Pro. La clé est ce que
- * la base stocke et ce que l'URL de l'affiche transporte ; le nom lisible vit
- * dans les messages (`Lairs.poster.styles.<clé>.name`).
+ * tous, les quatre suivants demandent un abonnement — Joutes Pro pour le lieu
+ * qui publie son programme, Joutes Expert ou Joutes Pro pour le compte qui
+ * compose la sienne. La clé est ce que la base stocke et ce que l'URL de
+ * l'affiche transporte ; le nom lisible vit dans les messages
+ * (`Lairs.poster.styles.<clé>.name`).
  *
  * Les trois couleurs sont l'aperçu du sélecteur de l'écran de gestion — ce
  * qu'un gérant voit avant d'ouvrir l'affiche —, pas des jetons de rendu : le
@@ -104,17 +104,22 @@ export function isPosterPeriod(value: unknown): value is PosterPeriod {
 /**
  * Le style que l'affiche rend vraiment.
  *
- * Un style Pro demandé par un lieu qui ne l'est pas — ou plus — retombe sur
- * le style par défaut plutôt que d'échouer : un abonnement arrêté ne doit pas
- * casser une affiche déjà partagée, ni forcer le gérant à revenir régler quoi
- * que ce soit pour imprimer la sienne.
+ * `unlocked` est le verrou levé, et il se gagne de deux façons : le lieu tient
+ * Joutes Pro pour l'affiche qu'il publie, le compte tient Joutes Expert ou
+ * Joutes Pro pour celle qu'un joueur compose. Les quatre styles réservés ne
+ * savent pas laquelle des deux les ouvre, et n'ont pas à le savoir.
+ *
+ * Un style réservé demandé sans ce verrou retombe sur le style par défaut
+ * plutôt que d'échouer : un abonnement arrêté ne doit pas casser une affiche
+ * déjà partagée, ni forcer qui que ce soit à revenir régler quoi que ce soit
+ * pour imprimer la sienne.
  */
-export function resolvePosterStyle(requested: unknown, isPro: boolean): PosterStyleKey {
+export function resolvePosterStyle(requested: unknown, unlocked: boolean): PosterStyleKey {
   if (!isPosterStyleKey(requested)) {
     return DEFAULT_POSTER_STYLE;
   }
 
-  return POSTER_STYLES[requested].pro && !isPro ? DEFAULT_POSTER_STYLE : requested;
+  return POSTER_STYLES[requested].pro && !unlocked ? DEFAULT_POSTER_STYLE : requested;
 }
 
 /**
@@ -183,18 +188,20 @@ function readCallToAction(stored: PosterCallToAction | undefined, overrides: unk
 }
 
 /**
- * Les réglages du lieu, complétés de leurs valeurs par défaut.
+ * Les réglages enregistrés, complétés de leurs valeurs par défaut.
  *
- * `overrides` porte ce qu'une URL demande par-dessus les réglages
- * enregistrés : c'est ainsi que l'aperçu de l'écran de gestion montre un
- * réglage avant qu'il soit sauvegardé. Le contrôle Pro s'applique aux deux.
+ * `overrides` porte ce qu'une URL demande par-dessus : c'est ainsi que
+ * l'aperçu de l'écran de gestion montre un réglage avant qu'il soit
+ * sauvegardé, et ainsi qu'une affiche composée par un joueur — qui
+ * n'enregistre rien du tout et passe `undefined` — se règle entièrement depuis
+ * son adresse. Le contrôle Pro s'applique aux deux chemins.
  */
 export function readPosterOptions(
-  lair: Pick<Lair, "options">,
+  settings: LairPosterSettings | undefined,
   isPro: boolean,
   overrides: Partial<Record<keyof PosterOptions, unknown>> = {},
 ): PosterOptions {
-  const stored = lair.options?.poster ?? {};
+  const stored = settings ?? {};
 
   const bool = (override: unknown, fallback: boolean | undefined): boolean => {
     if (override === "1" || override === true) return true;

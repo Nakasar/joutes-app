@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, ArrowLeftRight, Boxes, BookOpen, Hammer, Layers, ListChecks, Newspaper, Package, Scale, Settings2, Store, Swords, HelpCircle, type LucideIcon} from "lucide-react";
+import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, ArrowLeftRight, Boxes, BookOpen, Hammer, Layers, ListChecks, Newspaper, Package, Printer, Scale, Settings2, Store, Swords, HelpCircle, type LucideIcon} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -312,6 +312,7 @@ export default function Header() {
 
   const eventsMenuItems: { href: string; label: string; icon: LucideIcon }[] = [
     { href: "/events", label: t('menu.Calendrier'), icon: Calendar },
+    { href: "/affiches", label: t('menu.Affiches'), icon: Printer },
     { href: "/leagues", label: t('menu.Ligues'), icon: Trophy },
     { href: "/game-matches", label: t('menu.Parties'), icon: Gamepad2 },
     { href: "/tournaments", label: t('menu.Tournois'), icon: Trophy },

@@ -44,7 +44,7 @@ describe("posterEvent", () => {
     };
     const games = { Riftbound: { color: "#c8842a", images: { icon: "https://example.test/riftbound.png" } } };
 
-    const withLogos = posterEvent(event, "fr", ZONE, games, STRINGS, { logos: true });
+    const withLogos = posterEvent(event, "fr", ZONE, games, STRINGS, { logos: true, venues: false });
     assert.equal(withLogos.time, "19:30 – 23:00");
     assert.equal(withLogos.timeFr, "19h30 – 23h00");
     assert.equal(withLogos.dateShort, "mer. 9");
@@ -52,9 +52,26 @@ describe("posterEvent", () => {
     assert.equal(withLogos.seats, "14/24 places");
     assert.equal(withLogos.full, false);
 
-    const namesOnly = posterEvent(event, "fr", ZONE, games, STRINGS, { logos: false });
+    const namesOnly = posterEvent(event, "fr", ZONE, games, STRINGS, { logos: false, venues: false });
     assert.equal(namesOnly.game.icon, undefined);
     assert.equal(namesOnly.game.color, "#c8842a");
+  });
+
+  it("n'écrit le lieu de l'événement que sur une affiche qui en réunit plusieurs", () => {
+    const event: Event = {
+      id: "evt-2",
+      lairId: "lair-1",
+      lair: { id: "lair-1", name: "La Taverne" },
+      name: "Tournoi",
+      gameName: "Riftbound",
+      status: "available",
+      addedBy: "USER",
+      startDateTime: DateTime.fromISO("2026-09-09T19:30", { zone: ZONE }).toISO() ?? "",
+      endDateTime: DateTime.fromISO("2026-09-09T23:00", { zone: ZONE }).toISO() ?? "",
+    };
+
+    assert.equal(posterEvent(event, "fr", ZONE, {}, STRINGS, { logos: true, venues: false }).venue, undefined);
+    assert.equal(posterEvent(event, "fr", ZONE, {}, STRINGS, { logos: true, venues: true }).venue, "La Taverne");
   });
 });
 

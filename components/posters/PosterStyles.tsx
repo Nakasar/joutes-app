@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import type { PosterVenue } from "@/lib/posters/selection";
 import type { PosterStyleKey } from "@/lib/posters/styles";
 import type {
   PosterDayView,
@@ -24,13 +25,17 @@ export type PosterStrings = {
 export type PosterViewProps = {
   style: PosterStyleKey;
   period: "week" | "month";
-  lair: { id: string; name: string; address?: string; logo?: string };
+  /**
+   * Le bloc d'identité en tête : un lieu et son adresse, ou le nombre de lieux
+   * réunis et leurs noms. Le style l'écrit sans savoir lequel des deux c'est.
+   */
+  venue: PosterVenue;
   labels: PosterLabels;
   /** « 8 événements » — le nombre, déjà en toutes lettres. */
   count: string;
   days: PosterDayView[];
   weeks: PosterWeekView[];
-  /** Le QR code, en SVG, vers la page du lieu. */
+  /** Le QR code, en SVG, vers l'adresse que porte l'affiche. */
   qr: string;
   /**
    * La signature du pied de page — celle de Joutes, ou celle qu'un lieu Pro a
@@ -75,6 +80,16 @@ function GameMark({ game }: { game: PosterGame }) {
   );
 }
 
+/**
+ * Le lieu d'un événement, quand l'affiche en réunit plusieurs.
+ *
+ * Rien du tout sur l'affiche d'un lieu : `venue` n'y est pas rempli, et la
+ * ligne garde exactement la forme qu'elle avait.
+ */
+function VenueTag({ venue }: { venue?: string }) {
+  return venue ? <span className="evenue">{venue}</span> : null;
+}
+
 /** « 8 € », puis les places ou la mention « complet » — chacune dans sa classe. */
 function Attendance({ event, full, separator = " · " }: { event: PosterEvent; full: string; separator?: string }) {
   return (
@@ -93,8 +108,8 @@ function Attendance({ event, full, separator = " · " }: { event: PosterEvent; f
 }
 
 function QR({ svg }: { svg: string }) {
-  // Le SVG vient de `qrcode`, généré côté serveur à partir de l'URL du lieu :
-  // rien d'étranger n'y entre.
+  // Le SVG vient de `qrcode`, généré côté serveur à partir de l'adresse de
+  // l'affiche : rien d'étranger n'y entre.
   return <div className="qr" dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
@@ -121,11 +136,11 @@ function JoutesPoster(p: PosterViewProps) {
           </small>
         </h1>
         <div className="venue">
-          <span className="venue-name">{p.lair.name}</span>
-          {p.lair.address && (
+          <span className="venue-name">{p.venue.name}</span>
+          {p.venue.address && (
             <span className="venue-addr">
               {PIN_ICON}
-              {p.lair.address}
+              {p.venue.address}
             </span>
           )}
         </div>
@@ -144,6 +159,7 @@ function JoutesPoster(p: PosterViewProps) {
                   <div className="meta">
                     <span className="time">{e.time}</span>
                     <GameMark game={e.game} />
+                    <VenueTag venue={e.venue} />
                     <Attendance event={e} full={s("full")} separator="" />
                   </div>
                 </div>
@@ -165,6 +181,7 @@ function JoutesPoster(p: PosterViewProps) {
                   <span className="mtime">{e.time.split(" – ")[0]}</span>
                   <span className="mname">{e.name}</span>
                   <GameMark game={e.game} />
+                  <VenueTag venue={e.venue} />
                   <span className="mmeta">
                     <Attendance event={e} full={s("full")} />
                   </span>
@@ -237,11 +254,11 @@ function BoardPoster(p: PosterViewProps) {
           </p>
         </div>
         <div className="venue">
-          <p className="venue-name hand">{p.lair.name}</p>
-          {p.lair.address && (
+          <p className="venue-name hand">{p.venue.name}</p>
+          {p.venue.address && (
             <span className="venue-addr">
               {PIN_ICON}
-              {p.lair.address}
+              {p.venue.address}
             </span>
           )}
         </div>
@@ -266,6 +283,7 @@ function BoardPoster(p: PosterViewProps) {
                     <span>{e.time}</span>
                     <span>·</span>
                     <GameMark game={e.game} />
+                    <VenueTag venue={e.venue} />
                     {e.price && <span>· {e.price}</span>}
                     {e.full ? <span className="full">{s("full")}</span> : e.seats ? <span className="seats">· {e.seats}</span> : null}
                   </p>
@@ -293,6 +311,7 @@ function BoardPoster(p: PosterViewProps) {
                   <span className="mtime">{e.time.split(" – ")[0]}</span>
                   <span className="mname">{e.name}</span>
                   <GameMark game={e.game} />
+                  <VenueTag venue={e.venue} />
                   <span className="mmeta">
                     <Attendance event={e} full={s("full")} />
                   </span>
@@ -352,8 +371,8 @@ function TournamentPoster(p: PosterViewProps) {
           {isWeek ? s("subWeek", { range: p.labels.long }) : s("subMonth", { year: p.labels.year, count: p.count })}
         </p>
         <p className="venue cinzel">
-          {p.lair.name}
-          {p.lair.address ? ` · ${p.lair.address}` : ""}
+          {p.venue.name}
+          {p.venue.address ? ` · ${p.venue.address}` : ""}
         </p>
         <div className="rule" />
       </header>
@@ -374,6 +393,7 @@ function TournamentPoster(p: PosterViewProps) {
                   </div>
                   <p className="meta">
                     <GameMark game={e.game} />
+                    <VenueTag venue={e.venue} />
                     {e.price && <span>· {e.price}</span>}
                     {e.full ? <span className="full">· {s("full")}</span> : e.seats ? <span className="seats">· {e.seats}</span> : null}
                   </p>
@@ -396,6 +416,7 @@ function TournamentPoster(p: PosterViewProps) {
                   <span className="mtime">{e.timeFr.split(" – ")[0]}</span>
                   <span className="mname">{e.name}</span>
                   <GameMark game={e.game} />
+                  <VenueTag venue={e.venue} />
                   <span className="mmeta">
                     <Attendance event={e} full={`· ${s("full")}`} />
                   </span>
@@ -442,7 +463,7 @@ function CyberpunkPoster(p: PosterViewProps) {
       <div className="grid" />
       <header className="hd">
         <span className="sys mono">
-          {s("node", { name: p.lair.name.toUpperCase(), address: (p.lair.address ?? "").toUpperCase() })}
+          {s("node", { name: p.venue.name.toUpperCase(), address: (p.venue.address ?? "").toUpperCase() })}
         </span>
         <h1 className="title orb glow-c" data-echo={title}>
           {title}
@@ -450,7 +471,7 @@ function CyberpunkPoster(p: PosterViewProps) {
         <p className="period mono glow-m">
           {isWeek ? `${p.labels.startNumeric} >> ${p.labels.endNumeric}` : s("subMonth", { start: p.labels.startNumeric.slice(3), count: p.count.toUpperCase() })}
         </p>
-        {p.lair.address && <p className="venue">{p.lair.address}</p>}
+        {p.venue.address && <p className="venue">{p.venue.address}</p>}
       </header>
       {isWeek ? (
         <main className="body">
@@ -474,6 +495,7 @@ function CyberpunkPoster(p: PosterViewProps) {
                     </p>
                     {e.full && <span className="full">{s("full")}</span>}
                     <GameMark game={e.game} />
+                    <VenueTag venue={e.venue} />
                   </div>
                 ))}
               </div>
@@ -502,6 +524,7 @@ function CyberpunkPoster(p: PosterViewProps) {
                       {e.full && <span className="full">{s("full")}</span>}
                     </span>
                     <GameMark game={e.game} />
+                    <VenueTag venue={e.venue} />
                   </div>
                 ))}
               </div>
@@ -550,8 +573,8 @@ function TavernPoster(p: PosterViewProps) {
       <header className="sign-wrap">
         {CHAINS}
         <div className="sign">
-          <h1 className="sign-name med">{p.lair.name}</h1>
-          {p.lair.address && <p className="sign-sub">{p.lair.address}</p>}
+          <h1 className="sign-name med">{p.venue.name}</h1>
+          {p.venue.address && <p className="sign-sub">{p.venue.address}</p>}
         </div>
       </header>
       <div className={`banner${isWeek ? "" : " month-banner"}`}>
@@ -578,6 +601,7 @@ function TavernPoster(p: PosterViewProps) {
                       <span className="name">{e.name}</span>
                       <span className="meta">
                         <GameMark game={e.game} />
+                        <VenueTag venue={e.venue} />
                         {e.price && <span>— {e.price}</span>}
                         {e.full ? <span className="full">· {s("full")}</span> : e.seats ? <span className="seats">· {e.seats}</span> : null}
                       </span>
@@ -603,6 +627,7 @@ function TavernPoster(p: PosterViewProps) {
                       <span className="mtime">{e.timeFr.split(" – ")[0]}</span>
                       <span className="mname">{e.name}</span>
                       <GameMark game={e.game} />
+                      <VenueTag venue={e.venue} />
                       <span className="mmeta">
                         <Attendance event={e} full={`· ${s("full")}`} />
                       </span>
@@ -656,7 +681,7 @@ function SciFiPoster(p: PosterViewProps) {
     <div className="poster sf">
       {ORBIT}
       <header className="hd">
-        <span className="log">{s("log", { name: p.lair.name })}</span>
+        <span className="log">{s("log", { name: p.venue.name })}</span>
         <h1 className="title">
           {isWeek ? (
             <>
@@ -678,7 +703,7 @@ function SciFiPoster(p: PosterViewProps) {
             <i />
             {p.count}
           </span>
-          {p.lair.address && <span className="chip">{p.lair.address}</span>}
+          {p.venue.address && <span className="chip">{p.venue.address}</span>}
         </div>
       </header>
       {isWeek ? (
@@ -695,6 +720,7 @@ function SciFiPoster(p: PosterViewProps) {
                   <div className="meta">
                     <span className="time">{e.time}</span>
                     <GameMark game={e.game} />
+                    <VenueTag venue={e.venue} />
                     <Attendance event={e} full={s("full")} separator="" />
                   </div>
                 </div>
@@ -717,6 +743,7 @@ function SciFiPoster(p: PosterViewProps) {
                   <span className="mtime">{e.time.split(" – ")[0]}</span>
                   <span className="mname">{e.name}</span>
                   <GameMark game={e.game} />
+                  <VenueTag venue={e.venue} />
                   <span className="mmeta">
                     <Attendance event={e} full={`· ${s("full")}`} />
                   </span>
@@ -774,8 +801,8 @@ function GrimoirePoster(p: PosterViewProps) {
             {isWeek ? s("subWeek", { range: p.labels.big, year: p.labels.year }) : s("subMonth", { year: p.labels.year, count: p.count })}
           </p>
           <p className="venue">
-            {p.lair.name}
-            {p.lair.address ? ` · ${p.lair.address}` : ""}
+            {p.venue.name}
+            {p.venue.address ? ` · ${p.venue.address}` : ""}
           </p>
           {FLOURISH}
         </header>
@@ -797,6 +824,7 @@ function GrimoirePoster(p: PosterViewProps) {
                       <span className="time">{e.timeFr}</span>
                       <span className="meta">
                         <GameMark game={e.game} />
+                        <VenueTag venue={e.venue} />
                         {e.price && <span>— {e.price}</span>}
                         {e.full ? <span className="full">· {s("full")}</span> : e.seats ? <span className="seats">· {e.seats}</span> : null}
                       </span>
@@ -822,6 +850,7 @@ function GrimoirePoster(p: PosterViewProps) {
                       <span className="mtime">{e.timeFr.split(" – ")[0]}</span>
                       <span className="mname">{e.name}</span>
                       <GameMark game={e.game} />
+                      <VenueTag venue={e.venue} />
                       <span className="mmeta">
                         <Attendance event={e} full={`· ${s("full")}`} />
                       </span>
