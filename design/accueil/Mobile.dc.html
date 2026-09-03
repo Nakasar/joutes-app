@@ -1,0 +1,572 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    /* La remise à zéro de Tailwind : sans elle, une largeur en % déborde de ses marges. */
+    *, *::before, *::after { box-sizing: border-box; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /*
+     * Les jetons de `app/globals.css`, recopiés tels quels — l'accueil
+     * n'introduit aucune couleur à elle. Le rouge du direct est la seule
+     * exception, et il ne se dérive de rien : c'est déjà le choix de
+     * `components/users/LiveBadge.tsx`, un direct étant un état et non une
+     * marque.
+     */
+    .app {
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --popover: oklch(1 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+
+      --direct: oklch(0.637 0.237 25.331);
+      --direct-texte: oklch(0.577 0.245 27.325);
+      --ouvert: oklch(0.596 0.145 163.225);
+      --attention: oklch(0.554 0.135 66.442);
+
+      --ombre-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --ombre-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+
+      font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100%;
+    }
+
+    .app.sombre {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0);
+      --popover: oklch(0.205 0 0);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0);
+      --border: oklch(1 0 0 / 10%);
+      --input: oklch(1 0 0 / 15%);
+      --destructive: oklch(0.704 0.191 22.216);
+
+      --direct-texte: oklch(0.808 0.114 19.571);
+      --ouvert: oklch(0.765 0.177 163.223);
+      --attention: oklch(0.828 0.189 84.429);
+
+      --ombre-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+      --ombre-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+    }
+
+    /* La barre de `components/Header.tsx` : h-16, border-b, container px-8. */
+    .chrome { border-bottom: 1px solid var(--border); background: var(--background); position: relative; z-index: 2; }
+    .chrome-inner { max-width: 1280px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .marque { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+    .nav { display: flex; align-items: center; gap: 2px; }
+    .nav-lien { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--muted-foreground); }
+    .nav-lien.actif { background: var(--accent); color: var(--foreground); }
+    .chrome-droite { display: flex; align-items: center; gap: 8px; }
+    .recherche { display: flex; align-items: center; gap: 8px; height: 36px; width: 176px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; font-size: 14px; color: var(--muted-foreground); box-shadow: var(--ombre-xs); }
+    .recherche .kbd { margin-left: auto; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; font-weight: 500; padding: 2px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--muted); }
+    .icone-bouton { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; color: var(--muted-foreground); position: relative; }
+    .pastille-notif { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 999px; background: var(--direct); border: 2px solid var(--background); }
+    .avatar { width: 32px; height: 32px; border-radius: 999px; background: var(--secondary); border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+
+    .page { max-width: 1280px; margin: 0 auto; padding: 24px 32px 56px; display: flex; flex-direction: column; gap: 20px; }
+
+    .salut { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+    .salut h1 { margin: 0; font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -0.02em; }
+    .salut p { margin: 6px 0 0; font-size: 14px; line-height: 20px; color: var(--muted-foreground); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 8px; border: 1px solid transparent; font-size: 14px; font-weight: 500; white-space: nowrap; flex-shrink: 0; cursor: pointer; }
+    .btn.primaire { background: var(--primary); color: var(--primary-foreground); }
+    .btn.contour { border-color: var(--input); background: var(--background); color: var(--foreground); box-shadow: var(--ombre-xs); }
+    .btn.petit { height: 32px; padding: 0 12px; gap: 6px; }
+
+    /* La rangée de filtres : un seul jeu à la fois, comme le sélecteur du calendrier. */
+    .filtres { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .puce { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--background); font-size: 13px; font-weight: 500; color: var(--foreground); white-space: nowrap; flex-shrink: 0; cursor: pointer; }
+    .puce.actif { background: var(--primary); border-color: transparent; color: var(--primary-foreground); }
+    .filtres .compte { margin-left: auto; font-size: 13px; color: var(--muted-foreground); }
+
+    /* Le bandeau des directs. Absent quand rien ne tourne — jamais une plaque vide. */
+    .directs { display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 14px; border: 1px solid color-mix(in oklab, var(--direct) 45%, transparent); background: color-mix(in oklab, var(--direct) 6%, transparent); }
+    .pastille-direct { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--direct) 40%, transparent); background: color-mix(in oklab, var(--direct) 15%, transparent); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--direct-texte); }
+    .point-direct { width: 6px; height: 6px; border-radius: 999px; background: var(--direct); }
+    @media (prefers-reduced-motion: no-preference) { .point-direct { animation: battement 2s ease-in-out infinite; } }
+    @keyframes battement { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .directs-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+    .direct-carte { display: flex; gap: 14px; padding: 12px; border-radius: 12px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--ombre-xs); }
+    .direct-carte .corps { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding-top: 2px; }
+    .direct-titre { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: -0.01em; }
+    .direct-meta { font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
+
+    /* Une vignette dessinée : la place de l'image, pas une image inventée. */
+    .vignette { position: relative; flex-shrink: 0; border-radius: 10px; overflow: hidden; background: var(--muted); background-image: repeating-linear-gradient(135deg, color-mix(in oklab, var(--foreground) 4%, transparent) 0 1px, transparent 1px 9px); }
+    .vignette::after { content: ''; position: absolute; inset: 0; background-color: var(--muted-foreground); opacity: 0.45; -webkit-mask-position: center; mask-position: center; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: 26px 26px; mask-size: 26px 26px; }
+    .vignette.actu::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/%3E%3Cpath d='M8 10h8'/%3E%3Cpath d='M8 14h5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/%3E%3Cpath d='M8 10h8'/%3E%3Cpath d='M8 14h5'/%3E%3C/svg%3E"); }
+    .vignette.video::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M8 5l11 7-11 7z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M8 5l11 7-11 7z'/%3E%3C/svg%3E"); }
+    .vignette.direct::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M7.5 8.5a5 5 0 0 0 0 7'/%3E%3Cpath d='M16.5 8.5a5 5 0 0 1 0 7'/%3E%3Cpath d='M4.5 5.5a9 9 0 0 0 0 13'/%3E%3Cpath d='M19.5 5.5a9 9 0 0 1 0 13'/%3E%3Ccircle cx='12' cy='12' r='1.8' fill='black' stroke='none'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M7.5 8.5a5 5 0 0 0 0 7'/%3E%3Cpath d='M16.5 8.5a5 5 0 0 1 0 7'/%3E%3Cpath d='M4.5 5.5a9 9 0 0 0 0 13'/%3E%3Cpath d='M19.5 5.5a9 9 0 0 1 0 13'/%3E%3Ccircle cx='12' cy='12' r='1.8' fill='black' stroke='none'/%3E%3C/svg%3E"); }
+    .vignette.deck::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l9 5-9 5-9-5z'/%3E%3Cpath d='M3 13l9 5 9-5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l9 5-9 5-9-5z'/%3E%3Cpath d='M3 13l9 5 9-5'/%3E%3C/svg%3E"); }
+    .vignette .duree { position: absolute; right: 6px; bottom: 6px; padding: 1px 6px; border-radius: 6px; background: rgba(8, 6, 4, 0.78); color: #fff; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; font-weight: 500; }
+
+    .colonnes { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+    .pile { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+    /* La tuile de `HubView` : rounded-xl, border, bg-card, p-5. */
+    .tuile { display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); box-shadow: var(--ombre-xs); }
+    .tuile-entete { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .tuile-entete h2 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 16px; line-height: 22px; font-weight: 600; letter-spacing: -0.01em; }
+    .tuile-lien { font-size: 13px; font-weight: 500; color: var(--muted-foreground); display: inline-flex; align-items: center; gap: 3px; }
+
+    .liste { display: flex; flex-direction: column; gap: 8px; }
+
+    .evenement { display: flex; align-items: center; gap: 14px; padding: 12px; padding-left: 13px; border-radius: 10px; border: 1px solid var(--border); border-left: 3px solid var(--muted-foreground); background: var(--background); }
+    .evenement.inscrit { border-left-color: var(--ouvert); }
+    .evenement.organise { border-left-color: var(--foreground); }
+    .evenement.ouvert { border-left-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent); }
+    .date-bloc { flex-shrink: 0; width: 48px; height: 52px; border-radius: 10px; background: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+    .date-bloc .jour { font-size: 18px; line-height: 22px; font-weight: 700; letter-spacing: -0.02em; }
+    .date-bloc .mois { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-foreground); }
+    .evenement .corps { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex-grow: 1; }
+    .evenement .titre { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: -0.01em; }
+    .evenement .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
+
+    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; border: 1px solid transparent; background: var(--secondary); color: var(--foreground); font-size: 12px; line-height: 16px; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
+    .badge.ok { background: color-mix(in oklab, var(--ouvert) 14%, transparent); color: var(--ouvert); border-color: color-mix(in oklab, var(--ouvert) 35%, transparent); }
+    .badge.attention { background: color-mix(in oklab, var(--attention) 14%, transparent); color: var(--attention); border-color: color-mix(in oklab, var(--attention) 35%, transparent); }
+    .badge.principal { background: var(--primary); color: var(--primary-foreground); }
+    .badge.souci { background: color-mix(in oklab, var(--destructive) 12%, transparent); color: var(--destructive); border-color: color-mix(in oklab, var(--destructive) 30%, transparent); }
+
+    /* La bascule segmentée du calendrier : bordure, fond muted, p-0.5. */
+    .segments { display: inline-flex; gap: 2px; padding: 2px; border-radius: 10px; border: 1px solid var(--border); background: color-mix(in oklab, var(--muted) 60%, transparent); }
+    .segment { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--muted-foreground); white-space: nowrap; cursor: pointer; }
+    .segment.actif { background: var(--background); color: var(--foreground); box-shadow: var(--ombre-xs); }
+    .segment .nb { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; opacity: 0.7; }
+
+    .fil-item { display: flex; gap: 14px; padding: 12px; border-radius: 10px; border: 1px solid transparent; }
+    .fil-item:hover { background: var(--accent); border-color: var(--border); }
+    .fil-item .corps { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex-grow: 1; }
+    .fil-item .haut { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .fil-item .titre { font-size: 15px; line-height: 21px; font-weight: 600; letter-spacing: -0.01em; }
+    .fil-item .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
+    .type-chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; background: var(--secondary); font-size: 11px; font-weight: 500; letter-spacing: 0.02em; color: var(--muted-foreground); }
+    .type-chip.direct { background: color-mix(in oklab, var(--direct) 15%, transparent); color: var(--direct-texte); }
+    .sep { opacity: 0.5; }
+
+    .vide { padding: 28px 12px; text-align: center; font-size: 13px; color: var(--muted-foreground); border: 1px dashed var(--border); border-radius: 10px; }
+
+    .lieu { display: flex; align-items: center; gap: 12px; }
+    .logo-lieu { flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--muted); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: var(--muted-foreground); }
+    .lieu .corps { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex-grow: 1; }
+    .lieu .nom { display: flex; align-items: center; gap: 7px; font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: -0.01em; }
+    .lieu .etat { display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
+    .lieu .etat .point { margin-right: 6px; }
+    .point { display: inline-block; width: 6px; height: 6px; border-radius: 999px; flex-shrink: 0; vertical-align: middle; }
+    .point.ouvert { background: var(--ouvert); }
+    .point.ferme { background: color-mix(in oklab, var(--muted-foreground) 55%, transparent); }
+
+    .deck { display: flex; align-items: center; gap: 12px; }
+    .deck .barre-jeu { flex-shrink: 0; width: 3px; height: 38px; border-radius: 999px; background: color-mix(in oklab, var(--foreground) 22%, transparent); }
+    .deck .corps { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex-grow: 1; }
+    .deck .nom { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: -0.01em; }
+    .deck .meta { font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
+
+    .sondage { display: flex; flex-direction: column; gap: 10px; }
+    .sondage-option { display: flex; flex-direction: column; gap: 5px; }
+    .sondage-ligne { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 13px; line-height: 18px; }
+    .sondage-ligne .n { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; color: var(--muted-foreground); }
+    .jauge { height: 6px; border-radius: 999px; background: var(--secondary); overflow: hidden; }
+    .jauge i { display: block; height: 100%; border-radius: 999px; background: color-mix(in oklab, var(--foreground) 70%, transparent); }
+
+    .ico { width: 16px; height: 16px; flex-shrink: 0; }
+    .ico-sm { width: 14px; height: 14px; flex-shrink: 0; }
+    .ico-xs { width: 12px; height: 12px; flex-shrink: 0; }
+
+    /* Le téléphone : une colonne, et des cibles au doigt. */
+    .chrome-inner { padding: 0 16px; height: 56px; gap: 12px; }
+    .page { padding: 16px 16px 32px; gap: 16px; }
+    .salut h1 { font-size: 24px; line-height: 30px; }
+    .colonnes { display: flex; flex-direction: column; gap: 16px; }
+    .tuile { padding: 16px; gap: 12px; }
+    .directs { padding: 16px; gap: 12px; }
+    .directs-grille { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+
+    /*
+     * Les contrôles de la maison mesurent 36 px (`Button` par défaut) ; au
+     * doigt on vise 44. Sur cette planche ils passent à 40, la taille `lg` qui
+     * existe déjà dans `button.tsx` — le compromis est signalé en note, il se
+     * tranche avant l'intégration.
+     */
+    .puce { height: 40px; padding: 0 16px; font-size: 14px; }
+    .segment { height: 36px; padding: 0 12px; }
+    .segments { padding: 2px; }
+    .btn { height: 40px; }
+
+    .rang-defilant { display: flex; flex-wrap: wrap; gap: 8px; }
+    /* Les compteurs tiennent sur la planche large ; ici ils feraient déborder la bascule. */
+    .segment .nb { display: none; }
+
+    .fil-item { padding: 10px; gap: 12px; }
+    .fil-item .titre { font-size: 14px; line-height: 20px; }
+    .evenement { gap: 12px; padding: 10px; padding-left: 11px; align-items: flex-start; }
+    .evenement .badge { align-self: flex-start; margin-top: 2px; }
+    .date-bloc { width: 44px; height: 48px; }
+    .lieu { min-height: 44px; }
+    .deck { min-height: 44px; }
+  </style>
+</helmet>
+
+<div class="app">
+
+  <header class="chrome">
+    <div class="chrome-inner">
+      <div style="display: flex; align-items: center; gap: 10px; min-width: 0">
+        <span class="icone-bouton" style="margin-left: -8px">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path></svg>
+        </span>
+        <span class="marque">Joutes</span>
+      </div>
+      <div class="chrome-droite" style="gap: 2px">
+        <span class="icone-bouton">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        </span>
+        <span class="icone-bouton">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+          <span class="pastille-notif"></span>
+        </span>
+        <span class="avatar" style="margin-left: 6px">KT</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="page">
+
+    <div class="salut">
+      <div>
+        <h1>Bonsoir, Kévin</h1>
+        <p>{{ resume }}</p>
+      </div>
+    </div>
+
+    <div class="rang-defilant">
+      <sc-for list="{{ jeux }}" as="jeu" hint-placeholder-count="4">
+        <span class="puce {{ jeu.classe }}" onClick="{{ jeu.choisir }}">{{ jeu.nom }}</span>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ aDesDirects }}" hint-placeholder-val="{{ true }}">
+      <section class="directs">
+        <div class="tuile-entete">
+          <h2 style="font-size: 15px">
+            <span class="pastille-direct"><span class="point-direct"></span>En direct</span>
+          </h2>
+          <span class="tuile-lien">{{ titreDirects }}</span>
+        </div>
+        <div class="directs-grille">
+          <sc-for list="{{ directs }}" as="d" hint-placeholder-count="2">
+            <div class="direct-carte">
+              <span class="vignette direct" style="width: 112px; height: 63px"></span>
+              <span class="corps">
+                <span class="direct-titre">{{ d.titre }}</span>
+                <span class="direct-meta">{{ d.lieu }}</span>
+                <span class="direct-meta">{{ d.audience }}</span>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <section class="tuile">
+      <div class="tuile-entete">
+        <h2 style="font-size: 15px">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
+          Ce qui m&apos;attend
+        </h2>
+        <span class="tuile-lien">Agenda</span>
+      </div>
+      <sc-if value="{{ aDesEvenements }}" hint-placeholder-val="{{ true }}">
+        <div class="liste">
+          <sc-for list="{{ evenements }}" as="e" hint-placeholder-count="3">
+            <div class="evenement {{ e.etat }}">
+              <span class="date-bloc">
+                <span class="jour">{{ e.jour }}</span>
+                <span class="mois">{{ e.mois }}</span>
+              </span>
+              <span class="corps">
+                <span class="titre">{{ e.titre }}</span>
+                <span class="meta">{{ e.lieu }} <span class="sep">·</span> {{ e.heure }}</span>
+                <span class="meta">{{ e.nomJeu }}</span>
+              </span>
+              <span class="badge {{ e.badgeClasse }}">{{ e.badge }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ sansEvenement }}" hint-placeholder-val="{{ false }}">
+        <p class="vide">Rien de prévu pour ce jeu.</p>
+      </sc-if>
+    </section>
+
+    <section class="tuile">
+      <div class="tuile-entete">
+        <h2 style="font-size: 15px">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M8 10h8"></path><path d="M8 14h5"></path></svg>
+          Le fil
+        </h2>
+      </div>
+      <div class="rang-defilant">
+        <span class="segments">
+          <sc-for list="{{ onglets }}" as="o" hint-placeholder-count="5">
+            <span class="segment {{ o.classe }}" onClick="{{ o.choisir }}">{{ o.nom }}<span class="nb">{{ o.nombre }}</span></span>
+          </sc-for>
+        </span>
+      </div>
+      <sc-if value="{{ aDuFil }}" hint-placeholder-val="{{ true }}">
+        <div class="liste" style="gap: 2px">
+          <sc-for list="{{ fil }}" as="f" hint-placeholder-count="6">
+            <div class="fil-item">
+              <span class="vignette {{ f.type }}" style="width: 104px; height: 59px">
+                <sc-if value="{{ f.duree }}" hint-placeholder-val="{{ true }}">
+                  <span class="duree">{{ f.duree }}</span>
+                </sc-if>
+              </span>
+              <span class="corps">
+                <span class="haut">
+                  <span class="type-chip {{ f.chipClasse }}">{{ f.typeNom }}</span>
+                  <sc-if value="{{ f.badge }}" hint-placeholder-val="{{ true }}">
+                    <span class="badge {{ f.badgeClasse }}">{{ f.badge }}</span>
+                  </sc-if>
+                </span>
+                <span class="titre">{{ f.titre }}</span>
+                <span class="meta">{{ f.source }} <span class="sep">·</span> {{ f.quand }}</span>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ filVide }}" hint-placeholder-val="{{ false }}">
+        <p class="vide">Rien de ce type pour ce jeu.</p>
+      </sc-if>
+    </section>
+
+    <section class="tuile">
+      <div class="tuile-entete">
+        <h2 style="font-size: 15px">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          Mes lieux
+        </h2>
+        <span class="tuile-lien">Découvrir</span>
+      </div>
+      <div class="liste" style="gap: 12px">
+        <div class="lieu">
+          <span class="logo-lieu">RD</span>
+          <span class="corps">
+            <span class="nom">Le Repaire du Dragon <span class="point" style="background: var(--direct)"></span></span>
+            <span class="etat"><span class="point ouvert"></span>Ouvert jusqu&apos;à 19h</span>
+          </span>
+        </div>
+        <div class="lieu">
+          <span class="logo-lieu">TJ</span>
+          <span class="corps">
+            <span class="nom">La Taverne des Joueurs</span>
+            <span class="etat"><span class="point ferme"></span>Ouvre demain à 14h</span>
+          </span>
+        </div>
+        <div class="lieu">
+          <span class="logo-lieu">GC</span>
+          <span class="corps">
+            <span class="nom">Games &amp; Co Villeurbanne</span>
+            <span class="etat"><span class="point ouvert"></span>Ouvert jusqu&apos;à 20h</span>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="tuile">
+      <div class="tuile-entete">
+        <h2 style="font-size: 15px">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"></path><path d="M3 13l9 5 9-5"></path></svg>
+          Mes decks
+        </h2>
+        <span class="tuile-lien">Nouveau</span>
+      </div>
+      <div class="liste" style="gap: 12px">
+        <div class="deck">
+          <span class="barre-jeu"></span>
+          <span class="corps">
+            <span class="nom">Aggro Noxus</span>
+            <span class="meta">Riftbound <span class="sep">·</span> il y a 2 jours</span>
+          </span>
+          <span class="badge">Conforme</span>
+        </div>
+        <div class="deck">
+          <span class="barre-jeu"></span>
+          <span class="corps">
+            <span class="nom">Contrôle Azorius</span>
+            <span class="meta">Magic <span class="sep">·</span> hier</span>
+          </span>
+          <span class="badge souci">2 zones</span>
+        </div>
+        <div class="deck">
+          <span class="barre-jeu"></span>
+          <span class="corps">
+            <span class="nom">Rebelles agressif</span>
+            <span class="meta">Star Wars Unlimited</span>
+          </span>
+          <span class="badge">Brouillon</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="tuile">
+      <div class="tuile-entete">
+        <h2 style="font-size: 15px">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Les Joueurs du Jeudi
+        </h2>
+        <span class="badge attention">À répondre</span>
+      </div>
+      <p style="margin: 0; font-size: 13px; line-height: 18px; color: var(--muted-foreground)">Quelle date pour la prochaine session ?</p>
+      <div class="sondage">
+        <div class="sondage-option">
+          <span class="sondage-ligne">Jeudi 21 novembre<span class="n">4 / 6</span></span>
+          <span class="jauge"><i style="width: 67%"></i></span>
+        </div>
+        <div class="sondage-option">
+          <span class="sondage-ligne">Jeudi 28 novembre<span class="n">2 / 6</span></span>
+          <span class="jauge"><i style="width: 33%"></i></span>
+        </div>
+        <div class="sondage-option">
+          <span class="sondage-ligne">Samedi 30 novembre<span class="n">1 / 6</span></span>
+          <span class="jauge"><i style="width: 17%"></i></span>
+        </div>
+      </div>
+      <span class="btn primaire" style="width: 100%">Donner mes disponibilités</span>
+    </section>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":390,"height":3060}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { jeu: 'tous', onglet: 'tout' };
+  }
+
+  jeuxDisponibles() {
+    return [
+      { id: 'tous', nom: 'Tous mes jeux' },
+      { id: 'riftbound', nom: 'Riftbound' },
+      { id: 'mtg', nom: 'Magic' },
+      { id: 'swu', nom: 'Star Wars Unlimited' },
+    ];
+  }
+
+  tousLesDirects() {
+    return [
+      { jeu: 'riftbound', titre: "Draft de sortie, table 1", lieu: 'Le Repaire du Dragon · Twitch', audience: '142 spectateurs' },
+      { jeu: 'mtg', titre: "Finale du Standard — Ligue d'automne", lieu: 'La Taverne des Joueurs · YouTube', audience: '89 spectateurs' },
+    ];
+  }
+
+  tousLesEvenements() {
+    return [
+      { jeu: 'riftbound', jour: '22', mois: 'nov', titre: 'Tournoi Riftbound — Origines', lieu: 'Le Repaire du Dragon', heure: '14h00', nomJeu: 'Riftbound', etat: 'inscrit', badge: 'Inscrit', badgeClasse: 'ok' },
+      { jeu: 'swu', jour: '24', mois: 'nov', titre: 'Soirée découverte Star Wars Unlimited', lieu: 'La Taverne des Joueurs', heure: '19h30', nomJeu: 'Star Wars Unlimited', etat: 'organise', badge: 'Organisateur', badgeClasse: 'principal' },
+      { jeu: 'mtg', jour: '27', mois: 'nov', titre: 'Commander night', lieu: 'Le Repaire du Dragon', heure: '20h00', nomJeu: 'Magic', etat: 'ouvert', badge: '3 places', badgeClasse: 'attention' },
+    ];
+  }
+
+  toutLeFil() {
+    return [
+      { type: 'actu', typeNom: 'Actu', chipClasse: '', duree: '', jeu: 'riftbound', titre: 'Liste de restrictions du 18 novembre : deux cartes sortent du Standard', source: 'Riftbound officiel', nomJeu: 'Riftbound', quand: 'il y a 2 h', badge: '', badgeClasse: '' },
+      { type: 'direct', typeNom: 'En direct', chipClasse: 'direct', duree: '', jeu: 'riftbound', titre: "Draft de sortie, table 1", source: 'Le Repaire du Dragon', nomJeu: 'Riftbound', quand: '142 spectateurs', badge: '', badgeClasse: '' },
+      { type: 'video', typeNom: 'Vidéo', chipClasse: '', badge: '', badgeClasse: '', jeu: 'riftbound', titre: 'Trois erreurs de séquencement qui coûtent la partie', source: 'Chaîne de la Taverne', nomJeu: 'Riftbound', quand: 'il y a 5 h', duree: '12:40' },
+      { type: 'deck', typeNom: 'Deck', chipClasse: '', duree: '', jeu: 'riftbound', titre: "Aggro Noxus — 2e de la Ligue d'automne", source: 'par @lenaflux', nomJeu: 'Riftbound', quand: 'hier', badge: 'Conforme au format', badgeClasse: 'ok' },
+      { type: 'actu', typeNom: 'Actu', chipClasse: '', duree: '', badge: '', badgeClasse: '', jeu: 'mtg', titre: "Les dates de l'avant-première en boutique sont tombées", source: 'Actus Magic', nomJeu: 'Magic', quand: 'hier' },
+      { type: 'video', typeNom: 'Vidéo', chipClasse: '', badge: '', badgeClasse: '', jeu: 'swu', titre: 'Monter sa première liste Rebelles sans se ruiner', source: 'Games & Co', nomJeu: 'Star Wars Unlimited', quand: 'il y a 2 j', duree: '08:15' },
+      { type: 'deck', typeNom: 'Deck', chipClasse: '', duree: '', jeu: 'mtg', titre: 'Contrôle Azorius — la liste de la semaine', source: 'par @vahn', nomJeu: 'Magic', quand: 'il y a 3 j', badge: '2 zones à ajuster', badgeClasse: 'souci' },
+    ];
+  }
+
+  renderVals() {
+    const jeu = this.state.jeu;
+    const onglet = this.state.onglet;
+    const duJeu = (x) => jeu === 'tous' || x.jeu === jeu;
+
+    const jeux = this.jeuxDisponibles().map((j) => ({
+      id: j.id,
+      nom: j.nom,
+      classe: j.id === jeu ? 'actif' : '',
+      choisir: () => this.setState({ jeu: j.id }),
+    }));
+
+    const directs = this.tousLesDirects().filter(duJeu);
+    const evenements = this.tousLesEvenements().filter(duJeu);
+    const filDuJeu = this.toutLeFil().filter(duJeu);
+    const fil = filDuJeu.filter((f) => onglet === 'tout' || f.type === onglet);
+
+    const onglets = [
+      { id: 'tout', nom: 'Tout' },
+      { id: 'actu', nom: 'Actus' },
+      { id: 'video', nom: 'Vidéos' },
+      { id: 'direct', nom: 'Directs' },
+      { id: 'deck', nom: 'Decks' },
+    ].map((o) => ({
+      nom: o.nom,
+      nombre: o.id === 'tout' ? filDuJeu.length : filDuJeu.filter((f) => f.type === o.id).length,
+      classe: o.id === onglet ? 'actif' : '',
+      choisir: () => this.setState({ onglet: o.id }),
+    }));
+
+    const pluriel = (n, un, plusieurs) => (n > 1 ? n + ' ' + plusieurs : n + ' ' + un);
+
+    const morceaux = [];
+    if (evenements.length > 0) morceaux.push(pluriel(evenements.length, 'événement cette semaine', 'événements cette semaine'));
+    if (directs.length > 0) morceaux.push(pluriel(directs.length, 'direct en cours', 'directs en cours'));
+    const resume = morceaux.length > 0
+      ? morceaux.join(', ') + '.'
+      : "Rien ne vous attend sur ce jeu pour le moment.";
+
+    return {
+      resume,
+      compte: filDuJeu.length + ' contenus · ' + evenements.length + ' événements',
+      jeux,
+      onglets,
+      directs,
+      aDesDirects: directs.length > 0,
+      titreDirects: pluriel(directs.length, 'direct dans vos lieux', 'directs dans vos lieux'),
+      evenements,
+      aDesEvenements: evenements.length > 0,
+      sansEvenement: evenements.length === 0,
+      fil,
+      aDuFil: fil.length > 0,
+      filVide: fil.length === 0,
+    };
+  }
+}
+</script>
+</body>
+</html>

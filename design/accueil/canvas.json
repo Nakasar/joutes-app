@@ -1,0 +1,38 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "L'accueil connectée — clair", "x": 0, "y": 0, "w": 1440, "h": 1800, "is_interactive": true },
+    { "file": "Sombre.dc.html", "title": "La même, en sombre", "x": 1560, "y": 0, "w": 1440, "h": 1800, "is_interactive": true },
+    { "file": "Mobile.dc.html", "title": "Sur téléphone — 390 px", "x": 3120, "y": 0, "w": 390, "h": 3060, "is_interactive": true }
+  ],
+  "annotations": [
+    {
+      "id": "demande",
+      "x": 0,
+      "y": -620,
+      "w": 620,
+      "text": "La demande.\n\n« Imagine une nouvelle page d'accueil pour Joutes, qui combine évènements, lieux, actualités, contenus (articles / vidéos / directs), decks… »\n\nAujourd'hui app/[locale]/(app)/page.tsx ne porte qu'un titre, un bouton « Créer un événement » et le calendrier. Tout le reste de la plateforme — lieux suivis, actus, directs, decks, groupes de jeu — ne se trouve qu'en le cherchant dans le menu.\n\nCes planches montrent la vue du joueur connecté. L'accueil du visiteur non connecté est un autre écran, qui reste à faire : elle n'a ni les mêmes contenus ni le même but (convaincre plutôt que reprendre).\n\nLes trois planches répondent au clic : le filtre par jeu en haut, les onglets du fil au milieu."
+    },
+    {
+      "id": "parti-pris",
+      "x": 720,
+      "y": -620,
+      "w": 620,
+      "text": "Le parti pris.\n\nUne seule question, comme l'Établi d'un groupe de jeu (HubView) : qu'est-ce qui m'attend, et qu'est-ce qui bouge maintenant ? L'ordre de la page en découle — ce qui demande une réponse d'abord, ce qui informe ensuite.\n\n1. Les directs en cours, dans mes lieux et mes groupes. Le bandeau disparaît quand rien ne tourne, exactement comme LairLiveSection : un lieu sans direct n'affiche rien plutôt qu'une plaque vide.\n2. Ce qui m'attend : mes événements engagés, avec mon statut (inscrit, organisateur, places restantes) et le liseré de couleur du calendrier.\n3. Le fil : actus, vidéos, directs et decks dans un seul flux, avec des onglets pour n'en garder qu'un type.\n\nÀ droite, ce qui ne bouge pas au rythme du fil : mes lieux et leur état d'ouverture, mes decks et leur conformité, le sondage de session à répondre.\n\nLe filtre par jeu commande le haut de la page (directs, événements, fil) et laisse la colonne de droite intacte — mes lieux et mes decks ne dépendent pas du jeu que je regarde. C'est un choix, pas une omission."
+    },
+    {
+      "id": "code",
+      "x": 1440,
+      "y": -620,
+      "w": 620,
+      "text": "Ce que ça demande, côté code.\n\nRien de nouveau en base : tout est déjà écrit quelque part.\n\n— Événements : la source du calendrier, filtrée sur ce que la personne a rejoint ou organise. EventsCalendarWrapper lit déjà les mêmes documents.\n— Lieux : les lieux suivis, plus readOpeningState (lib/lairs/opening-hours.ts) pour la ligne « ouvert jusqu'à ».\n— Directs : lib/db/stream-links.ts et lib/streams/announce.ts posent déjà le direct sur les lieux et les groupes. L'accueil ne fait que les relire.\n— Actus et vidéos : /api/news, avec localizeNews pour la langue.\n— Decks : lib/db/decks.ts, et countNonCompliantZones pour le badge de conformité (jamais une valeur stockée — le badge se recalcule du contenu).\n— Sondage : lib/db/play-group-sessions.ts, statut « poll ».\n\nSix sources, six frontières Suspense : une tuile lente ne doit pas retenir les autres, et la page doit rester préfabriquée. Chaque tuile a son squelette, sauf le bandeau des directs — le cas courant étant qu'il n'y ait rien, une plaque grise annoncerait un contenu qui ne viendra pas."
+    },
+    {
+      "id": "trancher",
+      "x": 2160,
+      "y": -620,
+      "w": 620,
+      "text": "À trancher.\n\n— Le fil mélange quatre natures de contenu dans un seul flux. C'est ce qui donne son intérêt à l'accueil, et c'est aussi ce qui rend l'ordre difficile : un deck publié il y a trois jours vaut-il une actu d'il y a deux heures ? Proposé : l'ordre chronologique, et les onglets pour trancher soi-même.\n\n— Les vignettes sont dessinées, pas inventées. Les actus ont une bannière (BannerUploader), les vidéos une miniature de la plateforme, les decks rien du tout. Reste à décider ce que porte une carte de deck : les couleurs de la liste, la carte de champion, ou pas d'image.\n\n— Le sondage du groupe sur l'accueil recouvre l'Établi, qui existe déjà. À garder seulement s'il y a une réponse en attente — sinon la tuile n'a rien à dire.\n\n— Sur téléphone, les puces et les boutons passent à 40 px (la taille lg de button.tsx) là où la maison en met 36. Au doigt on vise 44. C'est un arbitrage à faire une fois, pour toute l'app, pas pour cette page.\n\n— Le nombre d'éléments par tuile : trois événements, trois lieux, trois decks, sept contenus. Rien ne le justifie encore autrement que par la hauteur de la page."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}
