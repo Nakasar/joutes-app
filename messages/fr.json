@@ -5064,6 +5064,24 @@
           "Serveur MCP et outils WebMCP : vos événements répondent aux assistants IA compatibles"
         ]
       },
+      "posters": {
+        "title": "L'agenda devient une affiche, sans logiciel de mise en page",
+        "description": "Votre semaine ou votre mois se composent tout seuls en une affiche A4 : vos événements, leurs horaires, leurs places restantes. À imprimer pour la vitrine, à publier sur vos réseaux — et la semaine suivante, elle se refait d'un clic.",
+        "bullets": [
+          "Affiche A4 portrait de la semaine ou du mois, composée depuis votre agenda",
+          "Toujours juste : un événement ajouté, déplacé ou annulé, et l'affiche suit",
+          "Trois styles ouverts à tous, du tableau d'affichage au parchemin de tournoi",
+          "Prête pour la vitrine comme pour vos réseaux : A4 sans marge, ou PDF",
+          "Un QR code vers la page de votre lieu : on s'inscrit depuis l'affiche",
+          "Fréquentation et logos des jeux montrés ou non, à votre main",
+          "Aperçu dans votre écran de gestion avant d'imprimer quoi que ce soit"
+        ],
+        "pro": [
+          "Quatre styles de plus : cyberpunk, taverne, science-fiction, grimoire",
+          "Votre logo, votre nom et votre signature à la place de celle de Joutes",
+          "Votre appel à l'action, et l'adresse que le QR code fait scanner"
+        ]
+      },
       "registrations": {
         "title": "Les inscriptions, sans fil de discussion à relire",
         "description": "Qui est inscrit, qui reste à valider, qui est arrivé, qui a rendu sa liste : tout se lit sur une seule page, et vos participants sont prévenus dès que quelque chose bouge.",
@@ -5170,6 +5188,18 @@
         "push": "Notification envoyée · {count} joueurs",
         "ai": "Assistant IA · « des tournois ce week-end ? »"
       },
+      "posters": {
+        "name": "Le Repaire du Dragon",
+        "period": "Semaine du 3 au 9 mars",
+        "event1": "Vendredi · Draft",
+        "event2": "Samedi · Tournoi",
+        "event3": "Dimanche · Initiation",
+        "hour1": "20h00",
+        "hour2": "14h00",
+        "hour3": "15h00",
+        "brand": "Votre signature",
+        "format": "A4 · prête à imprimer"
+      },
       "registrations": {
         "title": "Inscriptions",
         "registered": "Inscrit",
@@ -5259,6 +5289,7 @@
           "Un système de réservation pour vos évènements",
           "La mise en avant de vos évènements",
           "La personnalisation de votre page de lieu de jeu",
+          "Les affiches de votre agenda à votre marque, styles réservés compris",
           "Un canal d'assistance"
         ],
         "billingNote": "Également disponible sur facturation, pour les boutiques et les associations."

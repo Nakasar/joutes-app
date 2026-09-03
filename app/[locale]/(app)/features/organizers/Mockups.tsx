@@ -8,6 +8,8 @@ import {
   MapPin,
   Medal,
   Megaphone,
+  Printer,
+  QrCode,
   Radio,
   Smartphone,
   Sparkles,
@@ -184,6 +186,49 @@ export async function EngagementMockup() {
             <Check className="size-3 shrink-0 text-emerald-500" />
           </div>
         ))}
+      </div>
+    </DeviceFrame>
+  );
+}
+
+export async function PostersMockup() {
+  const t = await mockupT();
+  // Une affiche réduite : trois lignes d'événements, la signature et le QR
+  // code du pied de page. Les dates sont écrites en dur — un mockup qui suivrait
+  // le calendrier changerait d'illustration sans que rien n'ait bougé.
+  const events = [
+    { label: t("posters.event1"), hour: t("posters.hour1") },
+    { label: t("posters.event2"), hour: t("posters.hour2") },
+    { label: t("posters.event3"), hour: t("posters.hour3") },
+  ];
+  return (
+    <DeviceFrame accent="from-rose-500 to-pink-500">
+      <div className="overflow-hidden rounded-md border bg-background">
+        <div className="bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-2 text-white">
+          <div className="text-[11px] font-bold leading-tight">{t("posters.name")}</div>
+          <div className="text-[9px] opacity-90">{t("posters.period")}</div>
+        </div>
+        <div className="space-y-1 px-2.5 py-2">
+          {events.map((event) => (
+            <div
+              key={event.label}
+              className="flex items-center justify-between gap-2 rounded-sm bg-muted/50 px-2 py-1 text-[10px]"
+            >
+              <span className="min-w-0 flex-1 truncate font-medium">{event.label}</span>
+              <span className="font-mono text-[9px] text-muted-foreground">{event.hour}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 border-t px-2.5 py-2">
+          <QrCode className="size-6 shrink-0 text-rose-500" />
+          <span className="min-w-0 flex-1 truncate text-[9px] font-semibold text-muted-foreground">
+            {t("posters.brand")}
+          </span>
+        </div>
+      </div>
+      <div className="mt-3 flex items-center gap-2 rounded-md bg-pink-500/10 px-2.5 py-1.5 text-[10px] text-pink-700 dark:text-pink-300">
+        <Printer className="size-3.5 shrink-0" />
+        {t("posters.format")}
       </div>
     </DeviceFrame>
   );
