@@ -1,0 +1,542 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&amp;family=Geist:wght@400;500;600&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    *, *::before, *::after { box-sizing: border-box; }
+    a { color: inherit; text-decoration: none; }
+
+    /*
+     * « La carte ».
+     *
+     * C'est la seule des propositions qui ne change pas la peau mais la
+     * STRUCTURE. Partout ailleurs, un contenu porte son lieu en petites
+     * lettres sous son titre. Ici, c'est le lieu qui porte ses contenus : on
+     * ne lit plus un fil, on lit un territoire.
+     *
+     * Le pari : pour un joueur, « qu'est-ce qui se passe autour de moi » est
+     * une question géographique avant d'être une question chronologique. Une
+     * boutique à vingt minutes qui ouvre ses portes ce soir compte plus qu'un
+     * tournoi à deux heures de route.
+     *
+     * Ce que ça coûte, et il faut le dire tout de suite : une carte ne trie
+     * pas par date, et elle sature vers quinze lieux. Ce qui n'est attaché à
+     * aucun lieu — une actualité nationale, une vidéo, un deck — n'a pas de
+     * place sur le territoire : d'où le cartouche à droite, qui est la
+     * solution qu'employaient les vraies cartes pour le texte.
+     *
+     * Pastels : quatre teintes à chroma et clarté identiques, seule la teinte
+     * varie. L'encre est brune, jamais noire — un tracé à la plume ne l'est
+     * pas.
+     */
+    .carte-page {
+      --velin: oklch(0.958 0.020 88);
+      --velin-2: oklch(0.928 0.028 86);
+      --velin-3: oklch(0.900 0.034 84);
+      --mer: oklch(0.895 0.030 228);
+      --encre: oklch(0.335 0.030 58);
+      --encre-2: oklch(0.520 0.030 58);
+      --trait: oklch(0.700 0.035 62);
+      --trait-fin: oklch(0.800 0.028 64);
+
+      --sauge: oklch(0.815 0.055 150);
+      --rose: oklch(0.815 0.055 18);
+      --azur: oklch(0.815 0.055 245);
+      --miel: oklch(0.815 0.055 80);
+      --sang: oklch(0.545 0.160 25);
+      --vert-sombre: oklch(0.500 0.095 152);
+
+      font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+      color: var(--encre);
+      background-color: var(--velin);
+      background-image: repeating-linear-gradient(122deg, oklch(0.938 0.026 86) 0 1px, transparent 1px 7px);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100%;
+    }
+
+    .plume { font-family: 'EB Garamond', Georgia, serif; }
+    .plume-i { font-family: 'EB Garamond', Georgia, serif; font-style: italic; }
+    .capitale { font-family: 'EB Garamond', Georgia, serif; font-size: 12px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; }
+
+    .chrome { border-bottom: 1px solid var(--trait); }
+    .chrome-inner { max-width: 1320px; margin: 0 auto; padding: 0 30px; height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+    .marque { font-family: 'EB Garamond', Georgia, serif; font-weight: 600; font-size: 27px; letter-spacing: 0.05em; }
+    .nav { display: flex; align-items: center; gap: 24px; }
+    .nav span { font-family: 'EB Garamond', Georgia, serif; font-size: 15px; color: var(--encre-2); }
+    .nav span.actif { color: var(--encre); border-bottom: 1px solid var(--encre); }
+    .chrome-droite { display: flex; align-items: center; gap: 14px; color: var(--encre-2); }
+    .avatar { width: 32px; height: 32px; border-radius: 999px; border: 1px solid var(--trait); display: inline-flex; align-items: center; justify-content: center; font-family: 'EB Garamond', serif; font-size: 13px; }
+
+    .page { max-width: 1320px; margin: 0 auto; padding: 30px 30px 52px; display: flex; flex-direction: column; gap: 24px; }
+
+    /* Le cartouche de titre : ce qu'une vraie carte met en haut à gauche. */
+    .titre-carte { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 22px; }
+    .titre-carte h1 { margin: 0; font-family: 'EB Garamond', Georgia, serif; font-weight: 500; font-size: 46px; line-height: 50px; letter-spacing: -0.005em; }
+    .titre-carte h1 em { font-style: italic; }
+    .titre-carte p { margin: 8px 0 0; font-size: 14.5px; line-height: 21px; color: var(--encre-2); }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 38px; padding: 0 18px; border: 1px solid var(--trait); border-radius: 3px; background: var(--velin); font-family: 'EB Garamond', Georgia, serif; font-size: 16px; white-space: nowrap; flex-shrink: 0; cursor: pointer; }
+    .btn.plein { background: var(--encre); border-color: var(--encre); color: var(--velin); }
+    .btn.pleine-largeur { width: 100%; }
+
+    /* Les fanions : le filtre par jeu, en oriflammes. */
+    .fanions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .fanion { position: relative; display: inline-flex; align-items: center; height: 32px; padding: 0 20px 0 14px; background: var(--velin-2); border: 1px solid var(--trait); font-family: 'EB Garamond', Georgia, serif; font-size: 15px; color: var(--encre-2); white-space: nowrap; flex-shrink: 0; cursor: pointer; clip-path: polygon(0 0, 100% 0, calc(100% - 9px) 50%, 100% 100%, 0 100%); }
+    .fanion.actif { background: var(--encre); border-color: var(--encre); color: var(--velin); }
+
+    .plan { display: grid; grid-template-columns: minmax(0, 1fr) 372px; gap: 24px; align-items: start; }
+
+    /* Le territoire. */
+    .territoire { position: relative; border: 1px solid var(--trait); background: var(--velin-2); overflow: hidden; }
+    .territoire > svg.fond { display: block; width: 100%; height: auto; }
+
+    .marqueur { position: absolute; transform: translate(-50%, 0); width: 232px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .tour { position: relative; width: 40px; height: 44px; color: var(--encre); }
+    .halo { position: absolute; left: 50%; top: 26px; width: 46px; height: 46px; margin-left: -23px; margin-top: -23px; border: 1.5px solid var(--sang); border-radius: 999px; opacity: 0.5; }
+    @media (prefers-reduced-motion: no-preference) {
+      .halo { animation: onde 2.6s ease-out infinite; }
+      @keyframes onde { 0% { transform: scale(0.55); opacity: 0.75; } 100% { transform: scale(1.5); opacity: 0; } }
+    }
+    .nom-lieu { font-family: 'EB Garamond', Georgia, serif; font-style: italic; font-size: 19px; line-height: 22px; text-align: center; letter-spacing: 0.01em; }
+
+    /* La fiche d'un lieu : petite, mais elle porte tout ce qui s'y passe. */
+    .fiche-lieu { width: 100%; margin-top: 3px; padding: 10px 12px 11px; background: var(--velin); border: 1px solid var(--trait); border-radius: 2px; box-shadow: 0 1px 0 var(--trait-fin), 0 6px 14px -10px rgba(70, 48, 20, 0.6); display: flex; flex-direction: column; gap: 6px; }
+    .etat-lieu { display: flex; align-items: center; gap: 7px; font-size: 12px; line-height: 16px; color: var(--encre-2); }
+    .pastille { width: 6px; height: 6px; border-radius: 999px; flex-shrink: 0; }
+    .pastille.ouvert { background: var(--vert-sombre); }
+    .pastille.ferme { background: var(--trait); }
+    .ligne-direct { display: flex; align-items: center; gap: 7px; padding: 5px 8px; background: color-mix(in oklab, var(--sang) 10%, transparent); border: 1px solid color-mix(in oklab, var(--sang) 35%, transparent); border-radius: 2px; font-size: 11.5px; line-height: 15px; color: var(--sang); }
+    .ligne-direct .puce { width: 5px; height: 5px; border-radius: 999px; background: var(--sang); flex-shrink: 0; }
+    @media (prefers-reduced-motion: no-preference) { .ligne-direct .puce { animation: battement 2s ease-in-out infinite; } }
+    @keyframes battement { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .rdv { display: flex; flex-direction: column; gap: 3px; }
+    .rdv .quand { font-family: 'EB Garamond', Georgia, serif; font-size: 12.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--encre-2); }
+    .rdv .quoi { font-size: 13.5px; line-height: 18px; font-weight: 600; letter-spacing: -0.01em; }
+    .sceau { align-self: flex-start; padding: 2px 8px; border: 1px solid currentColor; border-radius: 999px; font-size: 11px; line-height: 15px; white-space: nowrap; }
+    .sceau.ok { color: var(--vert-sombre); }
+    .sceau.attention { color: oklch(0.545 0.115 72); }
+    .sceau.principal { color: var(--encre); }
+    .sceau.souci { color: var(--sang); }
+    .autres { font-size: 11.5px; color: var(--encre-2); }
+
+    /* La légende, et la rose des vents : deux pièces qu'une carte doit avoir. */
+    .legende { position: absolute; right: 18px; bottom: 18px; padding: 12px 14px; background: color-mix(in oklab, var(--velin) 92%, transparent); border: 1px solid var(--trait); border-radius: 2px; display: flex; flex-direction: column; gap: 7px; }
+    .legende .capitale { font-size: 10.5px; margin-bottom: 2px; }
+    .legende .cle { display: flex; align-items: center; gap: 9px; font-size: 12px; color: var(--encre-2); }
+    .rose { position: absolute; right: 20px; top: 18px; width: 62px; height: 62px; color: var(--encre-2); opacity: 0.75; }
+
+    /* Le cartouche : là où une carte met ce qui ne tient pas sur le terrain. */
+    .cartouche { border: 1px solid var(--trait); background: var(--velin); padding: 4px; }
+    .cartouche-inner { border: 1px solid var(--trait-fin); padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+    .cartouche h2 { margin: 0; font-family: 'EB Garamond', Georgia, serif; font-weight: 500; font-size: 26px; line-height: 30px; text-align: center; }
+    .filet-orne { display: flex; align-items: center; gap: 9px; color: var(--trait); }
+    .filet-orne::before, .filet-orne::after { content: ''; flex-grow: 1; height: 1px; background: var(--trait); }
+    .filet-orne span { font-size: 11px; letter-spacing: 0.2em; }
+
+    .rubans { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+    .ruban-onglet { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border: 1px solid var(--trait-fin); border-radius: 2px; font-family: 'EB Garamond', Georgia, serif; font-size: 14px; color: var(--encre-2); white-space: nowrap; cursor: pointer; }
+    .ruban-onglet.actif { background: var(--encre); border-color: var(--encre); color: var(--velin); }
+    .ruban-onglet .nb { font-size: 11px; opacity: 0.7; }
+
+    .nouvelles { display: flex; flex-direction: column; }
+    .nouvelle { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--trait-fin); }
+    .nouvelle:last-child { border-bottom: none; }
+    .nouvelle .corps { display: flex; flex-direction: column; gap: 5px; min-width: 0; flex-grow: 1; }
+    .nouvelle .genre { font-family: 'EB Garamond', Georgia, serif; font-size: 11.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--encre-2); }
+    .nouvelle .titre { font-family: 'EB Garamond', Georgia, serif; font-size: 18px; line-height: 22px; }
+    .nouvelle .meta { font-size: 11.5px; line-height: 16px; color: var(--encre-2); }
+
+    .vignette { position: relative; flex-shrink: 0; width: 62px; height: 48px; border: 1px solid var(--trait-fin); background: var(--velin-2); }
+    .vignette::after { content: ''; position: absolute; inset: 0; background-color: var(--encre-2); opacity: 0.42; -webkit-mask-position: center; mask-position: center; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: 19px 19px; mask-size: 19px 19px; }
+    .vignette.actu::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/%3E%3Cpath d='M8 10h8'/%3E%3Cpath d='M8 14h5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/%3E%3Cpath d='M8 10h8'/%3E%3Cpath d='M8 14h5'/%3E%3C/svg%3E"); }
+    .vignette.video::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M8 5l11 7-11 7z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M8 5l11 7-11 7z'/%3E%3C/svg%3E"); }
+    .vignette.deck::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l9 5-9 5-9-5z'/%3E%3Cpath d='M3 13l9 5 9-5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l9 5-9 5-9-5z'/%3E%3Cpath d='M3 13l9 5 9-5'/%3E%3C/svg%3E"); }
+
+    .petit-bloc { border: 1px solid var(--trait); background: var(--velin); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .petit-bloc h3 { margin: 0; font-family: 'EB Garamond', Georgia, serif; font-weight: 500; font-size: 20px; }
+    .deck-l { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .deck-l .n { font-family: 'EB Garamond', Georgia, serif; font-size: 17px; }
+    .deck-l .s { font-size: 11.5px; color: var(--encre-2); }
+    .option { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 13.5px; }
+    .option .n { font-family: 'EB Garamond', Georgia, serif; font-size: 13px; color: var(--encre-2); }
+
+    .vide { padding: 22px; text-align: center; font-family: 'EB Garamond', Georgia, serif; font-size: 15px; color: var(--encre-2); border: 1px dashed var(--trait-fin); }
+    .sep { opacity: 0.45; }
+    .ico { width: 16px; height: 16px; flex-shrink: 0; }
+  </style>
+</helmet>
+
+<div class="carte-page">
+
+  <header class="chrome">
+    <div class="chrome-inner">
+      <div style="display: flex; align-items: center; gap: 34px; min-width: 0">
+        <span class="marque">Joutes</span>
+        <nav class="nav">
+          <span class="actif">La carte</span>
+          <span>Événements</span>
+          <span>Lieux</span>
+          <span>Jeux</span>
+          <span>Contenus</span>
+          <span>Amis</span>
+        </nav>
+      </div>
+      <div class="chrome-droite">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+        <span class="avatar">KT</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="page">
+
+    <div class="titre-carte">
+      <div>
+        <span class="capitale" style="color: var(--encre-2)">Semaine du 18 novembre</span>
+        <h1 style="margin-top: 10px">Bonsoir, <em>Kévin</em></h1>
+        <p>{{ resume }}</p>
+      </div>
+      <div class="actions">
+        <span class="btn">Élargir la carte</span>
+        <span class="btn plein">Ouvrir un événement</span>
+      </div>
+    </div>
+
+    <div class="fanions">
+      <sc-for list="{{ jeux }}" as="jeu" hint-placeholder-count="4">
+        <span class="fanion {{ jeu.classe }}" onClick="{{ jeu.choisir }}">{{ jeu.nom }}</span>
+      </sc-for>
+    </div>
+
+    <div class="plan">
+
+      <div class="territoire">
+        <svg class="fond" viewBox="0 0 880 620" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- L'eau, en haut à gauche, avec ses hachures de rivage. -->
+          <path d="M0 0h250c-14 30-52 46-74 74-26 33-18 78-52 104-30 23-78 18-124 12V0z" fill="oklch(0.895 0.030 228)" opacity="0.55"></path>
+          <path d="M250 0c-14 30-52 46-74 74-26 33-18 78-52 104-30 23-78 18-124 12" stroke="oklch(0.700 0.035 62)" stroke-width="1.4" stroke-linecap="round"></path>
+          <path d="M244 10c-16 30-52 46-74 74-27 34-19 78-53 104-30 23-77 19-117 13" stroke="oklch(0.700 0.035 62)" stroke-width="0.7" stroke-dasharray="2 5" opacity="0.7"></path>
+
+          <!-- La rivière, qui traverse et sépare. -->
+          <path d="M124 190c46 26 62 74 118 96 58 22 96-14 152 6 52 18 66 74 122 92 46 15 100 4 152-14" stroke="oklch(0.895 0.030 228)" stroke-width="7" stroke-linecap="round" opacity="0.85"></path>
+          <path d="M124 190c46 26 62 74 118 96 58 22 96-14 152 6 52 18 66 74 122 92 46 15 100 4 152-14" stroke="oklch(0.700 0.035 62)" stroke-width="0.8" stroke-linecap="round" opacity="0.5"></path>
+
+          <!-- Les routes : ce sont elles qui disent la distance entre deux lieux. -->
+          <path d="M196 208C286 176 402 150 548 120" stroke="oklch(0.700 0.035 62)" stroke-width="1.2" stroke-dasharray="6 6" stroke-linecap="round" opacity="0.8"></path>
+          <path d="M204 226C258 300 340 372 424 404" stroke="oklch(0.700 0.035 62)" stroke-width="1.2" stroke-dasharray="6 6" stroke-linecap="round" opacity="0.8"></path>
+          <path d="M556 138C560 236 512 340 442 398" stroke="oklch(0.700 0.035 62)" stroke-width="1.2" stroke-dasharray="6 6" stroke-linecap="round" opacity="0.8"></path>
+
+          <!-- Les collines, à la plume : deux arcs, jamais plus. -->
+          <g stroke="oklch(0.700 0.035 62)" stroke-width="1.3" stroke-linecap="round" opacity="0.85">
+            <path d="M660 236c9-13 20-13 29 0"></path><path d="M676 236c9-13 20-13 29 0"></path>
+            <path d="M694 258c9-13 20-13 29 0"></path><path d="M712 258c9-13 20-13 29 0"></path>
+            <path d="M646 282c9-13 20-13 29 0"></path>
+            <path d="M96 396c9-13 20-13 29 0"></path><path d="M112 396c9-13 20-13 29 0"></path>
+            <path d="M132 418c9-13 20-13 29 0"></path>
+          </g>
+
+          <!-- La forêt : des arbres dessinés, pas une texture. -->
+          <g stroke="oklch(0.500 0.095 152)" stroke-width="1.3" stroke-linecap="round" opacity="0.75">
+            <path d="M228 470v10M222 470c0-9 12-9 12 0M225 462c0-7 6-7 6 0"></path>
+            <path d="M258 490v10M252 490c0-9 12-9 12 0M255 482c0-7 6-7 6 0"></path>
+            <path d="M290 466v10M284 466c0-9 12-9 12 0M287 458c0-7 6-7 6 0"></path>
+            <path d="M242 512v10M236 512c0-9 12-9 12 0M239 504c0-7 6-7 6 0"></path>
+            <path d="M276 522v10M270 522c0-9 12-9 12 0M273 514c0-7 6-7 6 0"></path>
+            <path d="M312 496v10M306 496c0-9 12-9 12 0M309 488c0-7 6-7 6 0"></path>
+          </g>
+
+          <!-- Le lac. -->
+          <path d="M700 448c34-18 76-6 84 20 8 27-22 50-58 46-34-4-56-30-46-52 4-8 12-11 20-14z" fill="oklch(0.895 0.030 228)" opacity="0.55" stroke="oklch(0.700 0.035 62)" stroke-width="1.1"></path>
+
+          <!-- La bordure du parchemin. -->
+          <rect x="7" y="7" width="866" height="606" stroke="oklch(0.700 0.035 62)" stroke-width="1" fill="none" opacity="0.7"></rect>
+          <rect x="13" y="13" width="854" height="594" stroke="oklch(0.800 0.028 64)" stroke-width="0.8" fill="none"></rect>
+        </svg>
+
+        <svg class="rose" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true">
+          <circle cx="32" cy="32" r="21"></circle>
+          <circle cx="32" cy="32" r="15" opacity="0.55"></circle>
+          <path d="M32 4l5 24-5 6-5-6z" fill="currentColor" opacity="0.85" stroke="none"></path>
+          <path d="M32 60l-5-24 5-6 5 6z" opacity="0.7"></path>
+          <path d="M4 32l24-5 6 5-6 5z" opacity="0.7"></path>
+          <path d="M60 32l-24 5-6-5 6-5z" opacity="0.7"></path>
+        </svg>
+
+        <sc-for list="{{ lieuxCarte }}" as="l" hint-placeholder-count="3">
+          <div class="marqueur" style="left: {{ l.x }}%; top: {{ l.y }}%">
+            <span class="tour">
+              <sc-if value="{{ l.enDirect }}" hint-placeholder-val="{{ true }}">
+                <span class="halo"></span>
+              </sc-if>
+              <svg viewBox="0 0 40 44" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11 40V19l9-8 9 8v21z" fill="oklch(0.958 0.020 88)"></path>
+                <path d="M11 19h18"></path>
+                <path d="M17 40v-9h6v9"></path>
+                <path d="M20 11V5"></path>
+                <path d="M20 5l8 3-8 3"></path>
+                <path d="M6 40h28"></path>
+              </svg>
+            </span>
+            <span class="nom-lieu">{{ l.nom }}</span>
+            <span class="fiche-lieu">
+              <span class="etat-lieu">
+                <sc-if value="{{ l.ouvert }}" hint-placeholder-val="{{ true }}"><span class="pastille ouvert"></span></sc-if>
+                <sc-if value="{{ l.ferme }}" hint-placeholder-val="{{ false }}"><span class="pastille ferme"></span></sc-if>
+                {{ l.etat }}
+              </span>
+              <sc-if value="{{ l.enDirect }}" hint-placeholder-val="{{ true }}">
+                <span class="ligne-direct"><span class="puce"></span>En direct — {{ l.titreDirect }}</span>
+              </sc-if>
+              <sc-if value="{{ l.aUnProchain }}" hint-placeholder-val="{{ true }}">
+                <span class="rdv">
+                  <span class="quand">{{ l.prochainQuand }}</span>
+                  <span class="quoi">{{ l.prochainTitre }}</span>
+                </span>
+              </sc-if>
+              <sc-if value="{{ l.aUnProchain }}" hint-placeholder-val="{{ true }}">
+                <span class="sceau {{ l.prochainBadgeClasse }}">{{ l.prochainBadge }}</span>
+              </sc-if>
+              <sc-if value="{{ l.aDAutres }}" hint-placeholder-val="{{ false }}">
+                <span class="autres">et {{ l.autres }}</span>
+              </sc-if>
+              <sc-if value="{{ l.sansRien }}" hint-placeholder-val="{{ false }}">
+                <span class="autres">Rien d&apos;annoncé cette semaine.</span>
+              </sc-if>
+            </span>
+          </div>
+        </sc-for>
+
+        <div class="legende">
+          <span class="capitale">Légende</span>
+          <span class="cle"><span class="pastille ouvert"></span>Lieu ouvert en ce moment</span>
+          <span class="cle"><span class="pastille ferme"></span>Lieu fermé</span>
+          <span class="cle"><span class="pastille" style="background: var(--sang)"></span>Direct en cours</span>
+          <span class="cle"><svg width="14" height="6" viewBox="0 0 14 6" aria-hidden="true"><path d="M0 3h14" stroke="var(--trait)" stroke-width="1.2" stroke-dasharray="4 4"></path></svg>Route entre deux lieux</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 20px">
+
+        <section class="cartouche">
+          <div class="cartouche-inner">
+            <h2 class="plume">Les nouvelles</h2>
+            <span class="filet-orne"><span>❧</span></span>
+            <p style="margin: 0; text-align: center; font-size: 12.5px; line-height: 18px; color: var(--encre-2)">Ce qui n&apos;a pas de lieu sur la carte : articles, vidéos, listes.</p>
+            <div class="rubans">
+              <sc-for list="{{ onglets }}" as="o" hint-placeholder-count="4">
+                <span class="ruban-onglet {{ o.classe }}" onClick="{{ o.choisir }}">{{ o.nom }}<span class="nb">{{ o.nombre }}</span></span>
+              </sc-for>
+            </div>
+            <sc-if value="{{ aDuFil }}" hint-placeholder-val="{{ true }}">
+              <div class="nouvelles">
+                <sc-for list="{{ fil }}" as="f" hint-placeholder-count="6">
+                  <div class="nouvelle">
+                    <span class="vignette {{ f.type }}"></span>
+                    <span class="corps">
+                      <span class="genre">{{ f.typeNom }}</span>
+                      <span class="titre">{{ f.titre }}</span>
+                      <span class="meta">{{ f.source }} <span class="sep">·</span> {{ f.quand }}</span>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ filVide }}" hint-placeholder-val="{{ false }}">
+              <p class="vide">{{ videFil }}</p>
+            </sc-if>
+          </div>
+        </section>
+
+        <section class="petit-bloc">
+          <h3>Mes decks</h3>
+          <sc-for list="{{ decks }}" as="d" hint-placeholder-count="3">
+            <div>
+              <span class="deck-l">
+                <span class="n">{{ d.nom }}</span>
+                <span class="sceau {{ d.badgeClasse }}">{{ d.badge }}</span>
+              </span>
+              <span class="s">{{ d.nomJeu }} <span class="sep">·</span> {{ d.quand }}</span>
+            </div>
+          </sc-for>
+        </section>
+
+        <section class="petit-bloc">
+          <h3>Les Joueurs du Jeudi</h3>
+          <p style="margin: 0; font-size: 13px; line-height: 18px; color: var(--encre-2)">Quelle date pour la prochaine session ?</p>
+          <span class="option"><span>Jeudi 26 novembre</span><span class="n">4 / 6</span></span>
+          <span class="option"><span>Samedi 28 novembre</span><span class="n">2 / 6</span></span>
+          <span class="option"><span>Jeudi 3 décembre</span><span class="n">1 / 6</span></span>
+          <span class="btn plein pleine-largeur">Répondre</span>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":1320,"height":1120}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { jeu: 'tous', onglet: 'tout' };
+  }
+
+  jeuxDisponibles() {
+    return [
+      { id: 'tous', nom: 'Tous mes jeux' },
+      { id: 'riftbound', nom: 'Riftbound' },
+      { id: 'mtg', nom: 'Magic' },
+      { id: 'swu', nom: 'Star Wars Unlimited' },
+    ];
+  }
+
+  /*
+   * Les directs ne vivent que dans le bandeau, jamais dans le fil : les y
+   * répéter montrait deux fois la même chose à trois cents pixels d'écart. Le
+   * fil garde ce qui se lit après coup — articles, vidéos, listes.
+   */
+  tousLesDirects() {
+    return [
+      { jeu: 'riftbound', titre: 'Draft de sortie, table 1', lieu: 'Le Repaire du Dragon', plateforme: 'Twitch', audience: '142 spectateurs' },
+      { jeu: 'mtg', titre: "Finale du Standard — Ligue d'automne", lieu: 'La Taverne des Joueurs', plateforme: 'YouTube', audience: '89 spectateurs' },
+    ];
+  }
+
+  /* Semaine du 18 novembre : le 19 est un jeudi, le 21 un samedi. */
+  tousLesEvenements() {
+    return [
+      { jeu: 'riftbound', jour: '19', mois: 'nov', jourNom: 'jeudi', titre: 'Tournoi Riftbound — Origines', lieu: 'Le Repaire du Dragon', heure: '19h00', nomJeu: 'Riftbound', etat: 'inscrit', badge: 'Inscrit', badgeClasse: 'ok' },
+      { jeu: 'mtg', jour: '20', mois: 'nov', jourNom: 'vendredi', titre: 'Commander night', lieu: 'Le Repaire du Dragon', heure: '20h00', nomJeu: 'Magic', etat: 'libre', badge: '3 places restantes', badgeClasse: 'attention' },
+      { jeu: 'swu', jour: '21', mois: 'nov', jourNom: 'samedi', titre: 'Soirée découverte Star Wars Unlimited', lieu: 'La Taverne des Joueurs', heure: '14h00', nomJeu: 'Star Wars Unlimited', etat: 'organise', badge: 'Organisateur', badgeClasse: 'principal' },
+    ];
+  }
+
+  toutLeFil() {
+    return [
+      { type: 'actu', typeNom: 'Actu', duree: '', jeu: 'riftbound', titre: 'Liste de restrictions du 18 novembre : deux cartes sortent du Standard', source: 'Riftbound officiel', nomJeu: 'Riftbound', quand: 'il y a 2 h', badge: '', badgeClasse: '' },
+      { type: 'video', typeNom: 'Vidéo', duree: '12:40', jeu: 'riftbound', titre: 'Trois erreurs de séquencement qui coûtent la partie', source: 'Chaîne de la Taverne', nomJeu: 'Riftbound', quand: 'il y a 5 h', badge: '', badgeClasse: '' },
+      { type: 'deck', typeNom: 'Deck', duree: '', jeu: 'riftbound', titre: "Aggro Noxus — 2e de la Ligue d'automne", source: 'par @lenaflux', nomJeu: 'Riftbound', quand: 'hier', badge: 'Conforme au format', badgeClasse: 'ok' },
+      { type: 'actu', typeNom: 'Actu', duree: '', jeu: 'mtg', titre: "Les dates de l'avant-première en boutique sont tombées", source: 'Actus Magic', nomJeu: 'Magic', quand: 'hier', badge: '', badgeClasse: '' },
+      { type: 'video', typeNom: 'Vidéo', duree: '08:15', jeu: 'swu', titre: 'Monter sa première liste Rebelles sans se ruiner', source: 'Games & Co', nomJeu: 'Star Wars Unlimited', quand: 'il y a 2 j', badge: '', badgeClasse: '' },
+      { type: 'deck', typeNom: 'Deck', duree: '', jeu: 'mtg', titre: 'Contrôle Azorius — la liste de la semaine', source: 'par @vahn', nomJeu: 'Magic', quand: 'il y a 3 j', badge: '2 zones à ajuster', badgeClasse: 'souci' },
+    ];
+  }
+
+  mesLieux() {
+    return [
+      { initiales: 'RD', x: 22, y: 30, nom: 'Le Repaire du Dragon', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 19h", agenda: '3 événements cette semaine' },
+      { initiales: 'TJ', x: 63, y: 17, nom: 'La Taverne des Joueurs', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 23h", agenda: '1 événement cette semaine' },
+      { initiales: 'GC', x: 53, y: 64, nom: 'Games & Co Villeurbanne', ouvert: false, ferme: true, etat: 'Fermé, ouvre demain à 14h', agenda: '1 événement cette semaine' },
+    ];
+  }
+
+  mesDecks() {
+    return [
+      { nom: 'Aggro Noxus', nomJeu: 'Riftbound', quand: 'modifié il y a 2 j', badge: 'Conforme', badgeClasse: '' },
+      { nom: 'Contrôle Azorius', nomJeu: 'Magic', quand: 'modifié hier', badge: '2 zones', badgeClasse: 'souci' },
+      { nom: 'Aggro Rebelles', nomJeu: 'Star Wars Unlimited', quand: 'modifié il y a 4 j', badge: 'Brouillon', badgeClasse: '' },
+    ];
+  }
+
+  renderVals() {
+    const jeu = this.state.jeu;
+    const onglet = this.state.onglet;
+    const tousJeux = jeu === 'tous';
+    const duJeu = (x) => tousJeux || x.jeu === jeu;
+
+    const jeux = this.jeuxDisponibles().map((j) => ({
+      id: j.id,
+      nom: j.nom,
+      classe: j.id === jeu ? 'actif' : '',
+      choisir: () => this.setState({ jeu: j.id }),
+    }));
+
+    const directs = this.tousLesDirects().filter(duJeu);
+    /*
+     * Le fanion « prochain » se calcule après le filtre, jamais dans les
+     * données : filtrer sur Magic doit le déplacer sur le premier événement
+     * Magic, pas le faire disparaître avec le tournoi Riftbound.
+     */
+    const evenements = this.tousLesEvenements()
+      .filter(duJeu)
+      .map((e, i) => ({ ...e, prochain: i === 0, classeProchain: i === 0 ? 'prochain' : '' }));
+    const filDuJeu = this.toutLeFil().filter(duJeu);
+    const fil = filDuJeu.filter((f) => onglet === 'tout' || f.type === onglet);
+
+    const onglets = [
+      { id: 'tout', nom: 'Tout' },
+      { id: 'actu', nom: 'Actus' },
+      { id: 'video', nom: 'Vidéos' },
+      { id: 'deck', nom: 'Decks' },
+    ].map((o) => ({
+      nom: o.nom,
+      nombre: o.id === 'tout' ? filDuJeu.length : filDuJeu.filter((f) => f.type === o.id).length,
+      classe: o.id === onglet ? 'actif' : '',
+      choisir: () => this.setState({ onglet: o.id }),
+    }));
+
+    const pluriel = (n, un, plusieurs) => n + ' ' + (n > 1 ? plusieurs : un);
+
+    const morceaux = [];
+    if (evenements.length > 0) morceaux.push(pluriel(evenements.length, 'événement cette semaine', 'événements cette semaine'));
+    if (directs.length > 0) morceaux.push(pluriel(directs.length, 'direct en cours', 'directs en cours'));
+
+    /* « Ce jeu » n'a de sens que si un jeu est choisi ; sinon la page ment. */
+    const surCeJeu = tousJeux ? '' : ' sur ce jeu';
+
+    return {
+      resume: morceaux.length > 0 ? morceaux.join(', ') + '.' : "Rien ne m'attend cette semaine" + surCeJeu + '.',
+      jeux,
+      onglets,
+      directs,
+      aDesDirects: directs.length > 0,
+      titreDirects: pluriel(directs.length, 'direct dans mes lieux', 'directs dans mes lieux'),
+      evenements,
+      aDesEvenements: evenements.length > 0,
+      sansEvenement: evenements.length === 0,
+      videEvenements: 'Rien de prévu cette semaine' + surCeJeu + '.',
+      fil,
+      aDuFil: fil.length > 0,
+      filVide: fil.length === 0,
+      videFil: "Rien de ce type" + surCeJeu + " pour l'instant.",
+      lieux: this.mesLieux(),
+
+      /*
+       * La lecture cartographique : ce n'est plus le contenu qui porte son
+       * lieu, c'est le lieu qui porte ses contenus. Tout est aplati — un trou
+       * ne sait suivre qu'un chemin pointé, jamais tester si un objet existe.
+       */
+      lieuxCarte: this.mesLieux().map((l) => {
+        const siens = evenements.filter((e) => e.lieu === l.nom);
+        const direct = directs.find((d) => d.lieu === l.nom);
+        return {
+          ...l,
+          enDirect: Boolean(direct),
+          titreDirect: direct ? direct.titre : '',
+          audienceDirect: direct ? direct.audience : '',
+          aUnProchain: siens.length > 0,
+          sansRien: siens.length === 0 && !direct,
+          prochainTitre: siens.length > 0 ? siens[0].titre : '',
+          prochainQuand: siens.length > 0 ? siens[0].jourNom + ' ' + siens[0].jour + ' ' + siens[0].mois + ', ' + siens[0].heure : '',
+          prochainBadge: siens.length > 0 ? siens[0].badge : '',
+          prochainBadgeClasse: siens.length > 0 ? siens[0].badgeClasse : '',
+          autres: siens.length > 1 ? pluriel(siens.length - 1, 'autre rendez-vous', 'autres rendez-vous') : '',
+          aDAutres: siens.length > 1,
+        };
+      }),
+      decks: this.mesDecks(),
+    };
+  }
+}
+</script>
+</body>
+</html>

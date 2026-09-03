@@ -642,9 +642,9 @@ class Component extends DCLogic {
 
   mesLieux() {
     return [
-      { initiales: 'RD', nom: 'Le Repaire du Dragon', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 19h", agenda: '3 événements cette semaine' },
-      { initiales: 'TJ', nom: 'La Taverne des Joueurs', ouvert: false, ferme: true, etat: 'Fermé, ouvre demain à 14h', agenda: '1 événement cette semaine' },
-      { initiales: 'GC', nom: 'Games & Co Villeurbanne', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 20h", agenda: '1 événement cette semaine' },
+      { initiales: 'RD', x: 22, y: 30, nom: 'Le Repaire du Dragon', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 19h", agenda: '3 événements cette semaine' },
+      { initiales: 'TJ', x: 63, y: 17, nom: 'La Taverne des Joueurs', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 23h", agenda: '1 événement cette semaine' },
+      { initiales: 'GC', x: 53, y: 64, nom: 'Games & Co Villeurbanne', ouvert: false, ferme: true, etat: 'Fermé, ouvre demain à 14h', agenda: '1 événement cette semaine' },
     ];
   }
 
@@ -677,7 +677,7 @@ class Component extends DCLogic {
      */
     const evenements = this.tousLesEvenements()
       .filter(duJeu)
-      .map((e, i) => ({ ...e, prochain: i === 0 }));
+      .map((e, i) => ({ ...e, prochain: i === 0, classeProchain: i === 0 ? 'prochain' : '' }));
     const filDuJeu = this.toutLeFil().filter(duJeu);
     const fil = filDuJeu.filter((f) => onglet === 'tout' || f.type === onglet);
 
@@ -718,6 +718,30 @@ class Component extends DCLogic {
       filVide: fil.length === 0,
       videFil: "Rien de ce type" + surCeJeu + " pour l'instant.",
       lieux: this.mesLieux(),
+
+      /*
+       * La lecture cartographique : ce n'est plus le contenu qui porte son
+       * lieu, c'est le lieu qui porte ses contenus. Tout est aplati — un trou
+       * ne sait suivre qu'un chemin pointé, jamais tester si un objet existe.
+       */
+      lieuxCarte: this.mesLieux().map((l) => {
+        const siens = evenements.filter((e) => e.lieu === l.nom);
+        const direct = directs.find((d) => d.lieu === l.nom);
+        return {
+          ...l,
+          enDirect: Boolean(direct),
+          titreDirect: direct ? direct.titre : '',
+          audienceDirect: direct ? direct.audience : '',
+          aUnProchain: siens.length > 0,
+          sansRien: siens.length === 0 && !direct,
+          prochainTitre: siens.length > 0 ? siens[0].titre : '',
+          prochainQuand: siens.length > 0 ? siens[0].jourNom + ' ' + siens[0].jour + ' ' + siens[0].mois + ', ' + siens[0].heure : '',
+          prochainBadge: siens.length > 0 ? siens[0].badge : '',
+          prochainBadgeClasse: siens.length > 0 ? siens[0].badgeClasse : '',
+          autres: siens.length > 1 ? pluriel(siens.length - 1, 'autre rendez-vous', 'autres rendez-vous') : '',
+          aDAutres: siens.length > 1,
+        };
+      }),
       decks: this.mesDecks(),
     };
   }

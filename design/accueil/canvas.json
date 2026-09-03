@@ -40,24 +40,64 @@
       "page": "page-1"
     },
     {
+      "file": "PanneauJoutes.dc.html",
+      "title": "D · Le panneau, aux couleurs de la maison",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 2000,
+      "is_interactive": true,
+      "page": "page-2"
+    },
+    {
+      "file": "Pont.dc.html",
+      "title": "E · Le pont — science-fiction",
+      "x": 1560,
+      "y": 0,
+      "w": 1200,
+      "h": 1820,
+      "is_interactive": true,
+      "page": "page-2"
+    },
+    {
+      "file": "Carte.dc.html",
+      "title": "F · La carte — le territoire porte les contenus",
+      "x": 2880,
+      "y": 0,
+      "w": 1320,
+      "h": 1800,
+      "is_interactive": true,
+      "page": "page-2"
+    },
+    {
+      "file": "Neon.dc.html",
+      "title": "G · Néon — cyberpunk assumé",
+      "x": 4320,
+      "y": 0,
+      "w": 1240,
+      "h": 1610,
+      "is_interactive": true,
+      "page": "page-2"
+    },
+    {
       "file": "Lice.dc.html",
-      "title": "B · La lice — écartée",
+      "title": "B · La lice",
       "x": 0,
       "y": 0,
       "w": 1240,
       "h": 2320,
       "is_interactive": true,
-      "page": "page-2"
+      "page": "page-3"
     },
     {
       "file": "Node.dc.html",
-      "title": "C · Le node — écartée",
+      "title": "C · Le node — cyberpunk sobre",
       "x": 1360,
       "y": 0,
       "w": 1240,
       "h": 1560,
       "is_interactive": true,
-      "page": "page-2"
+      "page": "page-3"
     },
     {
       "file": "Maison.dc.html",
@@ -67,7 +107,7 @@
       "w": 1440,
       "h": 1710,
       "is_interactive": true,
-      "page": "page-2"
+      "page": "page-3"
     },
     {
       "file": "Sombre.dc.html",
@@ -77,7 +117,7 @@
       "w": 1440,
       "h": 1710,
       "is_interactive": true,
-      "page": "page-2"
+      "page": "page-3"
     },
     {
       "file": "Mobile.dc.html",
@@ -87,79 +127,91 @@
       "w": 390,
       "h": 2950,
       "is_interactive": true,
-      "page": "page-2"
+      "page": "page-3"
     }
   ],
   "pages": [
+    {
+      "id": "page-2",
+      "name": "Nouvelles pistes"
+    },
     {
       "id": "page-1",
       "name": "Le tableau d'affichage"
     },
     {
-      "id": "page-2",
-      "name": "Les autres directions"
+      "id": "page-3",
+      "name": "Premières directions"
     }
   ],
   "annotations": [
+    {
+      "id": "pistes",
+      "x": 0,
+      "y": -1160,
+      "w": 680,
+      "page": "page-2",
+      "text": "Quatre nouvelles pistes.\n\nMême règle que la première série : structure identique, mêmes contenus, mêmes données — sauf pour la carte, qui change la structure exprès et qui est là pour ça. Les quatre répondent au clic.\n\nCe qu'il faut savoir avant de regarder :\n\n— D remet le panneau retenu dans les couleurs de l'application. Ce n'est pas une variante, c'est une ÉPREUVE : elle mesure ce que la direction doit à sa mise en page plutôt qu'à son papier.\n\n— E est de la science-fiction, mais pas celle du néon. Le cyberpunk sature ; le futurisme soustrait.\n\n— F est la seule qui touche à la structure. À regarder pour l'idée, pas pour la finition.\n\n— G est le cyberpunk assumé. Il double « Le node » de la première série, qui explorait déjà ce genre — les deux sont sur la table, et c'est entre eux deux qu'il faudra choisir si le genre est retenu."
+    },
+    {
+      "id": "note-d",
+      "x": 0,
+      "y": -560,
+      "w": 660,
+      "page": "page-2",
+      "text": "D · LE PANNEAU, AUX COULEURS DE LA MAISON\n\nOn garde la composition — chevauchement, inclinaison, punaise, fanion du prochain — et on change tous les matériaux : jetons de app/globals.css, une seule police, les rayons de --radius, les ombres de shadow-sm.\n\nCE QUI SURVIT : la hiérarchie. Le fanion et le recouvrement continuent de dire quelle échéance est la prochaine, et l'inclinaison suffit encore à distinguer l'agenda du reste de la page.\n\nCE QUI TOMBE : le panneau. Sans palette chaude ni grain, les punaises deviennent des points rouges décoratifs sur des cartes ordinaires, et le ruban adhésif a dû être retiré — sur un fond neutre, ce n'est plus qu'une tache grise. Le vocabulaire perd sa première pièce, et elle ne se remplace pas.\n\nCE QUE ÇA DIT : la direction tient à sa matière autant qu'à sa mise en page. Si l'on ne veut pas de la matière, autant reprendre « la maison, telle quelle » — l'inclinaison seule ne vaut pas le surcoût.\n\nC'est le compromis à examiner en premier, parce que c'est le seul qui n'engage rien."
+    },
+    {
+      "id": "note-e",
+      "x": 720,
+      "y": -560,
+      "w": 640,
+      "page": "page-2",
+      "text": "E · LE PONT — science-fiction\n\nUn pont de vaisseau n'a rien du néon : il affiche peu, en traits fins, très espacés, sur beaucoup de noir. Champ d'étoiles, arcs d'horizon, halos discrets, un titrage large et lettré.\n\nUN GESTE PORTE LA PAGE, ET IL N'EST PAS DÉCORATIF : l'agenda devient une TRAJECTOIRE. Trois échéances posées sur une ligne, un repère « maintenant » à gauche, la prochaine allumée. C'est la seule des sept mises en page où la distance dans le temps se VOIT au lieu de se lire — sur les autres, il faut comparer trois dates.\n\nCe geste vaut d'être retenu même si la direction ne l'est pas : la trajectoire fonctionnerait aussi bien sur le panneau.\n\nCE QUE ÇA COÛTE : beaucoup de vide, donc peu de contenus par écran ; et un futurisme froid qui va mal à une plateforme dont le sujet est de se retrouver à plusieurs autour d'une table."
+    },
+    {
+      "id": "note-f",
+      "x": 1420,
+      "y": -560,
+      "w": 700,
+      "page": "page-2",
+      "text": "F · LA CARTE — cartographie dessinée, pastel\n\nLa seule proposition qui ne change pas la peau mais la STRUCTURE. Partout ailleurs, un contenu porte son lieu en petites lettres sous son titre. Ici c'est l'inverse : le lieu porte ses contenus. On ne lit plus un fil, on lit un territoire.\n\nLE PARI : pour un joueur, « qu'est-ce qui se passe autour de moi » est une question géographique avant d'être chronologique. Une boutique à vingt minutes qui ouvre ce soir compte plus qu'un tournoi à deux heures de route — et aucune liste triée par date ne dit cela.\n\nTout est dessiné : rivage hachuré, rivière, routes en pointillé entre les lieux, collines et forêt à la plume, rose des vents, légende. Les pastels sont quatre teintes à chroma et clarté identiques ; l'encre est brune, jamais noire.\n\nCE QUE ÇA COÛTE, ET IL FAUT LE DIRE TOUT DE SUITE :\n— Une carte ne trie pas par date. « Qu'est-ce qui m'attend jeudi » redevient difficile.\n— Elle sature vers quinze lieux. Au-delà, les fiches se recouvrent.\n— Ce qui n'a pas de lieu — une actualité, une vidéo, un deck — n'a pas de place sur le territoire. D'où le cartouche à droite, qui est la solution des vraies cartes pour le texte, mais qui reste un fil déguisé.\n— Il faut de vraies coordonnées. Elles existent déjà : les lieux ont une adresse et la géolocalisation est en place.\n\nÀ regarder pour l'idée. Si elle plaît, la question suivante n'est pas esthétique : est-ce l'ACCUEIL, ou une VUE de la page Lieux ?"
+    },
+    {
+      "id": "note-g",
+      "x": 2180,
+      "y": -560,
+      "w": 660,
+      "page": "page-2",
+      "text": "G · NÉON — cyberpunk assumé\n\nDuotone magenta et cyan, coins coupés, halos, lignes de balayage, titrage lourd et penché. Reprend le style d'affiche « cyberpunk » que les lieux impriment déjà, mais en devanture plutôt qu'en régie.\n\nÀ COMPARER AVEC « LE NODE » (troisième page), qui explorait le même genre dans l'autre tempérament : austère, cyan seul, monospace partout, aucune lueur. Les deux sont défendables et ne servent pas la même chose — Node est un tableau de bord, Néon est une enseigne. Si le cyberpunk est retenu, c'est entre ces deux-là qu'il faut choisir.\n\nUNE CONTRAINTE A GOUVERNÉ LE DESSIN : le magenta et le cyan sont des accents de BORD et de LIBELLÉ, jamais de texte courant. Un titre d'article en magenta sur noir se lit mal, et une page dont le sujet est de lire des contenus doit d'abord se lire.\n\nCE QUE ÇA COÛTE : sombre par nature, pas de version claire ; et de l'urgence partout, y compris sur ce qui n'en demande pas."
+    },
+    {
+      "id": "ou-on-en-est",
+      "x": 2900,
+      "y": -560,
+      "w": 660,
+      "page": "page-2",
+      "text": "Où en est la décision.\n\nSept mises en page existent maintenant, sur trois pages de ce canevas. Ce n'est pas trois de trop : elles couvrent trois familles distinctes, et la décision se prend famille par famille.\n\n1. LA MATIÈRE — le tableau d'affichage (page 1), et son épreuve dépouillée (D). Question : la matière gagne-t-elle les autres écrans, ou l'accueil reste-t-il une page à part ?\n\n2. LE GENRE — la lice, le node, le pont, néon. Quatre habits forts. Question : Joutes veut-elle un genre, sachant que la plateforme couvre Riftbound, Magic, Star Wars Unlimited et des jeux de figurines, et que l'habit d'un genre en exclut d'autres ?\n\n3. LA STRUCTURE — la carte (F). Question indépendante des deux autres : lit-on un fil ou un territoire ? Elle peut se combiner à n'importe quelle peau.\n\nCe qu'il resterait à faire dans tous les cas : l'accueil du visiteur non connecté, qui n'a ni les mêmes contenus ni le même but, et qui n'est maquettée nulle part."
+    },
     {
       "id": "retenue",
       "x": 0,
       "y": -1240,
       "w": 680,
       "page": "page-1",
-      "text": "La direction retenue.\n\n« Le tableau d'affichage » : le panneau de liège de la boutique. C'est le seul endroit où un joueur voit déjà, côte à côte, une annonce de tournoi, une liste punaisée et un mot du patron — exactement le problème d'une accueil qui mêle six natures de contenu. Le panneau le résout par la matière, le chevauchement et la punaise, pas par des colonnes égales.\n\nQuatre planches : le panneau en 1440, le même le soir, la version de poche en 390, et le vocabulaire dont tout est fait.\n\nLes trois premières répondent au clic : les onglets de jeu en haut filtrent les directs, l'agenda et le fil ; la bascule trie le fil.\n\nLes deux directions écartées et la version alignée sur l'application sont sur la seconde page — elles restent la trace de la décision."
+      "text": "La direction retenue jusqu'ici.\n\n« Le tableau d'affichage » : le panneau de liège de la boutique — le seul endroit où un joueur voit déjà, côte à côte, une annonce de tournoi, une liste punaisée et un mot du patron.\n\nQuatre planches : le panneau en 1440, le même le soir, la version de poche en 390, et le vocabulaire dont tout est fait — les attaches, les marques, l'échelle d'inclinaison, et les six règles qui décident quand la maquette se tait.\n\nLes nouvelles pistes sont sur la page « Nouvelles pistes ». L'une d'elles (D) est cette direction même, dépouillée de sa matière : c'est l'épreuve la plus utile à regarder avant de trancher."
     },
     {
-      "id": "creuse",
-      "x": 740,
-      "y": -1240,
-      "w": 680,
-      "page": "page-1",
-      "text": "Ce que creuser a changé.\n\nLa première ébauche était un panneau en apparence et une grille en réalité : trois cartes égales, alignées, à peine inclinées. Cinq gestes l'ont fait basculer.\n\n1. LES ANNONCES SE CHEVAUCHENT. Elles se décalent verticalement et mordent de seize pixels l'une sur l'autre. Sur un vrai panneau, la dernière punaisée recouvre les précédentes ; ici l'ordre est inversé — c'est la PROCHAINE échéance qui passe devant, et elle porte un fanion rouge. L'empilement devient une hiérarchie.\n\n2. L'INCLINAISON EST DEVENUE LISIBLE. Un degré ne se voit pas. Les fiches vont maintenant de un à deux degrés et demi, les bandes larges du fil restent sous le demi-degré, et les commandes ne penchent jamais.\n\n3. LES ATTACHES VARIENT. Punaise rouge pour une échéance, punaise blanche ou ruban pour une coupure du fil, en alternance. Six coupures attachées de la même façon se relisaient comme un tableau.\n\n4. LES ÉTIQUETTES DÉBORDENT sur ce qu'elles annoncent, et la colonne de droite a une pile dont la feuille du dessous dépasse.\n\n5. LES RÉGLURES ONT ÉTÉ ESSAYÉES PUIS RETIRÉES. Des lignes de fiche bristol derrière le texte : à l'écran, cela ne se lit pas comme du papier mais comme un défaut d'impression. La chaleur, l'ombre, la punaise et l'inclinaison suffisent."
-    },
-    {
-      "id": "soir-poche",
-      "x": 1500,
-      "y": -1240,
-      "w": 660,
-      "page": "page-1",
-      "text": "Le soir, et la poche.\n\nLE SOIR n'est pas une inversion : c'est le même bois avec moins de lumière. Le liège fonce, le papier devient un carton teinté, l'encre passe à la crème, et les accents s'éclaircissent juste assez pour tenir. Aucune pièce ne change de forme — une seule classe sur la racine suffit, comme .dark dans l'application.\n\nUn point a demandé un réglage : en sombre, une fiche ne se détache plus par son ombre. Il a fallu écarter le carton du liège et renforcer le liseré, sinon les annonces flottaient dans le vide.\n\nLA POCHE, à 390 px, n'est plus un panneau : les fiches ne peuvent plus se ranger côte à côte. Elles s'empilent, en mordant de huit pixels sur la précédente — assez pour suggérer l'épaisseur, pas assez pour cacher du texte. Le chevauchement passe de l'horizontale à la verticale, et c'est tout ce qui change.\n\nLes commandes y passent à 44 px, la cible au doigt. C'est huit de plus que le Button de la maison : l'arbitrage reste à faire pour toute l'application, mais sur cette direction il est pris."
-    },
-    {
-      "id": "vocabulaire",
-      "x": 2220,
-      "y": -1240,
-      "w": 660,
-      "page": "page-1",
-      "text": "Pourquoi une planche de vocabulaire.\n\nUne direction ne tient que si elle se démonte. Sans cette planche, « le tableau d'affichage » reste une image : le premier écran suivant réinvente son papier, et six mois plus tard il y a quatre panneaux différents dans l'application.\n\nElle nomme les pièces — le support, les attaches, les marques, les commandes, le tirage — et surtout les deux choses qu'une maquette ne dit jamais : l'échelle d'inclinaison, qui dépend de la largeur de la pièce et pas de l'envie, et les six règles qui décident quand la maquette se tait.\n\nUne distinction porte tout le reste : LE PAPIER PENCHE, LES COMMANDES NON. Ce qui répond au doigt reste droit, avec un bord net et une ombre portée dure. C'est ce qui empêche la direction de devenir un décor où l'on ne sait plus quoi cliquer."
-    },
-    {
-      "id": "reste",
-      "x": 2940,
-      "y": -1240,
-      "w": 680,
-      "page": "page-1",
-      "text": "Ce qui reste à trancher.\n\n— JUSQU'OÙ VA LA MATIÈRE. C'est la question qui commande toutes les autres. Une accueil au tableau d'affichage dans une application neutre partout ailleurs serait une pièce rapportée. Trois réponses possibles : le panneau gagne les vitrines de lieux et de groupes, qui s'y prêtent ; il reste à l'accueil et on l'assume comme une page à part ; ou l'on renonce. Le prochain écran à maquetter devrait être une vitrine de lieu, pour trancher sur pièce.\n\n— LE TIRAGE. Les vignettes sont dessinées, pas inventées. Les actus ont une bannière, les vidéos une miniature de plateforme, les decks rien du tout. Reste à décider ce que porte une carte de deck : les couleurs de la liste, la carte de champion, ou pas d'image.\n\n— LE SONDAGE DU GROUPE recouvre l'Établi, qui existe déjà. À garder seulement s'il y a une réponse en attente.\n\n— LE BOUTON DE CRÉATION disparaît en poche, comme aujourd'hui sur /events. Barre basse, bouton flottant, ou rien : décision explicite à prendre.\n\n— LES POLICES. Bricolage Grotesque en titrage, Geist en texte, Geist Mono pour les tampons. Geist vient de l'application ; Bricolage est un ajout, à valider — et à charger proprement, l'export PNG ne l'embarquant pas."
-    },
-    {
-      "id": "code",
-      "x": 3700,
-      "y": -1240,
-      "w": 660,
-      "page": "page-1",
-      "text": "Ce que ça demande, côté code.\n\nRien de nouveau en base : six sources qui existent déjà.\n\n— Événements : la source du calendrier, filtrée sur ce que la personne a rejoint ou organise. EventsCalendarWrapper lit déjà les mêmes documents.\n— Lieux : les lieux suivis, plus readOpeningState (lib/lairs/opening-hours.ts).\n— Directs : lib/db/stream-links.ts et lib/streams/announce.ts posent déjà le direct sur les lieux et les groupes.\n— Actus et vidéos : /api/news, avec localizeNews pour la langue.\n— Decks : lib/db/decks.ts, et countNonCompliantZones pour le badge — jamais une valeur stockée, il se recalcule du contenu.\n— Sondage : lib/db/play-group-sessions.ts, statut « poll ».\n\nSix frontières Suspense, une par tuile : une source lente ne doit pas retenir les autres, et la page doit rester prérendue. Pas de squelette pour le bandeau des directs — le cas courant étant qu'il n'y ait rien.\n\nDeux règles de contenu tranchées en maquette : les directs ne vivent que dans le bandeau, jamais dans le fil ; et le filtre par jeu laisse la colonne de droite intacte.\n\nÀ l'intégration : les onglets de jeu deviennent des button avec aria-pressed, la bascule un role=tablist. Ici ce ne sont que des span."
-    },
-    {
-      "id": "ecartees",
+      "id": "premieres",
       "x": 0,
       "y": -700,
       "w": 700,
-      "page": "page-2",
-      "text": "Les directions écartées, et l'étalon.\n\nB · LA LICE — encre, or, filets, didone, symétrie. Joutes tient son nom des joutes ; la page devenait un ordre de passage. La plus spectaculaire, et celle qui donnait le plus de tenue aux événements. Écartée pour le costume : la plateforme couvre aussi Magic, Star Wars Unlimited et des jeux de figurines, et le didone se lit mal en petit.\n\nC · LE NODE — noir, grille, monospace, cyan. Reprenait à l'écran le style d'affiche cyberpunk que les lieux impriment déjà. La meilleure pour les directs et les tournois. Écartée parce qu'elle est sombre par nature — pas de version claire — et qu'elle met de l'urgence partout, y compris sur un article.\n\nLA MAISON, TELLE QUELLE — la première version, alignée au pixel près sur app/globals.css. Elle reste l'étalon : c'est à elle qu'on compare le coût d'intégration du panneau, et c'est encore l'option de repli si la matière ne convainc pas.\n\nCes cinq planches ne sont pas maintenues. Elles portent la trace de la décision, pas la suite du travail."
+      "page": "page-3",
+      "text": "Les premières directions.\n\nB · LA LICE — encre, or, filets, didone, symétrie. Joutes tient son nom des joutes ; la page devenait un ordre de passage. Écartée pour le costume, et parce que le didone se lit mal en petit.\n\nC · LE NODE — noir, grille, monospace, cyan, aucune lueur. Le cyberpunk en régie plutôt qu'en devanture. À comparer avec « Néon » sur la page des nouvelles pistes : c'est le même genre, dans deux tempéraments opposés.\n\nLA MAISON, TELLE QUELLE — la toute première version, alignée au pixel près sur app/globals.css, avec son sombre et son téléphone. Elle reste l'étalon : c'est à elle qu'on compare le coût d'intégration de tout le reste, et c'est l'option de repli.\n\nCes planches ne sont pas maintenues au même rythme que la page 1. Elles portent la trace de la décision."
     }
   ],
   "launch": {
     "view": "canvas",
-    "page": "page-1"
+    "page": "page-2"
   }
 }

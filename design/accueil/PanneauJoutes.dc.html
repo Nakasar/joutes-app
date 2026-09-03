@@ -296,10 +296,87 @@
 
     .ico { width: 16px; height: 16px; flex-shrink: 0; }
     .ico-sm { width: 13px; height: 13px; flex-shrink: 0; }
+
+    .board.joutes {
+      --fond: oklch(0.97 0 0);
+      --fond-creux: oklch(0.94 0 0);
+      /* Pas de grain : le liège est ce qui part en premier. */
+      --grain-clair: transparent;
+      --grain-sombre: transparent;
+      --papier: oklch(1 0 0);
+      --papier-2: oklch(0.985 0 0);
+      --encre: oklch(0.145 0 0);
+      --encre-2: oklch(0.556 0 0);
+      --trait: oklch(0.922 0 0);
+      --liseré: oklch(0.922 0 0);
+      --hachure: rgba(0, 0, 0, 0.05);
+
+      --rouge: oklch(0.577 0.245 27.325);
+      --vert: oklch(0.596 0.145 163.225);
+      --ambre: oklch(0.554 0.135 66.442);
+      --reflet: rgba(255, 255, 255, 0.35);
+      --ombre-punaise: rgba(0, 0, 0, 0.35);
+
+      --ombre-fiche: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+      --ombre-basse: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --ombre-dure: none;
+      --ombre-dure-fine: none;
+    }
+
+    /*
+     * Les matériaux de la maison : une seule police, les rayons de `--radius`,
+     * des bords d'un pixel, les ombres de `shadow-sm`. L'inclinaison, le
+     * chevauchement et le fanion restent — ce sont eux qu'on met à l'épreuve.
+     */
+    .board.joutes .titre-affiche,
+    .board.joutes .marque,
+    .board.joutes .papier-titre h2,
+    .board.joutes .direct-titre-section,
+    .board.joutes .annonce .date .jour,
+    .board.joutes .coupure .titre { font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; font-weight: 700; letter-spacing: -0.025em; }
+
+    .board.joutes .fiche,
+    .board.joutes .direct-mot { border-radius: 14px; }
+    .board.joutes .fiche > .liseré { border-radius: 14px; border-color: var(--liseré); }
+    .board.joutes .btn { border-radius: 8px; border-width: 1px; height: 36px; font-weight: 500; }
+    .board.joutes .btn.contour { border-color: var(--trait); }
+    .board.joutes .recherche { border-width: 1px; border-color: var(--trait); border-radius: 8px; }
+    .board.joutes .avatar { border-width: 1px; border-color: var(--trait); }
+    .board.joutes .enseigne { border-bottom-width: 1px; border-bottom-color: var(--trait); background: var(--papier); }
+    .board.joutes .marque svg { display: none; }
+    .board.joutes .accroche h1 em svg { display: none; }
+    .board.joutes .onglet-jeu { border-width: 1px; border-color: var(--trait); border-radius: 8px 8px 0 0; box-shadow: none; }
+    .board.joutes .onglet-jeu.actif { border-color: transparent; }
+    .board.joutes .etiquette { border-radius: 8px; transform: none; box-shadow: none; }
+    .board.joutes .bandeau-section { margin-bottom: 4px; }
+    .board.joutes .tampon-statut { border-radius: 999px; border-width: 1px; transform: none; text-transform: none; letter-spacing: 0.01em; font-family: 'Geist', ui-sans-serif, sans-serif; font-size: 12px; }
+    .board.joutes .genre { border-radius: 999px; }
+    .board.joutes .fanion { border-radius: 999px; right: 12px; letter-spacing: 0.06em; }
+    .board.joutes .bascule { border-width: 1px; border-color: var(--trait); border-radius: 10px; }
+    .board.joutes .bascule-item { border-right-width: 1px; border-right-color: var(--trait); }
+    .board.joutes .cachet { border-width: 1px; border-color: var(--trait); border-radius: 10px; }
+    .board.joutes .case { border-width: 1px; border-color: var(--trait); border-radius: 4px; }
+    .board.joutes .tirage { border-radius: 10px; padding: 0; border-color: var(--trait); }
+    .board.joutes .direct-mot { border-width: 1px; }
+
+    /*
+     * Le ruban disparaît. Sans palette chaude, un adhésif n'est plus qu'une
+     * tache grise : c'est la première pièce du vocabulaire que ce dépouillement
+     * emporte, et elle ne se remplace pas.
+     */
+    /* La barre et les étiquettes reprennent la voix de la maison : ni petites
+       capitales monospacées, ni pavé noir — sinon l'épreuve est truquée. */
+    .board.joutes .nav-lien { font-family: 'Geist', ui-sans-serif, sans-serif; font-size: 14px; text-transform: none; letter-spacing: normal; border-bottom: none; padding: 0 12px; height: 36px; display: inline-flex; align-items: center; border-radius: 8px; }
+    .board.joutes .nav-lien.actif { background: oklch(0.97 0 0); }
+    .board.joutes .nav { gap: 2px; }
+    .board.joutes .etiquette { background: transparent; color: var(--encre); padding: 0; font-family: 'Geist', ui-sans-serif, sans-serif; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; text-transform: none; }
+
+    .board.joutes .ruban { display: none; }
+    .board.joutes .coupure .attache-punaise { display: block; }
   </style>
 </helmet>
 
-<div class="board nuit">
+<div class="board joutes">
 
   <header class="enseigne">
     <div class="enseigne-inner">
@@ -569,7 +646,7 @@
 </div>
 </x-dc>
 
-<script data-dc-script data-props='{"$preview":{"width":1440,"height":2060}}'>
+<script data-dc-script data-props='{"$preview":{"width":1440,"height":1980}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
