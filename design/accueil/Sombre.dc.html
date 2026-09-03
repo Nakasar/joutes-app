@@ -17,10 +17,11 @@
 
     /*
      * Les jetons de `app/globals.css`, recopiés tels quels — l'accueil
-     * n'introduit aucune couleur à elle. Le rouge du direct est la seule
-     * exception, et il ne se dérive de rien : c'est déjà le choix de
-     * `components/users/LiveBadge.tsx`, un direct étant un état et non une
-     * marque.
+     * n'introduit aucune couleur à elle. Deux exceptions seulement : le rouge
+     * du direct, qui ne se dérive de rien parce qu'un direct est un état et
+     * non une marque — c'est déjà le choix de `components/users/LiveBadge.tsx`
+     * — et le noir de l'incrustation de durée, qui passe sur une image et ne
+     * peut donc pas suivre le thème.
      */
     .app {
       --background: oklch(1 0 0);
@@ -105,7 +106,6 @@
     .filtres { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
     .puce { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--background); font-size: 13px; font-weight: 500; color: var(--foreground); white-space: nowrap; flex-shrink: 0; cursor: pointer; }
     .puce.actif { background: var(--primary); border-color: transparent; color: var(--primary-foreground); }
-    .filtres .compte { margin-left: auto; font-size: 13px; color: var(--muted-foreground); }
 
     /* Le bandeau des directs. Absent quand rien ne tourne — jamais une plaque vide. */
     .directs { display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 14px; border: 1px solid color-mix(in oklab, var(--direct) 45%, transparent); background: color-mix(in oklab, var(--direct) 6%, transparent); }
@@ -142,7 +142,7 @@
     .evenement { display: flex; align-items: center; gap: 14px; padding: 12px; padding-left: 13px; border-radius: 10px; border: 1px solid var(--border); border-left: 3px solid var(--muted-foreground); background: var(--background); }
     .evenement.inscrit { border-left-color: var(--ouvert); }
     .evenement.organise { border-left-color: var(--foreground); }
-    .evenement.ouvert { border-left-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent); }
+    .evenement.libre { border-left-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent); }
     .date-bloc { flex-shrink: 0; width: 48px; height: 52px; border-radius: 10px; background: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
     .date-bloc .jour { font-size: 18px; line-height: 22px; font-weight: 700; letter-spacing: -0.02em; }
     .date-bloc .mois { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-foreground); }
@@ -185,7 +185,6 @@
     .point.ferme { background: color-mix(in oklab, var(--muted-foreground) 55%, transparent); }
 
     .deck { display: flex; align-items: center; gap: 12px; }
-    .deck .barre-jeu { flex-shrink: 0; width: 3px; height: 38px; border-radius: 999px; background: color-mix(in oklab, var(--foreground) 22%, transparent); }
     .deck .corps { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex-grow: 1; }
     .deck .nom { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: -0.01em; }
     .deck .meta { font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
@@ -261,7 +260,6 @@
       <sc-for list="{{ jeux }}" as="jeu" hint-placeholder-count="4">
         <span class="puce {{ jeu.classe }}" onClick="{{ jeu.choisir }}">{{ jeu.nom }}</span>
       </sc-for>
-      <span class="compte">{{ compte }}</span>
     </div>
 
     <sc-if value="{{ aDesDirects }}" hint-placeholder-val="{{ true }}">
@@ -329,7 +327,7 @@
             </div>
           </sc-if>
           <sc-if value="{{ sansEvenement }}" hint-placeholder-val="{{ false }}">
-            <p class="vide">Rien de prévu pour ce jeu. Le calendrier complet reste à un clic.</p>
+            <p class="vide">{{ videEvenements }}</p>
           </sc-if>
         </section>
 
@@ -345,7 +343,7 @@
           </div>
           <div>
             <span class="segments">
-              <sc-for list="{{ onglets }}" as="o" hint-placeholder-count="5">
+              <sc-for list="{{ onglets }}" as="o" hint-placeholder-count="4">
                 <span class="segment {{ o.classe }}" onClick="{{ o.choisir }}">{{ o.nom }}<span class="nb">{{ o.nombre }}</span></span>
               </sc-for>
             </span>
@@ -380,7 +378,7 @@
             </div>
           </sc-if>
           <sc-if value="{{ filVide }}" hint-placeholder-val="{{ false }}">
-            <p class="vide">Rien de ce type pour ce jeu.</p>
+            <p class="vide">{{ videFil }}</p>
           </sc-if>
         </section>
 
@@ -397,29 +395,19 @@
             <span class="tuile-lien">Découvrir</span>
           </div>
           <div class="liste" style="gap: 14px">
-            <div class="lieu">
-              <span class="logo-lieu">RD</span>
-              <span class="corps">
-                <span class="nom">Le Repaire du Dragon
-                  <span class="point" style="background: var(--direct)"></span>
+            <sc-for list="{{ lieux }}" as="l" hint-placeholder-count="3">
+              <div class="lieu">
+                <span class="logo-lieu">{{ l.initiales }}</span>
+                <span class="corps">
+                  <span class="nom">{{ l.nom }}</span>
+                  <span class="etat">
+                    <sc-if value="{{ l.ouvert }}" hint-placeholder-val="{{ true }}"><span class="point ouvert"></span></sc-if>
+                    <sc-if value="{{ l.ferme }}" hint-placeholder-val="{{ false }}"><span class="point ferme"></span></sc-if>
+                    {{ l.etat }} <span class="sep">·</span> {{ l.agenda }}
+                  </span>
                 </span>
-                <span class="etat"><span class="point ouvert"></span>Ouvert jusqu&apos;à 19h <span class="sep">·</span> 3 événements cette semaine</span>
-              </span>
-            </div>
-            <div class="lieu">
-              <span class="logo-lieu">TJ</span>
-              <span class="corps">
-                <span class="nom">La Taverne des Joueurs</span>
-                <span class="etat"><span class="point ferme"></span>Fermé <span class="sep">·</span> ouvre demain à 14h</span>
-              </span>
-            </div>
-            <div class="lieu">
-              <span class="logo-lieu">GC</span>
-              <span class="corps">
-                <span class="nom">Games &amp; Co Villeurbanne</span>
-                <span class="etat"><span class="point ouvert"></span>Ouvert jusqu&apos;à 20h <span class="sep">·</span> 1 événement cette semaine</span>
-              </span>
-            </div>
+              </div>
+            </sc-for>
           </div>
         </section>
 
@@ -435,30 +423,15 @@
             </span>
           </div>
           <div class="liste" style="gap: 14px">
-            <div class="deck">
-              <span class="barre-jeu"></span>
-              <span class="corps">
-                <span class="nom">Aggro Noxus</span>
-                <span class="meta">Riftbound <span class="sep">·</span> modifié il y a 2 jours</span>
-              </span>
-              <span class="badge">Conforme</span>
-            </div>
-            <div class="deck">
-              <span class="barre-jeu"></span>
-              <span class="corps">
-                <span class="nom">Contrôle Azorius</span>
-                <span class="meta">Magic <span class="sep">·</span> modifié hier</span>
-              </span>
-              <span class="badge souci">2 zones</span>
-            </div>
-            <div class="deck">
-              <span class="barre-jeu"></span>
-              <span class="corps">
-                <span class="nom">Rebelles agressif</span>
-                <span class="meta">Star Wars Unlimited <span class="sep">·</span> brouillon</span>
-              </span>
-              <span class="badge">Brouillon</span>
-            </div>
+            <sc-for list="{{ decks }}" as="d" hint-placeholder-count="3">
+              <div class="deck">
+                <span class="corps">
+                  <span class="nom">{{ d.nom }}</span>
+                  <span class="meta">{{ d.nomJeu }} <span class="sep">·</span> {{ d.quand }}</span>
+                </span>
+                <span class="badge {{ d.badgeClasse }}">{{ d.badge }}</span>
+              </div>
+            </sc-for>
           </div>
         </section>
 
@@ -511,37 +484,59 @@ class Component extends DCLogic {
     ];
   }
 
+  /*
+   * Les directs ne vivent que dans le bandeau, jamais dans le fil : les y
+   * répéter montrait deux fois la même chose à trois cents pixels d'écart. Le
+   * fil garde ce qui se lit après coup — articles, vidéos, listes.
+   */
   tousLesDirects() {
     return [
-      { jeu: 'riftbound', titre: "Draft de sortie, table 1", lieu: 'Le Repaire du Dragon · Twitch', audience: '142 spectateurs' },
-      { jeu: 'mtg', titre: "Finale du Standard — Ligue d'automne", lieu: 'La Taverne des Joueurs · YouTube', audience: '89 spectateurs' },
+      { jeu: 'riftbound', titre: 'Draft de sortie, table 1', lieu: 'Le Repaire du Dragon', plateforme: 'Twitch', audience: '142 spectateurs' },
+      { jeu: 'mtg', titre: "Finale du Standard — Ligue d'automne", lieu: 'La Taverne des Joueurs', plateforme: 'YouTube', audience: '89 spectateurs' },
     ];
   }
 
+  /* Semaine du 18 novembre : le 19 est un jeudi, le 21 un samedi. */
   tousLesEvenements() {
     return [
-      { jeu: 'riftbound', jour: '22', mois: 'nov', titre: 'Tournoi Riftbound — Origines', lieu: 'Le Repaire du Dragon', heure: '14h00', nomJeu: 'Riftbound', etat: 'inscrit', badge: 'Inscrit', badgeClasse: 'ok' },
-      { jeu: 'swu', jour: '24', mois: 'nov', titre: 'Soirée découverte Star Wars Unlimited', lieu: 'La Taverne des Joueurs', heure: '19h30', nomJeu: 'Star Wars Unlimited', etat: 'organise', badge: 'Organisateur', badgeClasse: 'principal' },
-      { jeu: 'mtg', jour: '27', mois: 'nov', titre: 'Commander night', lieu: 'Le Repaire du Dragon', heure: '20h00', nomJeu: 'Magic', etat: 'ouvert', badge: '3 places', badgeClasse: 'attention' },
+      { jeu: 'riftbound', jour: '19', mois: 'nov', jourNom: 'jeudi', titre: 'Tournoi Riftbound — Origines', lieu: 'Le Repaire du Dragon', heure: '19h00', nomJeu: 'Riftbound', etat: 'inscrit', badge: 'Inscrit', badgeClasse: 'ok' },
+      { jeu: 'mtg', jour: '20', mois: 'nov', jourNom: 'vendredi', titre: 'Commander night', lieu: 'Le Repaire du Dragon', heure: '20h00', nomJeu: 'Magic', etat: 'libre', badge: '3 places restantes', badgeClasse: 'attention' },
+      { jeu: 'swu', jour: '21', mois: 'nov', jourNom: 'samedi', titre: 'Soirée découverte Star Wars Unlimited', lieu: 'La Taverne des Joueurs', heure: '14h00', nomJeu: 'Star Wars Unlimited', etat: 'organise', badge: 'Organisateur', badgeClasse: 'principal' },
     ];
   }
 
   toutLeFil() {
     return [
-      { type: 'actu', typeNom: 'Actu', chipClasse: '', duree: '', jeu: 'riftbound', titre: 'Liste de restrictions du 18 novembre : deux cartes sortent du Standard', source: 'Riftbound officiel', nomJeu: 'Riftbound', quand: 'il y a 2 h', badge: '', badgeClasse: '' },
-      { type: 'direct', typeNom: 'En direct', chipClasse: 'direct', duree: '', jeu: 'riftbound', titre: "Draft de sortie, table 1", source: 'Le Repaire du Dragon', nomJeu: 'Riftbound', quand: '142 spectateurs', badge: '', badgeClasse: '' },
-      { type: 'video', typeNom: 'Vidéo', chipClasse: '', badge: '', badgeClasse: '', jeu: 'riftbound', titre: 'Trois erreurs de séquencement qui coûtent la partie', source: 'Chaîne de la Taverne', nomJeu: 'Riftbound', quand: 'il y a 5 h', duree: '12:40' },
-      { type: 'deck', typeNom: 'Deck', chipClasse: '', duree: '', jeu: 'riftbound', titre: "Aggro Noxus — 2e de la Ligue d'automne", source: 'par @lenaflux', nomJeu: 'Riftbound', quand: 'hier', badge: 'Conforme au format', badgeClasse: 'ok' },
-      { type: 'actu', typeNom: 'Actu', chipClasse: '', duree: '', badge: '', badgeClasse: '', jeu: 'mtg', titre: "Les dates de l'avant-première en boutique sont tombées", source: 'Actus Magic', nomJeu: 'Magic', quand: 'hier' },
-      { type: 'video', typeNom: 'Vidéo', chipClasse: '', badge: '', badgeClasse: '', jeu: 'swu', titre: 'Monter sa première liste Rebelles sans se ruiner', source: 'Games & Co', nomJeu: 'Star Wars Unlimited', quand: 'il y a 2 j', duree: '08:15' },
-      { type: 'deck', typeNom: 'Deck', chipClasse: '', duree: '', jeu: 'mtg', titre: 'Contrôle Azorius — la liste de la semaine', source: 'par @vahn', nomJeu: 'Magic', quand: 'il y a 3 j', badge: '2 zones à ajuster', badgeClasse: 'souci' },
+      { type: 'actu', typeNom: 'Actu', duree: '', jeu: 'riftbound', titre: 'Liste de restrictions du 18 novembre : deux cartes sortent du Standard', source: 'Riftbound officiel', nomJeu: 'Riftbound', quand: 'il y a 2 h', badge: '', badgeClasse: '' },
+      { type: 'video', typeNom: 'Vidéo', duree: '12:40', jeu: 'riftbound', titre: 'Trois erreurs de séquencement qui coûtent la partie', source: 'Chaîne de la Taverne', nomJeu: 'Riftbound', quand: 'il y a 5 h', badge: '', badgeClasse: '' },
+      { type: 'deck', typeNom: 'Deck', duree: '', jeu: 'riftbound', titre: "Aggro Noxus — 2e de la Ligue d'automne", source: 'par @lenaflux', nomJeu: 'Riftbound', quand: 'hier', badge: 'Conforme au format', badgeClasse: 'ok' },
+      { type: 'actu', typeNom: 'Actu', duree: '', jeu: 'mtg', titre: "Les dates de l'avant-première en boutique sont tombées", source: 'Actus Magic', nomJeu: 'Magic', quand: 'hier', badge: '', badgeClasse: '' },
+      { type: 'video', typeNom: 'Vidéo', duree: '08:15', jeu: 'swu', titre: 'Monter sa première liste Rebelles sans se ruiner', source: 'Games & Co', nomJeu: 'Star Wars Unlimited', quand: 'il y a 2 j', badge: '', badgeClasse: '' },
+      { type: 'deck', typeNom: 'Deck', duree: '', jeu: 'mtg', titre: 'Contrôle Azorius — la liste de la semaine', source: 'par @vahn', nomJeu: 'Magic', quand: 'il y a 3 j', badge: '2 zones à ajuster', badgeClasse: 'souci' },
+    ];
+  }
+
+  mesLieux() {
+    return [
+      { initiales: 'RD', nom: 'Le Repaire du Dragon', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 19h", agenda: '3 événements cette semaine' },
+      { initiales: 'TJ', nom: 'La Taverne des Joueurs', ouvert: false, ferme: true, etat: 'Fermé, ouvre demain à 14h', agenda: '1 événement cette semaine' },
+      { initiales: 'GC', nom: 'Games & Co Villeurbanne', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 20h", agenda: '1 événement cette semaine' },
+    ];
+  }
+
+  mesDecks() {
+    return [
+      { nom: 'Aggro Noxus', nomJeu: 'Riftbound', quand: 'modifié il y a 2 j', badge: 'Conforme', badgeClasse: '' },
+      { nom: 'Contrôle Azorius', nomJeu: 'Magic', quand: 'modifié hier', badge: '2 zones', badgeClasse: 'souci' },
+      { nom: 'Aggro Rebelles', nomJeu: 'Star Wars Unlimited', quand: 'modifié il y a 4 j', badge: 'Brouillon', badgeClasse: '' },
     ];
   }
 
   renderVals() {
     const jeu = this.state.jeu;
     const onglet = this.state.onglet;
-    const duJeu = (x) => jeu === 'tous' || x.jeu === jeu;
+    const tousJeux = jeu === 'tous';
+    const duJeu = (x) => tousJeux || x.jeu === jeu;
 
     const jeux = this.jeuxDisponibles().map((j) => ({
       id: j.id,
@@ -559,7 +554,6 @@ class Component extends DCLogic {
       { id: 'tout', nom: 'Tout' },
       { id: 'actu', nom: 'Actus' },
       { id: 'video', nom: 'Vidéos' },
-      { id: 'direct', nom: 'Directs' },
       { id: 'deck', nom: 'Decks' },
     ].map((o) => ({
       nom: o.nom,
@@ -568,29 +562,32 @@ class Component extends DCLogic {
       choisir: () => this.setState({ onglet: o.id }),
     }));
 
-    const pluriel = (n, un, plusieurs) => (n > 1 ? n + ' ' + plusieurs : n + ' ' + un);
+    const pluriel = (n, un, plusieurs) => n + ' ' + (n > 1 ? plusieurs : un);
 
     const morceaux = [];
     if (evenements.length > 0) morceaux.push(pluriel(evenements.length, 'événement cette semaine', 'événements cette semaine'));
     if (directs.length > 0) morceaux.push(pluriel(directs.length, 'direct en cours', 'directs en cours'));
-    const resume = morceaux.length > 0
-      ? morceaux.join(', ') + '.'
-      : "Rien ne vous attend sur ce jeu pour le moment.";
+
+    /* « Ce jeu » n'a de sens que si un jeu est choisi ; sinon la page ment. */
+    const surCeJeu = tousJeux ? '' : ' sur ce jeu';
 
     return {
-      resume,
-      compte: filDuJeu.length + ' contenus · ' + evenements.length + ' événements',
+      resume: morceaux.length > 0 ? morceaux.join(', ') + '.' : "Rien ne m'attend cette semaine" + surCeJeu + '.',
       jeux,
       onglets,
       directs,
       aDesDirects: directs.length > 0,
-      titreDirects: pluriel(directs.length, 'direct dans vos lieux', 'directs dans vos lieux'),
+      titreDirects: pluriel(directs.length, 'direct dans mes lieux', 'directs dans mes lieux'),
       evenements,
       aDesEvenements: evenements.length > 0,
       sansEvenement: evenements.length === 0,
+      videEvenements: 'Rien de prévu cette semaine' + surCeJeu + '.',
       fil,
       aDuFil: fil.length > 0,
       filVide: fil.length === 0,
+      videFil: "Rien de ce type" + surCeJeu + " pour l'instant.",
+      lieux: this.mesLieux(),
+      decks: this.mesDecks(),
     };
   }
 }

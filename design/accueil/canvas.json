@@ -1,38 +1,128 @@
 {
   "artboards": [
-    { "file": "Main.dc.html", "title": "L'accueil connectée — clair", "x": 0, "y": 0, "w": 1440, "h": 1800, "is_interactive": true },
-    { "file": "Sombre.dc.html", "title": "La même, en sombre", "x": 1560, "y": 0, "w": 1440, "h": 1800, "is_interactive": true },
-    { "file": "Mobile.dc.html", "title": "Sur téléphone — 390 px", "x": 3120, "y": 0, "w": 390, "h": 3060, "is_interactive": true }
+    {
+      "file": "Main.dc.html",
+      "title": "A · Le tableau d'affichage",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1980,
+      "is_interactive": true,
+      "page": "page-1"
+    },
+    {
+      "file": "Lice.dc.html",
+      "title": "B · La lice",
+      "x": 1560,
+      "y": 0,
+      "w": 1240,
+      "h": 2320,
+      "is_interactive": true,
+      "page": "page-1"
+    },
+    {
+      "file": "Node.dc.html",
+      "title": "C · Le node",
+      "x": 2920,
+      "y": 0,
+      "w": 1240,
+      "h": 1560,
+      "is_interactive": true,
+      "page": "page-1"
+    },
+    {
+      "file": "Maison.dc.html",
+      "title": "La maison, telle quelle — clair",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1710,
+      "is_interactive": true,
+      "page": "page-2"
+    },
+    {
+      "file": "Sombre.dc.html",
+      "title": "La maison, en sombre",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 1710,
+      "is_interactive": true,
+      "page": "page-2"
+    },
+    {
+      "file": "Mobile.dc.html",
+      "title": "La maison, sur téléphone",
+      "x": 3120,
+      "y": 0,
+      "w": 390,
+      "h": 2950,
+      "is_interactive": true,
+      "page": "page-2"
+    }
+  ],
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Directions"
+    },
+    {
+      "id": "page-2",
+      "name": "La maison, telle quelle"
+    }
   ],
   "annotations": [
     {
       "id": "demande",
       "x": 0,
-      "y": -620,
-      "w": 620,
-      "text": "La demande.\n\n« Imagine une nouvelle page d'accueil pour Joutes, qui combine évènements, lieux, actualités, contenus (articles / vidéos / directs), decks… »\n\nAujourd'hui app/[locale]/(app)/page.tsx ne porte qu'un titre, un bouton « Créer un événement » et le calendrier. Tout le reste de la plateforme — lieux suivis, actus, directs, decks, groupes de jeu — ne se trouve qu'en le cherchant dans le menu.\n\nCes planches montrent la vue du joueur connecté. L'accueil du visiteur non connecté est un autre écran, qui reste à faire : elle n'a ni les mêmes contenus ni le même but (convaincre plutôt que reprendre).\n\nLes trois planches répondent au clic : le filtre par jeu en haut, les onglets du fil au milieu."
+      "y": -1180,
+      "w": 660,
+      "page": "page-1",
+      "text": "La demande.\n\n« Imagine une nouvelle page d'accueil pour Joutes, qui combine évènements, lieux, actualités, contenus (articles / vidéos / directs), decks… », puis : « essayons une direction plus créative et originale ».\n\nLa structure ne bouge pas d'une planche à l'autre — mêmes contenus, même ordre, mêmes données. Seul le traitement change. C'est fait exprès : à contenu identique, la comparaison porte sur l'esthétique et rien d'autre.\n\nLes trois planches répondent au clic : les jeux suivis en haut filtrent les directs, l'agenda et le fil ; les onglets trient le fil.\n\nLa page « La maison, telle quelle » garde la première version, alignée au pixel près sur le design system existant. Ce n'est pas un rebut : c'est la quatrième option, et la moins chère."
     },
     {
-      "id": "parti-pris",
+      "id": "directions",
       "x": 720,
-      "y": -620,
-      "w": 620,
-      "text": "Le parti pris.\n\nUne seule question, comme l'Établi d'un groupe de jeu (HubView) : qu'est-ce qui m'attend, et qu'est-ce qui bouge maintenant ? L'ordre de la page en découle — ce qui demande une réponse d'abord, ce qui informe ensuite.\n\n1. Les directs en cours, dans mes lieux et mes groupes. Le bandeau disparaît quand rien ne tourne, exactement comme LairLiveSection : un lieu sans direct n'affiche rien plutôt qu'une plaque vide.\n2. Ce qui m'attend : mes événements engagés, avec mon statut (inscrit, organisateur, places restantes) et le liseré de couleur du calendrier.\n3. Le fil : actus, vidéos, directs et decks dans un seul flux, avec des onglets pour n'en garder qu'un type.\n\nÀ droite, ce qui ne bouge pas au rythme du fil : mes lieux et leur état d'ouverture, mes decks et leur conformité, le sondage de session à répondre.\n\nLe filtre par jeu commande le haut de la page (directs, événements, fil) et laisse la colonne de droite intacte — mes lieux et mes decks ne dépendent pas du jeu que je regarde. C'est un choix, pas une omission."
+      "y": -1180,
+      "w": 700,
+      "page": "page-1",
+      "text": "Les trois directions, et ce qu'elles coûtent.\n\nA · LE TABLEAU D'AFFICHAGE — papier chaud, fiches punaisées, ruban adhésif, un grotesque de titrage. La métaphore est celle du panneau de liège de la boutique : le seul endroit où un joueur voit déjà côte à côte une annonce de tournoi, une liste punaisée et un mot du patron. Une accueil qui mêle six natures de contenu a le même problème, et le panneau le résout par la matière et l'inclinaison plutôt que par des colonnes égales.\nCe qu'elle coûte : la matière se périme moins bien qu'une grille neutre, l'inclinaison complique l'alignement à l'intégration, et le papier demandera un vrai travail pour sa version sombre.\n\nB · LA LICE — encre profonde, or, filets, didone en titrage, symétrie. Joutes tient son nom des joutes : la page devient un ordre de passage, annoncé. C'est la direction la plus assumée, et celle qui donne le plus de tenue aux événements.\nCe qu'elle coûte : le costume. La plateforme couvre Magic, Star Wars Unlimited et des jeux de figurines ; leur donner à tous un habit médiéval est un parti pris de marque, pas un choix de mise en page. Et le didone se lit mal en petit.\n\nC · LE NODE — noir, grille apparente, monospace, cyan. Reprend à l'écran le style d'affiche « cyberpunk » que les lieux peuvent déjà imprimer, jusqu'à la façon d'adresser un lieu en NODE. C'est la direction qui sert le mieux les directs et les tournois.\nCe qu'elle coûte : elle est sombre par nature — pas de version claire — et elle met de l'urgence partout, y compris sur un article qu'on voulait lire tranquillement.\n\nCe que je garderais : A. C'est la seule dont la métaphore renvoie au lieu réel que Joutes met en relation, elle accueille sans effort des contenus de natures différentes, elle tient en clair comme en sombre, et elle n'enferme pas la marque dans un genre. B et C sont plus spectaculaires ; elles sont aussi plus difficiles à porter sur les cent autres écrans de l'application."
+    },
+    {
+      "id": "structure",
+      "x": 1500,
+      "y": -1180,
+      "w": 640,
+      "page": "page-1",
+      "text": "La structure, commune aux quatre planches.\n\nL'ordre suit celui de l'Établi d'un groupe de jeu (HubView) : ce qui demande une réponse d'abord, ce qui informe ensuite.\n\n1. Les directs en cours dans mes lieux. Le bandeau disparaît quand rien ne tourne, comme LairLiveSection : un lieu sans direct n'affiche rien plutôt qu'une plaque vide.\n2. Ce qui m'attend : mes événements engagés, avec mon statut — inscrit, organisateur, places restantes.\n3. Le fil : actus, vidéos et decks dans un seul flux, avec des onglets pour n'en garder qu'un type.\n\nÀ droite, ce qui ne bouge pas au rythme du fil : mes lieux et leur état d'ouverture, mes decks et leur conformité, le sondage de session à répondre.\n\nDeux règles tranchées en cours de route :\n\n— Les directs ne vivent que dans le bandeau. Les répéter dans le fil montrait deux fois la même chose à trois cents pixels d'écart. Le fil garde ce qui se lit après coup ; le direct est une invitation à agir maintenant.\n\n— Le filtre par jeu commande le haut de la page et laisse la colonne de droite intacte : mes lieux et mes decks ne dépendent pas du jeu que je regarde."
     },
     {
       "id": "code",
-      "x": 1440,
-      "y": -620,
-      "w": 620,
-      "text": "Ce que ça demande, côté code.\n\nRien de nouveau en base : tout est déjà écrit quelque part.\n\n— Événements : la source du calendrier, filtrée sur ce que la personne a rejoint ou organise. EventsCalendarWrapper lit déjà les mêmes documents.\n— Lieux : les lieux suivis, plus readOpeningState (lib/lairs/opening-hours.ts) pour la ligne « ouvert jusqu'à ».\n— Directs : lib/db/stream-links.ts et lib/streams/announce.ts posent déjà le direct sur les lieux et les groupes. L'accueil ne fait que les relire.\n— Actus et vidéos : /api/news, avec localizeNews pour la langue.\n— Decks : lib/db/decks.ts, et countNonCompliantZones pour le badge de conformité (jamais une valeur stockée — le badge se recalcule du contenu).\n— Sondage : lib/db/play-group-sessions.ts, statut « poll ».\n\nSix sources, six frontières Suspense : une tuile lente ne doit pas retenir les autres, et la page doit rester préfabriquée. Chaque tuile a son squelette, sauf le bandeau des directs — le cas courant étant qu'il n'y ait rien, une plaque grise annoncerait un contenu qui ne viendra pas."
+      "x": 2220,
+      "y": -1180,
+      "w": 640,
+      "page": "page-1",
+      "text": "Ce que ça demande, côté code.\n\nRien de nouveau en base : tout existe déjà quelque part.\n\n— Événements : la source du calendrier, filtrée sur ce que la personne a rejoint ou organise. EventsCalendarWrapper lit déjà les mêmes documents.\n— Lieux : les lieux suivis, plus readOpeningState (lib/lairs/opening-hours.ts) pour la ligne « ouvert jusqu'à ».\n— Directs : lib/db/stream-links.ts et lib/streams/announce.ts posent déjà le direct sur les lieux et les groupes ; l'accueil ne fait que les relire.\n— Actus et vidéos : /api/news, avec localizeNews pour la langue.\n— Decks : lib/db/decks.ts, et countNonCompliantZones pour le badge de conformité — jamais une valeur stockée, le badge se recalcule du contenu.\n— Sondage : lib/db/play-group-sessions.ts, statut « poll ».\n\nSix sources, six frontières Suspense : une tuile lente ne doit pas retenir les autres, et la page doit rester prérendue. Chaque tuile a son squelette, sauf le bandeau des directs — le cas courant étant qu'il n'y ait rien, une plaque grise annoncerait un contenu qui ne viendra pas.\n\nÀ l'intégration : les puces de jeu deviennent des boutons avec aria-pressed, et les onglets du fil un vrai role=tablist. Ici ce ne sont que des span."
     },
     {
       "id": "trancher",
-      "x": 2160,
-      "y": -620,
-      "w": 620,
-      "text": "À trancher.\n\n— Le fil mélange quatre natures de contenu dans un seul flux. C'est ce qui donne son intérêt à l'accueil, et c'est aussi ce qui rend l'ordre difficile : un deck publié il y a trois jours vaut-il une actu d'il y a deux heures ? Proposé : l'ordre chronologique, et les onglets pour trancher soi-même.\n\n— Les vignettes sont dessinées, pas inventées. Les actus ont une bannière (BannerUploader), les vidéos une miniature de la plateforme, les decks rien du tout. Reste à décider ce que porte une carte de deck : les couleurs de la liste, la carte de champion, ou pas d'image.\n\n— Le sondage du groupe sur l'accueil recouvre l'Établi, qui existe déjà. À garder seulement s'il y a une réponse en attente — sinon la tuile n'a rien à dire.\n\n— Sur téléphone, les puces et les boutons passent à 40 px (la taille lg de button.tsx) là où la maison en met 36. Au doigt on vise 44. C'est un arbitrage à faire une fois, pour toute l'app, pas pour cette page.\n\n— Le nombre d'éléments par tuile : trois événements, trois lieux, trois decks, sept contenus. Rien ne le justifie encore autrement que par la hauteur de la page."
+      "x": 2940,
+      "y": -1180,
+      "w": 660,
+      "page": "page-1",
+      "text": "À trancher.\n\n— La direction, évidemment. Et jusqu'où elle va : une accueil au tableau d'affichage dans une application qui reste neutre partout ailleurs serait une pièce rapportée. Soit la matière gagne les autres écrans, soit l'accueil reste sobre.\n\n— Les vignettes sont dessinées, pas inventées. Les actus ont une bannière, les vidéos une miniature de la plateforme, les decks rien du tout. Reste à décider ce que porte une carte de deck : les couleurs de la liste, la carte de champion, ou pas d'image.\n\n— Le sondage du groupe recouvre l'Établi, qui existe déjà. À garder seulement s'il y a une réponse en attente — sinon la tuile n'a rien à dire.\n\n— Sur téléphone, la première version fait passer les contrôles à 40 px là où la maison en met 36. Au doigt on vise 44. C'est un arbitrage à faire une fois, pour toute l'application.\n\n— Le bouton « Créer un événement » disparaît sur téléphone, comme aujourd'hui sur /events. Décision explicite à prendre : barre basse, bouton flottant, ou rien.\n\n— Le nombre d'éléments par tuile : trois événements, trois lieux, trois decks, six contenus. Rien ne le justifie encore autrement que par la hauteur de la page.\n\n— Les directions B et C n'ont pas de version téléphone ni de seconde thématique : elles s'arrêtent au niveau de finition qu'il faut pour choisir, pas pour intégrer."
+    },
+    {
+      "id": "maison",
+      "x": 0,
+      "y": -560,
+      "w": 700,
+      "page": "page-2",
+      "text": "La première version : la maison, telle quelle.\n\nLes jetons sont recopiés de app/globals.css, sans une couleur inventée. Les composants reprennent leurs valeurs réelles : Button en 36 px et rounded-md, Badge en rounded-full px-2 py-0.5 text-xs, la tuile rounded-xl border bg-card p-5 de HubView, la bascule segmentée du calendrier, la pastille rouge de components/users/LiveBadge.tsx avec son point qui bat à deux secondes. Geist et Geist Mono, comme le layout.\n\nElle reste sur le canevas pour deux raisons : c'est l'étalon qui permet de juger les trois autres, et c'est une option à part entière — celle qui coûte le moins à intégrer, et qui vieillira comme le reste de l'application.\n\nC'est aussi la seule des quatre qui montre le sombre et le téléphone."
     }
   ],
-  "launch": { "view": "canvas" }
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
 }

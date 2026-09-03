@@ -199,59 +199,40 @@
     .ico { width: 16px; height: 16px; flex-shrink: 0; }
     .ico-sm { width: 14px; height: 14px; flex-shrink: 0; }
     .ico-xs { width: 12px; height: 12px; flex-shrink: 0; }
-
-    /* Le téléphone : une colonne, et des cibles au doigt. */
-    .chrome-inner { padding: 0 16px; height: 56px; gap: 12px; }
-    .page { padding: 16px 16px 32px; gap: 16px; }
-    .salut h1 { font-size: 24px; line-height: 30px; }
-    .tuile { padding: 16px; gap: 12px; }
-    .directs { padding: 16px; gap: 12px; }
-    .directs-grille { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-
-    /*
-     * Les contrôles de la maison mesurent 36 px (`Button` par défaut) ; au
-     * doigt on vise 44. Sur cette planche ils passent à 40, la taille `lg` qui
-     * existe déjà dans `button.tsx` — le compromis est signalé en note, il se
-     * tranche avant l'intégration.
-     */
-    .puce { height: 40px; padding: 0 16px; font-size: 14px; }
-    .segment { height: 36px; padding: 0 13px; }
-    .segments { padding: 2px; height: 40px; align-items: center; }
-    .btn { height: 40px; }
-
-    .rang-souple { display: flex; flex-wrap: wrap; gap: 8px; }
-    /* Les compteurs tiennent sur la planche large ; ici ils feraient déborder la bascule. */
-    .segment .nb { display: none; }
-
-    .fil-item { padding: 10px; gap: 12px; }
-    .fil-item .titre { font-size: 14px; line-height: 20px; }
-    .evenement { gap: 12px; padding: 10px; padding-left: 11px; align-items: flex-start; }
-    .evenement .badge { align-self: flex-start; margin-top: 2px; }
-    .date-bloc { width: 44px; height: 48px; }
-    .lieu { min-height: 44px; }
-    .deck { min-height: 44px; }
   </style>
 </helmet>
 
-<div class="app">
+<div class="app maison">
 
   <header class="chrome">
     <div class="chrome-inner">
-      <div style="display: flex; align-items: center; gap: 10px; min-width: 0">
-        <span class="icone-bouton" style="margin-left: -8px">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path></svg>
-        </span>
+      <div style="display: flex; align-items: center; gap: 24px; min-width: 0">
         <span class="marque">Joutes</span>
+        <nav class="nav">
+          <span class="nav-lien actif">Accueil</span>
+          <span class="nav-lien">Événements</span>
+          <span class="nav-lien">Lieux</span>
+          <span class="nav-lien">Jeux
+            <svg class="ico-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+          </span>
+          <span class="nav-lien">Contenus</span>
+          <span class="nav-lien">Amis</span>
+        </nav>
       </div>
-      <div class="chrome-droite" style="gap: 2px">
-        <span class="icone-bouton">
+      <div class="chrome-droite">
+        <span class="recherche">
           <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+          Rechercher
+          <span class="kbd">⌘K</span>
         </span>
         <span class="icone-bouton">
           <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
           <span class="pastille-notif"></span>
         </span>
-        <span class="avatar" style="margin-left: 6px">KT</span>
+        <span class="icone-bouton">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+        </span>
+        <span class="avatar">KT</span>
       </div>
     </div>
   </header>
@@ -263,9 +244,19 @@
         <h1>Bonsoir, Kévin</h1>
         <p>{{ resume }}</p>
       </div>
+      <div class="actions">
+        <span class="btn contour">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          Proches de moi
+        </span>
+        <span class="btn primaire">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+          Créer un événement
+        </span>
+      </div>
     </div>
 
-    <div class="rang-souple">
+    <div class="filtres">
       <sc-for list="{{ jeux }}" as="jeu" hint-placeholder-count="4">
         <span class="puce {{ jeu.classe }}" onClick="{{ jeu.choisir }}">{{ jeu.nom }}</span>
       </sc-for>
@@ -274,15 +265,18 @@
     <sc-if value="{{ aDesDirects }}" hint-placeholder-val="{{ true }}">
       <section class="directs">
         <div class="tuile-entete">
-          <h2 style="font-size: 15px">
+          <h2>
             <span class="pastille-direct"><span class="point-direct"></span>En direct</span>
             {{ titreDirects }}
           </h2>
+          <span class="tuile-lien">Tous les directs
+            <svg class="ico-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+          </span>
         </div>
         <div class="directs-grille">
           <sc-for list="{{ directs }}" as="d" hint-placeholder-count="2">
             <div class="direct-carte">
-              <span class="vignette direct" style="width: 112px; height: 63px"></span>
+              <span class="vignette direct" style="width: 148px; height: 84px"></span>
               <span class="corps">
                 <span class="direct-titre">{{ d.titre }}</span>
                 <span class="direct-meta">{{ d.lieu }}</span>
@@ -294,157 +288,187 @@
       </section>
     </sc-if>
 
-    <section class="tuile">
-      <div class="tuile-entete">
-        <h2 style="font-size: 15px">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
-          Ce qui m&apos;attend
-        </h2>
-        <span class="tuile-lien">Agenda</span>
-      </div>
-      <sc-if value="{{ aDesEvenements }}" hint-placeholder-val="{{ true }}">
-        <div class="liste">
-          <sc-for list="{{ evenements }}" as="e" hint-placeholder-count="3">
-            <div class="evenement {{ e.etat }}">
-              <span class="date-bloc">
-                <span class="jour">{{ e.jour }}</span>
-                <span class="mois">{{ e.mois }}</span>
-              </span>
-              <span class="corps">
-                <span class="titre">{{ e.titre }}</span>
-                <span class="meta">{{ e.lieu }} <span class="sep">·</span> {{ e.heure }}</span>
-                <span class="meta">{{ e.nomJeu }}</span>
-              </span>
-              <span class="badge {{ e.badgeClasse }}">{{ e.badge }}</span>
-            </div>
-          </sc-for>
-        </div>
-      </sc-if>
-      <sc-if value="{{ sansEvenement }}" hint-placeholder-val="{{ false }}">
-        <p class="vide">{{ videEvenements }}</p>
-      </sc-if>
-    </section>
+    <div class="colonnes">
 
-    <section class="tuile">
-      <div class="tuile-entete">
-        <h2 style="font-size: 15px">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M8 10h8"></path><path d="M8 14h5"></path></svg>
-          Le fil
-        </h2>
-        <span class="tuile-lien">Tout voir</span>
+      <div class="pile">
+
+        <section class="tuile">
+          <div class="tuile-entete">
+            <h2>
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
+              Ce qui m&apos;attend
+            </h2>
+            <span class="tuile-lien">Agenda complet
+              <svg class="ico-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+            </span>
+          </div>
+          <sc-if value="{{ aDesEvenements }}" hint-placeholder-val="{{ true }}">
+            <div class="liste">
+              <sc-for list="{{ evenements }}" as="e" hint-placeholder-count="3">
+                <div class="evenement {{ e.etat }}">
+                  <span class="date-bloc">
+                    <span class="jour">{{ e.jour }}</span>
+                    <span class="mois">{{ e.mois }}</span>
+                  </span>
+                  <span class="corps">
+                    <span class="titre">{{ e.titre }}</span>
+                    <span class="meta">
+                      <svg class="ico-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                      {{ e.lieu }}
+                      <span class="sep">·</span>
+                      {{ e.heure }}
+                      <span class="sep">·</span>
+                      {{ e.nomJeu }}
+                    </span>
+                  </span>
+                  <span class="badge {{ e.badgeClasse }}">{{ e.badge }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ sansEvenement }}" hint-placeholder-val="{{ false }}">
+            <p class="vide">{{ videEvenements }}</p>
+          </sc-if>
+        </section>
+
+        <section class="tuile">
+          <div class="tuile-entete">
+            <h2>
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M8 10h8"></path><path d="M8 14h5"></path></svg>
+              Le fil
+            </h2>
+            <span class="tuile-lien">Tout voir
+              <svg class="ico-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+            </span>
+          </div>
+          <div>
+            <span class="segments">
+              <sc-for list="{{ onglets }}" as="o" hint-placeholder-count="4">
+                <span class="segment {{ o.classe }}" onClick="{{ o.choisir }}">{{ o.nom }}<span class="nb">{{ o.nombre }}</span></span>
+              </sc-for>
+            </span>
+          </div>
+          <sc-if value="{{ aDuFil }}" hint-placeholder-val="{{ true }}">
+            <div class="liste" style="gap: 4px">
+              <sc-for list="{{ fil }}" as="f" hint-placeholder-count="6">
+                <div class="fil-item">
+                  <span class="vignette {{ f.type }}" style="width: 140px; height: 79px">
+                    <sc-if value="{{ f.duree }}" hint-placeholder-val="{{ true }}">
+                      <span class="duree">{{ f.duree }}</span>
+                    </sc-if>
+                  </span>
+                  <span class="corps">
+                    <span class="haut">
+                      <span class="type-chip {{ f.chipClasse }}">{{ f.typeNom }}</span>
+                      <sc-if value="{{ f.badge }}" hint-placeholder-val="{{ true }}">
+                        <span class="badge {{ f.badgeClasse }}">{{ f.badge }}</span>
+                      </sc-if>
+                    </span>
+                    <span class="titre">{{ f.titre }}</span>
+                    <span class="meta">
+                      {{ f.source }}
+                      <span class="sep">·</span>
+                      {{ f.nomJeu }}
+                      <span class="sep">·</span>
+                      {{ f.quand }}
+                    </span>
+                  </span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ filVide }}" hint-placeholder-val="{{ false }}">
+            <p class="vide">{{ videFil }}</p>
+          </sc-if>
+        </section>
+
       </div>
-      <div class="rang-souple">
-        <span class="segments">
-          <sc-for list="{{ onglets }}" as="o" hint-placeholder-count="4">
-            <span class="segment {{ o.classe }}" onClick="{{ o.choisir }}">{{ o.nom }}<span class="nb">{{ o.nombre }}</span></span>
-          </sc-for>
-        </span>
-      </div>
-      <sc-if value="{{ aDuFil }}" hint-placeholder-val="{{ true }}">
-        <div class="liste" style="gap: 2px">
-          <sc-for list="{{ fil }}" as="f" hint-placeholder-count="6">
-            <div class="fil-item">
-              <span class="vignette {{ f.type }}" style="width: 104px; height: 59px">
-                <sc-if value="{{ f.duree }}" hint-placeholder-val="{{ true }}">
-                  <span class="duree">{{ f.duree }}</span>
-                </sc-if>
-              </span>
-              <span class="corps">
-                <span class="haut">
-                  <span class="type-chip {{ f.chipClasse }}">{{ f.typeNom }}</span>
-                  <sc-if value="{{ f.badge }}" hint-placeholder-val="{{ true }}">
-                    <span class="badge {{ f.badgeClasse }}">{{ f.badge }}</span>
-                  </sc-if>
+
+      <aside class="pile">
+
+        <section class="tuile">
+          <div class="tuile-entete">
+            <h2>
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              Mes lieux
+            </h2>
+            <span class="tuile-lien">Découvrir</span>
+          </div>
+          <div class="liste" style="gap: 14px">
+            <sc-for list="{{ lieux }}" as="l" hint-placeholder-count="3">
+              <div class="lieu">
+                <span class="logo-lieu">{{ l.initiales }}</span>
+                <span class="corps">
+                  <span class="nom">{{ l.nom }}</span>
+                  <span class="etat">
+                    <sc-if value="{{ l.ouvert }}" hint-placeholder-val="{{ true }}"><span class="point ouvert"></span></sc-if>
+                    <sc-if value="{{ l.ferme }}" hint-placeholder-val="{{ false }}"><span class="point ferme"></span></sc-if>
+                    {{ l.etat }} <span class="sep">·</span> {{ l.agenda }}
+                  </span>
                 </span>
-                <span class="titre">{{ f.titre }}</span>
-                <span class="meta">{{ f.source }} <span class="sep">·</span> {{ f.quand }}</span>
-              </span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section class="tuile">
+          <div class="tuile-entete">
+            <h2>
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"></path><path d="M3 13l9 5 9-5"></path></svg>
+              Mes decks
+            </h2>
+            <span class="btn contour petit">
+              <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+              Nouveau
+            </span>
+          </div>
+          <div class="liste" style="gap: 14px">
+            <sc-for list="{{ decks }}" as="d" hint-placeholder-count="3">
+              <div class="deck">
+                <span class="corps">
+                  <span class="nom">{{ d.nom }}</span>
+                  <span class="meta">{{ d.nomJeu }} <span class="sep">·</span> {{ d.quand }}</span>
+                </span>
+                <span class="badge {{ d.badgeClasse }}">{{ d.badge }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section class="tuile">
+          <div class="tuile-entete">
+            <h2>
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              Les Joueurs du Jeudi
+            </h2>
+            <span class="badge attention">À répondre</span>
+          </div>
+          <p style="margin: 0; font-size: 13px; line-height: 18px; color: var(--muted-foreground)">Quelle date pour la prochaine session ?</p>
+          <div class="sondage">
+            <div class="sondage-option">
+              <span class="sondage-ligne">Jeudi 21 novembre<span class="n">4 / 6</span></span>
+              <span class="jauge"><i style="width: 67%"></i></span>
             </div>
-          </sc-for>
-        </div>
-      </sc-if>
-      <sc-if value="{{ filVide }}" hint-placeholder-val="{{ false }}">
-        <p class="vide">{{ videFil }}</p>
-      </sc-if>
-    </section>
-
-    <section class="tuile">
-      <div class="tuile-entete">
-        <h2 style="font-size: 15px">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
-          Mes lieux
-        </h2>
-        <span class="tuile-lien">Découvrir</span>
-      </div>
-      <div class="liste" style="gap: 12px">
-        <sc-for list="{{ lieux }}" as="l" hint-placeholder-count="3">
-          <div class="lieu">
-            <span class="logo-lieu">{{ l.initiales }}</span>
-            <span class="corps">
-              <span class="nom">{{ l.nom }}</span>
-              <span class="etat">
-                <sc-if value="{{ l.ouvert }}" hint-placeholder-val="{{ true }}"><span class="point ouvert"></span></sc-if>
-                <sc-if value="{{ l.ferme }}" hint-placeholder-val="{{ false }}"><span class="point ferme"></span></sc-if>
-                {{ l.etat }}
-              </span>
-            </span>
+            <div class="sondage-option">
+              <span class="sondage-ligne">Jeudi 28 novembre<span class="n">2 / 6</span></span>
+              <span class="jauge"><i style="width: 33%"></i></span>
+            </div>
+            <div class="sondage-option">
+              <span class="sondage-ligne">Samedi 30 novembre<span class="n">1 / 6</span></span>
+              <span class="jauge"><i style="width: 17%"></i></span>
+            </div>
           </div>
-        </sc-for>
-      </div>
-    </section>
+          <span class="btn primaire" style="width: 100%">Donner mes disponibilités</span>
+        </section>
 
-    <section class="tuile">
-      <div class="tuile-entete">
-        <h2 style="font-size: 15px">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"></path><path d="M3 13l9 5 9-5"></path></svg>
-          Mes decks
-        </h2>
-        <span class="tuile-lien">Nouveau</span>
-      </div>
-      <div class="liste" style="gap: 12px">
-        <sc-for list="{{ decks }}" as="d" hint-placeholder-count="3">
-          <div class="deck">
-            <span class="corps">
-              <span class="nom">{{ d.nom }}</span>
-              <span class="meta">{{ d.nomJeu }} <span class="sep">·</span> {{ d.quand }}</span>
-            </span>
-            <span class="badge {{ d.badgeClasse }}">{{ d.badge }}</span>
-          </div>
-        </sc-for>
-      </div>
-    </section>
+      </aside>
 
-    <section class="tuile">
-      <div class="tuile-entete">
-        <h2 style="font-size: 15px">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-          Les Joueurs du Jeudi
-        </h2>
-        <span class="badge attention">À répondre</span>
-      </div>
-      <p style="margin: 0; font-size: 13px; line-height: 18px; color: var(--muted-foreground)">Quelle date pour la prochaine session ?</p>
-      <div class="sondage">
-        <div class="sondage-option">
-          <span class="sondage-ligne">Jeudi 21 novembre<span class="n">4 / 6</span></span>
-          <span class="jauge"><i style="width: 67%"></i></span>
-        </div>
-        <div class="sondage-option">
-          <span class="sondage-ligne">Jeudi 28 novembre<span class="n">2 / 6</span></span>
-          <span class="jauge"><i style="width: 33%"></i></span>
-        </div>
-        <div class="sondage-option">
-          <span class="sondage-ligne">Samedi 30 novembre<span class="n">1 / 6</span></span>
-          <span class="jauge"><i style="width: 17%"></i></span>
-        </div>
-      </div>
-      <span class="btn primaire" style="width: 100%">Donner mes disponibilités</span>
-    </section>
-
+    </div>
   </div>
 </div>
 </x-dc>
 
-<script data-dc-script data-props='{"$preview":{"width":390,"height":3060}}'>
+<script data-dc-script data-props='{"$preview":{"width":1440,"height":1800}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
