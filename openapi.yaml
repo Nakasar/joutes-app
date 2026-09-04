@@ -1394,6 +1394,19 @@ paths:
                 notes: { type: string, maxLength: 4000 }
                 format: { type: string, maxLength: 80 }
                 legendCardId: { type: string, maxLength: 200 }
+                coverCardId:
+                  type: string
+                  maxLength: 200
+                  description: "A card of the deck, chosen to illustrate it. Absent, the legend serves as the cover."
+                coverImageUrl:
+                  type: string
+                  format: uri
+                  maxLength: 2000
+                  description: >
+                    A cover image uploaded through `POST /decks/{deckId}/cover`;
+                    it wins over `coverCardId`. Only addresses on the
+                    application's own blob storage are accepted - an arbitrary
+                    host is rejected.
                 visibility: { type: string, enum: [private, unlisted, public], default: private }
       responses:
         "201": { description: Created., content: { application/json: { schema: { $ref: "#/components/schemas/Deck" } } } }
@@ -1456,6 +1469,23 @@ paths:
                     notes: { type: string, maxLength: 4000 }
                     format: { type: string, maxLength: 80 }
                     legendCardId: { type: string, maxLength: 200 }
+                    coverCardId:
+                      type: string
+                      maxLength: 200
+                      description: >
+                        A card of the deck, chosen to illustrate it. The empty
+                        string clears the choice and hands the cover back to the
+                        legend.
+                    coverImageUrl:
+                      description: >
+                        A cover image uploaded through
+                        `POST /decks/{deckId}/cover`; it wins over `coverCardId`.
+                        Only addresses on the application's own blob storage are
+                        accepted. The empty string removes it - hence the two
+                        branches: the field is not always a URI.
+                      oneOf:
+                        - { type: string, format: uri, maxLength: 2000 }
+                        - { type: string, enum: [""] }
                     visibility: { type: string, enum: [private, unlisted, public] }
                     expectedVersion:
                       type: integer
@@ -1511,6 +1541,34 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+
+  /decks/{deckId}/cover:
+    parameters:
+      - { name: deckId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-fA-F]{24}$" } }
+    post:
+      tags: [Decks]
+      summary: Upload a cover image for a deck
+      description: >
+        Reserved to the deck's author. `multipart/form-data`, field `file`
+        (JPG/PNG/WebP/GIF, max 5 MB). The route only stores the file and returns
+        its address: it is a `PATCH /decks/{deckId}` with `coverImageUrl` that
+        puts it on the deck.
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties: { file: { type: string, format: binary } }
+      responses:
+        "200": { description: Uploaded., content: { application/json: { schema: { type: object, required: [url], properties: { url: { type: string, format: uri } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   /decks/legends:
     get:
@@ -5689,6 +5747,9 @@ components:
         format: { type: string, description: "Targeted play format (\"Standard OGN\"), as the game's own record declares it." }
         legendCardId: { type: string, description: "The card that gives the deck its identity (the legend, in Riftbound)." }
         legendName: { type: string, description: "That card's name as of the last save, so it shows without a second read of the catalog." }
+        coverCardId: { type: string, description: "A card of the deck the author chose to illustrate it. Distinct from the legend, which is only the fallback." }
+        coverImageUrl: { type: string, format: uri, description: "A cover image uploaded by the author. Wins over `coverCardId`." }
+        coverImage: { type: string, format: uri, description: "The address the cover actually shows. Derived, rewritten on every save of the contents or of the cover, so listings show a thumbnail per deck without resolving the card catalog." }
         domains:
           type: array
           items: { type: string }

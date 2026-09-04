@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select.tsx";
 import { Link, usePathname, useRouter } from "@/i18n/navigation.ts";
 import { DeckLegalityBadge, DeckSizeLabel, DeckVisibilityBadge } from "@/components/decks/DeckBadges.tsx";
+import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
+import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import { ShareDeckDialog } from "@/components/decks/ShareDeckDialog.tsx";
 import { cn } from "@/lib/utils.ts";
 import { getDeckZones } from "@/lib/decks/zones.ts";
@@ -287,6 +289,7 @@ function DeckCard({
   onAfterFavoriteAction: () => void;
 }) {
   const zones = getDeckZones(game);
+  const cover = resolveDeckCover(deck);
   const updatedAt = DateTime.fromJSDate(new Date(deck.updatedAt)).setLocale("fr");
   const [favorited, setFavorited] = useState((deck.favoritedBy ?? []).includes(currentUserId));
   const [count, setCount] = useState(deck.favoritesCount ?? 0);
@@ -312,47 +315,53 @@ function DeckCard({
   };
 
   return (
-    <article className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <Link href={`/decks/${deck.id}`} className="min-w-0 truncate text-lg font-semibold hover:underline">
-          {deck.name}
-        </Link>
-        <DeckVisibilityBadge visibility={deck.visibility as DeckVisibility} />
-      </div>
+    <article className="flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md">
+      <Link href={`/decks/${deck.id}`} aria-hidden tabIndex={-1} className="block">
+        <DeckCoverImage cover={cover} name={deck.name} className="aspect-[16/7] w-full" />
+      </Link>
 
-      <p className="truncate text-sm text-muted-foreground">
-        {[game?.name, deck.legendName, deck.format].filter(Boolean).join(" · ") || "—"}
-      </p>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <DeckLegalityBadge cards={deck.cards} zones={zones} />
-        <DeckSizeLabel cards={deck.cards} zones={zones} />
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>Modifié {updatedAt.toRelative()}</span>
-        <button
-          type="button"
-          onClick={toggleFavorite}
-          aria-label={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
-          className="inline-flex shrink-0 items-center gap-1 hover:text-foreground"
-        >
-          <Star className={cn("size-3.5", favorited && "fill-current text-primary")} />
-          {count}
-        </button>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Button asChild variant="outline" size="sm" className="min-w-28 flex-1">
-          <Link href={`/decks/${deck.id}/edit`}>
-            <Hammer />
-            Modifier
+      <div className="flex flex-1 flex-col gap-3 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <Link href={`/decks/${deck.id}`} className="min-w-0 truncate text-lg font-semibold hover:underline">
+            {deck.name}
           </Link>
-        </Button>
-        <Button type="button" variant="outline" size="sm" className="min-w-28 flex-1" onClick={onShareAction}>
-          <Share2 />
-          Partager
-        </Button>
+          <DeckVisibilityBadge visibility={deck.visibility as DeckVisibility} />
+        </div>
+
+        <p className="truncate text-sm text-muted-foreground">
+          {[game?.name, deck.legendName, deck.format].filter(Boolean).join(" · ") || "—"}
+        </p>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <DeckLegalityBadge cards={deck.cards} zones={zones} />
+          <DeckSizeLabel cards={deck.cards} zones={zones} />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>Modifié {updatedAt.toRelative()}</span>
+          <button
+            type="button"
+            onClick={toggleFavorite}
+            aria-label={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+            className="inline-flex shrink-0 items-center gap-1 hover:text-foreground"
+          >
+            <Star className={cn("size-3.5", favorited && "fill-current text-primary")} />
+            {count}
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm" className="min-w-28 flex-1">
+            <Link href={`/decks/${deck.id}/edit`}>
+              <Hammer />
+              Modifier
+            </Link>
+          </Button>
+          <Button type="button" variant="outline" size="sm" className="min-w-28 flex-1" onClick={onShareAction}>
+            <Share2 />
+            Partager
+          </Button>
+        </div>
       </div>
     </article>
   );

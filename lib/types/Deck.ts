@@ -59,6 +59,23 @@ export type Deck = {
   /** Nom de cette carte au moment de l'enregistrement, pour l'afficher sans relire le catalogue. */
   legendName?: string;
   /**
+   * Carte du deck choisie par l'auteur pour l'illustrer.
+   *
+   * Distincte de `legendCardId` : la carte qui donne son identité au deck n'est
+   * pas toujours celle qui le montre le mieux, et un jeu sans zone « légende »
+   * n'en a de toute façon aucune. Absente, la légende sert de couverture.
+   */
+  coverCardId?: string;
+  /** Image de couverture déposée par l'auteur ; prime sur `coverCardId`. */
+  coverImageUrl?: string;
+  /**
+   * Adresse de la couverture telle qu'elle s'affiche. **Valeur dérivée**,
+   * réécrite à chaque enregistrement du contenu ou de la couverture : les
+   * listes — accueil, librairie, mes decks — montrent une vignette par deck
+   * sans avoir à résoudre le catalogue de cartes de chacun.
+   */
+  coverImage?: string;
+  /**
    * Domaines couverts par les cartes du deck. Valeur dérivée, recalculée à
    * chaque enregistrement du contenu : la librairie s'y filtre sans avoir à
    * rejoindre le catalogue de cartes.

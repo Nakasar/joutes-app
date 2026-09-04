@@ -10,10 +10,12 @@ import { Link, useRouter } from "@/i18n/navigation.ts";
 import { CostCurve } from "@/components/decks/DeckAnalysis.tsx";
 import { DeckLegalityBadge, DeckSizeLabel, DeckVisibilityBadge } from "@/components/decks/DeckBadges.tsx";
 import { DeckCardThumb } from "@/components/decks/DeckCardThumb.tsx";
+import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
 import { DeckZoneCards, DeckZonesSummary } from "@/components/decks/DeckZoneCards.tsx";
 import { ShareDeckDialog } from "@/components/decks/ShareDeckDialog.tsx";
 import { cn } from "@/lib/utils.ts";
 import { zoneEntries, type DeckCardInfo } from "@/lib/decks/contents.ts";
+import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import type { DeckZone } from "@/lib/decks/zones.ts";
 import type { Deck, DeckGuideSection, DeckMatchup, DeckVisibility } from "@/lib/types/Deck.ts";
 import {
@@ -67,6 +69,9 @@ export function DeckSheet({
   const [tab, setTab] = useState<SheetTab>("description");
 
   const cardsById = useMemo(() => new Map(catalog.map((card) => [card.id, card])), [catalog]);
+  // Le catalogue du deck est déjà là : la fiche montre donc l'illustration à
+  // jour de la carte de couverture, et non l'adresse figée à l'enregistrement.
+  const cover = resolveDeckCover(deck, cardsById);
   const updatedAt = DateTime.fromJSDate(new Date(deck.updatedAt)).setLocale("fr");
   // Une ligne de méta se construit de ce qui existe : un deck sans légende ni
   // format ne doit pas afficher les séparateurs de ce qu'il n'a pas.
@@ -233,6 +238,18 @@ export function DeckSheet({
           </Link>
           {gameName && <> / {gameName}</>}
         </nav>
+
+        {/* La couverture ouvre la fiche, quand le deck en a une. Elle se
+            choisit dans l'éditeur — la fiche la montre, elle ne l'édite pas,
+            comme tout ce qui touche aux cartes. */}
+        {cover.image && (
+          <DeckCoverImage
+            cover={cover}
+            name={deck.name}
+            rounded="rounded-xl"
+            className="h-32 w-full border sm:h-44"
+          />
+        )}
 
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-2">
