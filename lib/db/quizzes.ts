@@ -4,6 +4,7 @@ import db from "@/lib/mongodb";
 import { ObjectId, WithId, Document } from "mongodb";
 import { Quiz } from "@/lib/types/Quiz";
 import { CreateQuizInput, QuizTranslationPayload, UpdateQuizInput } from "@/lib/schemas/quiz.schema";
+import { getCardsByIds } from "@/lib/db/cards";
 import { defaultLocale, type Locale } from "@/i18n/config";
 
 const COLLECTION_NAME = "quizzes";
@@ -14,6 +15,9 @@ function toQuiz(doc: WithId<Document>): Quiz {
     title: doc.title,
     gameId: doc.gameId ? doc.gameId.toString() : undefined,
     game: doc.game ?? undefined,
+    coverImageUrl: doc.coverImageUrl ?? undefined,
+    coverCardId: doc.coverCardId ?? undefined,
+    coverImage: doc.coverImage ?? undefined,
     blocks: doc.blocks ?? [],
     // Les quizz écrits avant les traductions n'ont pas de langue d'origine :
     // ils sont en français, la langue par défaut de l'application.
@@ -134,12 +138,57 @@ export async function getQuizById(id: string): Promise<Quiz | null> {
   }
 }
 
+/**
+ * La couverture telle qu'elle s'écrit en base.
+ *
+ * `coverImage` est **dérivée** : c'est l'adresse que les listes affichent sans
+ * résoudre le catalogue de cartes du jeu. La calculer ici, une fois par
+ * enregistrement, évite autant de requêtes que de vignettes sur une page de
+ * liste.
+ *
+ * Une carte n'illustre que si le catalogue du jeu la connaît : un identifiant
+ * qui ne résout pas — jeu changé depuis, carte retirée, valeur inventée par un
+ * client d'API — ne laisse pas une référence morte sur le quizz. C'est aussi ce
+ * qui borne le champ : son contenu vient du client, mais l'adresse affichée
+ * vient toujours du catalogue.
+ */
+async function deriveQuizCover(
+  gameId: string | undefined,
+  choice: { coverCardId?: string; coverImageUrl?: string }
+): Promise<{ coverCardId?: string; coverImageUrl?: string; coverImage?: string }> {
+  if (choice.coverImageUrl) {
+    return {
+      // La carte désignée survit sous l'image déposée : la retirer rend la
+      // couverture à la carte, sans avoir à la rechercher une seconde fois.
+      ...(choice.coverCardId ? { coverCardId: choice.coverCardId } : {}),
+      coverImageUrl: choice.coverImageUrl,
+      coverImage: choice.coverImageUrl,
+    };
+  }
+
+  if (!choice.coverCardId || !gameId || !ObjectId.isValid(gameId)) {
+    return {};
+  }
+
+  const [card] = await getCardsByIds(new ObjectId(gameId), [choice.coverCardId]);
+  if (!card?.image) {
+    return {};
+  }
+
+  return { coverCardId: choice.coverCardId, coverImage: card.image };
+}
+
 export async function createQuiz(input: CreateQuizInput, authorId: string): Promise<Quiz> {
   const now = new Date();
+  const cover = await deriveQuizCover(input.gameId, {
+    coverCardId: input.coverCardId,
+    coverImageUrl: input.coverImageUrl,
+  });
   const doc = {
     title: input.title,
     ...(input.gameId ? { gameId: new ObjectId(input.gameId) } : {}),
     originalLang: input.originalLang,
+    ...cover,
     blocks: input.blocks,
     authorId: new ObjectId(authorId),
     createdAt: now,
@@ -152,6 +201,22 @@ export async function createQuiz(input: CreateQuizInput, authorId: string): Prom
     throw new Error("Failed to create quiz");
   }
   return created;
+}
+
+/**
+ * Ce qu'un `PATCH` dit d'un champ de couverture.
+ *
+ * Trois cas, et non deux : le champ absent laisse la valeur en base — un
+ * enregistrement de contenu ne doit pas effacer une couverture qu'il ne
+ * mentionne pas —, la chaîne vide est le geste « retirer », et une valeur la
+ * remplace.
+ */
+function readCoverChoice(update: string | undefined, current: unknown): string | undefined {
+  if (update === undefined) {
+    return typeof current === "string" && current ? current : undefined;
+  }
+
+  return update || undefined;
 }
 
 export async function updateQuiz(id: string, input: UpdateQuizInput): Promise<boolean> {
@@ -168,6 +233,42 @@ export async function updateQuiz(id: string, input: UpdateQuizInput): Promise<bo
       updateDoc.gameId = new ObjectId(input.gameId);
     } else {
       unset.gameId = "";
+    }
+  }
+
+  // Le jeu compte autant que le choix lui-même : déplacer un quizz vers un
+  // autre jeu emmène une carte que le nouveau catalogue ne connaît pas, et
+  // c'est la dérivation qui s'en aperçoit.
+  if (
+    input.coverCardId !== undefined ||
+    input.coverImageUrl !== undefined ||
+    input.gameId !== undefined
+  ) {
+    const existing = await db
+      .collection(COLLECTION_NAME)
+      .findOne(
+        { _id: new ObjectId(id) },
+        { projection: { gameId: 1, coverCardId: 1, coverImageUrl: 1 } }
+      );
+
+    if (existing) {
+      const gameId =
+        input.gameId !== undefined ? input.gameId : existing.gameId?.toString();
+
+      const cover = await deriveQuizCover(gameId || undefined, {
+        coverCardId: readCoverChoice(input.coverCardId, existing.coverCardId),
+        coverImageUrl: readCoverChoice(input.coverImageUrl, existing.coverImageUrl),
+      });
+
+      // Écrire ou retirer, jamais les deux : Mongo refuse un champ à la fois
+      // dans `$set` et dans `$unset`.
+      for (const key of ["coverCardId", "coverImageUrl", "coverImage"] as const) {
+        if (cover[key] === undefined) {
+          unset[key] = "";
+        } else {
+          updateDoc[key] = cover[key];
+        }
+      }
     }
   }
 

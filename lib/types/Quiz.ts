@@ -74,6 +74,12 @@ export type Quiz = {
   title: string;
   gameId?: string;
   game?: { id: string; name: string; slug?: string; icon?: string };
+  /** Image de couverture déposée par l'auteur. Prime sur la carte désignée. */
+  coverImageUrl?: string;
+  /** Carte du jeu choisie pour illustrer le quizz. */
+  coverCardId?: string;
+  /** Adresse de la couverture effectivement affichée — dérivée à l'enregistrement. */
+  coverImage?: string;
   blocks: QuizBlock[];
   /** Langue dans laquelle le quizz a été écrit : la « VO ». */
   originalLang: Locale;

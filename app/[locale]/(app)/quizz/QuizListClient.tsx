@@ -9,6 +9,9 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { Label } from "@/components/ui/label.tsx";
+import { QuizCoverImage } from "@/components/quizzes/QuizCoverImage.tsx";
+import { resolveQuizCover } from "@/lib/quizzes/cover.ts";
+import { cn } from "@/lib/utils.ts";
 import { ChevronLeft, ChevronRight, Loader2, Pencil, Gamepad2, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 
@@ -106,8 +109,18 @@ export default function QuizListClient({
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {data.quizzes.map((quiz) => {
             const questionCount = countQuestions(quiz);
+            // La couverture est facultative : la marge du haut ne tombe que
+            // lorsqu'il y a une image à coller au bord.
+            const cover = resolveQuizCover(quiz);
             return (
-              <Card key={quiz.id} className="hover:shadow-md transition-shadow">
+              <Card
+                key={quiz.id}
+                className={cn(
+                  "hover:shadow-md transition-shadow overflow-hidden",
+                  cover.image && "pt-0"
+                )}
+              >
+                <QuizCoverImage cover={cover} title={quiz.title} className="aspect-[16/7] w-full" />
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
                     <Link href={`/quizz/${quiz.id}`} className="group">
