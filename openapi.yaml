@@ -5653,13 +5653,13 @@ components:
             is dropped rather than kept as a dead reference. On a `PATCH`, an absent field leaves
             the cover as it is.
         coverImageUrl:
-          type: string
-          format: uri
-          maxLength: 2000
           description: >
-            A cover image uploaded by the author, or "" to remove it. It wins over `coverCardId`.
-            Only addresses on the application's own storage are accepted, which is what
-            `POST /quizzes/cover` returns.
+            A cover image uploaded through `POST /quizzes/cover`; it wins over `coverCardId`.
+            Only addresses on the application's own blob storage are accepted. The empty string
+            removes it - hence the two branches: the field is not always a URI.
+          oneOf:
+            - { type: string, format: uri, maxLength: 2000 }
+            - { type: string, enum: [""] }
         blocks: { type: array, minItems: 1, items: { $ref: "#/components/schemas/QuizBlock" } }
 
     Quiz:

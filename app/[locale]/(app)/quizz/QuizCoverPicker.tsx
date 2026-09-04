@@ -116,6 +116,15 @@ export default function QuizCoverPicker({
         return;
       }
 
+      // Une réponse acceptée mais sans adresse — corps illisible, route qui
+      // change de forme — poserait `undefined` dans un champ que le formulaire
+      // envoie en chaîne : l'enregistrement suivant, n'y voyant plus de champ,
+      // laisserait la couverture en place au lieu de la remplacer.
+      if (typeof payload.url !== "string" || !payload.url) {
+        toast.error("Téléversement impossible");
+        return;
+      }
+
       // Déposer une image est le geste le plus explicite : il remplace la carte
       // désignée plutôt que de se superposer à elle.
       setCardImage(undefined);
