@@ -23,7 +23,12 @@ export const metadata: Metadata = {
  * La porte — il faut un compte — et le formulaire qu'elle ouvre sont derrière
  * la frontière.
  */
-export default async function CreateQuizzPage({ params }: { params: Promise<{ locale: string }> }) {
+interface CreateQuizzPageProps {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ gameId?: string }>;
+}
+
+export default async function CreateQuizzPage({ params, searchParams }: CreateQuizzPageProps) {
   // Le bouton de retour est un `Link` localisé, resté dans la coquille : sans
   // cet appel, next-intl relit la langue à la requête pour en composer l'adresse
   // et rend toute la route dynamique. L'appel du layout ne porte pas jusqu'ici —
@@ -45,13 +50,13 @@ export default async function CreateQuizzPage({ params }: { params: Promise<{ lo
       </div>
 
       <Suspense fallback={<EditorFormSkeleton />}>
-        <CreateQuizForm />
+        <CreateQuizForm searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function CreateQuizForm() {
+async function CreateQuizForm({ searchParams }: { searchParams: CreateQuizzPageProps["searchParams"] }) {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user) {
@@ -67,10 +72,18 @@ async function CreateQuizForm() {
   // La VO part de la langue de l'auteur, qui reste modifiable dans le formulaire.
   const defaultLang = (await getLocale()) as Locale;
 
+  // On arrive parfois depuis la page de quizz d'un jeu, qui le désigne dans
+  // l'adresse : le rattachement est alors déjà fait. Un identifiant inconnu —
+  // collé à la main, ou d'un jeu retiré depuis — est ignoré plutôt que de poser
+  // dans le formulaire un jeu que la liste ne propose pas.
+  const { gameId } = await searchParams;
+  const defaultGameId = games.some((game) => game.id === gameId) ? gameId : undefined;
+
   return (
     <QuizForm
       mode="create"
       games={games}
+      defaultGameId={defaultGameId}
       defaultLang={defaultLang}
       canImport={canImport}
     />

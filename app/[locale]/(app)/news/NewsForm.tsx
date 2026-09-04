@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { ExternalLink, Loader2, X } from "lucide-react";
 
 type NewsFormProps =
-  | { mode: "create"; games: Game[]; existingTags: string[]; defaultLang: Locale }
+  | { mode: "create"; games: Game[]; defaultGameIds?: string[]; existingTags: string[]; defaultLang: Locale }
   | { mode: "edit"; news: News; games: Game[]; existingTags: string[]; defaultLang: Locale };
 
 type FormData = {
@@ -45,7 +45,7 @@ export default function NewsForm(props: NewsFormProps) {
     originalLang: isEdit ? props.news.originalLang : props.defaultLang,
     banner: isEdit ? props.news.banner : undefined,
     source: isEdit ? (props.news.source ?? null) : null,
-    gameIds: isEdit ? props.news.gameIds : [],
+    gameIds: isEdit ? props.news.gameIds : props.defaultGameIds ?? [],
     tags: isEdit ? props.news.tags : [],
   });
   const [tagInput, setTagInput] = useState("");

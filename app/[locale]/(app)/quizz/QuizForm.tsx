@@ -17,7 +17,7 @@ import { Loader2, FileText, ListChecks } from "lucide-react";
 
 /** `canImport` : droit `quizzes:ai-import`, distinct de celui d'éditer un quizz. */
 type QuizFormProps = { canImport: boolean } & (
-  | { mode: "create"; games: Game[]; defaultLang: Locale }
+  | { mode: "create"; games: Game[]; defaultGameId?: string; defaultLang: Locale }
   | { mode: "edit"; quiz: Quiz; games: Game[] }
 );
 
@@ -35,7 +35,7 @@ export default function QuizForm(props: QuizFormProps) {
 
   const [form, setForm] = useState<FormData>({
     title: isEdit ? props.quiz.title : "",
-    gameId: isEdit ? props.quiz.gameId ?? "" : "",
+    gameId: isEdit ? props.quiz.gameId ?? "" : props.defaultGameId ?? "",
     originalLang: isEdit ? props.quiz.originalLang : props.defaultLang,
     blocks: isEdit ? props.quiz.blocks : [],
   });
