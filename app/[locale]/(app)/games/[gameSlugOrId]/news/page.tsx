@@ -5,8 +5,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Button } from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, PenSquare } from "lucide-react";
 import { auth } from "@/lib/auth.ts";
+import { hasPermission } from "@/lib/db/permissions.ts";
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar.tsx";
@@ -101,8 +102,39 @@ async function NewsHeader({ params }: { params: GameParams }) {
         </Button>
         <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
       </div>
-      <GameToolsNavBar gameSlug={game.slug ?? game.id} currentTab="news" />
+      <div className="flex flex-row flex-wrap items-center gap-4">
+        <GameToolsNavBar gameSlug={game.slug ?? game.id} currentTab="news" />
+        {/* Pas de silhouette : ce bouton ne s'affiche qu'à la rédaction, et lui
+            réserver sa place la ferait sauter pour tous les autres. Sa frontière
+            est ici plutôt qu'autour de l'en-tête : le droit se lit à la requête,
+            le titre n'a pas à l'attendre. */}
+        <Suspense fallback={null}>
+          <WriteNewsButton gameId={game.id} />
+        </Suspense>
+      </div>
     </div>
+  );
+}
+
+/**
+ * Le raccourci vers l'éditeur, le jeu déjà rattaché.
+ *
+ * Rédiger demande le droit `news:update` : sans lui, le bouton disparaît plutôt
+ * que de mener à un formulaire dont l'envoi serait refusé.
+ */
+async function WriteNewsButton({ gameId }: { gameId: string }) {
+  const canWrite = await hasPermission("news:update").catch(() => false);
+  if (!canWrite) return null;
+
+  const t = await getTranslations("Games.news");
+
+  return (
+    <Button asChild>
+      <Link href={`/news/create?gameId=${gameId}`}>
+        <PenSquare className="h-4 w-4 mr-2" />
+        {t("create")}
+      </Link>
+    </Button>
   );
 }
 

@@ -24,7 +24,12 @@ export const metadata: Metadata = {
  * La porte — session puis droit de rédaction — et le formulaire qu'elle ouvre
  * sont derrière la frontière.
  */
-export default async function CreateNewsPage({ params }: { params: Promise<{ locale: string }> }) {
+interface CreateNewsPageProps {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ gameId?: string }>;
+}
+
+export default async function CreateNewsPage({ params, searchParams }: CreateNewsPageProps) {
   // Le bouton de retour est un `Link` localisé, resté dans la coquille : sans
   // cet appel, next-intl relit la langue à la requête pour en composer l'adresse
   // et rend toute la route dynamique. L'appel du layout ne porte pas jusqu'ici —
@@ -48,13 +53,13 @@ export default async function CreateNewsPage({ params }: { params: Promise<{ loc
       </div>
 
       <Suspense fallback={<EditorFormSkeleton />}>
-        <CreateNewsForm />
+        <CreateNewsForm searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function CreateNewsForm() {
+async function CreateNewsForm({ searchParams }: { searchParams: CreateNewsPageProps["searchParams"] }) {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user) {
@@ -66,9 +71,26 @@ async function CreateNewsForm() {
     redirect("/news");
   }
 
-  const [games, existingTags, locale] = await Promise.all([readAllGames(), getAllTags(), getLocale()]);
+  const [games, existingTags, locale, { gameId }] = await Promise.all([
+    readAllGames(),
+    getAllTags(),
+    getLocale(),
+    searchParams,
+  ]);
+
+  // On arrive parfois depuis la page d'actualités d'un jeu, qui le désigne dans
+  // l'adresse : le rattachement est alors déjà coché. Un identifiant inconnu —
+  // collé à la main, ou d'un jeu retiré depuis — est ignoré plutôt que de poser
+  // dans le formulaire un jeu que la liste ne propose pas.
+  const defaultGameIds = games.some((game) => game.id === gameId) ? [gameId as string] : [];
 
   return (
-    <NewsForm mode="create" games={games} existingTags={existingTags} defaultLang={locale as Locale} />
+    <NewsForm
+      mode="create"
+      games={games}
+      defaultGameIds={defaultGameIds}
+      existingTags={existingTags}
+      defaultLang={locale as Locale}
+    />
   );
 }

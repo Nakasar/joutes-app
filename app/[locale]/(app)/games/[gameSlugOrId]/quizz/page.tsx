@@ -5,7 +5,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Button } from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, PenSquare } from "lucide-react";
+import { auth } from "@/lib/auth.ts";
+import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar.tsx";
 import { GameToolHeaderSkeleton } from "@/components/games/GameToolSkeletons.tsx";
@@ -108,8 +110,39 @@ async function QuizzHeader({ params }: { params: GameParams }) {
         </Button>
         <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
       </div>
-      <GameToolsNavBar gameSlug={game.slug ?? game.id} currentTab="quizz" />
+      <div className="flex flex-row flex-wrap items-center gap-4">
+        <GameToolsNavBar gameSlug={game.slug ?? game.id} currentTab="quizz" />
+        {/* Pas de silhouette : ce bouton ne s'affiche qu'aux comptes connectés,
+            et lui réserver sa place la ferait sauter aux autres. Sa frontière
+            est ici plutôt qu'autour de l'en-tête : la session est lue à la
+            requête, le titre n'a pas à l'attendre. */}
+        <Suspense fallback={null}>
+          <CreateQuizButton gameId={game.id} />
+        </Suspense>
+      </div>
     </div>
+  );
+}
+
+/**
+ * Le raccourci vers l'éditeur, le jeu déjà rempli.
+ *
+ * Écrire un quizz est ouvert à tout compte connecté ; sans compte, le bouton
+ * disparaît plutôt que de mener à un formulaire dont l'envoi serait refusé.
+ */
+async function CreateQuizButton({ gameId }: { gameId: string }) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) return null;
+
+  const t = await getTranslations("Games.quizz");
+
+  return (
+    <Button asChild>
+      <Link href={`/quizz/create?gameId=${gameId}`}>
+        <PenSquare className="h-4 w-4 mr-2" />
+        {t("create")}
+      </Link>
+    </Button>
   );
 }
 
