@@ -304,7 +304,6 @@ export async function CarteInscription({ rang }: { rang: number }) {
   );
 }
 
-/** « Le Repaire du Dragon » → « LR ». Deux lettres suffisent à distinguer. */
 /**
  * L'écusson d'un lieu : son logo, ou ses initiales.
  *
@@ -321,7 +320,16 @@ function EcussonLieu({ logo, nom }: { logo?: string; nom: string }) {
   const source = externalUrl(logo);
 
   return (
-    <span className="bg-muted text-muted-foreground relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border text-xs font-semibold">
+    /*
+     * Décoratif : le nom du lieu suit immédiatement, et l'écusson tient dans
+     * un lien — sans cela, ses initiales entreraient dans le nom accessible du
+     * lien, qui s'annoncerait « CG Caverne du Gobelin ». Même parti que
+     * `play-groups/explore/Escu.tsx`.
+     */
+    <span
+      aria-hidden
+      className="bg-muted text-muted-foreground relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border text-xs font-semibold"
+    >
       {source ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -337,6 +345,7 @@ function EcussonLieu({ logo, nom }: { logo?: string; nom: string }) {
   );
 }
 
+/** « Le Repaire du Dragon » → « LR ». Deux lettres suffisent à distinguer. */
 function initiales(nom: string): string {
   const mots = nom
     .split(/\s+/)
