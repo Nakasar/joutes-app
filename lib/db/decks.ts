@@ -266,8 +266,24 @@ export async function createDeck(deckData: Omit<Deck, "id" | "createdAt" | "upda
   }
 
   const now = new Date();
+
+  // Une création qui porte déjà une couverture porte aussi sa valeur dérivée.
+  // Sans elle, les listes n'afficheraient rien de ce deck jusqu'à son premier
+  // enregistrement — et l'écran de création, lui, n'en pose aucune : seuls un
+  // appel d'API et la copie d'un deck en portent une, et la copie apporte la
+  // sienne toute faite.
+  const cover =
+    deckData.coverImage || !(deckData.coverCardId || deckData.coverImageUrl)
+      ? undefined
+      : await deriveDeckCover(deckData.gameId, {
+          coverCardId: deckData.coverCardId,
+          coverImageUrl: deckData.coverImageUrl,
+          legendCardId: deckData.legendCardId,
+          cards: deckData.cards,
+        });
+
   const document = {
-    ...toDocument(deckData),
+    ...toDocument({ ...deckData, ...cover }),
     createdAt: now,
     updatedAt: now,
   };
@@ -277,6 +293,7 @@ export async function createDeck(deckData: Omit<Deck, "id" | "createdAt" | "upda
   return {
     id: result.insertedId.toString(),
     ...deckData,
+    ...cover,
     createdAt: now,
     updatedAt: now,
   };

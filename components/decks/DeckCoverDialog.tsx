@@ -125,11 +125,20 @@ export function DeckCoverDialog({
 
   const apply = async () => {
     setSaving(true);
-    const ok = await onApplyAction({ coverCardId: selectedCardId, coverImageUrl: uploadedUrl });
-    setSaving(false);
+    try {
+      const ok = await onApplyAction({ coverCardId: selectedCardId, coverImageUrl: uploadedUrl });
 
-    if (ok) {
-      onOpenChange(false);
+      if (ok) {
+        onOpenChange(false);
+      }
+    } catch (error) {
+      // Sans le `finally`, une exception laisserait « Appliquer » désactivé
+      // pour de bon : le dialogue resterait ouvert sur un bouton mort, et il
+      // faudrait recharger la page pour choisir sa couverture.
+      console.error("Error applying deck cover:", error);
+      toast.error("Couverture non enregistrée", { description: "Une erreur est survenue." });
+    } finally {
+      setSaving(false);
     }
   };
 
