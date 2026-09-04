@@ -200,6 +200,32 @@ export async function listPublicContentsByAuthors(
   return docs.map(toUserContent);
 }
 
+/**
+ * Les derniers contenus publiés, tous auteurs confondus.
+ *
+ * `listPublicContentsByAuthors` répond à « ce qu'ont publié ces gens-là » —
+ * la vitrine d'un profil ou d'un groupe. L'accueil pose l'autre question :
+ * « ce qui vient de paraître », sans savoir d'avance qui l'a écrit. D'où ce
+ * second index, sur la visibilité et la date.
+ */
+export async function listRecentPublicContents({
+  gameId,
+  limit = 12,
+}: { gameId?: string; limit?: number } = {}): Promise<UserContent[]> {
+  const filter: Record<string, unknown> = { visibility: "public" };
+  if (gameId) {
+    filter.gameId = gameId;
+  }
+
+  const docs = await userContentsCollection
+    .find(filter)
+    .sort({ publishedAt: -1 })
+    .limit(limit)
+    .toArray();
+
+  return docs.map(toUserContent);
+}
+
 /** Suppression par la modération : sans auteur au filtre, sur signalement. */
 export async function deleteUserContentAsModerator(id: string): Promise<boolean> {
   if (!ObjectId.isValid(id)) {
@@ -218,4 +244,12 @@ export async function createUserContentIndexes(): Promise<void> {
   // Le tri accompagne le filtre : la vitrine d'un groupe cherche les contenus
   // publics d'une liste d'auteurs, du plus récent au plus ancien.
   await userContentsCollection.createIndex({ visibility: 1, authorId: 1, publishedAt: -1 });
+  /*
+   * Le fil de l'accueil ne connaît pas d'auteur : il lit « ce qui vient de
+   * paraître ». L'index ci-dessus ne peut pas le servir — son `authorId` au
+   * milieu laisse le tri sans appui dès qu'on ne fixe pas l'auteur. D'où ces
+   * deux-là, un par forme de la question : tous jeux confondus, ou sur un jeu.
+   */
+  await userContentsCollection.createIndex({ visibility: 1, publishedAt: -1 });
+  await userContentsCollection.createIndex({ visibility: 1, gameId: 1, publishedAt: -1 });
 }

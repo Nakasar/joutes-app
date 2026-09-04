@@ -67,7 +67,96 @@
   },
   "Home": {
     "title": "Calendrier des Événements",
-    "createEvent": "Créer un Événement"
+    "createEvent": "Créer un Événement",
+    "salutation": "Bonjour, {nom}",
+    "autourDeMoi": "Autour de moi",
+    "resume": {
+      "evenements": "{count, plural, one {# événement cette semaine} other {# événements cette semaine}}",
+      "directs": "{count, plural, one {# direct en cours} other {# directs en cours}}",
+      "rien": "Rien ne vous attend cette semaine."
+    },
+    "jeux": {
+      "legende": "Filtrer par jeu",
+      "tous": "Tous les jeux",
+      "tousLesMiens": "Tous mes jeux"
+    },
+    "proposition": {
+      "titre": "Trouvez où jouer près de chez vous.",
+      "sous": "Les tournois, les soirées et les boutiques de votre région, rassemblés au même endroit — avec l'actualité de vos jeux, les parties diffusées en direct et les listes que la communauté publie.",
+      "agenda": "Parcourir l'agenda",
+      "creer": "Créer un compte"
+    },
+    "position": {
+      "autourDe": "Autour de <nom>{lieu}</nom> · {rayon} km",
+      "autourDeMoi": "Autour de moi · {rayon} km",
+      "changer": "Changer",
+      "definir": "Voir ce qui se passe près de chez vous"
+    },
+    "directs": {
+      "enCours": "En direct",
+      "titre": "{count, plural, one {# direct dans vos lieux} other {# directs dans vos lieux}}",
+      "tous": "Tous les directs",
+      "spectateurs": "{count, plural, one {# spectateur} other {# spectateurs}}"
+    },
+    "agenda": {
+      "titreConnecte": "Ce qui m'attend",
+      "titreVisiteur": "Cette semaine",
+      "titreAutourDe": "Cette semaine autour de {lieu}",
+      "tout": "Tout l'agenda",
+      "vide": "Rien de prévu cette semaine.",
+      "videSurCeJeu": "Rien de prévu cette semaine sur ce jeu.",
+      "statut": {
+        "organisateur": "Organisateur",
+        "inscrit": "Inscrit",
+        "complet": "Complet",
+        "places": "{count, plural, one {# place restante} other {# places restantes}}",
+        "ouvert": "Inscriptions ouvertes"
+      }
+    },
+    "fil": {
+      "titre": "Le fil",
+      "tout": "Tout",
+      "vide": "Rien à lire ici pour l'instant.",
+      "types": {
+        "actu": "Actu",
+        "video": "Vidéo",
+        "deck": "Deck"
+      }
+    },
+    "lieux": {
+      "titreSuivis": "Mes lieux",
+      "titreProches": "Les lieux autour de vous",
+      "decouvrir": "Découvrir",
+      "voirTout": "Voir tout",
+      "ouvertJusqua": "Ouvert jusqu'à {heure}",
+      "ferme": "Fermé actuellement",
+      "horairesInconnus": "Horaires non précisés",
+      "distance": "à {km} km"
+    },
+    "decks": {
+      "titreMiens": "Mes decks",
+      "titreVedette": "Les decks en vedette",
+      "nouveau": "Nouveau",
+      "explorer": "Explorer",
+      "modifie": "modifié {quand}",
+      "brouillon": "Brouillon"
+    },
+    "sondage": {
+      "aRepondre": "À répondre",
+      "repondre": "{count, plural, =0 {Donner mes disponibilités} one {Donner mes disponibilités — # réponse} other {Donner mes disponibilités — # réponses}}"
+    },
+    "inscription": {
+      "titre": "Créez votre compte",
+      "gratuit": "Gratuit, et sans rien installer.",
+      "creer": "Créer un compte",
+      "deja": "Déjà inscrit ? <lien>Se connecter</lien>",
+      "arguments": {
+        "lieux": "Suivez vos boutiques et recevez leur programme",
+        "tournois": "Inscrivez-vous aux tournois en un clic",
+        "decks": "Construisez vos decks et vérifiez leur légalité",
+        "directs": "Soyez prévenu quand un direct commence"
+      }
+    }
   },
   "EventsCalendar": {
     "title": "Calendrier des Événements",
