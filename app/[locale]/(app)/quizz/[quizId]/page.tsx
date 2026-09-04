@@ -16,6 +16,8 @@ import { quizContentTexts } from "@/lib/quizzes/content.ts";
 import { getLocale, getTranslations } from "next-intl/server";
 import { localizeQuiz } from "@/lib/quizzes/translate.ts";
 import { quizIntroDescription } from "@/lib/quizzes/seo.ts";
+import { resolveQuizCover } from "@/lib/quizzes/cover.ts";
+import { QuizCoverImage } from "@/components/quizzes/QuizCoverImage.tsx";
 import type { Locale } from "@/i18n/config.ts";
 import QuizPlayer from "./QuizPlayer.tsx";
 import QuizTranslateMenu from "./QuizTranslateMenu.tsx";
@@ -65,9 +67,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: "Joutes",
       title,
       description,
-      // L'icône du jeu est la seule image qu'un quizz porte : elle dit d'un
-      // coup d'œil de quel jeu on va parler.
-      images: quiz.game?.icon ? [quiz.game.icon] : [],
+      // La couverture d'abord : c'est l'image que son auteur a choisie pour
+      // lui. À défaut, l'icône du jeu, qui dit au moins d'un coup d'œil de quel
+      // jeu on va parler.
+      images: quiz.coverImage ? [quiz.coverImage] : quiz.game?.icon ? [quiz.game.icon] : [],
     },
   };
 }
@@ -155,6 +158,12 @@ async function QuizArticle({ params }: Props) {
       </div>
 
       <article className="space-y-6">
+        <QuizCoverImage
+          cover={resolveQuizCover(quiz)}
+          title={quiz.title}
+          className="aspect-[16/7] w-full rounded-lg border sm:aspect-[3/1]"
+        />
+
         <QuizPlayer
           quiz={quiz}
           interfaceLocale={locale}

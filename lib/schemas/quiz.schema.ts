@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { defaultLocale, locales } from "@/i18n/config";
+import { isQuizCoverImageUrl } from "@/lib/quizzes/cover";
 
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID doit être un ObjectId MongoDB valide");
 // "" explicitly means "no game linked" — distinct from the field being absent
@@ -93,6 +94,23 @@ const quizBaseSchema = z.object({
   title: z.string().min(1, "Le titre est requis").max(200, "Le titre est trop long"),
   gameId: gameIdSchema.optional(),
   originalLang: localeSchema.optional(),
+  /**
+   * La couverture, telle que l'auteur la choisit.
+   *
+   * Les deux champs acceptent la chaîne vide, qui est le geste « retirer » :
+   * un `undefined` ne dit rien dans un `PATCH` partiel, où l'absence signifie
+   * précisément « ne touche pas à ça ».
+   */
+  coverCardId: z.string().max(200).optional().or(z.literal("")),
+  coverImageUrl: z
+    .string()
+    .max(2000, "L'adresse de l'image est trop longue")
+    // L'adresse ne se saisit pas : elle sort de `POST /quizzes/cover`. La
+    // refuser ailleurs évite qu'un quizz public fasse charger à chacun de ses
+    // lecteurs une image servie par un tiers.
+    .refine(isQuizCoverImageUrl, "L'image doit avoir été téléversée sur Joutes")
+    .optional()
+    .or(z.literal("")),
   blocks: z.array(quizBlockSchema).min(1, "Le quizz doit contenir au moins un bloc"),
 });
 

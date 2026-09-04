@@ -4043,6 +4043,31 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /quizzes/cover:
+    post:
+      tags: [Quizzes]
+      summary: Upload a cover image for a quiz
+      description: >
+        Open to any signed-in user, like writing a quiz itself: the cover is chosen in the form,
+        before the quiz exists, so the right is checked on the session rather than on a quiz.
+        `multipart/form-data`, field `file` (JPG/PNG/WebP/GIF, max 5 MB). The route only stores
+        the file and returns its address: it is a `POST /quizzes` or a `PATCH /quizzes/{quizId}`
+        with `coverImageUrl` that puts it on the quiz.
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties: { file: { type: string, format: binary } }
+      responses:
+        "200": { description: Uploaded., content: { application/json: { schema: { type: object, required: [url], properties: { url: { type: string, format: uri } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /quizzes/import:
     post:
       tags: [Quizzes]
@@ -5619,6 +5644,22 @@ components:
         title: { type: string, minLength: 1, maxLength: 200 }
         gameId: { type: string, description: "24-char hex ObjectId, or \"\" to leave unlinked." }
         originalLang: { type: string, enum: [en, fr, it, de], default: fr, description: "Language the quiz is written in. Defaults to the application's default locale." }
+        coverCardId:
+          type: string
+          maxLength: 200
+          description: >
+            A card of the quiz's game chosen to illustrate it, or "" to remove it. The card must
+            belong to the linked game's catalog: an id it does not know illustrates nothing, and
+            is dropped rather than kept as a dead reference. On a `PATCH`, an absent field leaves
+            the cover as it is.
+        coverImageUrl:
+          type: string
+          format: uri
+          maxLength: 2000
+          description: >
+            A cover image uploaded by the author, or "" to remove it. It wins over `coverCardId`.
+            Only addresses on the application's own storage are accepted, which is what
+            `POST /quizzes/cover` returns.
         blocks: { type: array, minItems: 1, items: { $ref: "#/components/schemas/QuizBlock" } }
 
     Quiz:
@@ -5628,6 +5669,9 @@ components:
         title: { type: string }
         gameId: { type: string }
         game: { type: object, properties: { id: { type: string }, name: { type: string }, slug: { type: string }, icon: { type: string } } }
+        coverCardId: { type: string, description: "A card of the game the author chose to illustrate the quiz." }
+        coverImageUrl: { type: string, format: uri, description: "A cover image uploaded by the author. Wins over `coverCardId`." }
+        coverImage: { type: string, format: uri, description: "The address the cover actually shows. Derived, rewritten on every save, so listings show a thumbnail per quiz without resolving the card catalog." }
         blocks: { type: array, items: { $ref: "#/components/schemas/QuizBlock" } }
         originalLang: { type: string, enum: [en, fr, it, de], description: "Language the quiz was written in (its \"VO\")." }
         translations: { type: array, items: { $ref: "#/components/schemas/QuizTranslation" } }

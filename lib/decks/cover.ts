@@ -1,3 +1,4 @@
+import { isAppBlobImageUrl } from "@/lib/media/blob-image-url";
 import { zoneEntries, type DeckCardInfo, type DeckCards } from "@/lib/decks/contents";
 import type { DeckZone } from "@/lib/decks/zones";
 
@@ -111,25 +112,11 @@ export function deckCoverPosition(source: DeckCoverSource): "top" | "center" {
 /**
  * Une adresse d'image de couverture acceptable.
  *
- * Seul le stockage de l'application est admis. Accepter une adresse
- * quelconque reviendrait à laisser un deck public faire charger au navigateur
- * de chacun de ses lecteurs une image servie par un tiers — qui en verrait
- * l'adresse IP —, et `next.config.ts` ne déclare de toute façon que cet hôte.
- * L'auteur dépose son image par `POST /api/decks/{deckId}/cover`, qui rend
- * l'adresse à réécrire ici.
+ * La règle est celle de toutes les images déposées sur Joutes
+ * (`isAppBlobImageUrl`) : seul son propre stockage est admis. L'auteur dépose
+ * son image par `POST /api/decks/{deckId}/cover`, qui rend l'adresse à
+ * réécrire ici.
  */
 export function isDeckCoverImageUrl(value: string): boolean {
-  let url: URL;
-
-  try {
-    url = new URL(value);
-  } catch {
-    return false;
-  }
-
-  return (
-    url.protocol === "https:" &&
-    (url.hostname === "blob.vercel-storage.com" ||
-      url.hostname.endsWith(".public.blob.vercel-storage.com"))
-  );
+  return isAppBlobImageUrl(value);
 }

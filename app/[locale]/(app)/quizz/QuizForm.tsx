@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import QuizBlockEditor from "./QuizBlockEditor.tsx";
+import QuizCoverPicker, { type QuizCoverChoice } from "./QuizCoverPicker.tsx";
 import QuizImportDialog from "./QuizImportDialog.tsx";
 import { toast } from "sonner";
 import { Loader2, FileText, ListChecks } from "lucide-react";
@@ -24,6 +25,10 @@ type QuizFormProps = { canImport: boolean } & (
 type FormData = {
   title: string;
   gameId: string;
+  /** Carte du jeu choisie pour illustrer le quizz ; `""` : aucune. */
+  coverCardId: string;
+  /** Image de couverture déposée ; `""` : aucune. */
+  coverImageUrl: string;
   /** Langue dans laquelle le quizz est écrit : la « VO » dont partent les traductions. */
   originalLang: Locale;
   blocks: QuizBlock[];
@@ -36,10 +41,26 @@ export default function QuizForm(props: QuizFormProps) {
   const [form, setForm] = useState<FormData>({
     title: isEdit ? props.quiz.title : "",
     gameId: isEdit ? props.quiz.gameId ?? "" : props.defaultGameId ?? "",
+    coverCardId: isEdit ? props.quiz.coverCardId ?? "" : "",
+    coverImageUrl: isEdit ? props.quiz.coverImageUrl ?? "" : "",
     originalLang: isEdit ? props.quiz.originalLang : props.defaultLang,
     blocks: isEdit ? props.quiz.blocks : [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  /**
+   * Changer de jeu emporte la carte qui illustrait le quizz : elle appartient
+   * au catalogue qu'on vient de quitter, et le serveur la laisserait de toute
+   * façon tomber à l'enregistrement. L'image déposée, elle, ne tient à aucun
+   * jeu et reste.
+   */
+  const changeGame = (gameId: string) => {
+    setForm((prev) => (prev.gameId === gameId ? prev : { ...prev, gameId, coverCardId: "" }));
+  };
+
+  const changeCover = (choice: QuizCoverChoice) => {
+    setForm((prev) => ({ ...prev, ...choice }));
+  };
 
   const addMarkdownBlock = () => {
     setForm((prev) => ({ ...prev, blocks: [...prev.blocks, { id: nanoid(), type: "markdown", content: "" }] }));
@@ -162,7 +183,7 @@ export default function QuizForm(props: QuizFormProps) {
         <Label>Jeu rattaché</Label>
         <Select
           value={form.gameId || "none"}
-          onValueChange={(value) => setForm((prev) => ({ ...prev, gameId: value === "none" ? "" : value }))}
+          onValueChange={(value) => changeGame(value === "none" ? "" : value)}
         >
           <SelectTrigger className="sm:max-w-xs">
             <SelectValue />
@@ -176,6 +197,21 @@ export default function QuizForm(props: QuizFormProps) {
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Image de couverture</Label>
+        <QuizCoverPicker
+          gameSlug={props.games.find((game) => game.id === form.gameId)?.slug}
+          coverCardId={form.coverCardId}
+          coverImageUrl={form.coverImageUrl}
+          initialCardImage={isEdit ? props.quiz.coverImage : undefined}
+          onChange={changeCover}
+        />
+        <p className="text-xs text-muted-foreground">
+          Elle illustre le quizz dans les listes et en tête de sa page. Une carte du jeu, ou une
+          image à vous.
+        </p>
       </div>
 
       <div className="space-y-2">
