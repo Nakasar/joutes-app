@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Layers, Newspaper, Play, Radio } from "lucide-react";
 
 import { cn } from "@/lib/utils.ts";
+import { externalUrl } from "@/lib/lairs/urls.ts";
 import type { TypeContenu } from "./accueil-data.ts";
 
 /**
@@ -128,6 +129,16 @@ export function Tirage({
 }) {
   const Icone = ICONES_TIRAGE[type];
 
+  /*
+   * Filtré ici, et non à la source : les vignettes du fil viennent de deux
+   * collections aux garanties inégales. `UserContent.thumbnail` passe déjà par
+   * `externalUrl` à la saisie, mais `News.banner` se contente d'un
+   * `z.string().url()`, qui accepte n'importe quel schéma. C'est en devenant un
+   * `src` que la question se pose : on y répond donc ici, une fois pour les
+   * deux. Ce qui n'est pas http(s) retombe sur l'icône.
+   */
+  const vignette = externalUrl(src);
+
   return (
     <span
       className={cn(
@@ -135,7 +146,7 @@ export function Tirage({
         className,
       )}
     >
-      {src ? (
+      {vignette ? (
         /*
          * Une balise ordinaire, et non `next/image` : la miniature d'un
          * contenu est une URL que son auteur saisit — YouTube, un blog, ce
@@ -144,7 +155,12 @@ export function Tirage({
          * `LairHero` a fait le même choix pour la bannière d'un lieu.
          */
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
+        <img
+          src={vignette}
+          alt=""
+          loading="lazy"
+          className="absolute inset-0 size-full object-cover"
+        />
       ) : (
         <span
           aria-hidden
