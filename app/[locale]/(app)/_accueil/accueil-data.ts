@@ -12,6 +12,7 @@ import { getAllEvents, getEventsByLairIds, getEventsForUser } from "@/lib/db/eve
 import { getNews } from "@/lib/db/news.ts";
 import { listRecentPublicContents } from "@/lib/db/user-contents.ts";
 import { getFeaturedDecks, searchDecks } from "@/lib/db/decks.ts";
+import { deckCoverPosition, resolveDeckCover } from "@/lib/decks/cover.ts";
 import { getPlayGroupsForUser } from "@/lib/db/play-groups.ts";
 import { listPlayGroupSessions } from "@/lib/db/play-group-sessions.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
@@ -71,6 +72,12 @@ export type EntreeFil = {
   /** ISO 8601 — le tri du fil, et l'ancienneté affichée. */
   publieLe: string;
   vignette?: string;
+  /*
+   * Le cadrage de la vignette. Une illustration de carte porte son sujet en
+   * haut ; la centrer dans une vignette panoramique la décapite. Seuls les
+   * decks ont un avis là-dessus, et c'est `deckCoverPosition` qui le donne.
+   */
+  cadrage?: "top" | "center";
   duree?: string;
 };
 
@@ -357,6 +364,8 @@ function versEntreeContenu(contenu: UserContent): EntreeFil {
 }
 
 function versEntreeDeck(deck: Deck): EntreeFil {
+  const couverture = resolveDeckCover(deck);
+
   return {
     id: deck.id,
     type: "deck",
@@ -365,6 +374,19 @@ function versEntreeDeck(deck: Deck): EntreeFil {
     source: deck.creatorName ?? "",
     gameId: deck.gameId,
     publieLe: (deck.updatedAt instanceof Date ? deck.updatedAt : new Date(deck.updatedAt)).toISOString(),
+    /*
+     * La couverture du deck, résolue comme partout ailleurs : l'image que
+     * l'auteur a déposée, la carte qu'il a désignée, ou la légende qui donne
+     * déjà son identité au deck. Sans catalogue — le fil est une liste, et
+     * `coverImage` est justement la valeur dénormalisée que les listes lisent,
+     * écrite à l'enregistrement du deck.
+     *
+     * La provenance voyage avec l'adresse, parce qu'elle décide du cadrage :
+     * sans elle, le même deck serait cadré ici autrement que dans la
+     * librairie, ce que `resolveDeckCover` existe précisément pour empêcher.
+     */
+    vignette: couverture.image,
+    cadrage: deckCoverPosition(couverture.source),
   };
 }
 

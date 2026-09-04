@@ -119,11 +119,14 @@ const ICONES_TIRAGE = {
 export function Tirage({
   src,
   type,
+  cadrage = "center",
   duree,
   className,
 }: {
   src?: string;
   type: TypeContenu | "direct";
+  /** Où cadrer l'image quand elle déborde. Voir `deckCoverPosition`. */
+  cadrage?: "top" | "center";
   duree?: string;
   className?: string;
 }) {
@@ -159,7 +162,10 @@ export function Tirage({
           src={vignette}
           alt=""
           loading="lazy"
-          className="absolute inset-0 size-full object-cover"
+          className={cn(
+            "absolute inset-0 size-full object-cover",
+            cadrage === "top" ? "object-top" : "object-center",
+          )}
         />
       ) : (
         <span
