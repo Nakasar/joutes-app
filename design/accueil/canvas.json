@@ -2,87 +2,97 @@
   "artboards": [
     {
       "file": "Main.dc.html",
-      "title": "Le panneau — 1440 px",
-      "x": 0,
-      "y": 0,
-      "w": 1440,
-      "h": 1990,
-      "is_interactive": true,
-      "page": "page-1"
-    },
-    {
-      "file": "Nuit.dc.html",
-      "title": "Le panneau, le soir",
-      "x": 1560,
-      "y": 0,
-      "w": 1440,
-      "h": 1990,
-      "is_interactive": true,
-      "page": "page-1"
-    },
-    {
-      "file": "Poche.dc.html",
-      "title": "Dans la poche — 390 px",
-      "x": 3120,
-      "y": 0,
-      "w": 390,
-      "h": 3400,
-      "is_interactive": true,
-      "page": "page-1"
-    },
-    {
-      "file": "Vocabulaire.dc.html",
-      "title": "Le vocabulaire",
-      "x": 3630,
-      "y": 0,
-      "w": 1180,
-      "h": 2020,
-      "page": "page-1"
-    },
-    {
-      "file": "PanneauJoutes.dc.html",
-      "title": "D · Le panneau, aux couleurs de la maison",
+      "title": "Connecté — 1440 px",
       "x": 0,
       "y": 0,
       "w": 1440,
       "h": 2000,
       "is_interactive": true,
+      "page": "page-1"
+    },
+    {
+      "file": "Visiteur.dc.html",
+      "title": "Non connecté — 1440 px",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 2150,
+      "is_interactive": true,
+      "page": "page-1"
+    },
+    {
+      "file": "Panneau.dc.html",
+      "title": "Le panneau en papier — clair",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1990,
+      "is_interactive": true,
+      "page": "page-2"
+    },
+    {
+      "file": "Nuit.dc.html",
+      "title": "Le panneau en papier — le soir",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 1990,
+      "is_interactive": true,
+      "page": "page-2"
+    },
+    {
+      "file": "Poche.dc.html",
+      "title": "Le panneau en papier — 390 px",
+      "x": 3120,
+      "y": 0,
+      "w": 390,
+      "h": 3400,
+      "is_interactive": true,
+      "page": "page-2"
+    },
+    {
+      "file": "Vocabulaire.dc.html",
+      "title": "Le vocabulaire du papier",
+      "x": 3630,
+      "y": 0,
+      "w": 1180,
+      "h": 2020,
       "page": "page-2"
     },
     {
       "file": "Pont.dc.html",
       "title": "E · Le pont — science-fiction",
-      "x": 1560,
+      "x": 0,
       "y": 0,
       "w": 1200,
       "h": 1820,
       "is_interactive": true,
-      "page": "page-2"
+      "page": "page-3"
     },
     {
       "file": "Carte.dc.html",
       "title": "F · La carte — le territoire porte les contenus",
-      "x": 2880,
+      "x": 1320,
       "y": 0,
       "w": 1320,
       "h": 1800,
       "is_interactive": true,
-      "page": "page-2"
+      "page": "page-3"
     },
     {
       "file": "Neon.dc.html",
       "title": "G · Néon — cyberpunk assumé",
-      "x": 4320,
+      "x": 2760,
       "y": 0,
       "w": 1240,
       "h": 1610,
       "is_interactive": true,
-      "page": "page-2"
+      "page": "page-3"
     },
     {
       "file": "Lice.dc.html",
       "title": "B · La lice",
-      "x": 0,
+      "x": 4120,
       "y": 0,
       "w": 1240,
       "h": 2320,
@@ -92,7 +102,7 @@
     {
       "file": "Node.dc.html",
       "title": "C · Le node — cyberpunk sobre",
-      "x": 1360,
+      "x": 5480,
       "y": 0,
       "w": 1240,
       "h": 1560,
@@ -101,8 +111,8 @@
     },
     {
       "file": "Maison.dc.html",
-      "title": "La maison, telle quelle — clair",
-      "x": 2720,
+      "title": "La toute première version — clair",
+      "x": 6840,
       "y": 0,
       "w": 1440,
       "h": 1710,
@@ -111,8 +121,8 @@
     },
     {
       "file": "Sombre.dc.html",
-      "title": "La maison, en sombre",
-      "x": 4280,
+      "title": "La toute première version — sombre",
+      "x": 8400,
       "y": 0,
       "w": 1440,
       "h": 1710,
@@ -121,8 +131,8 @@
     },
     {
       "file": "Mobile.dc.html",
-      "title": "La maison, sur téléphone",
-      "x": 5840,
+      "title": "La toute première version — téléphone",
+      "x": 9960,
       "y": 0,
       "w": 390,
       "h": 2950,
@@ -132,86 +142,70 @@
   ],
   "pages": [
     {
-      "id": "page-2",
-      "name": "Nouvelles pistes"
+      "id": "page-1",
+      "name": "Le panneau, aux couleurs de la maison"
     },
     {
-      "id": "page-1",
-      "name": "Le tableau d'affichage"
+      "id": "page-2",
+      "name": "Le panneau, en papier"
     },
     {
       "id": "page-3",
-      "name": "Premières directions"
+      "name": "Directions écartées"
     }
   ],
   "annotations": [
     {
-      "id": "pistes",
-      "x": 0,
-      "y": -1160,
-      "w": 680,
-      "page": "page-2",
-      "text": "Quatre nouvelles pistes.\n\nMême règle que la première série : structure identique, mêmes contenus, mêmes données — sauf pour la carte, qui change la structure exprès et qui est là pour ça. Les quatre répondent au clic.\n\nCe qu'il faut savoir avant de regarder :\n\n— D remet le panneau retenu dans les couleurs de l'application. Ce n'est pas une variante, c'est une ÉPREUVE : elle mesure ce que la direction doit à sa mise en page plutôt qu'à son papier.\n\n— E est de la science-fiction, mais pas celle du néon. Le cyberpunk sature ; le futurisme soustrait.\n\n— F est la seule qui touche à la structure. À regarder pour l'idée, pas pour la finition.\n\n— G est le cyberpunk assumé. Il double « Le node » de la première série, qui explorait déjà ce genre — les deux sont sur la table, et c'est entre eux deux qu'il faudra choisir si le genre est retenu."
-    },
-    {
-      "id": "note-d",
-      "x": 0,
-      "y": -560,
-      "w": 660,
-      "page": "page-2",
-      "text": "D · LE PANNEAU, AUX COULEURS DE LA MAISON\n\nOn garde la composition — chevauchement, inclinaison, punaise, fanion du prochain — et on change tous les matériaux : jetons de app/globals.css, une seule police, les rayons de --radius, les ombres de shadow-sm.\n\nCE QUI SURVIT : la hiérarchie. Le fanion et le recouvrement continuent de dire quelle échéance est la prochaine, et l'inclinaison suffit encore à distinguer l'agenda du reste de la page.\n\nCE QUI TOMBE : le panneau. Sans palette chaude ni grain, les punaises deviennent des points rouges décoratifs sur des cartes ordinaires, et le ruban adhésif a dû être retiré — sur un fond neutre, ce n'est plus qu'une tache grise. Le vocabulaire perd sa première pièce, et elle ne se remplace pas.\n\nCE QUE ÇA DIT : la direction tient à sa matière autant qu'à sa mise en page. Si l'on ne veut pas de la matière, autant reprendre « la maison, telle quelle » — l'inclinaison seule ne vaut pas le surcoût.\n\nC'est le compromis à examiner en premier, parce que c'est le seul qui n'engage rien."
-    },
-    {
-      "id": "note-e",
-      "x": 720,
-      "y": -560,
-      "w": 640,
-      "page": "page-2",
-      "text": "E · LE PONT — science-fiction\n\nUn pont de vaisseau n'a rien du néon : il affiche peu, en traits fins, très espacés, sur beaucoup de noir. Champ d'étoiles, arcs d'horizon, halos discrets, un titrage large et lettré.\n\nUN GESTE PORTE LA PAGE, ET IL N'EST PAS DÉCORATIF : l'agenda devient une TRAJECTOIRE. Trois échéances posées sur une ligne, un repère « maintenant » à gauche, la prochaine allumée. C'est la seule des sept mises en page où la distance dans le temps se VOIT au lieu de se lire — sur les autres, il faut comparer trois dates.\n\nCe geste vaut d'être retenu même si la direction ne l'est pas : la trajectoire fonctionnerait aussi bien sur le panneau.\n\nCE QUE ÇA COÛTE : beaucoup de vide, donc peu de contenus par écran ; et un futurisme froid qui va mal à une plateforme dont le sujet est de se retrouver à plusieurs autour d'une table."
-    },
-    {
-      "id": "note-f",
-      "x": 1420,
-      "y": -560,
-      "w": 700,
-      "page": "page-2",
-      "text": "F · LA CARTE — cartographie dessinée, pastel\n\nLa seule proposition qui ne change pas la peau mais la STRUCTURE. Partout ailleurs, un contenu porte son lieu en petites lettres sous son titre. Ici c'est l'inverse : le lieu porte ses contenus. On ne lit plus un fil, on lit un territoire.\n\nLE PARI : pour un joueur, « qu'est-ce qui se passe autour de moi » est une question géographique avant d'être chronologique. Une boutique à vingt minutes qui ouvre ce soir compte plus qu'un tournoi à deux heures de route — et aucune liste triée par date ne dit cela.\n\nTout est dessiné : rivage hachuré, rivière, routes en pointillé entre les lieux, collines et forêt à la plume, rose des vents, légende. Les pastels sont quatre teintes à chroma et clarté identiques ; l'encre est brune, jamais noire.\n\nCE QUE ÇA COÛTE, ET IL FAUT LE DIRE TOUT DE SUITE :\n— Une carte ne trie pas par date. « Qu'est-ce qui m'attend jeudi » redevient difficile.\n— Elle sature vers quinze lieux. Au-delà, les fiches se recouvrent.\n— Ce qui n'a pas de lieu — une actualité, une vidéo, un deck — n'a pas de place sur le territoire. D'où le cartouche à droite, qui est la solution des vraies cartes pour le texte, mais qui reste un fil déguisé.\n— Il faut de vraies coordonnées. Elles existent déjà : les lieux ont une adresse et la géolocalisation est en place.\n\nÀ regarder pour l'idée. Si elle plaît, la question suivante n'est pas esthétique : est-ce l'ACCUEIL, ou une VUE de la page Lieux ?"
-    },
-    {
-      "id": "note-g",
-      "x": 2180,
-      "y": -560,
-      "w": 660,
-      "page": "page-2",
-      "text": "G · NÉON — cyberpunk assumé\n\nDuotone magenta et cyan, coins coupés, halos, lignes de balayage, titrage lourd et penché. Reprend le style d'affiche « cyberpunk » que les lieux impriment déjà, mais en devanture plutôt qu'en régie.\n\nÀ COMPARER AVEC « LE NODE » (troisième page), qui explorait le même genre dans l'autre tempérament : austère, cyan seul, monospace partout, aucune lueur. Les deux sont défendables et ne servent pas la même chose — Node est un tableau de bord, Néon est une enseigne. Si le cyberpunk est retenu, c'est entre ces deux-là qu'il faut choisir.\n\nUNE CONTRAINTE A GOUVERNÉ LE DESSIN : le magenta et le cyan sont des accents de BORD et de LIBELLÉ, jamais de texte courant. Un titre d'article en magenta sur noir se lit mal, et une page dont le sujet est de lire des contenus doit d'abord se lire.\n\nCE QUE ÇA COÛTE : sombre par nature, pas de version claire ; et de l'urgence partout, y compris sur ce qui n'en demande pas."
-    },
-    {
-      "id": "ou-on-en-est",
-      "x": 2900,
-      "y": -560,
-      "w": 660,
-      "page": "page-2",
-      "text": "Où en est la décision.\n\nSept mises en page existent maintenant, sur trois pages de ce canevas. Ce n'est pas trois de trop : elles couvrent trois familles distinctes, et la décision se prend famille par famille.\n\n1. LA MATIÈRE — le tableau d'affichage (page 1), et son épreuve dépouillée (D). Question : la matière gagne-t-elle les autres écrans, ou l'accueil reste-t-il une page à part ?\n\n2. LE GENRE — la lice, le node, le pont, néon. Quatre habits forts. Question : Joutes veut-elle un genre, sachant que la plateforme couvre Riftbound, Magic, Star Wars Unlimited et des jeux de figurines, et que l'habit d'un genre en exclut d'autres ?\n\n3. LA STRUCTURE — la carte (F). Question indépendante des deux autres : lit-on un fil ou un territoire ? Elle peut se combiner à n'importe quelle peau.\n\nCe qu'il resterait à faire dans tous les cas : l'accueil du visiteur non connecté, qui n'a ni les mêmes contenus ni le même but, et qui n'est maquettée nulle part."
-    },
-    {
       "id": "retenue",
       "x": 0,
-      "y": -1240,
+      "y": -1120,
       "w": 680,
       "page": "page-1",
-      "text": "La direction retenue jusqu'ici.\n\n« Le tableau d'affichage » : le panneau de liège de la boutique — le seul endroit où un joueur voit déjà, côte à côte, une annonce de tournoi, une liste punaisée et un mot du patron.\n\nQuatre planches : le panneau en 1440, le même le soir, la version de poche en 390, et le vocabulaire dont tout est fait — les attaches, les marques, l'échelle d'inclinaison, et les six règles qui décident quand la maquette se tait.\n\nLes nouvelles pistes sont sur la page « Nouvelles pistes ». L'une d'elles (D) est cette direction même, dépouillée de sa matière : c'est l'épreuve la plus utile à regarder avant de trancher."
+      "text": "La direction retenue.\n\nLa composition du tableau d'affichage — fiches qui se chevauchent, inclinaison, punaise, fanion de la prochaine échéance — dans les jetons de app/globals.css. Une seule police, les rayons de --radius, les ombres de shadow-sm.\n\nC'est le compromis le moins cher de tous ceux qui ont été maquettés : la hiérarchie du panneau sans son papier, donc sans le surcoût d'une matière à porter sur cent autres écrans.\n\nDeux planches, à comparer côte à côte : la vue du joueur connecté, et celle du visiteur. Elles répondent au clic toutes les deux — les onglets de jeu filtrent les directs, l'agenda et le fil ; la bascule trie le fil.\n\nCe qui reste du panneau : le recouvrement des trois annonces, leur décalage vertical, l'inclinaison entre un et deux degrés et demi, la punaise, et le fanion rouge. C'est là que passe toute la hiérarchie.\n\nCe qui a disparu avec le papier : le ruban adhésif — sur fond neutre ce n'est plus qu'une tache grise — et le grain de liège. Aucun des deux ne se remplace ; il faut l'accepter."
     },
     {
-      "id": "premieres",
+      "id": "deux-vues",
+      "x": 720,
+      "y": -1120,
+      "w": 700,
+      "page": "page-1",
+      "text": "Ce qui change d'une vue à l'autre.\n\nLA COMPOSITION NE BOUGE PAS. Même barre, même rythme de sections, mêmes fiches inclinées, même bandeau rouge. C'est voulu : un visiteur qui crée son compte doit retrouver la page qu'il vient de parcourir, pas en découvrir une autre.\n\nCE QUI RESTE IDENTIQUE, parce que c'est public : les directs en cours, le fil (actus, vidéos, decks), et les trois mêmes événements.\n\nCE QUI CHANGE, parce que la page n'a plus le droit de le savoir :\n\n— L'EN-TÊTE. « Bonsoir, Kévin » devient une proposition en une phrase. La cloche et l'avatar cèdent la place à « Se connecter » et « Créer un compte ».\n\n— LA LOCALISATION. Sans compte, il n'y a pas de lieux suivis : la page ne sait pas où l'on est. D'où la puce « Autour de Lyon · 15 km · Changer », qui reprend le formulaire « Proches de moi » du calendrier — ville ou coordonnées, rayon de 5 à 150 km, 15 km par défaut. Sans elle, « près de chez vous » ne veut rien dire.\n\n— LES ÉVÉNEMENTS. « Inscrit » et « Organisateur » n'existent plus. À la place, ce que Event porte publiquement : registeredParticipantsCount sur maxParticipants, price, status, et la distance calculée par distanceKm. Le fanion « Prochain » devient « Demain » — pour un visiteur, la proximité dans le temps compte plus que l'engagement, qu'il n'a pas.\n\n— LA COLONNE DE DROITE. « Mes lieux » devient « Les lieux autour de vous », triés par distance. « Mes decks » devient « Les decks en vedette » (FeaturedDecks existe déjà sur /decks/library). Le sondage du groupe, qui n'a aucun sens sans compte, cède la place à la carte d'inscription.\n\nLA CARTE D'INSCRIPTION est la seule pièce sans équivalent sur la vue connectée. Ses quatre arguments ne sont pas génériques : chacun répond à quelque chose que le visiteur vient de voir plus haut sur la page — les lieux, les événements, les decks, les directs."
+    },
+    {
+      "id": "verifs",
+      "x": 1500,
+      "y": -1120,
+      "w": 660,
+      "page": "page-1",
+      "text": "Ce qui a été vérifié, et ce qui est un exemple.\n\nRIEN N'EST INVENTÉ DU MODÈLE. Tout ce que la vue visiteur affiche existe dans le code : Event porte price, registeredParticipantsCount, maxParticipants et status ; lib/lairs/creation.ts calcule distanceKm ; docs/GEOLOCATION_FEATURE.md décrit la recherche par ville et le rayon ; decks/library/FeaturedDecks.tsx met des listes en avant. La page ne demande aucun champ nouveau.\n\nCE QUI EST UN EXEMPLE : les valeurs. Noms de lieux et de comptes inventés ; prix, compteurs d'inscrits et distances plausibles, nécessaires pour que le filtre et la jauge aient quelque chose à montrer.\n\nDEUX CHOIX PRIS EN COURS DE ROUTE, à confirmer :\n\n— Le bouton « Suivre » a été retiré des lignes de lieux. Trois d'entre eux écrasaient les noms sur deux lignes dans une colonne de 348 px, et surtout ils faisaient concurrence à la seule action que cette page doit obtenir. Le suivi se fait sur la fiche du lieu ; la carte d'inscription le promet déjà.\n\n— Les badges des decks en vedette ont sauté : un deck mis en avant est conforme par construction, les trois badges étaient donc identiques et ne distinguaient rien. Le jeu et l'auteur, eux, distinguent."
+    },
+    {
+      "id": "trancher",
+      "x": 2220,
+      "y": -1120,
+      "w": 660,
+      "page": "page-1",
+      "text": "À trancher.\n\n— L'ORDRE DES BLOCS. Les deux vues gardent le même, pour que la comparaison soit juste. Mais leur centre de gravité diffère : sur la vue connectée c'est l'agenda — ce à quoi je me suis engagé ; sur la vue visiteur ce sont plutôt les directs et les lieux proches, qui prouvent que la plateforme est vivante à côté de chez lui. Faut-il remonter « les lieux autour de vous » sur la vue visiteur ?\n\n— LA LOCALISATION AVANT LA PAGE. Que montre-t-on à quelqu'un qui arrive sans position et qui refuse le partage ? Trois réponses possibles : une ville par défaut (Paris ?), la dernière ville cherchée, ou un écran qui demande d'abord. La maquette suppose une position déjà connue.\n\n— LE SECOND PUBLIC. Joutes a des fonctionnalités d'organisateur (/features/organizers). Faut-il un bandeau en pied de page pour les lieux et les organisateurs, ou cette accueil ne parle-t-elle qu'aux joueurs ?\n\n— LA VERSION TÉLÉPHONE de ces deux vues reste à faire. La planche « Poche » de la page suivante montre le principe d'empilement sur 390 px, mais en papier.\n\n— LE THÈME SOMBRE vient gratuitement : les jetons de .dark existent déjà. Une planche de contrôle suffirait à le vérifier."
+    },
+    {
+      "id": "papier",
       "x": 0,
       "y": -700,
       "w": 700,
+      "page": "page-2",
+      "text": "Le panneau, en papier.\n\nLa direction d'où vient la composition retenue : papier chaud, grain de liège, fiches punaisées, ruban adhésif, tampons encrés. Avec sa version du soir, sa version de poche et sa planche de vocabulaire.\n\nElle n'est pas retenue, mais elle n'est pas perdue : c'est ici que sont écrites les règles que la version « maison » applique encore — l'échelle d'inclinaison (0° pour les commandes, ±0,5° pour les bandes larges, 1 à 2,5° pour les fiches), la hiérarchie par recouvrement, et les six règles qui décident quand la maquette se tait.\n\nÀ relire si l'on veut savoir POURQUOI la version retenue est composée ainsi."
+    },
+    {
+      "id": "ecartees",
+      "x": 0,
+      "y": -640,
+      "w": 700,
       "page": "page-3",
-      "text": "Les premières directions.\n\nB · LA LICE — encre, or, filets, didone, symétrie. Joutes tient son nom des joutes ; la page devenait un ordre de passage. Écartée pour le costume, et parce que le didone se lit mal en petit.\n\nC · LE NODE — noir, grille, monospace, cyan, aucune lueur. Le cyberpunk en régie plutôt qu'en devanture. À comparer avec « Néon » sur la page des nouvelles pistes : c'est le même genre, dans deux tempéraments opposés.\n\nLA MAISON, TELLE QUELLE — la toute première version, alignée au pixel près sur app/globals.css, avec son sombre et son téléphone. Elle reste l'étalon : c'est à elle qu'on compare le coût d'intégration de tout le reste, et c'est l'option de repli.\n\nCes planches ne sont pas maintenues au même rythme que la page 1. Elles portent la trace de la décision."
+      "text": "Les directions écartées.\n\nE · LE PONT — science-fiction de l'apesanteur. Un geste mérite d'être repris quelle que soit la direction : l'agenda y devient une trajectoire, avec un repère « maintenant ». C'est la seule mise en page où la distance dans le temps se voit au lieu de se lire.\n\nF · LA CARTE — la seule qui change la structure : le lieu porte ses contenus au lieu de l'inverse. Écartée comme accueil, mais elle reste une candidate sérieuse pour une VUE de la page Lieux.\n\nG · NÉON et C · LE NODE — le cyberpunk en devanture et en régie.\n\nB · LA LICE — encre, or, didone.\n\nLA TOUTE PREMIÈRE VERSION — alignée au pixel près sur globals.css, avec son sombre et son téléphone. Elle reste l'étalon de coût.\n\nCes planches ne sont plus maintenues. Elles portent la trace de la décision."
     }
   ],
   "launch": {
     "view": "canvas",
-    "page": "page-2"
+    "page": "page-1"
   }
 }

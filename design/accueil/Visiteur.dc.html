@@ -373,6 +373,51 @@
 
     .board.joutes .ruban { display: none; }
     .board.joutes .coupure .attache-punaise { display: block; }
+
+    /*
+     * La vue du VISITEUR.
+     *
+     * Même composition que la vue connectée — chevauchement, inclinaison,
+     * punaise, fanion — et mêmes matériaux. Ce qui change n'est pas le
+     * dessin, c'est ce que la page a le droit de savoir : personne n'a de
+     * lieux suivis, de decks ni de groupe. Le personnel cède la place au
+     * local, et la page doit gagner un compte plutôt que d'en supposer un.
+     *
+     * Trois pièces neuves seulement : la proposition en tête, la puce de
+     * localisation (sans elle, « près de chez vous » ne veut rien dire), et
+     * la carte d'inscription, qui est la seule chose ici sans équivalent sur
+     * la vue connectée.
+     */
+    .proposition { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px 32px; margin-bottom: 26px; }
+    .proposition h1 { margin: 0; max-width: 780px; font-size: 42px; line-height: 47px; font-weight: 700; letter-spacing: -0.035em; }
+    .proposition p { margin: 14px 0 0; max-width: 560px; font-size: 16px; line-height: 24px; color: var(--encre-2); }
+    .proposition .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+    .barre-filtres { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+    .localisation { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border: 1px solid var(--trait); border-radius: 999px; background: var(--papier); font-size: 13px; color: var(--encre-2); white-space: nowrap; flex-shrink: 0; }
+    .localisation b { font-weight: 600; color: var(--encre); }
+    .localisation .changer { color: var(--encre); font-weight: 500; border-bottom: 1px solid var(--trait); }
+
+    /* Les compteurs publics d'un événement : ce qu'on peut lire sans compte. */
+    .places { display: flex; flex-direction: column; gap: 6px; }
+    .places .chiffres { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--encre-2); }
+    .places .chiffres b { font-weight: 600; color: var(--encre); }
+    .jauge-places { height: 4px; border-radius: 999px; background: var(--fond-creux); overflow: hidden; }
+    .jauge-places i { display: block; height: 100%; border-radius: 999px; background: color-mix(in oklab, var(--encre) 55%, transparent); }
+    .jauge-places.serre i { background: var(--ambre); }
+
+    .distance { font-variant-numeric: tabular-nums; }
+
+    /* La carte d'inscription : la seule pièce propre au visiteur. */
+    .inscription { border-color: var(--encre); }
+    .inscription .papier-titre { border-bottom-color: var(--encre); }
+    .arguments { display: flex; flex-direction: column; gap: 11px; }
+    .argument { display: flex; gap: 10px; font-size: 13.5px; line-height: 19px; }
+    .argument svg { margin-top: 2px; color: var(--vert); }
+    .deja { text-align: center; font-size: 12.5px; color: var(--encre-2); }
+    .deja b { font-weight: 600; color: var(--encre); border-bottom: 1px solid var(--trait); }
+
+    .btn.fantome { background: transparent; border-color: transparent; box-shadow: none; }
   </style>
 </helmet>
 
@@ -381,16 +426,13 @@
   <header class="enseigne">
     <div class="enseigne-inner">
       <div style="display: flex; align-items: center; gap: 34px; min-width: 0">
-        <span class="marque">Joutes
-          <svg viewBox="0 0 100 7" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M1 4.6C18 2.2 42 1.7 61 3.1c14 1 26 2.4 38 1.1"></path></svg>
-        </span>
+        <span class="marque">Joutes</span>
         <nav class="nav">
-          <span class="nav-lien actif">Le panneau</span>
+          <span class="nav-lien actif">Accueil</span>
           <span class="nav-lien">Événements</span>
           <span class="nav-lien">Lieux</span>
           <span class="nav-lien">Jeux</span>
           <span class="nav-lien">Contenus</span>
-          <span class="nav-lien">Amis</span>
         </nav>
       </div>
       <div class="enseigne-droite">
@@ -398,38 +440,39 @@
           <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
           Chercher
         </span>
-        <span class="icone-bouton">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
-          <span class="pastille-notif"></span>
-        </span>
-        <span class="avatar">KT</span>
+        <span class="btn fantome">Se connecter</span>
+        <span class="btn primaire">Créer un compte</span>
       </div>
     </div>
   </header>
 
   <div class="page">
 
-    <div class="accroche">
+    <div class="proposition">
       <div>
-        <h1 class="titre-affiche">Bonsoir, <em>Kévin<svg viewBox="0 0 100 10" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M2 7.4C22 3.6 52 2.4 74 4.2c9 .7 17 2 24 1.4"></path></svg></em></h1>
-        <p>{{ resume }}</p>
+        <h1>Trouvez où jouer près de chez vous.</h1>
+        <p>Les tournois, les soirées et les boutiques de votre région, rassemblés au même endroit — avec l&apos;actualité de vos jeux, les parties diffusées en direct et les listes que la communauté publie.</p>
       </div>
       <div class="actions">
-        <span class="btn contour">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
-          Autour de moi
-        </span>
+        <span class="btn contour">Parcourir l&apos;agenda</span>
         <span class="btn primaire">
           <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-          Punaiser un événement
+          Créer un compte
         </span>
       </div>
     </div>
 
-    <div class="onglets-jeux">
-      <sc-for list="{{ jeux }}" as="jeu" hint-placeholder-count="4">
-        <span class="onglet-jeu {{ jeu.classe }}" onClick="{{ jeu.choisir }}">{{ jeu.nom }}</span>
-      </sc-for>
+    <div class="barre-filtres">
+      <div class="onglets-jeux" style="margin-bottom: 0">
+        <sc-for list="{{ jeux }}" as="jeu" hint-placeholder-count="4">
+          <span class="onglet-jeu {{ jeu.classe }}" onClick="{{ jeu.choisir }}">{{ jeu.nom }}</span>
+        </sc-for>
+      </div>
+      <span class="localisation">
+        <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        Autour de <b>Lyon</b> · 15 km
+        <span class="changer">Changer</span>
+      </span>
     </div>
 
     <sc-if value="{{ aDesDirects }}" hint-placeholder-val="{{ true }}">
@@ -458,7 +501,7 @@
     <div class="bandeau-section">
       <span class="etiquette">
         <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="1"></rect><path d="M3 10h18"></path></svg>
-        Ce qui m&apos;attend
+        Cette semaine autour de Lyon
       </span>
       <span class="lien-section">Tout l&apos;agenda
         <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
@@ -476,8 +519,8 @@
               <circle cx="8.6" cy="6.6" r="2.4" fill="var(--reflet)"></circle>
               <path d="M11 16.5v1.6" stroke="var(--ombre-punaise)" stroke-width="1.4" stroke-linecap="round"></path>
             </svg>
-            <sc-if value="{{ e.prochain }}" hint-placeholder-val="{{ true }}">
-              <span class="fanion">Prochain</span>
+            <sc-if value="{{ e.bientot }}" hint-placeholder-val="{{ true }}">
+              <span class="fanion">{{ e.quandCourt }}</span>
             </sc-if>
             <span class="date">
               <span class="jour">{{ e.jour }}</span>
@@ -487,7 +530,14 @@
               </span>
             </span>
             <span class="titre">{{ e.titre }}</span>
-            <span class="lieu">{{ e.lieu }} · {{ e.nomJeu }}</span>
+            <span class="lieu">{{ e.lieu }} <span class="sep">·</span> <span class="distance">{{ e.distance }}</span> <span class="sep">·</span> {{ e.nomJeu }}</span>
+            <span class="places">
+              <span class="chiffres">
+                <span><b>{{ e.inscrits }}</b> / {{ e.places }} inscrits</span>
+                <span>{{ e.prix }}</span>
+              </span>
+              <span class="jauge-places {{ e.jaugeClasse }}"><i style="width: {{ e.remplissage }}"></i></span>
+            </span>
             <span class="pied">
               <span class="tampon-statut {{ e.badgeClasse }}">{{ e.badge }}</span>
             </span>
@@ -519,7 +569,6 @@
             <sc-for list="{{ fil }}" as="f" hint-placeholder-count="6">
               <div class="fiche coupure">
                 <span class="liseré"></span>
-                <span class="ruban attache-ruban" style="left: 34px; width: 74px; transform: rotate(-2.6deg)"></span>
                 <svg class="punaise attache-punaise" viewBox="0 0 22 22" fill="none" style="left: 44px">
                   <ellipse cx="11" cy="18" rx="5" ry="1.6" fill="var(--ombre-punaise)" opacity="0.4"></ellipse>
                   <circle cx="11" cy="9" r="7" fill="var(--papier)" stroke="var(--liseré)"></circle>
@@ -560,12 +609,10 @@
       <aside class="colonne-droite">
 
         <section class="fiche papier">
-          <span class="dessous"></span>
           <span class="liseré"></span>
-          <span class="ruban" style="left: 50%; margin-left: -46px; width: 92px; transform: rotate(1.8deg)"></span>
           <div class="papier-titre">
-            <h2>Mes lieux</h2>
-            <span class="lien">Découvrir</span>
+            <h2>Les lieux autour de vous</h2>
+            <span class="lien">Voir tout</span>
           </div>
           <div class="liste">
             <sc-for list="{{ lieux }}" as="l" hint-placeholder-count="3">
@@ -582,7 +629,7 @@
                     </sc-if>
                     {{ l.etat }}
                   </span>
-                  <span class="etat">{{ l.agenda }}</span>
+                  <span class="etat"><span class="distance">{{ l.distance }}</span> <span class="sep">·</span> {{ l.agenda }}</span>
                 </span>
               </div>
             </sc-for>
@@ -591,10 +638,9 @@
 
         <section class="fiche papier">
           <span class="liseré"></span>
-          <span class="ruban" style="left: 26px; width: 78px; transform: rotate(-2.2deg)"></span>
           <div class="papier-titre">
-            <h2>Mes decks</h2>
-            <span class="lien">Nouveau</span>
+            <h2>Les decks en vedette</h2>
+            <span class="lien">Explorer</span>
           </div>
           <div class="liste">
             <sc-for list="{{ decks }}" as="d" hint-placeholder-count="3">
@@ -603,40 +649,37 @@
                   <span class="nom">{{ d.nom }}</span>
                   <span class="meta">{{ d.nomJeu }} <span class="sep">·</span> {{ d.quand }}</span>
                 </span>
-                <span class="tampon-statut {{ d.badgeClasse }}">{{ d.badge }}</span>
               </div>
             </sc-for>
           </div>
         </section>
 
-        <section class="fiche papier">
+        <section class="fiche papier inscription">
           <span class="liseré"></span>
-          <span class="ruban" style="right: 22px; width: 70px; transform: rotate(2.4deg)"></span>
           <div class="papier-titre">
-            <h2>Les Joueurs du Jeudi</h2>
-            <span class="tampon-statut attention" style="transform: rotate(1.4deg)">À répondre</span>
+            <h2>Créez votre compte</h2>
           </div>
-          <p style="margin: 0; font-size: 14px; line-height: 19px; color: var(--encre-2)">Quelle date pour la prochaine session ?</p>
-          <div class="bulletin">
-            <div class="option">
-              <span class="case">
-                <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
-              </span>
-              <span class="libelle">Jeudi 26 novembre</span>
-              <span class="compte">4 / 6</span>
-            </div>
-            <div class="option">
-              <span class="case"></span>
-              <span class="libelle">Samedi 28 novembre</span>
-              <span class="compte">2 / 6</span>
-            </div>
-            <div class="option">
-              <span class="case"></span>
-              <span class="libelle">Jeudi 3 décembre</span>
-              <span class="compte">1 / 6</span>
-            </div>
+          <p style="margin: 0; font-size: 13.5px; line-height: 19px; color: var(--encre-2)">Gratuit, et sans rien installer.</p>
+          <div class="arguments">
+            <span class="argument">
+              <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+              Suivez vos boutiques et recevez leur programme
+            </span>
+            <span class="argument">
+              <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+              Inscrivez-vous aux tournois en un clic
+            </span>
+            <span class="argument">
+              <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+              Construisez vos decks et vérifiez leur légalité
+            </span>
+            <span class="argument">
+              <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+              Soyez prévenu quand un direct commence
+            </span>
           </div>
-          <span class="btn primaire large">Envoyer mes disponibilités</span>
+          <span class="btn primaire large">Créer un compte</span>
+          <span class="deja">Déjà inscrit ? <b>Se connecter</b></span>
         </section>
 
       </aside>
@@ -646,7 +689,7 @@
 </div>
 </x-dc>
 
-<script data-dc-script data-props='{"$preview":{"width":1440,"height":1980}}'>
+<script data-dc-script data-props='{"$preview":{"width":1440,"height":2060}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -655,18 +698,14 @@ class Component extends DCLogic {
 
   jeuxDisponibles() {
     return [
-      { id: 'tous', nom: 'Tous mes jeux' },
+      { id: 'tous', nom: 'Tous les jeux' },
       { id: 'riftbound', nom: 'Riftbound' },
       { id: 'mtg', nom: 'Magic' },
       { id: 'swu', nom: 'Star Wars Unlimited' },
     ];
   }
 
-  /*
-   * Les directs ne vivent que dans le bandeau, jamais dans le fil : les y
-   * répéter montrait deux fois la même chose à trois cents pixels d'écart. Le
-   * fil garde ce qui se lit après coup — articles, vidéos, listes.
-   */
+  /* Les directs sont publics : un visiteur les voit comme un inscrit. */
   tousLesDirects() {
     return [
       { jeu: 'riftbound', titre: 'Draft de sortie, table 1', lieu: 'Le Repaire du Dragon', plateforme: 'Twitch', audience: '142 spectateurs' },
@@ -674,15 +713,20 @@ class Component extends DCLogic {
     ];
   }
 
-  /* Semaine du 18 novembre : le 19 est un jeudi, le 21 un samedi. */
+  /*
+   * Sans compte, un événement ne peut plus dire « inscrit » ni
+   * « organisateur ». Il dit ce que `Event` porte publiquement :
+   * registeredParticipantsCount / maxParticipants, price, status.
+   */
   tousLesEvenements() {
     return [
-      { jeu: 'riftbound', jour: '19', mois: 'nov', jourNom: 'jeudi', titre: 'Tournoi Riftbound — Origines', lieu: 'Le Repaire du Dragon', heure: '19h00', nomJeu: 'Riftbound', etat: 'inscrit', badge: 'Inscrit', badgeClasse: 'ok' },
-      { jeu: 'mtg', jour: '20', mois: 'nov', jourNom: 'vendredi', titre: 'Commander night', lieu: 'Le Repaire du Dragon', heure: '20h00', nomJeu: 'Magic', etat: 'libre', badge: '3 places restantes', badgeClasse: 'attention' },
-      { jeu: 'swu', jour: '21', mois: 'nov', jourNom: 'samedi', titre: 'Soirée découverte Star Wars Unlimited', lieu: 'La Taverne des Joueurs', heure: '14h00', nomJeu: 'Star Wars Unlimited', etat: 'organise', badge: 'Organisateur', badgeClasse: 'principal' },
+      { jeu: 'riftbound', jour: '19', mois: 'nov', jourNom: 'jeudi', heure: '19h00', quandCourt: 'Demain', bientot: true, titre: 'Tournoi Riftbound — Origines', lieu: 'Le Repaire du Dragon', distance: '1,2 km', nomJeu: 'Riftbound', inscrits: '12', places: '16', remplissage: '75%', jaugeClasse: '', prix: '8 €', badge: 'Inscriptions ouvertes', badgeClasse: 'ok' },
+      { jeu: 'mtg', jour: '20', mois: 'nov', jourNom: 'vendredi', heure: '20h00', quandCourt: '', bientot: false, titre: 'Commander night', lieu: 'Le Repaire du Dragon', distance: '1,2 km', nomJeu: 'Magic', inscrits: '9', places: '12', remplissage: '75%', jaugeClasse: '', prix: 'Gratuit', badge: 'Inscriptions ouvertes', badgeClasse: 'ok' },
+      { jeu: 'swu', jour: '21', mois: 'nov', jourNom: 'samedi', heure: '14h00', quandCourt: '', bientot: false, titre: 'Soirée découverte Star Wars Unlimited', lieu: 'La Taverne des Joueurs', distance: '3,8 km', nomJeu: 'Star Wars Unlimited', inscrits: '14', places: '16', remplissage: '88%', jaugeClasse: 'serre', prix: 'Gratuit', badge: '2 places restantes', badgeClasse: 'attention' },
     ];
   }
 
+  /* Le fil est public lui aussi : il ne change pas d'une vue à l'autre. */
   toutLeFil() {
     return [
       { type: 'actu', typeNom: 'Actu', duree: '', jeu: 'riftbound', titre: 'Liste de restrictions du 18 novembre : deux cartes sortent du Standard', source: 'Riftbound officiel', nomJeu: 'Riftbound', quand: 'il y a 2 h', badge: '', badgeClasse: '' },
@@ -694,19 +738,21 @@ class Component extends DCLogic {
     ];
   }
 
-  mesLieux() {
+  /* Aucun lieu n'est suivi : c'est la distance qui les ordonne. */
+  lieuxProches() {
     return [
-      { initiales: 'RD', x: 22, y: 30, nom: 'Le Repaire du Dragon', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 19h", agenda: '3 événements cette semaine' },
-      { initiales: 'TJ', x: 63, y: 17, nom: 'La Taverne des Joueurs', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 23h", agenda: '1 événement cette semaine' },
-      { initiales: 'GC', x: 53, y: 64, nom: 'Games & Co Villeurbanne', ouvert: false, ferme: true, etat: 'Fermé, ouvre demain à 14h', agenda: '1 événement cette semaine' },
+      { initiales: 'RD', nom: 'Le Repaire du Dragon', distance: '1,2 km', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 19h", agenda: '3 événements cette semaine' },
+      { initiales: 'TJ', nom: 'La Taverne des Joueurs', distance: '3,8 km', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 23h", agenda: '1 événement cette semaine' },
+      { initiales: 'GC', nom: 'Games & Co Villeurbanne', distance: '4,1 km', ouvert: false, ferme: true, etat: 'Fermé, ouvre demain à 14h', agenda: '1 événement cette semaine' },
     ];
   }
 
-  mesDecks() {
+  /* Pas de « mes decks » : les listes mises en avant, comme FeaturedDecks. */
+  decksEnVedette() {
     return [
-      { nom: 'Aggro Noxus', nomJeu: 'Riftbound', quand: 'modifié il y a 2 j', badge: 'Conforme', badgeClasse: '' },
-      { nom: 'Contrôle Azorius', nomJeu: 'Magic', quand: 'modifié hier', badge: '2 zones', badgeClasse: 'souci' },
-      { nom: 'Aggro Rebelles', nomJeu: 'Star Wars Unlimited', quand: 'modifié il y a 4 j', badge: 'Brouillon', badgeClasse: '' },
+      { nom: 'Aggro Noxus', nomJeu: 'Riftbound', quand: 'par @lenaflux' },
+      { nom: 'Contrôle Azorius', nomJeu: 'Magic', quand: 'par @vahn' },
+      { nom: 'Aggro Rebelles', nomJeu: 'Star Wars Unlimited', quand: 'par @sora' },
     ];
   }
 
@@ -724,14 +770,7 @@ class Component extends DCLogic {
     }));
 
     const directs = this.tousLesDirects().filter(duJeu);
-    /*
-     * Le fanion « prochain » se calcule après le filtre, jamais dans les
-     * données : filtrer sur Magic doit le déplacer sur le premier événement
-     * Magic, pas le faire disparaître avec le tournoi Riftbound.
-     */
-    const evenements = this.tousLesEvenements()
-      .filter(duJeu)
-      .map((e, i) => ({ ...e, prochain: i === 0, classeProchain: i === 0 ? 'prochain' : '' }));
+    const evenements = this.tousLesEvenements().filter(duJeu);
     const filDuJeu = this.toutLeFil().filter(duJeu);
     const fil = filDuJeu.filter((f) => onglet === 'tout' || f.type === onglet);
 
@@ -748,55 +787,24 @@ class Component extends DCLogic {
     }));
 
     const pluriel = (n, un, plusieurs) => n + ' ' + (n > 1 ? plusieurs : un);
-
-    const morceaux = [];
-    if (evenements.length > 0) morceaux.push(pluriel(evenements.length, 'événement cette semaine', 'événements cette semaine'));
-    if (directs.length > 0) morceaux.push(pluriel(directs.length, 'direct en cours', 'directs en cours'));
-
-    /* « Ce jeu » n'a de sens que si un jeu est choisi ; sinon la page ment. */
     const surCeJeu = tousJeux ? '' : ' sur ce jeu';
 
     return {
-      resume: morceaux.length > 0 ? morceaux.join(', ') + '.' : "Rien ne m'attend cette semaine" + surCeJeu + '.',
       jeux,
       onglets,
       directs,
       aDesDirects: directs.length > 0,
-      titreDirects: pluriel(directs.length, 'direct dans mes lieux', 'directs dans mes lieux'),
+      titreDirects: pluriel(directs.length, 'direct en ce moment', 'directs en ce moment'),
       evenements,
       aDesEvenements: evenements.length > 0,
       sansEvenement: evenements.length === 0,
-      videEvenements: 'Rien de prévu cette semaine' + surCeJeu + '.',
+      videEvenements: 'Rien de prévu cette semaine autour de Lyon' + surCeJeu + '. Élargissez le rayon pour voir plus loin.',
       fil,
       aDuFil: fil.length > 0,
       filVide: fil.length === 0,
-      videFil: "Rien de ce type" + surCeJeu + " pour l'instant.",
-      lieux: this.mesLieux(),
-
-      /*
-       * La lecture cartographique : ce n'est plus le contenu qui porte son
-       * lieu, c'est le lieu qui porte ses contenus. Tout est aplati — un trou
-       * ne sait suivre qu'un chemin pointé, jamais tester si un objet existe.
-       */
-      lieuxCarte: this.mesLieux().map((l) => {
-        const siens = evenements.filter((e) => e.lieu === l.nom);
-        const direct = directs.find((d) => d.lieu === l.nom);
-        return {
-          ...l,
-          enDirect: Boolean(direct),
-          titreDirect: direct ? direct.titre : '',
-          audienceDirect: direct ? direct.audience : '',
-          aUnProchain: siens.length > 0,
-          sansRien: siens.length === 0 && !direct,
-          prochainTitre: siens.length > 0 ? siens[0].titre : '',
-          prochainQuand: siens.length > 0 ? siens[0].jourNom + ' ' + siens[0].jour + ' ' + siens[0].mois + ', ' + siens[0].heure : '',
-          prochainBadge: siens.length > 0 ? siens[0].badge : '',
-          prochainBadgeClasse: siens.length > 0 ? siens[0].badgeClasse : '',
-          autres: siens.length > 1 ? pluriel(siens.length - 1, 'autre rendez-vous', 'autres rendez-vous') : '',
-          aDAutres: siens.length > 1,
-        };
-      }),
-      decks: this.mesDecks(),
+      videFil: 'Rien de ce type' + surCeJeu + " pour l'instant.",
+      lieux: this.lieuxProches(),
+      decks: this.decksEnVedette(),
     };
   }
 }
