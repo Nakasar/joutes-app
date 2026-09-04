@@ -86,8 +86,9 @@
     },
     "directs": {
       "enCours": "Live",
-      "titre": "{count, plural, one {# live in your places} other {# lives in your places}}",
-      "tous": "All lives",
+      "titreSuivis": "{count, plural, one {# live stream in your venues} other {# live streams in your venues}}",
+      "titreProches": "{count, plural, one {# live stream near you} other {# live streams near you}}",
+      "tous": "All live streams",
       "spectateurs": "{count, plural, one {# viewer} other {# viewers}}"
     },
     "agenda": {

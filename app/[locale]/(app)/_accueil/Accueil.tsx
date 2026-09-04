@@ -160,6 +160,8 @@ async function EnTeteConnectee({
             {t("autourDeMoi")}
           </Link>
         </Button>
+        {/* Masqué sur mobile comme sur `/events`, et comme l'accueil le faisait
+            déjà : on ne crée pas un événement depuis un téléphone. */}
         <Button asChild className="hidden sm:inline-flex">
           <Link href="/events/new">
             <Plus aria-hidden />

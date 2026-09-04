@@ -94,7 +94,8 @@
     },
     "directs": {
       "enCours": "Live",
-      "titre": "{count, plural, one {# Livestream in deinen Orten} other {# Livestreams in deinen Orten}}",
+      "titreSuivis": "{count, plural, one {# Livestream in deinen Orten} other {# Livestreams in deinen Orten}}",
+      "titreProches": "{count, plural, one {# Livestream in deiner Nähe} other {# Livestreams in deiner Nähe}}",
       "tous": "Alle Livestreams",
       "spectateurs": "{count, plural, one {# Zuschauer} other {# Zuschauer}}"
     },

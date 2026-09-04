@@ -183,13 +183,20 @@ function lireStatut(
     };
   }
 
-  if (evenement.status === "sold-out") {
+  const inscrits = evenement.registeredParticipantsCount ?? evenement.participants?.length ?? 0;
+  const places = evenement.maxParticipants;
+
+  /*
+   * Complet se dit de deux façons : le lieu l'a déclaré, ou la jauge y est.
+   * Sans le second cas, un événement à dix-huit inscrits sur dix-huit
+   * s'annonçait « inscriptions ouvertes » — l'invitation à s'inscrire juste
+   * sous le compteur qui dit qu'il n'y a plus de place.
+   */
+  if (evenement.status === "sold-out" || (places != null && inscrits >= places)) {
     return { cle: "complet", variante: "outline" };
   }
 
-  const inscrits = evenement.registeredParticipantsCount ?? evenement.participants?.length ?? 0;
-  const places = evenement.maxParticipants;
-  if (places != null && places > inscrits) {
+  if (places != null) {
     return { cle: "places", places: places - inscrits, variante: "outline" };
   }
 

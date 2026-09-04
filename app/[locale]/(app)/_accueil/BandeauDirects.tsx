@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation.ts";
 import { LiveBadge } from "@/components/users/LiveBadge.tsx";
 import { Tirage } from "./pieces.tsx";
-import { lireDirects, type Position } from "./accueil-data.ts";
+import { lireDirects, lireViewer, type Position } from "./accueil-data.ts";
 
 /**
  * Ce qui se passe à l'instant, dans les lieux que la page regarde.
@@ -18,18 +18,30 @@ import { lireDirects, type Position } from "./accueil-data.ts";
  * place de ce qui, la plupart du temps, n'existe pas.
  */
 export default async function BandeauDirects({ position }: { position: Position | null }) {
-  const [t, directs] = await Promise.all([getTranslations("Home.directs"), lireDirects(position)]);
+  const [t, viewer, directs] = await Promise.all([
+    getTranslations("Home.directs"),
+    lireViewer(),
+    lireDirects(position),
+  ]);
 
   if (directs.length === 0) {
     return null;
   }
+
+  /*
+   * « Dans vos lieux » ne se dit qu'à qui en suit : les mêmes directs, pour un
+   * visiteur, viennent des lieux autour de lui et ne sont les siens en rien.
+   * Même partage que `TuileLieux`, et pour la même raison — c'est la condition
+   * exacte sur laquelle `lireLieux` choisit sa source.
+   */
+  const suivis = (viewer?.lairs ?? []).length > 0;
 
   return (
     <section className="border-destructive/45 bg-destructive/5 rounded-xl border p-5">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <LiveBadge label={t("enCours")} />
         <h2 className="text-base font-semibold tracking-tight">
-          {t("titre", { count: directs.length })}
+          {t(suivis ? "titreSuivis" : "titreProches", { count: directs.length })}
         </h2>
         <Link
           href="/lairs"

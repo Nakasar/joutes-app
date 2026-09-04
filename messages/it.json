@@ -94,7 +94,8 @@
     },
     "directs": {
       "enCours": "In diretta",
-      "titre": "{count, plural, one {# diretta nei tuoi luoghi} other {# dirette nei tuoi luoghi}}",
+      "titreSuivis": "{count, plural, one {# diretta nei tuoi locali} other {# dirette nei tuoi locali}}",
+      "titreProches": "{count, plural, one {# diretta vicino a te} other {# dirette vicino a te}}",
       "tous": "Tutte le dirette",
       "spectateurs": "{count, plural, one {# spettatore} other {# spettatori}}"
     },
