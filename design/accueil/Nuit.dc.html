@@ -1,0 +1,728 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    *, *::before, *::after { box-sizing: border-box; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /*
+     * « Le tableau d'affichage ».
+     *
+     * La métaphore n'est pas décorative : c'est le panneau de liège de la
+     * boutique, le seul endroit où un joueur voit déjà, côte à côte, une
+     * annonce de tournoi, une liste punaisée et un mot du patron. Une accueil
+     * qui mêle six natures de contenu a le même problème à résoudre, et le
+     * panneau le résout depuis toujours — par la matière, le chevauchement et
+     * la punaise, pas par des colonnes égales.
+     *
+     * Trois règles s'en déduisent, et elles portent la mise en page :
+     *
+     *   1. Ce qui compte est DEVANT. La prochaine échéance recouvre les
+     *      suivantes, et rien d'autre ne le dit.
+     *   2. Rien n'est parfaitement droit, mais tout est lisible : deux degrés
+     *      se voient, cinq donnent le mal de mer, et une bande large ne penche
+     *      jamais au-delà du demi-degré.
+     *   3. Le support se voit. Papier chaud, grain de liège, réglures pâles —
+     *      c'est ce qui distingue un panneau d'une grille de cartes.
+     *
+     * Les couleurs quittent donc `globals.css` : un panneau blanc n'existe
+     * pas. Deux accents seulement — le rouge de la punaise et le vert du
+     * confirmé — pris à la même chroma et à la même clarté, seule la teinte
+     * varie. L'ambre des places restantes est le troisième, et il est
+     * fonctionnel : c'est un état, pas une couleur de marque.
+     */
+    .board {
+      --fond: oklch(0.902 0.026 76);
+      --fond-creux: oklch(0.868 0.032 74);
+      --grain-clair: oklch(0.93 0.022 82);
+      --grain-sombre: oklch(0.845 0.036 70);
+      --papier: oklch(0.973 0.012 88);
+      --papier-2: oklch(0.951 0.021 84);
+      --encre: oklch(0.245 0.026 62);
+      --encre-2: oklch(0.478 0.028 62);
+      --trait: oklch(0.782 0.028 70);
+      --hachure: rgba(64, 42, 18, 0.07);
+      --liseré: rgba(64, 42, 18, 0.16);
+
+      --rouge: oklch(0.545 0.185 27);
+      --vert: oklch(0.545 0.115 152);
+      --ambre: oklch(0.575 0.125 72);
+      --ruban: oklch(0.845 0.075 88);
+      --reflet: rgba(255, 255, 255, 0.42);
+      --ombre-punaise: rgba(64, 42, 18, 0.5);
+
+      --ombre-fiche: 0 1px 1px rgba(64, 42, 18, 0.20), 0 12px 26px -14px rgba(64, 42, 18, 0.55);
+      --ombre-basse: 0 1px 1px rgba(64, 42, 18, 0.18), 0 6px 14px -10px rgba(64, 42, 18, 0.5);
+      --ombre-dure: 3px 3px 0 rgba(64, 42, 18, 0.2);
+      --ombre-dure-fine: 2px 2px 0 rgba(64, 42, 18, 0.16);
+
+      font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+      color: var(--encre);
+      background-color: var(--fond);
+      /* Le grain du liège : un pointillé très fin, jamais une photo de texture. */
+      background-image:
+        radial-gradient(var(--grain-sombre) 0.5px, transparent 0.6px),
+        radial-gradient(var(--grain-clair) 0.5px, transparent 0.6px);
+      background-size: 5px 5px, 5px 5px;
+      background-position: 0 0, 2px 3px;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100%;
+    }
+
+    /*
+     * Le panneau, le soir. Même bois, moins de lumière : le liège fonce, le
+     * papier devient un carton teinté, et l'encre passe à la crème. Les
+     * accents s'éclaircissent juste assez pour tenir sur ce fond — c'est la
+     * seule chose que la nuit change à la palette.
+     */
+    .board.nuit {
+      --fond: oklch(0.222 0.018 62);
+      --fond-creux: oklch(0.185 0.015 62);
+      --grain-clair: oklch(0.252 0.020 66);
+      --grain-sombre: oklch(0.192 0.015 60);
+      --papier: oklch(0.352 0.016 68);
+      --papier-2: oklch(0.312 0.018 66);
+      --encre: oklch(0.938 0.014 84);
+      --encre-2: oklch(0.742 0.019 80);
+      --trait: oklch(0.435 0.021 68);
+      --hachure: rgba(255, 246, 232, 0.06);
+      --liseré: rgba(255, 246, 232, 0.22);
+
+      --rouge: oklch(0.655 0.195 27);
+      --vert: oklch(0.715 0.135 152);
+      --ambre: oklch(0.765 0.125 74);
+      --ruban: oklch(0.565 0.062 88);
+      --reflet: rgba(255, 255, 255, 0.28);
+      --ombre-punaise: rgba(0, 0, 0, 0.55);
+
+      --ombre-fiche: 0 1px 1px rgba(0, 0, 0, 0.4), 0 14px 30px -14px rgba(0, 0, 0, 0.8);
+      --ombre-basse: 0 1px 1px rgba(0, 0, 0, 0.35), 0 6px 16px -10px rgba(0, 0, 0, 0.7);
+      --ombre-dure: 3px 3px 0 rgba(0, 0, 0, 0.42);
+      --ombre-dure-fine: 2px 2px 0 rgba(0, 0, 0, 0.38);
+    }
+
+    .titre-affiche { font-family: 'Bricolage Grotesque', 'Geist', ui-sans-serif, sans-serif; font-weight: 800; letter-spacing: -0.03em; }
+
+    /* L'enseigne, en haut du panneau : peinte dessus, pas posée dessus. */
+    .enseigne { border-bottom: 2px solid var(--encre); background: color-mix(in oklab, var(--fond) 70%, var(--papier)); }
+    .enseigne-inner { max-width: 1280px; margin: 0 auto; padding: 0 32px; height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .marque { font-family: 'Bricolage Grotesque', 'Geist', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: -0.04em; position: relative; }
+    .marque svg { position: absolute; left: 0; bottom: -7px; width: 100%; height: 7px; color: var(--rouge); }
+    .nav { display: flex; align-items: center; gap: 22px; }
+    .nav-lien { font-size: 12px; font-weight: 500; letter-spacing: 0.09em; text-transform: uppercase; font-family: 'Geist Mono', ui-monospace, monospace; color: var(--encre-2); padding-bottom: 2px; border-bottom: 2px solid transparent; }
+    .nav-lien.actif { color: var(--encre); border-bottom-color: var(--encre); }
+    .enseigne-droite { display: flex; align-items: center; gap: 10px; }
+    .recherche { display: flex; align-items: center; gap: 8px; height: 36px; width: 184px; padding: 0 12px; border: 1.5px solid var(--encre); border-radius: 2px; background: var(--papier); font-size: 13px; color: var(--encre-2); box-shadow: var(--ombre-dure-fine); }
+    .icone-bouton { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; color: var(--encre-2); position: relative; }
+    .pastille-notif { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 999px; background: var(--rouge); }
+    .avatar { width: 34px; height: 34px; border-radius: 999px; background: var(--papier); border: 1.5px solid var(--encre); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+
+    .page { max-width: 1280px; margin: 0 auto; padding: 34px 32px 64px; }
+
+    .accroche { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
+    .accroche h1 { margin: 0; font-size: 46px; line-height: 48px; }
+    .accroche h1 em { font-style: normal; position: relative; white-space: nowrap; }
+    .accroche h1 em svg { position: absolute; left: -2%; bottom: -10px; width: 104%; height: 10px; color: var(--rouge); }
+    .accroche p { margin: 14px 0 0; font-size: 15px; line-height: 21px; color: var(--encre-2); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border: 1.5px solid var(--encre); border-radius: 2px; font-size: 14px; font-weight: 600; white-space: nowrap; flex-shrink: 0; cursor: pointer; box-shadow: var(--ombre-dure); }
+    .btn.primaire { background: var(--encre); color: var(--papier); }
+    .btn.contour { background: var(--papier); color: var(--encre); }
+    .btn.large { width: 100%; }
+
+    /* Les jeux suivis : des onglets de carton, dépassant du panneau. */
+    .onglets-jeux { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; margin-bottom: 22px; }
+    .onglet-jeu { display: inline-flex; align-items: center; height: 34px; padding: 0 16px; border: 1.5px solid var(--encre); border-bottom: none; border-radius: 3px 3px 0 0; background: var(--papier-2); font-size: 13px; font-weight: 600; color: var(--encre-2); white-space: nowrap; flex-shrink: 0; cursor: pointer; box-shadow: inset 0 -3px 6px -4px rgba(64, 42, 18, 0.45); }
+    .onglet-jeu.actif { background: var(--encre); color: var(--papier); height: 38px; box-shadow: none; }
+
+    /* La fiche : le geste de base du panneau. */
+    .fiche { position: relative; background: var(--papier); border-radius: 2px; box-shadow: var(--ombre-fiche); --r: 0deg; transform: rotate(var(--r)); }
+    .fiche > .liseré { position: absolute; inset: 0; border: 1px solid var(--liseré); border-radius: 2px; pointer-events: none; }
+    @media (prefers-reduced-motion: no-preference) {
+      /*
+       * Une seule animation sur la page, et elle est courte : la planche part
+       * aussi en PNG, et une fiche encore invisible partirait telle quelle.
+       */
+      .fiche { animation: poser 380ms cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+      @keyframes poser {
+        from { opacity: 0; transform: translateY(14px) rotate(var(--r)); }
+        to { opacity: 1; transform: translateY(0) rotate(var(--r)); }
+      }
+    }
+
+    .punaise { position: absolute; top: -11px; left: 50%; margin-left: -11px; width: 22px; height: 22px; }
+    .ruban { position: absolute; top: -12px; height: 30px; background: color-mix(in oklab, var(--ruban) 82%, transparent); border-left: 1px dashed var(--liseré); border-right: 1px dashed var(--liseré); box-shadow: 0 1px 2px rgba(64, 42, 18, 0.16); }
+
+    /* L'étiquette d'une section : collée sur le panneau, et elle déborde. */
+    .etiquette { display: inline-flex; align-items: center; gap: 9px; padding: 6px 14px; background: var(--encre); color: var(--papier); border-radius: 2px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; transform: rotate(-1.1deg); box-shadow: var(--ombre-basse); }
+    .bandeau-section { position: relative; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: -4px; }
+    .lien-section { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--encre-2); border-bottom: 1.5px solid var(--trait); padding-bottom: 1px; }
+
+    /* Le mot punaisé en rouge : ce qui se passe à l'instant. */
+    .direct-mot { position: relative; margin-bottom: 44px; padding: 22px 24px 24px; background: var(--papier); border-radius: 2px; border: 2px solid var(--rouge); box-shadow: var(--ombre-fiche); transform: rotate(-0.45deg); }
+    .direct-entete { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .pastille-direct { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px; background: var(--rouge); color: var(--papier); border-radius: 2px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; }
+    .point-direct { width: 6px; height: 6px; border-radius: 999px; background: var(--papier); }
+    @media (prefers-reduced-motion: no-preference) { .point-direct { animation: battement 2s ease-in-out infinite; } }
+    @keyframes battement { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .direct-titre-section { font-family: 'Bricolage Grotesque', 'Geist', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+    .directs-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 18px; }
+    .direct-carte { display: flex; gap: 15px; }
+    .direct-carte .corps { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding-top: 3px; }
+    .direct-carte .titre { font-size: 16px; line-height: 21px; font-weight: 600; letter-spacing: -0.01em; }
+    .direct-carte .meta { font-size: 13px; line-height: 18px; color: var(--encre-2); }
+
+    /* La vignette : un tirage posé sur le panneau, marge blanche comprise. */
+    .tirage { position: relative; flex-shrink: 0; background: var(--papier); padding: 6px; border: 1px solid var(--liseré); box-shadow: var(--ombre-basse); }
+    .tirage span.image { display: block; width: 100%; height: 100%; background: var(--fond-creux); background-image: repeating-linear-gradient(135deg, var(--hachure) 0 1px, transparent 1px 8px); position: relative; }
+    .tirage span.image::after { content: ''; position: absolute; inset: 0; background-color: var(--encre-2); opacity: 0.5; -webkit-mask-position: center; mask-position: center; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: 26px 26px; mask-size: 26px 26px; }
+    .tirage.actu span.image::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/%3E%3Cpath d='M8 10h8'/%3E%3Cpath d='M8 14h5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/%3E%3Cpath d='M8 10h8'/%3E%3Cpath d='M8 14h5'/%3E%3C/svg%3E"); }
+    .tirage.video span.image::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M8 5l11 7-11 7z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M8 5l11 7-11 7z'/%3E%3C/svg%3E"); }
+    .tirage.direct span.image::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M7.5 8.5a5 5 0 0 0 0 7'/%3E%3Cpath d='M16.5 8.5a5 5 0 0 1 0 7'/%3E%3Cpath d='M4.5 5.5a9 9 0 0 0 0 13'/%3E%3Cpath d='M19.5 5.5a9 9 0 0 1 0 13'/%3E%3Ccircle cx='12' cy='12' r='1.8' fill='black' stroke='none'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M7.5 8.5a5 5 0 0 0 0 7'/%3E%3Cpath d='M16.5 8.5a5 5 0 0 1 0 7'/%3E%3Cpath d='M4.5 5.5a9 9 0 0 0 0 13'/%3E%3Cpath d='M19.5 5.5a9 9 0 0 1 0 13'/%3E%3Ccircle cx='12' cy='12' r='1.8' fill='black' stroke='none'/%3E%3C/svg%3E"); }
+    .tirage.deck span.image::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l9 5-9 5-9-5z'/%3E%3Cpath d='M3 13l9 5 9-5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l9 5-9 5-9-5z'/%3E%3Cpath d='M3 13l9 5 9-5'/%3E%3C/svg%3E"); }
+    .tirage .duree { position: absolute; right: 10px; bottom: 10px; padding: 2px 6px; background: var(--encre); color: var(--papier); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; font-weight: 500; }
+
+    /*
+     * Les annonces d'événement. Elles se chevauchent et se décalent : sur un
+     * panneau, la dernière punaisée recouvre les précédentes. Ici l'ordre est
+     * inversé — c'est la PROCHAINE échéance qui passe devant, parce que c'est
+     * elle qu'on doit voir en premier.
+     */
+    .annonces { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-bottom: 50px; padding-top: 18px; }
+    .annonce { padding: 26px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .annonce:nth-child(1) { --r: -2.1deg; z-index: 3; margin-right: -16px; animation-delay: 0ms; }
+    .annonce:nth-child(2) { --r: 1.3deg; z-index: 2; margin: 16px -16px 0 0; animation-delay: 60ms; }
+    .annonce:nth-child(3) { --r: -1deg; z-index: 1; margin-top: 7px; animation-delay: 120ms; }
+    .annonce .date { display: flex; align-items: baseline; gap: 9px; padding-bottom: 12px; border-bottom: 2px solid var(--encre); }
+    .annonce .date .jour { font-family: 'Bricolage Grotesque', 'Geist', sans-serif; font-weight: 800; font-size: 46px; line-height: 40px; letter-spacing: -0.05em; }
+    .annonce .date .reste { display: flex; flex-direction: column; gap: 2px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--encre-2); }
+    .annonce .titre { font-size: 18px; line-height: 23px; font-weight: 600; letter-spacing: -0.015em; }
+    .annonce .lieu { font-size: 13px; line-height: 18px; color: var(--encre-2); }
+    .annonce .pied { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: auto; padding-top: 4px; }
+
+    /* Le fanion du prochain : le seul repère qui hiérarchise l'agenda. */
+    .fanion { position: absolute; top: 14px; right: -7px; padding: 4px 10px; background: var(--rouge); color: var(--papier); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 9.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; box-shadow: var(--ombre-basse); }
+    .annonce:nth-child(1) .date .jour { font-size: 58px; line-height: 50px; }
+
+    /* Le tampon de statut : encré à la main, donc jamais tout à fait droit. */
+    .tampon-statut { display: inline-block; padding: 4px 10px; border: 1.5px solid currentColor; border-radius: 2px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; transform: rotate(-1.6deg); }
+    .tampon-statut.ok { color: var(--vert); }
+    .tampon-statut.attention { color: var(--ambre); }
+    .tampon-statut.principal { color: var(--rouge); }
+    .tampon-statut.souci { color: var(--rouge); }
+
+    .colonnes { display: grid; grid-template-columns: minmax(0, 1fr) 348px; gap: 44px; align-items: start; }
+
+    .bascule { display: inline-flex; border: 1.5px solid var(--encre); border-radius: 2px; background: var(--papier); box-shadow: var(--ombre-dure-fine); overflow: hidden; }
+    .bascule-item { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 15px; border-right: 1.5px solid var(--encre); font-size: 13px; font-weight: 600; color: var(--encre-2); white-space: nowrap; cursor: pointer; }
+    .bascule-item:last-child { border-right: none; }
+    .bascule-item.actif { background: var(--encre); color: var(--papier); }
+    .bascule-item .nb { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; opacity: 0.65; }
+
+    /*
+     * Le fil : des coupures. Elles alternent le papier et l'attache — une
+     * punaise, un ruban — pour qu'aucune suite de six ne se lise comme un
+     * tableau. Elles ne penchent presque pas : une bande large qui penche se
+     * lit comme un défaut d'alignement, pas comme un geste.
+     */
+    .coupures { display: flex; flex-direction: column; gap: 22px; padding-top: 16px; }
+    .coupure { display: flex; gap: 18px; padding: 18px; }
+    .coupure:nth-child(odd) { --r: -0.5deg; }
+    .coupure:nth-child(even) { --r: 0.55deg; background: var(--papier-2); }
+    .coupure:nth-child(1) { animation-delay: 0ms; }
+    .coupure:nth-child(2) { animation-delay: 30ms; }
+    .coupure:nth-child(3) { animation-delay: 60ms; }
+    .coupure:nth-child(4) { animation-delay: 90ms; }
+    .coupure:nth-child(5) { animation-delay: 120ms; }
+    .coupure:nth-child(6) { animation-delay: 150ms; }
+    .coupure .attache-ruban { display: none; }
+    .coupure .attache-punaise { display: none; }
+    .coupure:nth-child(odd) .attache-ruban { display: block; }
+    .coupure:nth-child(even) .attache-punaise { display: block; }
+    .coupure .corps { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex-grow: 1; }
+    .coupure .haut { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+    .coupure .titre { font-family: 'Bricolage Grotesque', 'Geist', sans-serif; font-weight: 700; font-size: 20px; line-height: 25px; letter-spacing: -0.025em; }
+    .coupure .filet { height: 1px; background: var(--trait); opacity: 0.6; }
+    .coupure .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; color: var(--encre-2); }
+    .genre { display: inline-flex; align-items: center; padding: 3px 9px; background: var(--fond-creux); border-radius: 2px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.13em; text-transform: uppercase; color: var(--encre-2); }
+    .sep { opacity: 0.45; }
+
+    .vide { padding: 30px 16px; text-align: center; font-size: 14px; color: var(--encre-2); border: 1.5px dashed var(--trait); border-radius: 2px; }
+
+    /* La colonne de droite : un groupe de petits papiers, plus serré. */
+    .colonne-droite { display: flex; flex-direction: column; gap: 36px; padding-top: 16px; }
+    .papier { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+    .papier:nth-of-type(1) { --r: 1.6deg; animation-delay: 60ms; }
+    .papier:nth-of-type(2) { --r: -1.9deg; animation-delay: 110ms; }
+    .papier:nth-of-type(3) { --r: 1.2deg; animation-delay: 160ms; }
+    /* Une pile : la feuille du dessous dépasse, comme sur un vrai panneau. */
+    .fiche .dessous { position: absolute; inset: 0; background: var(--papier-2); border: 1px solid var(--liseré); border-radius: 2px; box-shadow: var(--ombre-basse); transform: rotate(-3.4deg); z-index: -1; }
+    .papier-titre { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 11px; border-bottom: 2px solid var(--encre); }
+    .papier-titre h2 { margin: 0; font-family: 'Bricolage Grotesque', 'Geist', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: -0.025em; }
+    .papier-titre .lien { font-size: 12px; font-weight: 600; color: var(--encre-2); border-bottom: 1.5px solid var(--trait); }
+
+    .liste { display: flex; flex-direction: column; gap: 15px; }
+    .ligne { display: flex; align-items: flex-start; gap: 12px; }
+    .cachet { flex-shrink: 0; width: 40px; height: 40px; border: 1.5px solid var(--encre); border-radius: 999px; display: flex; align-items: center; justify-content: center; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; }
+    .ligne .corps { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex-grow: 1; }
+    .ligne .nom { font-size: 15px; line-height: 20px; font-weight: 600; letter-spacing: -0.01em; }
+    .ligne .etat { display: block; font-size: 12.5px; line-height: 17px; color: var(--encre-2); }
+    .ligne .etat .point { margin-right: 7px; }
+    .point { display: inline-block; width: 6px; height: 6px; border-radius: 999px; vertical-align: middle; }
+    .point.ouvert { background: var(--vert); }
+    .point.ferme { background: var(--trait); }
+
+    .deck-ligne { display: flex; align-items: center; gap: 12px; }
+    .deck-ligne .corps { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex-grow: 1; }
+    .deck-ligne .nom { font-size: 15px; line-height: 20px; font-weight: 600; letter-spacing: -0.01em; }
+    .deck-ligne .meta { font-size: 12.5px; line-height: 17px; color: var(--encre-2); }
+
+    /* Le sondage : un bulletin, avec ses cases à cocher. */
+    .bulletin { display: flex; flex-direction: column; gap: 12px; }
+    .option { display: flex; align-items: center; gap: 11px; }
+    .case { flex-shrink: 0; width: 19px; height: 19px; border: 1.5px solid var(--encre); border-radius: 2px; display: flex; align-items: center; justify-content: center; }
+    .option .libelle { font-size: 14px; line-height: 19px; flex-grow: 1; }
+    .option .compte { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; color: var(--encre-2); }
+
+    .ico { width: 16px; height: 16px; flex-shrink: 0; }
+    .ico-sm { width: 13px; height: 13px; flex-shrink: 0; }
+  </style>
+</helmet>
+
+<div class="board nuit">
+
+  <header class="enseigne">
+    <div class="enseigne-inner">
+      <div style="display: flex; align-items: center; gap: 34px; min-width: 0">
+        <span class="marque">Joutes
+          <svg viewBox="0 0 100 7" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M1 4.6C18 2.2 42 1.7 61 3.1c14 1 26 2.4 38 1.1"></path></svg>
+        </span>
+        <nav class="nav">
+          <span class="nav-lien actif">Le panneau</span>
+          <span class="nav-lien">Événements</span>
+          <span class="nav-lien">Lieux</span>
+          <span class="nav-lien">Jeux</span>
+          <span class="nav-lien">Contenus</span>
+          <span class="nav-lien">Amis</span>
+        </nav>
+      </div>
+      <div class="enseigne-droite">
+        <span class="recherche">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+          Chercher
+        </span>
+        <span class="icone-bouton">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+          <span class="pastille-notif"></span>
+        </span>
+        <span class="avatar">KT</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="page">
+
+    <div class="accroche">
+      <div>
+        <h1 class="titre-affiche">Bonsoir, <em>Kévin<svg viewBox="0 0 100 10" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M2 7.4C22 3.6 52 2.4 74 4.2c9 .7 17 2 24 1.4"></path></svg></em></h1>
+        <p>{{ resume }}</p>
+      </div>
+      <div class="actions">
+        <span class="btn contour">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          Autour de moi
+        </span>
+        <span class="btn primaire">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+          Punaiser un événement
+        </span>
+      </div>
+    </div>
+
+    <div class="onglets-jeux">
+      <sc-for list="{{ jeux }}" as="jeu" hint-placeholder-count="4">
+        <span class="onglet-jeu {{ jeu.classe }}" onClick="{{ jeu.choisir }}">{{ jeu.nom }}</span>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ aDesDirects }}" hint-placeholder-val="{{ true }}">
+      <section class="direct-mot">
+        <div class="direct-entete">
+          <span class="pastille-direct"><span class="point-direct"></span>En ce moment</span>
+          <span class="direct-titre-section">{{ titreDirects }}</span>
+          <span class="lien-section" style="margin-left: auto">Tous les directs</span>
+        </div>
+        <div class="directs-grille">
+          <sc-for list="{{ directs }}" as="d" hint-placeholder-count="2">
+            <div class="direct-carte">
+              <span class="tirage direct" style="width: 150px; height: 92px"><span class="image"></span></span>
+              <span class="corps">
+                <span class="titre">{{ d.titre }}</span>
+                <span class="meta">{{ d.lieu }} <span class="sep">·</span> {{ d.plateforme }}</span>
+                <span class="meta">{{ d.audience }}</span>
+                <span class="lien-section" style="align-self: flex-start; margin-top: 3px">Regarder</span>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <div class="bandeau-section">
+      <span class="etiquette">
+        <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="1"></rect><path d="M3 10h18"></path></svg>
+        Ce qui m&apos;attend
+      </span>
+      <span class="lien-section">Tout l&apos;agenda
+        <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+      </span>
+    </div>
+
+    <sc-if value="{{ aDesEvenements }}" hint-placeholder-val="{{ true }}">
+      <div class="annonces">
+        <sc-for list="{{ evenements }}" as="e" hint-placeholder-count="3">
+          <div class="fiche annonce">
+            <span class="liseré"></span>
+            <svg class="punaise" viewBox="0 0 22 22" fill="none">
+              <ellipse cx="11" cy="18" rx="5" ry="1.6" fill="var(--ombre-punaise)" opacity="0.45"></ellipse>
+              <circle cx="11" cy="9" r="7.5" fill="var(--rouge)"></circle>
+              <circle cx="8.6" cy="6.6" r="2.4" fill="var(--reflet)"></circle>
+              <path d="M11 16.5v1.6" stroke="var(--ombre-punaise)" stroke-width="1.4" stroke-linecap="round"></path>
+            </svg>
+            <sc-if value="{{ e.prochain }}" hint-placeholder-val="{{ true }}">
+              <span class="fanion">Prochain</span>
+            </sc-if>
+            <span class="date">
+              <span class="jour">{{ e.jour }}</span>
+              <span class="reste">
+                <span>{{ e.mois }}</span>
+                <span>{{ e.jourNom }} {{ e.heure }}</span>
+              </span>
+            </span>
+            <span class="titre">{{ e.titre }}</span>
+            <span class="lieu">{{ e.lieu }} · {{ e.nomJeu }}</span>
+            <span class="pied">
+              <span class="tampon-statut {{ e.badgeClasse }}">{{ e.badge }}</span>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ sansEvenement }}" hint-placeholder-val="{{ false }}">
+      <p class="vide" style="margin: 22px 0 50px">{{ videEvenements }}</p>
+    </sc-if>
+
+    <div class="colonnes">
+
+      <div>
+        <div class="bandeau-section">
+          <span class="etiquette">
+            <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M8 10h8"></path><path d="M8 14h5"></path></svg>
+            Le fil
+          </span>
+          <span class="bascule">
+            <sc-for list="{{ onglets }}" as="o" hint-placeholder-count="4">
+              <span class="bascule-item {{ o.classe }}" onClick="{{ o.choisir }}">{{ o.nom }}<span class="nb">{{ o.nombre }}</span></span>
+            </sc-for>
+          </span>
+        </div>
+
+        <sc-if value="{{ aDuFil }}" hint-placeholder-val="{{ true }}">
+          <div class="coupures">
+            <sc-for list="{{ fil }}" as="f" hint-placeholder-count="6">
+              <div class="fiche coupure">
+                <span class="liseré"></span>
+                <span class="ruban attache-ruban" style="left: 34px; width: 74px; transform: rotate(-2.6deg)"></span>
+                <svg class="punaise attache-punaise" viewBox="0 0 22 22" fill="none" style="left: 44px">
+                  <ellipse cx="11" cy="18" rx="5" ry="1.6" fill="var(--ombre-punaise)" opacity="0.4"></ellipse>
+                  <circle cx="11" cy="9" r="7" fill="var(--papier)" stroke="var(--liseré)"></circle>
+                  <circle cx="8.8" cy="6.8" r="2.2" fill="var(--reflet)"></circle>
+                </svg>
+                <span class="tirage {{ f.type }}" style="width: 148px; height: 100px">
+                  <span class="image"></span>
+                  <sc-if value="{{ f.duree }}" hint-placeholder-val="{{ true }}">
+                    <span class="duree">{{ f.duree }}</span>
+                  </sc-if>
+                </span>
+                <span class="corps">
+                  <span class="haut">
+                    <span class="genre">{{ f.typeNom }}</span>
+                    <sc-if value="{{ f.badge }}" hint-placeholder-val="{{ true }}">
+                      <span class="tampon-statut {{ f.badgeClasse }}">{{ f.badge }}</span>
+                    </sc-if>
+                  </span>
+                  <span class="titre">{{ f.titre }}</span>
+                  <span class="filet"></span>
+                  <span class="meta">
+                    {{ f.source }}
+                    <span class="sep">·</span>
+                    {{ f.nomJeu }}
+                    <span class="sep">·</span>
+                    {{ f.quand }}
+                  </span>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ filVide }}" hint-placeholder-val="{{ false }}">
+          <p class="vide" style="margin: 22px 0 0">{{ videFil }}</p>
+        </sc-if>
+      </div>
+
+      <aside class="colonne-droite">
+
+        <section class="fiche papier">
+          <span class="dessous"></span>
+          <span class="liseré"></span>
+          <span class="ruban" style="left: 50%; margin-left: -46px; width: 92px; transform: rotate(1.8deg)"></span>
+          <div class="papier-titre">
+            <h2>Mes lieux</h2>
+            <span class="lien">Découvrir</span>
+          </div>
+          <div class="liste">
+            <sc-for list="{{ lieux }}" as="l" hint-placeholder-count="3">
+              <div class="ligne">
+                <span class="cachet">{{ l.initiales }}</span>
+                <span class="corps">
+                  <span class="nom">{{ l.nom }}</span>
+                  <span class="etat">
+                    <sc-if value="{{ l.ouvert }}" hint-placeholder-val="{{ true }}">
+                      <span class="point ouvert"></span>
+                    </sc-if>
+                    <sc-if value="{{ l.ferme }}" hint-placeholder-val="{{ false }}">
+                      <span class="point ferme"></span>
+                    </sc-if>
+                    {{ l.etat }}
+                  </span>
+                  <span class="etat">{{ l.agenda }}</span>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section class="fiche papier">
+          <span class="liseré"></span>
+          <span class="ruban" style="left: 26px; width: 78px; transform: rotate(-2.2deg)"></span>
+          <div class="papier-titre">
+            <h2>Mes decks</h2>
+            <span class="lien">Nouveau</span>
+          </div>
+          <div class="liste">
+            <sc-for list="{{ decks }}" as="d" hint-placeholder-count="3">
+              <div class="deck-ligne">
+                <span class="corps">
+                  <span class="nom">{{ d.nom }}</span>
+                  <span class="meta">{{ d.nomJeu }} <span class="sep">·</span> {{ d.quand }}</span>
+                </span>
+                <span class="tampon-statut {{ d.badgeClasse }}">{{ d.badge }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section class="fiche papier">
+          <span class="liseré"></span>
+          <span class="ruban" style="right: 22px; width: 70px; transform: rotate(2.4deg)"></span>
+          <div class="papier-titre">
+            <h2>Les Joueurs du Jeudi</h2>
+            <span class="tampon-statut attention" style="transform: rotate(1.4deg)">À répondre</span>
+          </div>
+          <p style="margin: 0; font-size: 14px; line-height: 19px; color: var(--encre-2)">Quelle date pour la prochaine session ?</p>
+          <div class="bulletin">
+            <div class="option">
+              <span class="case">
+                <svg class="ico-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+              </span>
+              <span class="libelle">Jeudi 26 novembre</span>
+              <span class="compte">4 / 6</span>
+            </div>
+            <div class="option">
+              <span class="case"></span>
+              <span class="libelle">Samedi 28 novembre</span>
+              <span class="compte">2 / 6</span>
+            </div>
+            <div class="option">
+              <span class="case"></span>
+              <span class="libelle">Jeudi 3 décembre</span>
+              <span class="compte">1 / 6</span>
+            </div>
+          </div>
+          <span class="btn primaire large">Envoyer mes disponibilités</span>
+        </section>
+
+      </aside>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":1440,"height":2060}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { jeu: 'tous', onglet: 'tout' };
+  }
+
+  jeuxDisponibles() {
+    return [
+      { id: 'tous', nom: 'Tous mes jeux' },
+      { id: 'riftbound', nom: 'Riftbound' },
+      { id: 'mtg', nom: 'Magic' },
+      { id: 'swu', nom: 'Star Wars Unlimited' },
+    ];
+  }
+
+  /*
+   * Les directs ne vivent que dans le bandeau, jamais dans le fil : les y
+   * répéter montrait deux fois la même chose à trois cents pixels d'écart. Le
+   * fil garde ce qui se lit après coup — articles, vidéos, listes.
+   */
+  tousLesDirects() {
+    return [
+      { jeu: 'riftbound', titre: 'Draft de sortie, table 1', lieu: 'Le Repaire du Dragon', plateforme: 'Twitch', audience: '142 spectateurs' },
+      { jeu: 'mtg', titre: "Finale du Standard — Ligue d'automne", lieu: 'La Taverne des Joueurs', plateforme: 'YouTube', audience: '89 spectateurs' },
+    ];
+  }
+
+  /* Semaine du 18 novembre : le 19 est un jeudi, le 21 un samedi. */
+  tousLesEvenements() {
+    return [
+      { jeu: 'riftbound', jour: '19', mois: 'nov', jourNom: 'jeudi', titre: 'Tournoi Riftbound — Origines', lieu: 'Le Repaire du Dragon', heure: '19h00', nomJeu: 'Riftbound', etat: 'inscrit', badge: 'Inscrit', badgeClasse: 'ok' },
+      { jeu: 'mtg', jour: '20', mois: 'nov', jourNom: 'vendredi', titre: 'Commander night', lieu: 'Le Repaire du Dragon', heure: '20h00', nomJeu: 'Magic', etat: 'libre', badge: '3 places restantes', badgeClasse: 'attention' },
+      { jeu: 'swu', jour: '21', mois: 'nov', jourNom: 'samedi', titre: 'Soirée découverte Star Wars Unlimited', lieu: 'La Taverne des Joueurs', heure: '14h00', nomJeu: 'Star Wars Unlimited', etat: 'organise', badge: 'Organisateur', badgeClasse: 'principal' },
+    ];
+  }
+
+  toutLeFil() {
+    return [
+      { type: 'actu', typeNom: 'Actu', duree: '', jeu: 'riftbound', titre: 'Liste de restrictions du 18 novembre : deux cartes sortent du Standard', source: 'Riftbound officiel', nomJeu: 'Riftbound', quand: 'il y a 2 h', badge: '', badgeClasse: '' },
+      { type: 'video', typeNom: 'Vidéo', duree: '12:40', jeu: 'riftbound', titre: 'Trois erreurs de séquencement qui coûtent la partie', source: 'Chaîne de la Taverne', nomJeu: 'Riftbound', quand: 'il y a 5 h', badge: '', badgeClasse: '' },
+      { type: 'deck', typeNom: 'Deck', duree: '', jeu: 'riftbound', titre: "Aggro Noxus — 2e de la Ligue d'automne", source: 'par @lenaflux', nomJeu: 'Riftbound', quand: 'hier', badge: 'Conforme au format', badgeClasse: 'ok' },
+      { type: 'actu', typeNom: 'Actu', duree: '', jeu: 'mtg', titre: "Les dates de l'avant-première en boutique sont tombées", source: 'Actus Magic', nomJeu: 'Magic', quand: 'hier', badge: '', badgeClasse: '' },
+      { type: 'video', typeNom: 'Vidéo', duree: '08:15', jeu: 'swu', titre: 'Monter sa première liste Rebelles sans se ruiner', source: 'Games & Co', nomJeu: 'Star Wars Unlimited', quand: 'il y a 2 j', badge: '', badgeClasse: '' },
+      { type: 'deck', typeNom: 'Deck', duree: '', jeu: 'mtg', titre: 'Contrôle Azorius — la liste de la semaine', source: 'par @vahn', nomJeu: 'Magic', quand: 'il y a 3 j', badge: '2 zones à ajuster', badgeClasse: 'souci' },
+    ];
+  }
+
+  mesLieux() {
+    return [
+      { initiales: 'RD', x: 22, y: 30, nom: 'Le Repaire du Dragon', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 19h", agenda: '3 événements cette semaine' },
+      { initiales: 'TJ', x: 63, y: 17, nom: 'La Taverne des Joueurs', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 23h", agenda: '1 événement cette semaine' },
+      { initiales: 'GC', x: 53, y: 64, nom: 'Games & Co Villeurbanne', ouvert: false, ferme: true, etat: 'Fermé, ouvre demain à 14h', agenda: '1 événement cette semaine' },
+    ];
+  }
+
+  mesDecks() {
+    return [
+      { nom: 'Aggro Noxus', nomJeu: 'Riftbound', quand: 'modifié il y a 2 j', badge: 'Conforme', badgeClasse: '' },
+      { nom: 'Contrôle Azorius', nomJeu: 'Magic', quand: 'modifié hier', badge: '2 zones', badgeClasse: 'souci' },
+      { nom: 'Aggro Rebelles', nomJeu: 'Star Wars Unlimited', quand: 'modifié il y a 4 j', badge: 'Brouillon', badgeClasse: '' },
+    ];
+  }
+
+  renderVals() {
+    const jeu = this.state.jeu;
+    const onglet = this.state.onglet;
+    const tousJeux = jeu === 'tous';
+    const duJeu = (x) => tousJeux || x.jeu === jeu;
+
+    const jeux = this.jeuxDisponibles().map((j) => ({
+      id: j.id,
+      nom: j.nom,
+      classe: j.id === jeu ? 'actif' : '',
+      choisir: () => this.setState({ jeu: j.id }),
+    }));
+
+    const directs = this.tousLesDirects().filter(duJeu);
+    /*
+     * Le fanion « prochain » se calcule après le filtre, jamais dans les
+     * données : filtrer sur Magic doit le déplacer sur le premier événement
+     * Magic, pas le faire disparaître avec le tournoi Riftbound.
+     */
+    const evenements = this.tousLesEvenements()
+      .filter(duJeu)
+      .map((e, i) => ({ ...e, prochain: i === 0, classeProchain: i === 0 ? 'prochain' : '' }));
+    const filDuJeu = this.toutLeFil().filter(duJeu);
+    const fil = filDuJeu.filter((f) => onglet === 'tout' || f.type === onglet);
+
+    const onglets = [
+      { id: 'tout', nom: 'Tout' },
+      { id: 'actu', nom: 'Actus' },
+      { id: 'video', nom: 'Vidéos' },
+      { id: 'deck', nom: 'Decks' },
+    ].map((o) => ({
+      nom: o.nom,
+      nombre: o.id === 'tout' ? filDuJeu.length : filDuJeu.filter((f) => f.type === o.id).length,
+      classe: o.id === onglet ? 'actif' : '',
+      choisir: () => this.setState({ onglet: o.id }),
+    }));
+
+    const pluriel = (n, un, plusieurs) => n + ' ' + (n > 1 ? plusieurs : un);
+
+    const morceaux = [];
+    if (evenements.length > 0) morceaux.push(pluriel(evenements.length, 'événement cette semaine', 'événements cette semaine'));
+    if (directs.length > 0) morceaux.push(pluriel(directs.length, 'direct en cours', 'directs en cours'));
+
+    /* « Ce jeu » n'a de sens que si un jeu est choisi ; sinon la page ment. */
+    const surCeJeu = tousJeux ? '' : ' sur ce jeu';
+
+    return {
+      resume: morceaux.length > 0 ? morceaux.join(', ') + '.' : "Rien ne m'attend cette semaine" + surCeJeu + '.',
+      jeux,
+      onglets,
+      directs,
+      aDesDirects: directs.length > 0,
+      titreDirects: pluriel(directs.length, 'direct dans mes lieux', 'directs dans mes lieux'),
+      evenements,
+      aDesEvenements: evenements.length > 0,
+      sansEvenement: evenements.length === 0,
+      videEvenements: 'Rien de prévu cette semaine' + surCeJeu + '.',
+      fil,
+      aDuFil: fil.length > 0,
+      filVide: fil.length === 0,
+      videFil: "Rien de ce type" + surCeJeu + " pour l'instant.",
+      lieux: this.mesLieux(),
+
+      /*
+       * La lecture cartographique : ce n'est plus le contenu qui porte son
+       * lieu, c'est le lieu qui porte ses contenus. Tout est aplati — un trou
+       * ne sait suivre qu'un chemin pointé, jamais tester si un objet existe.
+       */
+      lieuxCarte: this.mesLieux().map((l) => {
+        const siens = evenements.filter((e) => e.lieu === l.nom);
+        const direct = directs.find((d) => d.lieu === l.nom);
+        return {
+          ...l,
+          enDirect: Boolean(direct),
+          titreDirect: direct ? direct.titre : '',
+          audienceDirect: direct ? direct.audience : '',
+          aUnProchain: siens.length > 0,
+          sansRien: siens.length === 0 && !direct,
+          prochainTitre: siens.length > 0 ? siens[0].titre : '',
+          prochainQuand: siens.length > 0 ? siens[0].jourNom + ' ' + siens[0].jour + ' ' + siens[0].mois + ', ' + siens[0].heure : '',
+          prochainBadge: siens.length > 0 ? siens[0].badge : '',
+          prochainBadgeClasse: siens.length > 0 ? siens[0].badgeClasse : '',
+          autres: siens.length > 1 ? pluriel(siens.length - 1, 'autre rendez-vous', 'autres rendez-vous') : '',
+          aDAutres: siens.length > 1,
+        };
+      }),
+      decks: this.mesDecks(),
+    };
+  }
+}
+</script>
+</body>
+</html>

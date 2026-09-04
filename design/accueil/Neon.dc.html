@@ -1,0 +1,507 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,600&amp;family=Space+Mono:wght@400;700&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    *, *::before, *::after { box-sizing: border-box; }
+    a { color: inherit; text-decoration: none; }
+
+    /*
+     * « Néon ».
+     *
+     * Le cyberpunk assumé, par opposition à la planche « Node » de la
+     * première série : celle-là était un terminal — austère, cyan, monospace
+     * partout. Celle-ci sature. Duotone magenta et cyan, coins coupés,
+     * halos, lignes de balayage, titrage lourd et penché.
+     *
+     * Les deux tiennent du même genre et ne servent pas la même chose : Node
+     * est un tableau de bord de régie, Néon est une devanture. Si le
+     * cyberpunk est retenu, c'est entre ces deux tempéraments qu'il faudra
+     * choisir, pas entre le cyberpunk et autre chose.
+     *
+     * Une contrainte de lisibilité gouverne tout : le magenta et le cyan sont
+     * des accents de BORD et de LIBELLÉ, jamais de texte courant. Un titre
+     * d'article en magenta sur noir se lit mal, et une page de contenus doit
+     * d'abord se lire.
+     */
+    .neon {
+      --noir: oklch(0.132 0.022 300);
+      --noir-2: oklch(0.168 0.026 300);
+      --panneau: oklch(0.192 0.030 300);
+      --arete: oklch(0.305 0.055 305);
+      --clair: oklch(0.955 0.010 300);
+      --clair-2: oklch(0.672 0.030 300);
+      --magenta: oklch(0.700 0.235 340);
+      --cyan: oklch(0.800 0.150 195);
+      --rouge: oklch(0.660 0.220 20);
+      --vert: oklch(0.800 0.150 155);
+
+      font-family: 'Chakra Petch', ui-sans-serif, system-ui, sans-serif;
+      color: var(--clair);
+      background-color: var(--noir);
+      background-image:
+        radial-gradient(60% 40% at 12% 0%, color-mix(in oklab, var(--magenta) 16%, transparent) 0%, transparent 70%),
+        radial-gradient(55% 40% at 92% 8%, color-mix(in oklab, var(--cyan) 13%, transparent) 0%, transparent 70%),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 3px);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100%;
+    }
+
+    .mono { font-family: 'Space Mono', ui-monospace, monospace; }
+    .etiq { font-family: 'Space Mono', ui-monospace, monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; }
+    /* Le coin coupé : la signature de la direction, un seul angle par pièce. */
+    .coupe { clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); }
+
+    .chrome { border-bottom: 1px solid var(--arete); background: color-mix(in oklab, var(--noir) 88%, black); box-shadow: 0 1px 0 color-mix(in oklab, var(--magenta) 32%, transparent); }
+    .chrome-inner { max-width: 1240px; margin: 0 auto; padding: 0 28px; height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .marque { font-weight: 700; font-size: 24px; font-style: italic; letter-spacing: -0.02em; color: var(--clair); text-shadow: 2px 0 0 color-mix(in oklab, var(--magenta) 70%, transparent), -2px 0 0 color-mix(in oklab, var(--cyan) 55%, transparent); }
+    .nav { display: flex; align-items: center; gap: 3px; }
+    .nav span { padding: 7px 12px; font-family: 'Space Mono', ui-monospace, monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--clair-2); }
+    .nav span.actif { color: var(--noir); background: var(--cyan); }
+    .chrome-droite { display: flex; align-items: center; gap: 13px; color: var(--clair-2); }
+    .avatar { width: 30px; height: 30px; border: 1px solid var(--magenta); display: inline-flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--magenta); }
+
+    .page { max-width: 1240px; margin: 0 auto; padding: 26px 28px 56px; display: flex; flex-direction: column; gap: 22px; }
+
+    .tete { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px; }
+    .tete .etiq { display: block; color: var(--cyan); margin-bottom: 9px; }
+    .tete h1 { margin: 0; font-size: 44px; line-height: 46px; font-weight: 700; font-style: italic; letter-spacing: -0.035em; text-transform: uppercase; }
+    .tete h1 b { color: var(--magenta); font-weight: 700; text-shadow: 0 0 28px color-mix(in oklab, var(--magenta) 60%, transparent); }
+    .tete p { margin: 10px 0 0; font-size: 14px; color: var(--clair-2); }
+    .actions { display: flex; flex-wrap: wrap; gap: 9px; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 38px; padding: 0 18px; border: 1px solid var(--arete); background: transparent; font-family: 'Space Mono', ui-monospace, monospace; font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--clair); white-space: nowrap; flex-shrink: 0; cursor: pointer; clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px)); }
+    .btn.vif { background: var(--magenta); border-color: var(--magenta); color: var(--noir); box-shadow: 0 0 26px -6px var(--magenta); }
+    .btn.pleine { width: 100%; }
+
+    .filtres { display: flex; flex-wrap: wrap; gap: 7px; }
+    .filtre { display: inline-flex; align-items: center; height: 30px; padding: 0 14px; border: 1px solid var(--arete); font-family: 'Space Mono', ui-monospace, monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--clair-2); white-space: nowrap; flex-shrink: 0; cursor: pointer; }
+    .filtre.actif { border-color: var(--cyan); color: var(--cyan); background: color-mix(in oklab, var(--cyan) 14%, transparent); box-shadow: 0 0 20px -6px var(--cyan), inset 0 0 18px -12px var(--cyan); }
+
+    /* Le direct : c'est la devanture qui s'allume. */
+    .directs { position: relative; border: 1px solid var(--rouge); background: linear-gradient(100deg, color-mix(in oklab, var(--rouge) 16%, transparent), color-mix(in oklab, var(--magenta) 8%, transparent)); box-shadow: 0 0 44px -14px var(--rouge); padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+    .directs-tete { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .flamme { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px; background: var(--rouge); color: var(--noir); font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+    .point-direct { width: 6px; height: 6px; border-radius: 999px; background: var(--noir); }
+    @media (prefers-reduced-motion: no-preference) { .point-direct { animation: battement 2s ease-in-out infinite; } }
+    @keyframes battement { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+    .directs-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+    .direct { display: flex; gap: 12px; padding: 10px; border: 1px solid color-mix(in oklab, var(--rouge) 40%, transparent); background: color-mix(in oklab, var(--noir) 55%, transparent); }
+    .direct .corps { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .direct .titre { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+    .direct .meta { font-family: 'Space Mono', monospace; font-size: 10px; line-height: 15px; color: var(--clair-2); }
+
+    .bloc { position: relative; border: 1px solid var(--arete); background: var(--panneau); padding: 18px; }
+    .bloc::after { content: ''; position: absolute; left: 0; top: 0; width: 3px; height: 46px; background: var(--magenta); box-shadow: 0 0 16px -2px var(--magenta); }
+    .bloc-tete { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--arete); }
+    .bloc-titre { font-size: 19px; font-weight: 700; font-style: italic; letter-spacing: -0.02em; text-transform: uppercase; }
+    .bloc-titre b { color: var(--cyan); }
+
+    .grille-2 { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+    .pile { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+    /* L'agenda : des barres inclinées, la prochaine allumée. */
+    .rangs { display: flex; flex-direction: column; gap: 10px; }
+    .rang { display: flex; align-items: center; gap: 16px; padding: 13px 14px; border: 1px solid var(--arete); background: color-mix(in oklab, var(--noir-2) 70%, transparent); }
+    .rang.prochain { border-color: var(--magenta); box-shadow: inset 3px 0 0 var(--magenta), 0 0 28px -14px var(--magenta); }
+    .rang .quand { flex-shrink: 0; width: 116px; display: flex; flex-direction: column; gap: 1px; }
+    .rang .quand .d { font-size: 24px; font-weight: 700; font-style: italic; letter-spacing: -0.03em; }
+    .rang .quand .h { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--clair-2); }
+    .rang .corps { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex-grow: 1; }
+    .rang .titre { font-size: 16.5px; font-weight: 600; letter-spacing: -0.01em; }
+    .rang .ou { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--clair-2); }
+
+    .jeton { flex-shrink: 0; padding: 3px 10px; border: 1px solid currentColor; font-family: 'Space Mono', monospace; font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
+    .jeton.ok { color: var(--vert); }
+    .jeton.attention { color: var(--cyan); }
+    .jeton.principal { color: var(--magenta); }
+    .jeton.souci { color: var(--rouge); }
+
+    .bascule { display: flex; gap: 5px; }
+    .bascule-item { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border: 1px solid var(--arete); font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--clair-2); white-space: nowrap; cursor: pointer; }
+    .bascule-item.actif { border-color: var(--magenta); color: var(--magenta); background: color-mix(in oklab, var(--magenta) 12%, transparent); }
+    .bascule-item .nb { opacity: 0.6; }
+
+    .flux { display: flex; flex-direction: column; gap: 10px; }
+    .paquet { display: flex; gap: 14px; padding: 12px; border: 1px solid var(--arete); background: color-mix(in oklab, var(--noir-2) 55%, transparent); }
+    .paquet .corps { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex-grow: 1; }
+    .paquet .haut { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+    .paquet .titre { font-size: 17px; line-height: 22px; font-weight: 600; letter-spacing: -0.015em; }
+    .paquet .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--clair-2); }
+    .genre { font-family: 'Space Mono', monospace; font-size: 9.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cyan); }
+
+    .ecran { position: relative; flex-shrink: 0; border: 1px solid var(--arete); background: var(--noir); overflow: hidden; }
+    .ecran::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, color-mix(in oklab, var(--magenta) 22%, transparent), color-mix(in oklab, var(--cyan) 20%, transparent)); opacity: 0.5; }
+    .ecran::after { content: ''; position: absolute; inset: 0; background-color: var(--clair); opacity: 0.55; -webkit-mask-position: center; mask-position: center; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: 22px 22px; mask-size: 22px 22px; }
+    .ecran.actu::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/%3E%3Cpath d='M8 10h8'/%3E%3Cpath d='M8 14h5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/%3E%3Cpath d='M8 10h8'/%3E%3Cpath d='M8 14h5'/%3E%3C/svg%3E"); }
+    .ecran.video::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M8 5l11 7-11 7z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M8 5l11 7-11 7z'/%3E%3C/svg%3E"); }
+    .ecran.deck::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l9 5-9 5-9-5z'/%3E%3Cpath d='M3 13l9 5 9-5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l9 5-9 5-9-5z'/%3E%3Cpath d='M3 13l9 5 9-5'/%3E%3C/svg%3E"); }
+    .ecran.direct::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M7.5 8.5a5 5 0 0 0 0 7'/%3E%3Cpath d='M16.5 8.5a5 5 0 0 1 0 7'/%3E%3Cpath d='M4.5 5.5a9 9 0 0 0 0 13'/%3E%3Cpath d='M19.5 5.5a9 9 0 0 1 0 13'/%3E%3Ccircle cx='12' cy='12' r='1.8' fill='black' stroke='none'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M7.5 8.5a5 5 0 0 0 0 7'/%3E%3Cpath d='M16.5 8.5a5 5 0 0 1 0 7'/%3E%3Cpath d='M4.5 5.5a9 9 0 0 0 0 13'/%3E%3Cpath d='M19.5 5.5a9 9 0 0 1 0 13'/%3E%3Ccircle cx='12' cy='12' r='1.8' fill='black' stroke='none'/%3E%3C/svg%3E"); }
+    .ecran .duree { position: absolute; right: 5px; bottom: 5px; z-index: 2; padding: 1px 5px; background: var(--noir); color: var(--cyan); font-family: 'Space Mono', monospace; font-size: 9.5px; }
+
+    .liste { display: flex; flex-direction: column; gap: 13px; }
+    .item { display: flex; flex-direction: column; gap: 3px; }
+    .item .haut { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .item .nom { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+    .item .sous { font-family: 'Space Mono', monospace; font-size: 10px; line-height: 15px; color: var(--clair-2); }
+    .point { display: inline-block; width: 5px; height: 5px; margin-right: 7px; vertical-align: middle; }
+    .point.ouvert { background: var(--vert); box-shadow: 0 0 8px 0 var(--vert); }
+    .point.ferme { background: var(--clair-2); }
+
+    .jauge { height: 4px; background: var(--noir); border: 1px solid var(--arete); margin-top: 5px; }
+    .jauge i { display: block; height: 100%; background: linear-gradient(90deg, var(--magenta), var(--cyan)); }
+    .option { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 13.5px; }
+    .option .n { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--cyan); }
+
+    .vide { padding: 24px; text-align: center; border: 1px dashed var(--arete); font-family: 'Space Mono', monospace; font-size: 11px; color: var(--clair-2); }
+    .sep { opacity: 0.4; }
+    .ico { width: 15px; height: 15px; flex-shrink: 0; }
+  </style>
+</helmet>
+
+<div class="neon">
+
+  <header class="chrome">
+    <div class="chrome-inner">
+      <div style="display: flex; align-items: center; gap: 26px; min-width: 0">
+        <span class="marque">JOUTES</span>
+        <nav class="nav">
+          <span class="actif">Accueil</span>
+          <span>Events</span>
+          <span>Lieux</span>
+          <span>Jeux</span>
+          <span>Contenus</span>
+          <span>Amis</span>
+        </nav>
+      </div>
+      <div class="chrome-droite">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+        <span class="avatar">KT</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="page">
+
+    <div class="tete">
+      <div>
+        <span class="etiq">Semaine du 18.11</span>
+        <h1>Bonsoir, <b>Kévin</b></h1>
+        <p>{{ resume }}</p>
+      </div>
+      <div class="actions">
+        <span class="btn">Autour de moi</span>
+        <span class="btn vif">Nouvel événement</span>
+      </div>
+    </div>
+
+    <div class="filtres">
+      <sc-for list="{{ jeux }}" as="jeu" hint-placeholder-count="4">
+        <span class="filtre {{ jeu.classe }}" onClick="{{ jeu.choisir }}">{{ jeu.nom }}</span>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ aDesDirects }}" hint-placeholder-val="{{ true }}">
+      <section class="directs coupe">
+        <div class="directs-tete">
+          <span class="flamme"><span class="point-direct"></span>Live</span>
+          <span class="etiq">{{ titreDirects }}</span>
+          <span class="etiq" style="margin-left: auto; color: var(--cyan)">Tous les flux →</span>
+        </div>
+        <div class="directs-grille">
+          <sc-for list="{{ directs }}" as="d" hint-placeholder-count="2">
+            <div class="direct">
+              <span class="ecran direct" style="width: 104px; height: 62px"></span>
+              <span class="corps">
+                <span class="titre">{{ d.titre }}</span>
+                <span class="meta">{{ d.lieu }}</span>
+                <span class="meta">{{ d.plateforme }} <span class="sep">·</span> {{ d.audience }}</span>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <div class="grille-2">
+      <div class="pile">
+
+        <section class="bloc coupe">
+          <div class="bloc-tete">
+            <span class="bloc-titre">Ce qui m&apos;attend</span>
+            <span class="etiq" style="color: var(--cyan)">Agenda complet →</span>
+          </div>
+          <sc-if value="{{ aDesEvenements }}" hint-placeholder-val="{{ true }}">
+            <div class="rangs">
+              <sc-for list="{{ evenements }}" as="e" hint-placeholder-count="3">
+                <div class="rang {{ e.classeProchain }}">
+                  <span class="quand">
+                    <span class="d">{{ e.jour }}.{{ e.mois }}</span>
+                    <span class="h">{{ e.jourNom }} {{ e.heure }}</span>
+                  </span>
+                  <span class="corps">
+                    <span class="titre">{{ e.titre }}</span>
+                    <span class="ou">{{ e.lieu }} <span class="sep">·</span> {{ e.nomJeu }}</span>
+                  </span>
+                  <span class="jeton {{ e.badgeClasse }}">{{ e.badge }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ sansEvenement }}" hint-placeholder-val="{{ false }}">
+            <p class="vide">{{ videEvenements }}</p>
+          </sc-if>
+        </section>
+
+        <section class="bloc coupe">
+          <div class="bloc-tete">
+            <span class="bloc-titre">Le <b>fil</b></span>
+            <span class="bascule">
+              <sc-for list="{{ onglets }}" as="o" hint-placeholder-count="4">
+                <span class="bascule-item {{ o.classe }}" onClick="{{ o.choisir }}">{{ o.nom }}<span class="nb">{{ o.nombre }}</span></span>
+              </sc-for>
+            </span>
+          </div>
+          <sc-if value="{{ aDuFil }}" hint-placeholder-val="{{ true }}">
+            <div class="flux">
+              <sc-for list="{{ fil }}" as="f" hint-placeholder-count="6">
+                <div class="paquet">
+                  <span class="ecran {{ f.type }}" style="width: 112px; height: 66px">
+                    <sc-if value="{{ f.duree }}" hint-placeholder-val="{{ true }}">
+                      <span class="duree">{{ f.duree }}</span>
+                    </sc-if>
+                  </span>
+                  <span class="corps">
+                    <span class="haut">
+                      <span class="genre">{{ f.typeNom }}</span>
+                      <sc-if value="{{ f.badge }}" hint-placeholder-val="{{ true }}">
+                        <span class="jeton {{ f.badgeClasse }}">{{ f.badge }}</span>
+                      </sc-if>
+                    </span>
+                    <span class="titre">{{ f.titre }}</span>
+                    <span class="meta">{{ f.source }} <span class="sep">·</span> {{ f.nomJeu }} <span class="sep">·</span> {{ f.quand }}</span>
+                  </span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ filVide }}" hint-placeholder-val="{{ false }}">
+            <p class="vide">{{ videFil }}</p>
+          </sc-if>
+        </section>
+
+      </div>
+
+      <aside class="pile">
+        <section class="bloc coupe">
+          <div class="bloc-tete"><span class="bloc-titre">Mes <b>lieux</b></span></div>
+          <div class="liste">
+            <sc-for list="{{ lieux }}" as="l" hint-placeholder-count="3">
+              <div class="item">
+                <span class="nom">{{ l.nom }}</span>
+                <span class="sous">
+                  <sc-if value="{{ l.ouvert }}" hint-placeholder-val="{{ true }}"><span class="point ouvert"></span></sc-if>
+                  <sc-if value="{{ l.ferme }}" hint-placeholder-val="{{ false }}"><span class="point ferme"></span></sc-if>
+                  {{ l.etat }}
+                </span>
+                <span class="sous">{{ l.agenda }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section class="bloc coupe">
+          <div class="bloc-tete"><span class="bloc-titre">Mes <b>decks</b></span><span class="etiq" style="color: var(--cyan)">+ Nouveau</span></div>
+          <div class="liste">
+            <sc-for list="{{ decks }}" as="d" hint-placeholder-count="3">
+              <div class="item">
+                <span class="haut">
+                  <span class="nom">{{ d.nom }}</span>
+                  <span class="jeton {{ d.badgeClasse }}">{{ d.badge }}</span>
+                </span>
+                <span class="sous">{{ d.nomJeu }} <span class="sep">·</span> {{ d.quand }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section class="bloc coupe">
+          <div class="bloc-tete"><span class="bloc-titre">Jeudi</span><span class="jeton attention">À répondre</span></div>
+          <div class="liste">
+            <div><span class="option"><span>Jeudi 26 novembre</span><span class="n">4/6</span></span><span class="jauge"><i style="width: 67%"></i></span></div>
+            <div><span class="option"><span>Samedi 28 novembre</span><span class="n">2/6</span></span><span class="jauge"><i style="width: 33%"></i></span></div>
+            <div><span class="option"><span>Jeudi 3 décembre</span><span class="n">1/6</span></span><span class="jauge"><i style="width: 17%"></i></span></div>
+          </div>
+          <span class="btn vif pleine" style="margin-top: 16px">Répondre</span>
+        </section>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":1240,"height":1560}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { jeu: 'tous', onglet: 'tout' };
+  }
+
+  jeuxDisponibles() {
+    return [
+      { id: 'tous', nom: 'Tous mes jeux' },
+      { id: 'riftbound', nom: 'Riftbound' },
+      { id: 'mtg', nom: 'Magic' },
+      { id: 'swu', nom: 'Star Wars Unlimited' },
+    ];
+  }
+
+  /*
+   * Les directs ne vivent que dans le bandeau, jamais dans le fil : les y
+   * répéter montrait deux fois la même chose à trois cents pixels d'écart. Le
+   * fil garde ce qui se lit après coup — articles, vidéos, listes.
+   */
+  tousLesDirects() {
+    return [
+      { jeu: 'riftbound', titre: 'Draft de sortie, table 1', lieu: 'Le Repaire du Dragon', plateforme: 'Twitch', audience: '142 spectateurs' },
+      { jeu: 'mtg', titre: "Finale du Standard — Ligue d'automne", lieu: 'La Taverne des Joueurs', plateforme: 'YouTube', audience: '89 spectateurs' },
+    ];
+  }
+
+  /* Semaine du 18 novembre : le 19 est un jeudi, le 21 un samedi. */
+  tousLesEvenements() {
+    return [
+      { jeu: 'riftbound', jour: '19', mois: 'nov', jourNom: 'jeudi', titre: 'Tournoi Riftbound — Origines', lieu: 'Le Repaire du Dragon', heure: '19h00', nomJeu: 'Riftbound', etat: 'inscrit', badge: 'Inscrit', badgeClasse: 'ok' },
+      { jeu: 'mtg', jour: '20', mois: 'nov', jourNom: 'vendredi', titre: 'Commander night', lieu: 'Le Repaire du Dragon', heure: '20h00', nomJeu: 'Magic', etat: 'libre', badge: '3 places restantes', badgeClasse: 'attention' },
+      { jeu: 'swu', jour: '21', mois: 'nov', jourNom: 'samedi', titre: 'Soirée découverte Star Wars Unlimited', lieu: 'La Taverne des Joueurs', heure: '14h00', nomJeu: 'Star Wars Unlimited', etat: 'organise', badge: 'Organisateur', badgeClasse: 'principal' },
+    ];
+  }
+
+  toutLeFil() {
+    return [
+      { type: 'actu', typeNom: 'Actu', duree: '', jeu: 'riftbound', titre: 'Liste de restrictions du 18 novembre : deux cartes sortent du Standard', source: 'Riftbound officiel', nomJeu: 'Riftbound', quand: 'il y a 2 h', badge: '', badgeClasse: '' },
+      { type: 'video', typeNom: 'Vidéo', duree: '12:40', jeu: 'riftbound', titre: 'Trois erreurs de séquencement qui coûtent la partie', source: 'Chaîne de la Taverne', nomJeu: 'Riftbound', quand: 'il y a 5 h', badge: '', badgeClasse: '' },
+      { type: 'deck', typeNom: 'Deck', duree: '', jeu: 'riftbound', titre: "Aggro Noxus — 2e de la Ligue d'automne", source: 'par @lenaflux', nomJeu: 'Riftbound', quand: 'hier', badge: 'Conforme au format', badgeClasse: 'ok' },
+      { type: 'actu', typeNom: 'Actu', duree: '', jeu: 'mtg', titre: "Les dates de l'avant-première en boutique sont tombées", source: 'Actus Magic', nomJeu: 'Magic', quand: 'hier', badge: '', badgeClasse: '' },
+      { type: 'video', typeNom: 'Vidéo', duree: '08:15', jeu: 'swu', titre: 'Monter sa première liste Rebelles sans se ruiner', source: 'Games & Co', nomJeu: 'Star Wars Unlimited', quand: 'il y a 2 j', badge: '', badgeClasse: '' },
+      { type: 'deck', typeNom: 'Deck', duree: '', jeu: 'mtg', titre: 'Contrôle Azorius — la liste de la semaine', source: 'par @vahn', nomJeu: 'Magic', quand: 'il y a 3 j', badge: '2 zones à ajuster', badgeClasse: 'souci' },
+    ];
+  }
+
+  mesLieux() {
+    return [
+      { initiales: 'RD', x: 22, y: 30, nom: 'Le Repaire du Dragon', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 19h", agenda: '3 événements cette semaine' },
+      { initiales: 'TJ', x: 63, y: 17, nom: 'La Taverne des Joueurs', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 23h", agenda: '1 événement cette semaine' },
+      { initiales: 'GC', x: 53, y: 64, nom: 'Games & Co Villeurbanne', ouvert: false, ferme: true, etat: 'Fermé, ouvre demain à 14h', agenda: '1 événement cette semaine' },
+    ];
+  }
+
+  mesDecks() {
+    return [
+      { nom: 'Aggro Noxus', nomJeu: 'Riftbound', quand: 'modifié il y a 2 j', badge: 'Conforme', badgeClasse: '' },
+      { nom: 'Contrôle Azorius', nomJeu: 'Magic', quand: 'modifié hier', badge: '2 zones', badgeClasse: 'souci' },
+      { nom: 'Aggro Rebelles', nomJeu: 'Star Wars Unlimited', quand: 'modifié il y a 4 j', badge: 'Brouillon', badgeClasse: '' },
+    ];
+  }
+
+  renderVals() {
+    const jeu = this.state.jeu;
+    const onglet = this.state.onglet;
+    const tousJeux = jeu === 'tous';
+    const duJeu = (x) => tousJeux || x.jeu === jeu;
+
+    const jeux = this.jeuxDisponibles().map((j) => ({
+      id: j.id,
+      nom: j.nom,
+      classe: j.id === jeu ? 'actif' : '',
+      choisir: () => this.setState({ jeu: j.id }),
+    }));
+
+    const directs = this.tousLesDirects().filter(duJeu);
+    /*
+     * Le fanion « prochain » se calcule après le filtre, jamais dans les
+     * données : filtrer sur Magic doit le déplacer sur le premier événement
+     * Magic, pas le faire disparaître avec le tournoi Riftbound.
+     */
+    const evenements = this.tousLesEvenements()
+      .filter(duJeu)
+      .map((e, i) => ({ ...e, prochain: i === 0, classeProchain: i === 0 ? 'prochain' : '' }));
+    const filDuJeu = this.toutLeFil().filter(duJeu);
+    const fil = filDuJeu.filter((f) => onglet === 'tout' || f.type === onglet);
+
+    const onglets = [
+      { id: 'tout', nom: 'Tout' },
+      { id: 'actu', nom: 'Actus' },
+      { id: 'video', nom: 'Vidéos' },
+      { id: 'deck', nom: 'Decks' },
+    ].map((o) => ({
+      nom: o.nom,
+      nombre: o.id === 'tout' ? filDuJeu.length : filDuJeu.filter((f) => f.type === o.id).length,
+      classe: o.id === onglet ? 'actif' : '',
+      choisir: () => this.setState({ onglet: o.id }),
+    }));
+
+    const pluriel = (n, un, plusieurs) => n + ' ' + (n > 1 ? plusieurs : un);
+
+    const morceaux = [];
+    if (evenements.length > 0) morceaux.push(pluriel(evenements.length, 'événement cette semaine', 'événements cette semaine'));
+    if (directs.length > 0) morceaux.push(pluriel(directs.length, 'direct en cours', 'directs en cours'));
+
+    /* « Ce jeu » n'a de sens que si un jeu est choisi ; sinon la page ment. */
+    const surCeJeu = tousJeux ? '' : ' sur ce jeu';
+
+    return {
+      resume: morceaux.length > 0 ? morceaux.join(', ') + '.' : "Rien ne m'attend cette semaine" + surCeJeu + '.',
+      jeux,
+      onglets,
+      directs,
+      aDesDirects: directs.length > 0,
+      titreDirects: pluriel(directs.length, 'direct dans mes lieux', 'directs dans mes lieux'),
+      evenements,
+      aDesEvenements: evenements.length > 0,
+      sansEvenement: evenements.length === 0,
+      videEvenements: 'Rien de prévu cette semaine' + surCeJeu + '.',
+      fil,
+      aDuFil: fil.length > 0,
+      filVide: fil.length === 0,
+      videFil: "Rien de ce type" + surCeJeu + " pour l'instant.",
+      lieux: this.mesLieux(),
+
+      /*
+       * La lecture cartographique : ce n'est plus le contenu qui porte son
+       * lieu, c'est le lieu qui porte ses contenus. Tout est aplati — un trou
+       * ne sait suivre qu'un chemin pointé, jamais tester si un objet existe.
+       */
+      lieuxCarte: this.mesLieux().map((l) => {
+        const siens = evenements.filter((e) => e.lieu === l.nom);
+        const direct = directs.find((d) => d.lieu === l.nom);
+        return {
+          ...l,
+          enDirect: Boolean(direct),
+          titreDirect: direct ? direct.titre : '',
+          audienceDirect: direct ? direct.audience : '',
+          aUnProchain: siens.length > 0,
+          sansRien: siens.length === 0 && !direct,
+          prochainTitre: siens.length > 0 ? siens[0].titre : '',
+          prochainQuand: siens.length > 0 ? siens[0].jourNom + ' ' + siens[0].jour + ' ' + siens[0].mois + ', ' + siens[0].heure : '',
+          prochainBadge: siens.length > 0 ? siens[0].badge : '',
+          prochainBadgeClasse: siens.length > 0 ? siens[0].badgeClasse : '',
+          autres: siens.length > 1 ? pluriel(siens.length - 1, 'autre rendez-vous', 'autres rendez-vous') : '',
+          aDAutres: siens.length > 1,
+        };
+      }),
+      decks: this.mesDecks(),
+    };
+  }
+}
+</script>
+</body>
+</html>

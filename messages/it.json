@@ -67,7 +67,97 @@
   },
   "Home": {
     "title": "Calendario degli Eventi",
-    "createEvent": "Crea un Evento"
+    "createEvent": "Crea un Evento",
+    "salutation": "Ciao, {nom}",
+    "autourDeMoi": "Vicino a me",
+    "resume": {
+      "evenements": "{count, plural, one {# evento questa settimana} other {# eventi questa settimana}}",
+      "directs": "{count, plural, one {# diretta in corso} other {# dirette in corso}}",
+      "rien": "Niente in programma per te questa settimana."
+    },
+    "jeux": {
+      "legende": "Filtra per gioco",
+      "tous": "Tutti i giochi",
+      "tousLesMiens": "Tutti i miei giochi"
+    },
+    "proposition": {
+      "titre": "Trova dove giocare vicino a te.",
+      "sous": "Tornei, serate e negozi della tua zona, raccolti in un unico posto — con le notizie dei tuoi giochi, le partite trasmesse in diretta e le liste che la comunità pubblica.",
+      "agenda": "Sfoglia il calendario",
+      "creer": "Crea un account"
+    },
+    "position": {
+      "autourDe": "Intorno a <nom>{lieu}</nom> · {rayon} km",
+      "autourDeMoi": "Vicino a me · {rayon} km",
+      "changer": "Cambia",
+      "definir": "Guarda cosa succede vicino a te"
+    },
+    "directs": {
+      "enCours": "In diretta",
+      "titreSuivis": "{count, plural, one {# diretta nei tuoi locali} other {# dirette nei tuoi locali}}",
+      "titreProches": "{count, plural, one {# diretta vicino a te} other {# dirette vicino a te}}",
+      "tous": "Tutte le dirette",
+      "spectateurs": "{count, plural, one {# spettatore} other {# spettatori}}"
+    },
+    "agenda": {
+      "titreConnecte": "Cosa mi aspetta",
+      "titreVisiteur": "Questa settimana",
+      "titreAutourDe": "Questa settimana intorno a {lieu}",
+      "tout": "Tutto il calendario",
+      "vide": "Niente in programma questa settimana.",
+      "videSurCeJeu": "Niente in programma questa settimana per questo gioco.",
+      "statut": {
+        "organisateur": "Organizzatore",
+        "inscrit": "Iscritto",
+        "complet": "Al completo",
+        "places": "{count, plural, one {# posto rimasto} other {# posti rimasti}}",
+        "ouvert": "Iscrizioni aperte"
+      }
+    },
+    "fil": {
+      "titre": "Il flusso",
+      "tout": "Tutto",
+      "vide": "Ancora niente da leggere qui.",
+      "types": {
+        "actu": "Notizia",
+        "video": "Video",
+        "deck": "Mazzo"
+      }
+    },
+    "lieux": {
+      "titreSuivis": "I miei luoghi",
+      "titreProches": "I luoghi intorno a te",
+      "decouvrir": "Scopri",
+      "voirTout": "Vedi tutti",
+      "ouvertJusqua": "Aperto fino alle {heure}",
+      "ferme": "Attualmente chiuso",
+      "horairesInconnus": "Orari non indicati",
+      "distance": "a {km} km"
+    },
+    "decks": {
+      "titreMiens": "I miei mazzi",
+      "titreVedette": "Mazzi in evidenza",
+      "nouveau": "Nuovo",
+      "explorer": "Esplora",
+      "modifie": "modificato {quand}",
+      "brouillon": "Bozza"
+    },
+    "sondage": {
+      "aRepondre": "Da rispondere",
+      "repondre": "{count, plural, =0 {Indica la mia disponibilità} one {Indica la mia disponibilità — # risposta} other {Indica la mia disponibilità — # risposte}}"
+    },
+    "inscription": {
+      "titre": "Crea il tuo account",
+      "gratuit": "Gratis, e senza installare nulla.",
+      "creer": "Crea un account",
+      "deja": "Già registrato? <lien>Accedi</lien>",
+      "arguments": {
+        "lieux": "Segui i tuoi negozi e ricevi il loro programma",
+        "tournois": "Iscriviti ai tornei con un clic",
+        "decks": "Costruisci i tuoi mazzi e verificane la legalità",
+        "directs": "Ricevi un avviso quando inizia una diretta"
+      }
+    }
   },
   "EventsCalendar": {
     "title": "Calendario degli Eventi",

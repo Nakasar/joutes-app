@@ -1,0 +1,516 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&amp;family=Space+Mono:wght@400;700&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    *, *::before, *::after { box-sizing: border-box; }
+    a { color: inherit; text-decoration: none; }
+
+    /*
+     * « Le node ».
+     *
+     * Reprend à l'écran le style d'affiche `cyberpunk` que les lieux peuvent
+     * déjà imprimer — « Néons et grille », et cette façon d'adresser un lieu
+     * en `// {nom} · NODE {adresse}`. Tout est désigné, numéroté, aligné sur
+     * une grille visible ; la page se lit comme une console de régie.
+     *
+     * C'est la direction qui sert le mieux les directs et les tournois, et la
+     * moins accueillante pour un article qu'on lit tranquillement. Elle est
+     * aussi sombre par nature : il n'y en aura pas de version claire.
+     */
+    .node {
+      --fond: oklch(0.145 0.008 250);
+      --fond-2: oklch(0.185 0.011 250);
+      --panneau: oklch(0.172 0.010 250);
+      --trait: oklch(0.305 0.018 250);
+      --texte: oklch(0.925 0.006 250);
+      --texte-2: oklch(0.645 0.016 250);
+      --cyan: oklch(0.79 0.135 195);
+      --magenta: oklch(0.72 0.185 340);
+      --rouge: oklch(0.66 0.21 25);
+      --vert: oklch(0.79 0.16 155);
+
+      font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+      color: var(--texte);
+      background-color: var(--fond);
+      background-image:
+        linear-gradient(oklch(0.205 0.012 250) 1px, transparent 1px),
+        linear-gradient(90deg, oklch(0.205 0.012 250) 1px, transparent 1px);
+      background-size: 40px 40px, 40px 40px;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100%;
+    }
+
+    .mono { font-family: 'Space Mono', ui-monospace, monospace; }
+    .adresse { font-family: 'Space Mono', ui-monospace, monospace; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texte-2); }
+
+    .chrome { border-bottom: 1px solid var(--trait); background: color-mix(in oklab, var(--fond) 82%, black); }
+    .chrome-inner { max-width: 1240px; margin: 0 auto; padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .marque { font-family: 'Space Mono', ui-monospace, monospace; font-weight: 700; font-size: 17px; letter-spacing: 0.02em; color: var(--cyan); }
+    .nav { display: flex; align-items: center; gap: 4px; }
+    .nav span { padding: 6px 11px; font-family: 'Space Mono', ui-monospace, monospace; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--texte-2); }
+    .nav span.actif { color: var(--fond); background: var(--cyan); }
+    .chrome-droite { display: flex; align-items: center; gap: 12px; color: var(--texte-2); }
+    .avatar { width: 30px; height: 30px; border: 1px solid var(--trait); display: inline-flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--cyan); }
+
+    .page { max-width: 1240px; margin: 0 auto; padding: 26px 28px 56px; display: flex; flex-direction: column; gap: 22px; }
+
+    /* Un panneau : quatre équerres, jamais un arrondi. */
+    .panneau { position: relative; border: 1px solid var(--trait); background: var(--panneau); padding: 18px; }
+    .panneau::before, .panneau::after { content: ''; position: absolute; width: 9px; height: 9px; border: 1px solid var(--cyan); pointer-events: none; }
+    .panneau::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+    .panneau::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+    .entete { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 16px; }
+    .entete h1 { margin: 0; font-size: 32px; line-height: 36px; font-weight: 700; letter-spacing: -0.02em; }
+    .entete h1 b { color: var(--cyan); font-weight: 700; }
+    .entete p { margin: 8px 0 0; font-size: 13.5px; color: var(--texte-2); }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border: 1px solid var(--trait); background: transparent; font-family: 'Space Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texte); white-space: nowrap; flex-shrink: 0; cursor: pointer; }
+    .btn.plein { background: var(--cyan); border-color: var(--cyan); color: var(--fond); }
+    .btn.large { width: 100%; }
+
+    .filtres { display: flex; flex-wrap: wrap; gap: 6px; }
+    .filtre { display: inline-flex; align-items: center; height: 30px; padding: 0 13px; border: 1px solid var(--trait); font-family: 'Space Mono', ui-monospace, monospace; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texte-2); white-space: nowrap; flex-shrink: 0; cursor: pointer; }
+    .filtre.actif { border-color: var(--cyan); color: var(--cyan); background: color-mix(in oklab, var(--cyan) 12%, transparent); }
+
+    /* Le direct : le seul endroit qui a le droit de luire. */
+    .directs { border: 1px solid var(--rouge); background: color-mix(in oklab, var(--rouge) 9%, transparent); box-shadow: 0 0 0 1px color-mix(in oklab, var(--rouge) 25%, transparent), 0 0 34px -12px var(--rouge); padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+    .directs-entete { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .flamme { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px; background: var(--rouge); color: var(--fond); font-family: 'Space Mono', monospace; font-weight: 700; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; }
+    .point-direct { width: 6px; height: 6px; border-radius: 999px; background: var(--fond); }
+    @media (prefers-reduced-motion: no-preference) { .point-direct { animation: battement 2s ease-in-out infinite; } }
+    @keyframes battement { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+    .directs-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+    .direct { display: flex; gap: 12px; border: 1px solid color-mix(in oklab, var(--rouge) 35%, transparent); padding: 10px; }
+    .direct .corps { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .direct .titre { font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em; }
+
+    .grille-2 { display: grid; grid-template-columns: minmax(0, 1fr) 316px; gap: 22px; align-items: start; }
+    .pile { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+
+    .panneau-entete { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--trait); }
+    .panneau-titre { font-family: 'Space Mono', ui-monospace, monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cyan); }
+
+    /* L'agenda : une ligne de registre, adressée. */
+    .registre { display: flex; flex-direction: column; }
+    .entree { display: flex; align-items: center; gap: 16px; padding: 13px 10px; border-left: 2px solid var(--trait); }
+    .entree + .entree { margin-top: 8px; }
+    .entree.inscrit { border-left-color: var(--vert); }
+    .entree.organise { border-left-color: var(--magenta); }
+    .entree.libre { border-left-color: var(--texte-2); }
+    .entree .quand { flex-shrink: 0; width: 112px; display: flex; flex-direction: column; gap: 2px; }
+    .entree .quand .d { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 17px; letter-spacing: 0.02em; }
+    .entree .quand .h { font-family: 'Space Mono', monospace; font-size: 10.5px; color: var(--texte-2); }
+    .entree .corps { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex-grow: 1; }
+    .entree .titre { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+
+    .jeton { flex-shrink: 0; padding: 3px 9px; border: 1px solid currentColor; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+    .jeton.ok { color: var(--vert); }
+    .jeton.attention { color: var(--cyan); }
+    .jeton.principal { color: var(--magenta); }
+    .jeton.souci { color: var(--rouge); }
+
+    .bascule { display: flex; gap: 6px; }
+    .bascule-item { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border: 1px solid var(--trait); font-family: 'Space Mono', monospace; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texte-2); white-space: nowrap; cursor: pointer; }
+    .bascule-item.actif { border-color: var(--cyan); color: var(--cyan); }
+    .bascule-item .nb { opacity: 0.6; }
+
+    .flux { display: flex; flex-direction: column; gap: 10px; }
+    .paquet { display: flex; gap: 14px; padding: 12px; border: 1px solid var(--trait); background: color-mix(in oklab, var(--fond-2) 60%, transparent); }
+    .paquet .corps { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex-grow: 1; }
+    .paquet .haut { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+    .paquet .titre { font-size: 15.5px; line-height: 21px; font-weight: 700; letter-spacing: -0.015em; }
+    .paquet .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-family: 'Space Mono', monospace; font-size: 10.5px; color: var(--texte-2); }
+
+    .ecran { position: relative; flex-shrink: 0; border: 1px solid var(--trait); background: var(--fond); background-image: repeating-linear-gradient(0deg, color-mix(in oklab, var(--cyan) 10%, transparent) 0 1px, transparent 1px 4px); }
+    .ecran::after { content: ''; position: absolute; inset: 0; background-color: var(--cyan); opacity: 0.4; -webkit-mask-position: center; mask-position: center; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: 22px 22px; mask-size: 22px 22px; }
+    .ecran.actu::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/%3E%3Cpath d='M8 10h8'/%3E%3Cpath d='M8 14h5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/%3E%3Cpath d='M8 10h8'/%3E%3Cpath d='M8 14h5'/%3E%3C/svg%3E"); }
+    .ecran.direct::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M7.5 8.5a5 5 0 0 0 0 7'/%3E%3Cpath d='M16.5 8.5a5 5 0 0 1 0 7'/%3E%3Cpath d='M4.5 5.5a9 9 0 0 0 0 13'/%3E%3Cpath d='M19.5 5.5a9 9 0 0 1 0 13'/%3E%3Ccircle cx='12' cy='12' r='1.8' fill='black' stroke='none'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M7.5 8.5a5 5 0 0 0 0 7'/%3E%3Cpath d='M16.5 8.5a5 5 0 0 1 0 7'/%3E%3Cpath d='M4.5 5.5a9 9 0 0 0 0 13'/%3E%3Cpath d='M19.5 5.5a9 9 0 0 1 0 13'/%3E%3Ccircle cx='12' cy='12' r='1.8' fill='black' stroke='none'/%3E%3C/svg%3E"); }
+    .ecran.video::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M8 5l11 7-11 7z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M8 5l11 7-11 7z'/%3E%3C/svg%3E"); }
+    .ecran.deck::after { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l9 5-9 5-9-5z'/%3E%3Cpath d='M3 13l9 5 9-5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l9 5-9 5-9-5z'/%3E%3Cpath d='M3 13l9 5 9-5'/%3E%3C/svg%3E"); }
+    .ecran .duree { position: absolute; right: 5px; bottom: 5px; padding: 1px 5px; background: var(--fond); color: var(--cyan); font-family: 'Space Mono', monospace; font-size: 9.5px; }
+
+    .liste { display: flex; flex-direction: column; gap: 13px; }
+    .item { display: flex; flex-direction: column; gap: 3px; }
+    .item .haut { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .item .nom { font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em; }
+    .item .sous { font-family: 'Space Mono', monospace; font-size: 10.5px; line-height: 15px; color: var(--texte-2); }
+    .point { display: inline-block; width: 5px; height: 5px; margin-right: 7px; vertical-align: middle; }
+    .point.ouvert { background: var(--vert); }
+    .point.ferme { background: var(--texte-2); }
+
+    .jauge { height: 4px; background: var(--fond); border: 1px solid var(--trait); margin-top: 5px; }
+    .jauge i { display: block; height: 100%; background: var(--cyan); }
+    .option { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 13px; }
+    .option .n { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--cyan); }
+
+    .vide { padding: 24px; text-align: center; border: 1px dashed var(--trait); font-family: 'Space Mono', monospace; font-size: 11px; color: var(--texte-2); }
+    .sep { opacity: 0.45; }
+    .ico { width: 15px; height: 15px; flex-shrink: 0; }
+  </style>
+</helmet>
+
+<div class="node">
+
+  <header class="chrome">
+    <div class="chrome-inner">
+      <div style="display: flex; align-items: center; gap: 26px; min-width: 0">
+        <span class="marque">JOUTES//</span>
+        <nav class="nav">
+          <span class="actif">Node</span>
+          <span>Events</span>
+          <span>Lieux</span>
+          <span>Jeux</span>
+          <span>Contenus</span>
+          <span>Amis</span>
+        </nav>
+      </div>
+      <div class="chrome-droite">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+        <span class="avatar">KT</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="page">
+
+    <div class="entete">
+      <div>
+        <span class="adresse">// session 18.11 · node lyon-07</span>
+        <h1 style="margin-top: 8px">Bonsoir, <b>Kévin</b></h1>
+        <p>{{ resume }}</p>
+      </div>
+      <div class="actions">
+        <span class="btn">Autour de moi</span>
+        <span class="btn plein">+ Nouvel événement</span>
+      </div>
+    </div>
+
+    <div class="filtres">
+      <sc-for list="{{ jeux }}" as="jeu" hint-placeholder-count="4">
+        <span class="filtre {{ jeu.classe }}" onClick="{{ jeu.choisir }}">{{ jeu.nom }}</span>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ aDesDirects }}" hint-placeholder-val="{{ true }}">
+      <section class="directs">
+        <div class="directs-entete">
+          <span class="flamme"><span class="point-direct"></span>Live</span>
+          <span class="adresse" style="color: var(--texte)">{{ titreDirects }}</span>
+          <span class="adresse" style="margin-left: auto">// tous les flux</span>
+        </div>
+        <div class="directs-grille">
+          <sc-for list="{{ directs }}" as="d" hint-placeholder-count="2">
+            <div class="direct">
+              <span class="ecran direct" style="width: 96px; height: 58px"></span>
+              <span class="corps">
+                <span class="titre">{{ d.titre }}</span>
+                <span class="adresse">{{ d.lieu }}</span>
+                <span class="adresse">{{ d.plateforme }} <span class="sep">·</span> {{ d.audience }}</span>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <div class="grille-2">
+      <div class="pile">
+
+        <section class="panneau">
+          <div class="panneau-entete">
+            <span class="panneau-titre">// ce qui m&apos;attend</span>
+            <span class="adresse">agenda complet →</span>
+          </div>
+          <sc-if value="{{ aDesEvenements }}" hint-placeholder-val="{{ true }}">
+            <div class="registre">
+              <sc-for list="{{ evenements }}" as="e" hint-placeholder-count="3">
+                <div class="entree {{ e.etat }}">
+                  <span class="quand">
+                    <span class="d">{{ e.jour }}.{{ e.mois }}</span>
+                    <span class="h">{{ e.jourNom }} {{ e.heure }}</span>
+                  </span>
+                  <span class="corps">
+                    <span class="titre">{{ e.titre }}</span>
+                    <span class="adresse">{{ e.lieu }} <span class="sep">·</span> {{ e.nomJeu }}</span>
+                  </span>
+                  <span class="jeton {{ e.badgeClasse }}">{{ e.badge }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ sansEvenement }}" hint-placeholder-val="{{ false }}">
+            <p class="vide">{{ videEvenements }}</p>
+          </sc-if>
+        </section>
+
+        <section class="panneau">
+          <div class="panneau-entete">
+            <span class="panneau-titre">// le fil</span>
+            <span class="bascule">
+              <sc-for list="{{ onglets }}" as="o" hint-placeholder-count="4">
+                <span class="bascule-item {{ o.classe }}" onClick="{{ o.choisir }}">{{ o.nom }}<span class="nb">{{ o.nombre }}</span></span>
+              </sc-for>
+            </span>
+          </div>
+          <sc-if value="{{ aDuFil }}" hint-placeholder-val="{{ true }}">
+            <div class="flux">
+              <sc-for list="{{ fil }}" as="f" hint-placeholder-count="6">
+                <div class="paquet">
+                  <span class="ecran {{ f.type }}" style="width: 116px; height: 66px">
+                    <sc-if value="{{ f.duree }}" hint-placeholder-val="{{ true }}">
+                      <span class="duree">{{ f.duree }}</span>
+                    </sc-if>
+                  </span>
+                  <span class="corps">
+                    <span class="haut">
+                      <span class="adresse" style="color: var(--cyan)">[{{ f.typeNom }}]</span>
+                      <sc-if value="{{ f.badge }}" hint-placeholder-val="{{ true }}">
+                        <span class="jeton {{ f.badgeClasse }}">{{ f.badge }}</span>
+                      </sc-if>
+                    </span>
+                    <span class="titre">{{ f.titre }}</span>
+                    <span class="meta">{{ f.source }} <span class="sep">·</span> {{ f.nomJeu }} <span class="sep">·</span> {{ f.quand }}</span>
+                  </span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ filVide }}" hint-placeholder-val="{{ false }}">
+            <p class="vide">{{ videFil }}</p>
+          </sc-if>
+        </section>
+
+      </div>
+
+      <aside class="pile">
+        <section class="panneau">
+          <div class="panneau-entete">
+            <span class="panneau-titre">// mes lieux</span>
+          </div>
+          <div class="liste">
+            <sc-for list="{{ lieux }}" as="l" hint-placeholder-count="3">
+              <div class="item">
+                <span class="nom">{{ l.nom }}</span>
+                <span class="sous">
+                  <sc-if value="{{ l.ouvert }}" hint-placeholder-val="{{ true }}"><span class="point ouvert"></span></sc-if>
+                  <sc-if value="{{ l.ferme }}" hint-placeholder-val="{{ false }}"><span class="point ferme"></span></sc-if>
+                  {{ l.etat }}
+                </span>
+                <span class="sous">{{ l.agenda }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section class="panneau">
+          <div class="panneau-entete">
+            <span class="panneau-titre">// mes decks</span>
+            <span class="adresse">+ nouveau</span>
+          </div>
+          <div class="liste">
+            <sc-for list="{{ decks }}" as="d" hint-placeholder-count="3">
+              <div class="item">
+                <span class="haut">
+                  <span class="nom">{{ d.nom }}</span>
+                  <span class="jeton {{ d.badgeClasse }}">{{ d.badge }}</span>
+                </span>
+                <span class="sous">{{ d.nomJeu }} <span class="sep">·</span> {{ d.quand }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section class="panneau">
+          <div class="panneau-entete">
+            <span class="panneau-titre">// joueurs du jeudi</span>
+            <span class="jeton attention">À répondre</span>
+          </div>
+          <div class="liste">
+            <div>
+              <span class="option"><span>Jeudi 26 novembre</span><span class="n">4/6</span></span>
+              <span class="jauge"><i style="width: 67%"></i></span>
+            </div>
+            <div>
+              <span class="option"><span>Samedi 28 novembre</span><span class="n">2/6</span></span>
+              <span class="jauge"><i style="width: 33%"></i></span>
+            </div>
+            <div>
+              <span class="option"><span>Jeudi 3 décembre</span><span class="n">1/6</span></span>
+              <span class="jauge"><i style="width: 17%"></i></span>
+            </div>
+          </div>
+          <span class="btn plein large" style="margin-top: 16px">Répondre</span>
+        </section>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":1240,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { jeu: 'tous', onglet: 'tout' };
+  }
+
+  jeuxDisponibles() {
+    return [
+      { id: 'tous', nom: 'Tous mes jeux' },
+      { id: 'riftbound', nom: 'Riftbound' },
+      { id: 'mtg', nom: 'Magic' },
+      { id: 'swu', nom: 'Star Wars Unlimited' },
+    ];
+  }
+
+  /*
+   * Les directs ne vivent que dans le bandeau, jamais dans le fil : les y
+   * répéter montrait deux fois la même chose à trois cents pixels d'écart. Le
+   * fil garde ce qui se lit après coup — articles, vidéos, listes.
+   */
+  tousLesDirects() {
+    return [
+      { jeu: 'riftbound', titre: 'Draft de sortie, table 1', lieu: 'Le Repaire du Dragon', plateforme: 'Twitch', audience: '142 spectateurs' },
+      { jeu: 'mtg', titre: "Finale du Standard — Ligue d'automne", lieu: 'La Taverne des Joueurs', plateforme: 'YouTube', audience: '89 spectateurs' },
+    ];
+  }
+
+  /* Semaine du 18 novembre : le 19 est un jeudi, le 21 un samedi. */
+  tousLesEvenements() {
+    return [
+      { jeu: 'riftbound', jour: '19', mois: 'nov', jourNom: 'jeudi', titre: 'Tournoi Riftbound — Origines', lieu: 'Le Repaire du Dragon', heure: '19h00', nomJeu: 'Riftbound', etat: 'inscrit', badge: 'Inscrit', badgeClasse: 'ok' },
+      { jeu: 'mtg', jour: '20', mois: 'nov', jourNom: 'vendredi', titre: 'Commander night', lieu: 'Le Repaire du Dragon', heure: '20h00', nomJeu: 'Magic', etat: 'libre', badge: '3 places restantes', badgeClasse: 'attention' },
+      { jeu: 'swu', jour: '21', mois: 'nov', jourNom: 'samedi', titre: 'Soirée découverte Star Wars Unlimited', lieu: 'La Taverne des Joueurs', heure: '14h00', nomJeu: 'Star Wars Unlimited', etat: 'organise', badge: 'Organisateur', badgeClasse: 'principal' },
+    ];
+  }
+
+  toutLeFil() {
+    return [
+      { type: 'actu', typeNom: 'Actu', duree: '', jeu: 'riftbound', titre: 'Liste de restrictions du 18 novembre : deux cartes sortent du Standard', source: 'Riftbound officiel', nomJeu: 'Riftbound', quand: 'il y a 2 h', badge: '', badgeClasse: '' },
+      { type: 'video', typeNom: 'Vidéo', duree: '12:40', jeu: 'riftbound', titre: 'Trois erreurs de séquencement qui coûtent la partie', source: 'Chaîne de la Taverne', nomJeu: 'Riftbound', quand: 'il y a 5 h', badge: '', badgeClasse: '' },
+      { type: 'deck', typeNom: 'Deck', duree: '', jeu: 'riftbound', titre: "Aggro Noxus — 2e de la Ligue d'automne", source: 'par @lenaflux', nomJeu: 'Riftbound', quand: 'hier', badge: 'Conforme au format', badgeClasse: 'ok' },
+      { type: 'actu', typeNom: 'Actu', duree: '', jeu: 'mtg', titre: "Les dates de l'avant-première en boutique sont tombées", source: 'Actus Magic', nomJeu: 'Magic', quand: 'hier', badge: '', badgeClasse: '' },
+      { type: 'video', typeNom: 'Vidéo', duree: '08:15', jeu: 'swu', titre: 'Monter sa première liste Rebelles sans se ruiner', source: 'Games & Co', nomJeu: 'Star Wars Unlimited', quand: 'il y a 2 j', badge: '', badgeClasse: '' },
+      { type: 'deck', typeNom: 'Deck', duree: '', jeu: 'mtg', titre: 'Contrôle Azorius — la liste de la semaine', source: 'par @vahn', nomJeu: 'Magic', quand: 'il y a 3 j', badge: '2 zones à ajuster', badgeClasse: 'souci' },
+    ];
+  }
+
+  mesLieux() {
+    return [
+      { initiales: 'RD', x: 22, y: 30, nom: 'Le Repaire du Dragon', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 19h", agenda: '3 événements cette semaine' },
+      { initiales: 'TJ', x: 63, y: 17, nom: 'La Taverne des Joueurs', ouvert: true, ferme: false, etat: "Ouvert jusqu'à 23h", agenda: '1 événement cette semaine' },
+      { initiales: 'GC', x: 53, y: 64, nom: 'Games & Co Villeurbanne', ouvert: false, ferme: true, etat: 'Fermé, ouvre demain à 14h', agenda: '1 événement cette semaine' },
+    ];
+  }
+
+  mesDecks() {
+    return [
+      { nom: 'Aggro Noxus', nomJeu: 'Riftbound', quand: 'modifié il y a 2 j', badge: 'Conforme', badgeClasse: '' },
+      { nom: 'Contrôle Azorius', nomJeu: 'Magic', quand: 'modifié hier', badge: '2 zones', badgeClasse: 'souci' },
+      { nom: 'Aggro Rebelles', nomJeu: 'Star Wars Unlimited', quand: 'modifié il y a 4 j', badge: 'Brouillon', badgeClasse: '' },
+    ];
+  }
+
+  renderVals() {
+    const jeu = this.state.jeu;
+    const onglet = this.state.onglet;
+    const tousJeux = jeu === 'tous';
+    const duJeu = (x) => tousJeux || x.jeu === jeu;
+
+    const jeux = this.jeuxDisponibles().map((j) => ({
+      id: j.id,
+      nom: j.nom,
+      classe: j.id === jeu ? 'actif' : '',
+      choisir: () => this.setState({ jeu: j.id }),
+    }));
+
+    const directs = this.tousLesDirects().filter(duJeu);
+    /*
+     * Le fanion « prochain » se calcule après le filtre, jamais dans les
+     * données : filtrer sur Magic doit le déplacer sur le premier événement
+     * Magic, pas le faire disparaître avec le tournoi Riftbound.
+     */
+    const evenements = this.tousLesEvenements()
+      .filter(duJeu)
+      .map((e, i) => ({ ...e, prochain: i === 0, classeProchain: i === 0 ? 'prochain' : '' }));
+    const filDuJeu = this.toutLeFil().filter(duJeu);
+    const fil = filDuJeu.filter((f) => onglet === 'tout' || f.type === onglet);
+
+    const onglets = [
+      { id: 'tout', nom: 'Tout' },
+      { id: 'actu', nom: 'Actus' },
+      { id: 'video', nom: 'Vidéos' },
+      { id: 'deck', nom: 'Decks' },
+    ].map((o) => ({
+      nom: o.nom,
+      nombre: o.id === 'tout' ? filDuJeu.length : filDuJeu.filter((f) => f.type === o.id).length,
+      classe: o.id === onglet ? 'actif' : '',
+      choisir: () => this.setState({ onglet: o.id }),
+    }));
+
+    const pluriel = (n, un, plusieurs) => n + ' ' + (n > 1 ? plusieurs : un);
+
+    const morceaux = [];
+    if (evenements.length > 0) morceaux.push(pluriel(evenements.length, 'événement cette semaine', 'événements cette semaine'));
+    if (directs.length > 0) morceaux.push(pluriel(directs.length, 'direct en cours', 'directs en cours'));
+
+    /* « Ce jeu » n'a de sens que si un jeu est choisi ; sinon la page ment. */
+    const surCeJeu = tousJeux ? '' : ' sur ce jeu';
+
+    return {
+      resume: morceaux.length > 0 ? morceaux.join(', ') + '.' : "Rien ne m'attend cette semaine" + surCeJeu + '.',
+      jeux,
+      onglets,
+      directs,
+      aDesDirects: directs.length > 0,
+      titreDirects: pluriel(directs.length, 'direct dans mes lieux', 'directs dans mes lieux'),
+      evenements,
+      aDesEvenements: evenements.length > 0,
+      sansEvenement: evenements.length === 0,
+      videEvenements: 'Rien de prévu cette semaine' + surCeJeu + '.',
+      fil,
+      aDuFil: fil.length > 0,
+      filVide: fil.length === 0,
+      videFil: "Rien de ce type" + surCeJeu + " pour l'instant.",
+      lieux: this.mesLieux(),
+
+      /*
+       * La lecture cartographique : ce n'est plus le contenu qui porte son
+       * lieu, c'est le lieu qui porte ses contenus. Tout est aplati — un trou
+       * ne sait suivre qu'un chemin pointé, jamais tester si un objet existe.
+       */
+      lieuxCarte: this.mesLieux().map((l) => {
+        const siens = evenements.filter((e) => e.lieu === l.nom);
+        const direct = directs.find((d) => d.lieu === l.nom);
+        return {
+          ...l,
+          enDirect: Boolean(direct),
+          titreDirect: direct ? direct.titre : '',
+          audienceDirect: direct ? direct.audience : '',
+          aUnProchain: siens.length > 0,
+          sansRien: siens.length === 0 && !direct,
+          prochainTitre: siens.length > 0 ? siens[0].titre : '',
+          prochainQuand: siens.length > 0 ? siens[0].jourNom + ' ' + siens[0].jour + ' ' + siens[0].mois + ', ' + siens[0].heure : '',
+          prochainBadge: siens.length > 0 ? siens[0].badge : '',
+          prochainBadgeClasse: siens.length > 0 ? siens[0].badgeClasse : '',
+          autres: siens.length > 1 ? pluriel(siens.length - 1, 'autre rendez-vous', 'autres rendez-vous') : '',
+          aDAutres: siens.length > 1,
+        };
+      }),
+      decks: this.mesDecks(),
+    };
+  }
+}
+</script>
+</body>
+</html>

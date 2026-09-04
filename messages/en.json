@@ -59,7 +59,97 @@
   },
   "Home": {
     "title": "Event calendar",
-    "createEvent": "Create an Event"
+    "createEvent": "Create an Event",
+    "salutation": "Hello, {nom}",
+    "autourDeMoi": "Near me",
+    "resume": {
+      "evenements": "{count, plural, one {# event this week} other {# events this week}}",
+      "directs": "{count, plural, one {# live now} other {# lives now}}",
+      "rien": "Nothing on your plate this week."
+    },
+    "jeux": {
+      "legende": "Filter by game",
+      "tous": "All games",
+      "tousLesMiens": "All my games"
+    },
+    "proposition": {
+      "titre": "Find where to play near you.",
+      "sous": "Tournaments, game nights and shops in your area, gathered in one place — along with news for your games, matches streamed live, and the lists the community publishes.",
+      "agenda": "Browse the calendar",
+      "creer": "Create an account"
+    },
+    "position": {
+      "autourDe": "Around <nom>{lieu}</nom> · {rayon} km",
+      "autourDeMoi": "Near me · {rayon} km",
+      "changer": "Change",
+      "definir": "See what is happening near you"
+    },
+    "directs": {
+      "enCours": "Live",
+      "titreSuivis": "{count, plural, one {# live stream in your venues} other {# live streams in your venues}}",
+      "titreProches": "{count, plural, one {# live stream near you} other {# live streams near you}}",
+      "tous": "All live streams",
+      "spectateurs": "{count, plural, one {# viewer} other {# viewers}}"
+    },
+    "agenda": {
+      "titreConnecte": "What's coming up",
+      "titreVisiteur": "This week",
+      "titreAutourDe": "This week around {lieu}",
+      "tout": "Full calendar",
+      "vide": "Nothing planned this week.",
+      "videSurCeJeu": "Nothing planned this week for this game.",
+      "statut": {
+        "organisateur": "Organiser",
+        "inscrit": "Registered",
+        "complet": "Sold out",
+        "places": "{count, plural, one {# seat left} other {# seats left}}",
+        "ouvert": "Registrations open"
+      }
+    },
+    "fil": {
+      "titre": "The feed",
+      "tout": "All",
+      "vide": "Nothing to read here yet.",
+      "types": {
+        "actu": "News",
+        "video": "Video",
+        "deck": "Deck"
+      }
+    },
+    "lieux": {
+      "titreSuivis": "My places",
+      "titreProches": "Places around you",
+      "decouvrir": "Discover",
+      "voirTout": "See all",
+      "ouvertJusqua": "Open until {heure}",
+      "ferme": "Currently closed",
+      "horairesInconnus": "Opening hours unknown",
+      "distance": "{km} km away"
+    },
+    "decks": {
+      "titreMiens": "My decks",
+      "titreVedette": "Featured decks",
+      "nouveau": "New",
+      "explorer": "Explore",
+      "modifie": "edited {quand}",
+      "brouillon": "Draft"
+    },
+    "sondage": {
+      "aRepondre": "Needs your answer",
+      "repondre": "{count, plural, =0 {Give my availability} one {Give my availability — # reply} other {Give my availability — # replies}}"
+    },
+    "inscription": {
+      "titre": "Create your account",
+      "gratuit": "Free, and nothing to install.",
+      "creer": "Create an account",
+      "deja": "Already registered? <lien>Sign in</lien>",
+      "arguments": {
+        "lieux": "Follow your shops and get their schedule",
+        "tournois": "Register for tournaments in one click",
+        "decks": "Build your decks and check their legality",
+        "directs": "Get notified when a stream starts"
+      }
+    }
   },
   "LocaleSwitcher": {
     "label": "Language",

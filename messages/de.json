@@ -67,7 +67,97 @@
   },
   "Home": {
     "title": "Eventkalender",
-    "createEvent": "Event erstellen"
+    "createEvent": "Event erstellen",
+    "salutation": "Hallo, {nom}",
+    "autourDeMoi": "In meiner Nähe",
+    "resume": {
+      "evenements": "{count, plural, one {# Event diese Woche} other {# Events diese Woche}}",
+      "directs": "{count, plural, one {# Livestream läuft} other {# Livestreams laufen}}",
+      "rien": "Diese Woche steht nichts für dich an."
+    },
+    "jeux": {
+      "legende": "Nach Spiel filtern",
+      "tous": "Alle Spiele",
+      "tousLesMiens": "Alle meine Spiele"
+    },
+    "proposition": {
+      "titre": "Finde heraus, wo du in deiner Nähe spielen kannst.",
+      "sous": "Turniere, Spieleabende und Läden aus deiner Region an einem Ort — dazu Neuigkeiten zu deinen Spielen, live übertragene Partien und die Listen, die die Community veröffentlicht.",
+      "agenda": "Kalender durchstöbern",
+      "creer": "Konto erstellen"
+    },
+    "position": {
+      "autourDe": "Rund um <nom>{lieu}</nom> · {rayon} km",
+      "autourDeMoi": "In meiner Nähe · {rayon} km",
+      "changer": "Ändern",
+      "definir": "Sieh, was in deiner Nähe los ist"
+    },
+    "directs": {
+      "enCours": "Live",
+      "titreSuivis": "{count, plural, one {# Livestream in deinen Orten} other {# Livestreams in deinen Orten}}",
+      "titreProches": "{count, plural, one {# Livestream in deiner Nähe} other {# Livestreams in deiner Nähe}}",
+      "tous": "Alle Livestreams",
+      "spectateurs": "{count, plural, one {# Zuschauer} other {# Zuschauer}}"
+    },
+    "agenda": {
+      "titreConnecte": "Was ansteht",
+      "titreVisiteur": "Diese Woche",
+      "titreAutourDe": "Diese Woche rund um {lieu}",
+      "tout": "Ganzer Kalender",
+      "vide": "Diese Woche ist nichts geplant.",
+      "videSurCeJeu": "Für dieses Spiel ist diese Woche nichts geplant.",
+      "statut": {
+        "organisateur": "Organisator",
+        "inscrit": "Angemeldet",
+        "complet": "Ausgebucht",
+        "places": "{count, plural, one {noch # Platz} other {noch # Plätze}}",
+        "ouvert": "Anmeldung offen"
+      }
+    },
+    "fil": {
+      "titre": "Der Feed",
+      "tout": "Alles",
+      "vide": "Hier gibt es noch nichts zu lesen.",
+      "types": {
+        "actu": "News",
+        "video": "Video",
+        "deck": "Deck"
+      }
+    },
+    "lieux": {
+      "titreSuivis": "Meine Orte",
+      "titreProches": "Orte in deiner Nähe",
+      "decouvrir": "Entdecken",
+      "voirTout": "Alle ansehen",
+      "ouvertJusqua": "Geöffnet bis {heure}",
+      "ferme": "Derzeit geschlossen",
+      "horairesInconnus": "Öffnungszeiten unbekannt",
+      "distance": "{km} km entfernt"
+    },
+    "decks": {
+      "titreMiens": "Meine Decks",
+      "titreVedette": "Empfohlene Decks",
+      "nouveau": "Neu",
+      "explorer": "Erkunden",
+      "modifie": "bearbeitet {quand}",
+      "brouillon": "Entwurf"
+    },
+    "sondage": {
+      "aRepondre": "Antwort offen",
+      "repondre": "{count, plural, =0 {Verfügbarkeit angeben} one {Verfügbarkeit angeben — # Antwort} other {Verfügbarkeit angeben — # Antworten}}"
+    },
+    "inscription": {
+      "titre": "Erstelle dein Konto",
+      "gratuit": "Kostenlos, ohne Installation.",
+      "creer": "Konto erstellen",
+      "deja": "Schon registriert? <lien>Anmelden</lien>",
+      "arguments": {
+        "lieux": "Folge deinen Läden und erhalte ihr Programm",
+        "tournois": "Melde dich mit einem Klick für Turniere an",
+        "decks": "Baue deine Decks und prüfe ihre Legalität",
+        "directs": "Werde benachrichtigt, wenn ein Stream startet"
+      }
+    }
   },
   "EventsCalendar": {
     "title": "Eventkalender",
