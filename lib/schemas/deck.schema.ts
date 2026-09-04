@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { isDeckCoverImageUrl } from "@/lib/decks/cover";
 import { DECK_ZONE_KEYS } from "@/lib/decks/zones";
 
 export const deckVisibilitySchema = z.enum(["private", "unlisted", "public"]);
@@ -47,6 +48,23 @@ export const deckSchema = z.object({
   notes: z.string().max(4000, "Les notes sont trop longues").optional(),
   format: z.string().max(80, "Le nom du format est trop long").optional(),
   legendCardId: z.string().max(200).optional(),
+  /**
+   * La couverture, telle que l'auteur la choisit.
+   *
+   * Les deux champs acceptent la chaîne vide, qui est le geste « retirer » :
+   * un `undefined` ne dit rien dans un `PATCH` partiel, où l'absence signifie
+   * précisément « ne touche pas à ça ».
+   */
+  coverCardId: z.string().max(200).optional().or(z.literal("")),
+  coverImageUrl: z
+    .string()
+    .max(2000, "L'adresse de l'image est trop longue")
+    // L'adresse ne se saisit pas : elle sort de `POST /decks/{deckId}/cover`.
+    // La refuser ailleurs évite qu'un deck public fasse charger à chacun de
+    // ses lecteurs une image servie par un tiers.
+    .refine(isDeckCoverImageUrl, "L'image doit avoir été téléversée sur Joutes")
+    .optional()
+    .or(z.literal("")),
   visibility: deckVisibilitySchema.default("private"),
 });
 

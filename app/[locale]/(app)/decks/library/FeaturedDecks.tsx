@@ -1,7 +1,8 @@
 import { DateTime } from "luxon";
 
 import { Link } from "@/i18n/navigation.ts";
-import { DeckCardThumb } from "@/components/decks/DeckCardThumb.tsx";
+import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
+import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import type { DeckCardInfo } from "@/lib/decks/contents.ts";
 import type { Deck } from "@/lib/types/Deck.ts";
 
@@ -16,7 +17,10 @@ export function FeaturedDecks({
   legendCards,
 }: {
   decks: Deck[];
-  /** Illustration de la légende de chaque deck, par identifiant de carte. */
+  /**
+   * Illustrations des cartes qui servent de couverture, par identifiant. Les
+   * decks dont l'auteur a déposé une image n'en ont pas besoin.
+   */
   legendCards: Map<string, DeckCardInfo>;
 }) {
   if (decks.length === 0) {
@@ -32,7 +36,7 @@ export function FeaturedDecks({
 
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {decks.map((deck) => {
-          const legend = deck.legendCardId ? legendCards.get(deck.legendCardId) : undefined;
+          const cover = resolveDeckCover(deck, legendCards);
           const updatedAt = DateTime.fromJSDate(new Date(deck.updatedAt)).setLocale("fr");
 
           return (
@@ -41,21 +45,10 @@ export function FeaturedDecks({
                 href={`/decks/${deck.id}`}
                 className="flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md"
               >
-                <span className="block aspect-[16/7] overflow-hidden bg-muted">
-                  {legend?.image ? (
-                    // Le bandeau reprend l'illustration de la légende, cadrée
-                    // en bannière : c'est le visuel que les joueurs associent
-                    // déjà au deck.
-                    <img
-                      src={legend.image}
-                      alt=""
-                      loading="lazy"
-                      className="size-full object-cover object-top"
-                    />
-                  ) : (
-                    <DeckCardThumb name={deck.name} className="size-full rounded-none border-0" />
-                  )}
-                </span>
+                {/* Le bandeau est la couverture du deck : l'image que son
+                    auteur a choisie, ou à défaut la carte qui lui donne son
+                    identité. */}
+                <DeckCoverImage cover={cover} name={deck.name} className="aspect-[16/7] w-full" />
 
                 <span className="flex flex-1 flex-col gap-1 p-4">
                   <span className="text-[17px] font-semibold">{deck.name}</span>

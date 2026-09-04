@@ -67,3 +67,46 @@ test("deckUpdateSchema laisse passer une visibilité demandée", () => {
   assert.equal(parsed.success, true);
   assert.equal(parsed.success && parsed.data.visibility, "public");
 });
+
+/**
+ * La couverture d'un deck : une carte qu'on désigne, ou une image qu'on
+ * dépose. L'adresse de l'image ne se saisit pas — elle sort de
+ * `POST /decks/{deckId}/cover`, et le schéma le vérifie.
+ */
+
+test("deckUpdateSchema accepte une carte de couverture", () => {
+  const parsed = deckUpdateSchema.safeParse({ coverCardId: "OGN-103" });
+
+  assert.equal(parsed.success, true);
+  assert.equal(parsed.success && parsed.data.coverCardId, "OGN-103");
+});
+
+test("deckUpdateSchema accepte la chaîne vide, qui retire la couverture", () => {
+  // Un `undefined` ne dirait rien dans un corps partiel, où l'absence signifie
+  // « ne touche pas à ça » : le retrait a besoin d'une valeur.
+  for (const body of [{ coverCardId: "" }, { coverImageUrl: "" }]) {
+    assert.equal(deckUpdateSchema.safeParse(body).success, true, JSON.stringify(body));
+  }
+});
+
+test("deckUpdateSchema accepte une image déposée sur le stockage de l'application", () => {
+  const url = "https://uiez8a3cxaj4q4wl.public.blob.vercel-storage.com/decks/abc/cover-x1.png";
+  const parsed = deckUpdateSchema.safeParse({ coverImageUrl: url });
+
+  assert.equal(parsed.success, true);
+  assert.equal(parsed.success && parsed.data.coverImageUrl, url);
+});
+
+test("deckUpdateSchema refuse une couverture hébergée ailleurs", () => {
+  // Un deck public ferait sinon charger à chacun de ses lecteurs une image
+  // servie par un tiers, qui en verrait l'adresse IP.
+  for (const coverImageUrl of [
+    "https://exemple.test/cover.png",
+    "http://x.public.blob.vercel-storage.com/decks/abc/cover.png",
+    "javascript:alert(1)",
+    "/decks/abc/cover.png",
+  ]) {
+    const parsed = deckUpdateSchema.safeParse({ coverImageUrl });
+    assert.equal(parsed.success, false, `${coverImageUrl} devrait être refusé`);
+  }
+});

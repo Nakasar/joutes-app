@@ -12,7 +12,7 @@ formulaire. Une **librairie publique** expose les listes publiées.
 | `/decks` | Mes decks : onglets Tous / En cours / Publiés / Favoris, cartes denses avec badges de visibilité et de légalité |
 | `/decks/library` | Librairie publique : decks du moment, filtres (jeu, format, légende, domaines), tris, « Copier chez moi » |
 | `/decks/[deckId]` | Fiche du deck. Vue auteur (description, cartes, guide, confrontations, éditables sur place) ou vue visiteur (lecture seule, courbe, légalité, copie) |
-| `/decks/[deckId]/edit` | Éditeur : catalogue à gauche, zones au centre, six panneaux d'analyse à droite |
+| `/decks/[deckId]/edit` | Éditeur : catalogue à gauche, zones au centre, six panneaux d'analyse à droite, et le choix de la couverture |
 
 La fiche est la page d'atterrissage d'un deck, y compris pour son auteur :
 l'éditeur ne s'atteint que par le bouton **Construire**. Lire un deck et le
@@ -31,6 +31,9 @@ modifier sont deux gestes distincts.
 | `notes` | `string` | aide-mémoire privé, jamais servi à un visiteur |
 | `format` | `string` | format visé, tiré de `Game.formats` |
 | `legendCardId` / `legendName` | `string` | carte qui donne son identité au deck |
+| `coverCardId` | `string` | carte du deck choisie pour l'illustrer |
+| `coverImageUrl` | `string` | image de couverture déposée par l'auteur ; prime sur `coverCardId` |
+| `coverImage` | `string` | **dérivé** : l'adresse effectivement affichée, pour les listes |
 | `domains` | `string[]` | **dérivé** du contenu à chaque enregistrement, pour le filtre de la librairie |
 | `favoritesCount` | `number` | dénormalisé, pour trier sans lire tout le tableau `favoritedBy` |
 | `views` | `number` | consultations par un autre que l'auteur |
@@ -71,6 +74,55 @@ Le **coût** d'une carte est lu par `lib/decks/card-info.ts`, qui essaie
 `cost`, `energy`, `mana`, `manaValue`, `manaCost` dans cet ordre. Un jeu dont le
 catalogue ne porte aucun de ces attributs n'a simplement pas de courbe.
 
+## Couverture (`lib/decks/cover.ts`)
+
+Un deck s'illustre. Le bouton **Couverture** de l'éditeur ouvre les deux
+moyens de le faire, parce qu'ils répondent à la même question : désigner **une
+carte du deck**, ou **déposer une image**.
+
+`resolveDeckCover()` tranche entre les deux, dans cet ordre — l'image déposée,
+la carte désignée, puis la légende. L'image l'emporte : c'est le geste le plus
+explicite. La légende n'est qu'un repli, et c'est ce qui donne une couverture à
+tous les decks d'avant cette fonctionnalité sans rien leur écrire.
+
+Le catalogue de cartes est un **argument facultatif** de la résolution. Une
+fiche de deck l'a déjà sous la main et rend donc l'illustration à jour ; une
+liste ne l'a pas et lit `coverImage`, écrit à l'enregistrement. Sans cette
+valeur dénormalisée, l'accueil et la librairie feraient une requête de
+catalogue par vignette.
+
+`coverImage` se recalcule quand l'auteur touche à la couverture **et** quand le
+contenu change sous elle : une carte retirée du deck cesse de l'illustrer, et la
+légende de repli vient justement d'être recalculée. La vérification
+d'appartenance ne s'applique qu'aux enregistrements de contenu — un
+enregistrement de la seule couverture accepte la carte telle que l'éditeur l'a
+proposée, y compris celle que l'enregistrement suivant seul écrira.
+
+### Dépôt
+
+`POST /decks/{deckId}/cover` — `multipart/form-data`, champ `file`, 5 Mo,
+JPG/PNG/WebP/GIF. Le droit se vérifie sur **la propriété du deck**, là où
+`/api/upload` n'ouvre qu'aux administrateurs ; la clé est préfixée par
+l'identifiant du deck et porte un suffixe aléatoire, comme les images d'un
+groupe de jeu.
+
+La route ne fait que déposer : c'est un `PATCH` du deck qui inscrit l'adresse.
+Fermer le dialogue sans appliquer laisse donc le deck sur sa couverture
+précédente.
+
+`coverImageUrl` n'accepte en écriture **que** le stockage de l'application
+(`isDeckCoverImageUrl`). Une adresse quelconque ferait charger au navigateur de
+chaque lecteur d'un deck public une image servie par un tiers, qui en verrait
+l'adresse IP — et `next.config.ts` ne déclare de toute façon que cet hôte.
+
+### Où elle s'affiche
+
+Un seul composant, `DeckCoverImage`, sert partout : bandeau des deux fiches,
+carte de la librairie, carte de « Mes decks », decks du moment, tuile de
+l'accueil, decks d'un profil. Le cadrage suit la provenance — une illustration
+de carte porte son sujet en haut, une image déposée a été choisie pour son
+centre.
+
 ## Listes texte (`lib/decks/text.ts`)
 
 `parseDeckText` lit une liste collée (« Légende : » puis « 2 Nom de carte »),
@@ -87,9 +139,10 @@ C'est le même format que le vérificateur de deck de Riftbound
 | Route | Nouveautés |
 | --- | --- |
 | `GET /api/decks` | `scope=public` (librairie, jamais de deck non répertorié), `format`, `legendCardId`, `domain` (répétable), `sortBy=favoritesCount\|views`, `visibility` répétable |
-| `PATCH /api/decks/[deckId]` | accepte `cards`, `guide`, `matchups`, `notes`, `format`, `legendCardId`, `visibility=unlisted` |
+| `PATCH /api/decks/[deckId]` | accepte `cards`, `guide`, `matchups`, `notes`, `format`, `legendCardId`, `coverCardId`, `coverImageUrl`, `visibility=unlisted` |
 | `GET /api/decks/[deckId]` | les `notes` sont retirées pour qui n'est pas l'auteur |
-| `POST /api/decks/[deckId]/copy` | « Copier chez moi » — la copie arrive **privée**, nom suffixé si besoin |
+| `POST /api/decks/[deckId]/copy` | « Copier chez moi » — la copie arrive **privée**, nom suffixé si besoin, couverture comprise |
+| `POST /api/decks/[deckId]/cover` | Dépôt de l'image de couverture, réservé à l'auteur du deck |
 | `GET /api/decks/legends` | légendes jouées par les decks publiés, avec leur nombre de decks (combobox de la librairie) |
 | `GET/POST /api/games/[gameId]/deck-cards` | cartes d'un deck par identifiant, ou appariement par nom (onglet « Texte ») |
 
@@ -142,6 +195,10 @@ repli.
   de le recoller dans l'onglet « Texte » pour le structurer.
 - `favoritesCount` retombe sur la longueur de `favoritedBy` tant qu'il n'a pas
   été écrit ; il se corrige de lui-même au premier passage sur l'étoile.
+- `coverImage` n'existe pas non plus tant qu'aucun enregistrement ne l'a écrit.
+  Les listes retombent alors sur la légende quand elles la connaissent (la
+  rangée « Decks du moment » résout ces cartes), et sur un aplat sinon. Le deck
+  se rattrape au premier enregistrement.
 - `domains` et `legendName` s'écrivent au premier enregistrement du contenu
   depuis l'éditeur. Tant qu'ils sont absents, le deck ne remonte pas dans les
   filtres par domaine ou par légende de la librairie.

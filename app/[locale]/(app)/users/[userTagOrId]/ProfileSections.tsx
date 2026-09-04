@@ -10,6 +10,7 @@ import GameMarkdown from "@/components/GameMarkdown.tsx";
 import { AchievementIcon } from "@/components/AchievementIcon.tsx";
 import { LiveBadge } from "@/components/users/LiveBadge.tsx";
 import { getDeckCardPreviews } from "@/lib/db/decks.ts";
+import { deckCoverImage } from "@/lib/decks/cover.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { readLiveEmbed } from "@/lib/media/live-embed.ts";
 import { userProfilePath } from "@/lib/users/handle.ts";
@@ -171,7 +172,9 @@ export async function DecksSection({ userTagOrId }: { userTagOrId: string }) {
         id: deck.id,
         name: deck.name,
         gameName: game?.name,
-        image: previews[0]?.image,
+        // La couverture choisie par l'auteur d'abord : l'appariement de la
+        // liste texte n'est qu'un repli pour les decks qui n'en ont pas.
+        image: deckCoverImage(deck) ?? previews[0]?.image,
         updatedAt: deck.updatedAt.toISOString(),
       };
     }),

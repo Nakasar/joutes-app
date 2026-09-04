@@ -4,7 +4,7 @@ import { ObjectId, WithId, Document } from "mongodb";
 import { getUsersByIds } from "@/lib/db/users";
 import { deriveDeckDomains, getDeckCardInfos } from "@/lib/db/deck-cards";
 import { deckVersionWrite } from "@/lib/db/deck-version";
-import type { DeckCards } from "@/lib/decks/contents";
+import { deckCardIds, type DeckCards } from "@/lib/decks/contents";
 
 const COLLECTION_NAME = "decks";
 
@@ -78,6 +78,9 @@ function toDeck(doc: WithId<Document>, creatorName?: string): Deck {
     format: doc.format,
     legendCardId: doc.legendCardId,
     legendName: doc.legendName,
+    coverCardId: doc.coverCardId,
+    coverImageUrl: doc.coverImageUrl,
+    coverImage: doc.coverImage,
     domains: doc.domains,
     visibility: doc.visibility || "private",
     creatorName,
@@ -108,6 +111,9 @@ function toDocument(deck: Omit<Deck, "id" | "createdAt" | "updatedAt">): Omit<De
     format: deck.format,
     legendCardId: deck.legendCardId,
     legendName: deck.legendName,
+    coverCardId: deck.coverCardId,
+    coverImageUrl: deck.coverImageUrl,
+    coverImage: deck.coverImage,
     domains: deck.domains,
     visibility: deck.visibility || "private",
     favoritedBy: deck.favoritedBy || [],
@@ -333,6 +339,7 @@ export async function updateDeck(
   }
 
   const set: Record<string, unknown> = { ...updates, updatedAt: new Date() };
+  const unset: Record<string, ""> = {};
 
   /*
    * Tout enregistrement compte pour un. Le bump était réservé au contenu, si
@@ -369,13 +376,46 @@ export async function updateDeck(
     }
   }
 
+  // La couverture se réécrit quand l'auteur y touche — et quand le contenu
+  // change sous elle : une carte retirée du deck ne peut plus l'illustrer, et
+  // la légende de repli vient justement d'être recalculée.
+  if (updates.coverCardId !== undefined || updates.coverImageUrl !== undefined || updates.cards) {
+    const cover = await deriveDeckCover(existing.gameId, {
+      coverCardId: readCoverChoice(updates.coverCardId, existing.coverCardId),
+      coverImageUrl: readCoverChoice(updates.coverImageUrl, existing.coverImageUrl),
+      // `set.legendCardId` n'est écrit que par le bloc au-dessus : sans lui, la
+      // légende est celle déjà en base.
+      legendCardId: ("legendCardId" in set ? set.legendCardId : existing.legendCardId) as
+        | string
+        | undefined,
+      cards: updates.cards,
+    });
+
+    for (const key of ["coverCardId", "coverImageUrl", "coverImage"] as const) {
+      if (cover[key] === undefined) {
+        // `$set: { x: undefined }` écrit un `null` — le pilote ne l'ignore pas.
+        // Retirer le champ dit la même chose sans laisser de valeur à lire.
+        delete set[key];
+        unset[key] = "";
+      } else {
+        set[key] = cover[key];
+      }
+    }
+  }
+
+  const update: Record<string, unknown> = { $set: set };
+  if (Object.keys(inc).length > 0) {
+    update.$inc = inc;
+  }
+  if (Object.keys(unset).length > 0) {
+    update.$unset = unset;
+  }
+
   const result = await db
     .collection(COLLECTION_NAME)
-    .findOneAndUpdate(
-      { _id: new ObjectId(deckId), playerId, ...version.guard },
-      Object.keys(inc).length > 0 ? { $set: set, $inc: inc } : { $set: set },
-      { returnDocument: "after" }
-    );
+    .findOneAndUpdate({ _id: new ObjectId(deckId), playerId, ...version.guard }, update, {
+      returnDocument: "after",
+    });
 
   if (result) {
     return { ok: true, deck: toDeck(result) };
@@ -390,6 +430,66 @@ export async function updateDeck(
   }
 
   return { ok: false, error: "conflict", deck: toDeck(fresh) };
+}
+
+/**
+ * Ce qu'un `PATCH` dit d'un champ de couverture.
+ *
+ * Trois cas, et non deux : le champ absent laisse la valeur en base — un
+ * enregistrement de contenu ne doit pas effacer une couverture qu'il ne
+ * mentionne pas —, la chaîne vide est le geste « retirer », et une valeur la
+ * remplace.
+ */
+function readCoverChoice(update: string | undefined, current: unknown): string | undefined {
+  if (update === undefined) {
+    return typeof current === "string" && current ? current : undefined;
+  }
+
+  return update || undefined;
+}
+
+/**
+ * La couverture telle qu'elle s'écrit en base.
+ *
+ * `coverImage` est **dérivée** : c'est l'adresse que les listes affichent sans
+ * résoudre le catalogue de cartes du jeu. La calculer ici, une fois par
+ * enregistrement, évite autant de requêtes que de vignettes sur l'accueil ou
+ * dans la librairie.
+ *
+ * `cards` n'est fourni que par un enregistrement **du contenu**, et la carte
+ * désignée est alors vérifiée contre lui : une carte retirée du deck cesse de
+ * l'illustrer, plutôt que de laisser les listes montrer une carte qu'on n'y
+ * trouve plus. Un enregistrement de la seule couverture, lui, ne vérifie rien —
+ * l'éditeur propose les cartes qu'il a à l'écran, dont celles que
+ * l'enregistrement suivant seul écrira.
+ */
+async function deriveDeckCover(
+  gameId: string,
+  choice: {
+    coverCardId?: string;
+    coverImageUrl?: string;
+    legendCardId?: string;
+    /** Le contenu en cours d'écriture, quand il y en a un. */
+    cards?: DeckCards;
+  }
+): Promise<{ coverCardId?: string; coverImageUrl?: string; coverImage?: string }> {
+  const played = choice.cards ? new Set(deckCardIds(choice.cards)) : undefined;
+  const coverCardId =
+    choice.coverCardId && (!played || played.has(choice.coverCardId))
+      ? choice.coverCardId
+      : undefined;
+
+  if (choice.coverImageUrl) {
+    return { coverCardId, coverImageUrl: choice.coverImageUrl, coverImage: choice.coverImageUrl };
+  }
+
+  const illustrating = coverCardId ?? choice.legendCardId;
+  if (!illustrating) {
+    return { coverCardId };
+  }
+
+  const [card] = await getDeckCardInfos(gameId, [illustrating]);
+  return { coverCardId, coverImage: card?.image };
 }
 
 /**
@@ -439,6 +539,11 @@ export async function copyDeckForPlayer(source: Deck, playerId: string): Promise
     format: source.format,
     legendCardId: source.legendCardId,
     legendName: source.legendName,
+    // La couverture suit la liste : une copie qui perdrait son illustration
+    // n'aurait plus rien de ce qui a donné envie de la reprendre.
+    coverCardId: source.coverCardId,
+    coverImageUrl: source.coverImageUrl,
+    coverImage: source.coverImage,
     domains: source.domains,
     visibility: "private",
   });

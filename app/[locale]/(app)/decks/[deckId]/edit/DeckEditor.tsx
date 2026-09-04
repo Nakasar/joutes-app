@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input.tsx";
 import { Link, useRouter } from "@/i18n/navigation.ts";
 import { SegmentedControl } from "@/components/decks/SegmentedControl.tsx";
 import { ShareDeckDialog } from "@/components/decks/ShareDeckDialog.tsx";
+import { DeckCoverButton, DeckCoverDialog } from "@/components/decks/DeckCoverDialog.tsx";
 import { DeckVisibilityBadge } from "@/components/decks/DeckBadges.tsx";
 import { cn } from "@/lib/utils.ts";
 import {
@@ -18,6 +19,7 @@ import {
   type DeckCardInfo,
   type DeckCards,
 } from "@/lib/decks/contents.ts";
+import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import { stringifyDeckText } from "@/lib/decks/text.ts";
 import { defaultDeckZone, type DeckZone, type DeckZoneKey } from "@/lib/decks/zones.ts";
 import { DECK_VISIBILITIES, DECK_VISIBILITY_LABELS, type Deck, type DeckVisibility } from "@/lib/types/Deck.ts";
@@ -71,6 +73,11 @@ export function DeckEditor({
   const [view, setView] = useState<"grid" | "list">("grid");
   const [preview, setPreview] = useState<DeckCardInfo | undefined>();
   const [shareOpen, setShareOpen] = useState(false);
+  const [coverOpen, setCoverOpen] = useState(false);
+  const [cover, setCover] = useState({
+    coverCardId: deck.coverCardId,
+    coverImageUrl: deck.coverImageUrl,
+  });
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<DateTime>(DateTime.fromJSDate(new Date(deck.updatedAt)));
@@ -206,6 +213,9 @@ export function DeckEditor({
 
   const total = deckSize(cards, zones);
   const activeZone = zones.find((entry) => entry.key === zone);
+  // La couverture suit ce qui est à l'écran : la carte que l'on vient de
+  // désigner s'affiche sans attendre le rechargement de la page.
+  const currentCover = resolveDeckCover({ ...cover, legendCardId: deck.legendCardId }, catalog);
 
   const visibilityControl = (
     <SegmentedControl
@@ -294,6 +304,7 @@ export function DeckEditor({
             <span className="lg:hidden">
               <DeckVisibilityBadge visibility={visibility} />
             </span>
+            <DeckCoverButton onClick={() => setCoverOpen(true)} cover={currentCover} />
             <Button type="button" variant="outline" onClick={() => setShareOpen(true)}>
               <Share2 />
               Partager
@@ -408,6 +419,44 @@ export function DeckEditor({
           Enregistrer
         </Button>
       </div>
+
+      <DeckCoverDialog
+        open={coverOpen}
+        onOpenChange={setCoverOpen}
+        deckId={deck.id}
+        deckName={name}
+        cards={cards}
+        zones={zones}
+        cardsById={catalog}
+        coverCardId={cover.coverCardId}
+        coverImageUrl={cover.coverImageUrl}
+        legendCardId={deck.legendCardId}
+        onApplyAction={async (choice) => {
+          // Sans `expectedVersion` : choisir une couverture n'entre pas en
+          // concurrence avec la construction du deck, et refuser ce choix
+          // parce qu'un autre onglet a enregistré une carte n'aiderait
+          // personne.
+          const response = await fetch(`/api/decks/${deck.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(choice),
+          }).catch(() => null);
+
+          if (!response?.ok) {
+            const data = await response?.json().catch(() => null);
+            toast.error("Couverture non enregistrée", { description: data?.error });
+            return false;
+          }
+
+          setCover({
+            coverCardId: choice.coverCardId || undefined,
+            coverImageUrl: choice.coverImageUrl || undefined,
+          });
+          toast.success("Couverture mise à jour");
+          router.refresh();
+          return true;
+        }}
+      />
 
       <ShareDeckDialog
         open={shareOpen}

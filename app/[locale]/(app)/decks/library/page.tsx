@@ -62,13 +62,16 @@ async function DeckLibraryContent({ searchParams }: { searchParams: SearchParams
     ...new Set([...initialData.decks, ...featured].flatMap((deck) => deck.domains ?? [])),
   ].sort((a, b) => a.localeCompare(b, "fr"));
 
-  // Les bandeaux de la rangée mise en avant : une requête pour les trois
-  // légendes, pas une par carte.
+  // Les bandeaux de la rangée mise en avant : une requête par jeu pour les
+  // cartes de couverture, pas une par carte. La carte désignée comme
+  // couverture et la légende de repli, les decks d'avant la couverture
+  // n'ayant que la seconde.
   const legendCardsByGame = await Promise.all(
     [...new Set(featured.map((deck) => deck.gameId))].map(async (gameId) => {
       const ids = featured
-        .filter((deck) => deck.gameId === gameId && deck.legendCardId)
-        .map((deck) => deck.legendCardId as string);
+        .filter((deck) => deck.gameId === gameId)
+        .flatMap((deck) => [deck.coverCardId, deck.legendCardId])
+        .filter((id): id is string => Boolean(id));
       return getDeckCardInfos(gameId, ids);
     })
   );

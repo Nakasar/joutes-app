@@ -5,6 +5,8 @@ import { DateTime } from "luxon";
 import { Link } from "@/i18n/navigation.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
+import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import { cn } from "@/lib/utils.ts";
 import { readOpeningState } from "@/lib/lairs/opening-hours.ts";
 import { distanceKm } from "@/lib/lairs/creation.ts";
@@ -173,6 +175,15 @@ export async function TuileDecks({ jeuChoisi, rang }: { jeuChoisi: string | null
         {decks.map((deck) => (
           <li key={deck.id}>
             <Link href={`/decks/${deck.id}`} className="flex flex-wrap items-center gap-2">
+              {/* Une vignette et non un bandeau : la tuile aligne quelques
+                  decks en colonne étroite, et c'est la ligne de texte qui doit
+                  rester lisible. */}
+              <DeckCoverImage
+                cover={resolveDeckCover(deck)}
+                name={deck.name}
+                rounded="rounded-md"
+                className="size-9 shrink-0 border"
+              />
               <span className="flex min-w-0 flex-grow flex-col gap-0.5">
                 <span className="truncate text-sm leading-5 font-semibold tracking-tight">
                   {deck.name}

@@ -7,9 +7,11 @@ import FavoriteDeckButton from "../FavoriteDeckButton.tsx";
 import { CopyDeckButton } from "@/components/decks/CopyDeckButton.tsx";
 import { CostCurve, LegalityList } from "@/components/decks/DeckAnalysis.tsx";
 import { DeckVisibilityBadge, DeckSizeLabel } from "@/components/decks/DeckBadges.tsx";
+import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
 import { DeckZoneCards } from "@/components/decks/DeckZoneCards.tsx";
 import { SheetCard } from "./DeckSheetSections.tsx";
 import type { DeckCardInfo } from "@/lib/decks/contents.ts";
+import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import type { DeckZone } from "@/lib/decks/zones.ts";
 import type { Deck } from "@/lib/types/Deck.ts";
 
@@ -38,6 +40,7 @@ export function PublicDeckSheet({
   ownedByCardId?: Record<string, number>;
 }) {
   const cardsById = new Map(catalog.map((card) => [card.id, card]));
+  const cover = resolveDeckCover(deck, cardsById);
   const owned = ownedByCardId ? new Map(Object.entries(ownedByCardId)) : undefined;
   const updatedAt = DateTime.fromJSDate(new Date(deck.updatedAt)).setLocale("fr");
 
@@ -61,6 +64,15 @@ export function PublicDeckSheet({
             {gameName && <> / {gameName}</>}
           </nav>
 
+          {cover.image && (
+            <DeckCoverImage
+              cover={cover}
+              name={deck.name}
+              rounded="rounded-xl"
+              className="h-32 w-full border sm:h-44"
+            />
+          )}
+
           <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">{deck.name}</h1>
           <p className="text-sm text-muted-foreground">{meta}</p>
 
@@ -83,7 +95,10 @@ export function PublicDeckSheet({
               />
             )}
             {isAuthenticated && <CopyDeckButton deckId={deck.id} />}
-            <ReportButton contentType="deck" contentId={deck.id} />
+            {/* Un drapeau seul se prend pour un signet : le libellé dit ce que
+                le geste fait, et c'est ce qu'on veut d'une action de
+                modération. */}
+            <ReportButton contentType="deck" contentId={deck.id} variant="outline" withLabel />
           </div>
         </header>
 
