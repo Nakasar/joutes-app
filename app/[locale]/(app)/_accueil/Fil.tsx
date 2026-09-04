@@ -133,6 +133,7 @@ function Coupure({
         <Tirage
           src={entree.vignette}
           type={entree.type}
+          cadrage={entree.cadrage}
           duree={entree.duree}
           className="h-[100px] w-[148px]"
         />
