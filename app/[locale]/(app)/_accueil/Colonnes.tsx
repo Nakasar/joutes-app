@@ -10,6 +10,7 @@ import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import { cn } from "@/lib/utils.ts";
 import { readOpeningState } from "@/lib/lairs/opening-hours.ts";
 import { distanceKm } from "@/lib/lairs/creation.ts";
+import { externalUrl } from "@/lib/lairs/urls.ts";
 import type { Deck } from "@/lib/types/Deck";
 
 import { Fiche } from "./pieces.tsx";
@@ -96,9 +97,7 @@ export async function TuileLieux({ position, rang }: { position: Position | null
           return (
             <li key={lieu.id}>
               <Link href={`/lairs/${lieu.id}`} className="flex items-start gap-3">
-                <span className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-lg border text-xs font-semibold">
-                  {initiales(lieu.name)}
-                </span>
+                <EcussonLieu logo={lieu.options?.theme?.logo} nom={lieu.name} />
                 <span className="flex min-w-0 flex-grow flex-col gap-0.5">
                   <span className="truncate text-sm leading-5 font-semibold tracking-tight">
                     {lieu.name}
@@ -302,6 +301,47 @@ export async function CarteInscription({ rang }: { rang: number }) {
         })}
       </p>
     </Fiche>
+  );
+}
+
+/**
+ * L'écusson d'un lieu : son logo, ou ses initiales.
+ *
+ * Le logo est celui de la marque blanche (`options.theme.logo`), le même que
+ * porte la bannière de la page du lieu — un lieu qui s'est donné une identité
+ * doit se reconnaître partout, y compris dans une liste de quarante pixels.
+ *
+ * Une balise `img` ordinaire : `lairThemeSchema` n'impose au logo qu'une URL
+ * http(s), pas l'hôte du stockage de l'application, et l'optimiseur de Next
+ * refuserait à l'exécution tout hôte absent de `next.config.ts`. Le filtre
+ * `externalUrl` reste posé au rendu, comme sur les vignettes du fil.
+ */
+function EcussonLieu({ logo, nom }: { logo?: string; nom: string }) {
+  const source = externalUrl(logo);
+
+  return (
+    /*
+     * Décoratif : le nom du lieu suit immédiatement, et l'écusson tient dans
+     * un lien — sans cela, ses initiales entreraient dans le nom accessible du
+     * lien, qui s'annoncerait « CG Caverne du Gobelin ». Même parti que
+     * `play-groups/explore/Escu.tsx`.
+     */
+    <span
+      aria-hidden
+      className="bg-muted text-muted-foreground relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border text-xs font-semibold"
+    >
+      {source ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={source}
+          alt=""
+          loading="lazy"
+          className="absolute inset-0 size-full object-cover"
+        />
+      ) : (
+        initiales(nom)
+      )}
+    </span>
   );
 }
 
