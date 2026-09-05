@@ -7,7 +7,8 @@ import { Tirage } from "./pieces.tsx";
 import { lireDirects, lireViewer, type Position } from "./accueil-data.ts";
 
 /**
- * Ce qui se passe à l'instant, dans les lieux que la page regarde.
+ * Ce qui se passe à l'instant : les directs des lieux que la page regarde, et
+ * ceux des éditeurs des jeux suivis.
  *
  * La section DISPARAÎT quand rien ne tourne — elle n'a pas d'état vide. C'est
  * déjà le choix de `LairLiveSection` sur la vitrine d'un lieu : le cas courant
@@ -29,19 +30,24 @@ export default async function BandeauDirects({ position }: { position: Position 
   }
 
   /*
+   * Le titre nomme la source, et ne peut donc le faire que si elle est unique.
    * « Dans vos lieux » ne se dit qu'à qui en suit : les mêmes directs, pour un
    * visiteur, viennent des lieux autour de lui et ne sont les siens en rien.
    * Même partage que `TuileLieux`, et pour la même raison — c'est la condition
-   * exacte sur laquelle `lireLieux` choisit sa source.
+   * exacte sur laquelle `lireLieux` choisit sa source. Dès qu'un direct
+   * d'éditeur s'y mêle, aucune des deux phrases n'est vraie : le titre devient
+   * neutre plutôt que faux.
    */
+  const jeux = directs.some((direct) => direct.jeu);
   const suivis = (viewer?.lairs ?? []).length > 0;
+  const titre = jeux ? "titreMixte" : suivis ? "titreSuivis" : "titreProches";
 
   return (
     <section className="border-destructive/45 bg-destructive/5 rounded-xl border p-5">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <LiveBadge label={t("enCours")} />
         <h2 className="text-base font-semibold tracking-tight">
-          {t(suivis ? "titreSuivis" : "titreProches", { count: directs.length })}
+          {t(titre, { count: directs.length })}
         </h2>
         <Link
           href="/lairs"
@@ -55,17 +61,17 @@ export default async function BandeauDirects({ position }: { position: Position 
       <div className="grid gap-4 md:grid-cols-2">
         {directs.map((direct) => (
           <Link
-            key={direct.lairId}
-            href={`/lairs/${direct.lairId}`}
+            key={direct.cle}
+            href={direct.href}
             className="bg-card hover:bg-accent flex gap-4 rounded-lg border p-3 transition-colors"
           >
-            <Tirage type="direct" className="h-[84px] w-[148px]" />
+            <Tirage type="direct" src={direct.vignette} className="h-[84px] w-[148px]" />
             <span className="flex min-w-0 flex-col gap-1 pt-0.5">
               <span className="text-sm leading-5 font-semibold tracking-tight">{direct.titre}</span>
-              <span className="text-muted-foreground text-xs">{direct.lieu}</span>
-              {direct.live.viewers != null && (
+              <span className="text-muted-foreground text-xs">{direct.source}</span>
+              {direct.viewers != null && (
                 <span className="text-muted-foreground text-xs">
-                  {t("spectateurs", { count: direct.live.viewers })}
+                  {t("spectateurs", { count: direct.viewers })}
                 </span>
               )}
             </span>

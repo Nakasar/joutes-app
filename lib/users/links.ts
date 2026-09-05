@@ -27,6 +27,8 @@ export const USER_LINK_KINDS = [
   "tiktok",
   "x",
   "mastodon",
+  "facebook",
+  "reddit",
   "website",
 ] as const;
 
@@ -58,6 +60,8 @@ const DOMAINS: { suffixes: string[]; kind: UserLinkKind }[] = [
   { suffixes: ["tiktok.com"], kind: "tiktok" },
   { suffixes: ["x.com", "twitter.com"], kind: "x" },
   { suffixes: ["mastodon.social", "piaille.fr"], kind: "mastodon" },
+  { suffixes: ["facebook.com", "fb.com"], kind: "facebook" },
+  { suffixes: ["reddit.com"], kind: "reddit" },
 ];
 
 /** Le domaine sans son `www.`, en minuscules. */

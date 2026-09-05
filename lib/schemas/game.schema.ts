@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { GAME_FEATURE_KEYS } from "@/lib/constants/game-features";
+import { GAME_LINK_KEYS } from "@/lib/constants/game-links";
 import { DECK_ZONE_KEYS } from "@/lib/decks/zones";
 import {
   tournamentResultModeSchema,
@@ -17,6 +18,36 @@ export const gameTypeSchema = z.enum(["TCG", "BoardGame", "VideoGame", "Miniatur
 export const gameFeaturesSchema = z.object(
   Object.fromEntries(GAME_FEATURE_KEYS.map((key) => [key, z.boolean().optional()]))
 ) as z.ZodType<Partial<Record<(typeof GAME_FEATURE_KEYS)[number], boolean>>>;
+
+/**
+ * Le site de l'éditeur et ses réseaux.
+ *
+ * Chaque clé est facultative, et la **chaîne vide vaut « aucun lien »** : c'est
+ * ce que rend un champ qu'on vide, et refuser l'enregistrement pour cette
+ * raison rendrait un lien impossible à retirer. La transformation en
+ * `undefined` est faite ici plutôt que dans le formulaire, pour que l'API et
+ * l'écran se comportent pareil.
+ *
+ * `z.url()` accepte `javascript:` — le dépôt le note déjà dans
+ * `lib/schemas/news.schema.ts`. Le protocole est donc vérifié en plus, faute de
+ * quoi l'adresse trouverait une exécution au clic dans le `href` de la fiche.
+ */
+export const gameLinksSchema = z.object(
+  Object.fromEntries(
+    GAME_LINK_KEYS.map((key) => [
+      key,
+      z
+        .string()
+        .trim()
+        .max(500, "L'adresse est trop longue")
+        .refine((value) => value.length === 0 || /^https?:\/\//i.test(value), {
+          message: "L'adresse doit commencer par http:// ou https://",
+        })
+        .transform((value) => (value.length > 0 ? value : undefined))
+        .optional(),
+    ]),
+  ),
+) as z.ZodType<Partial<Record<(typeof GAME_LINK_KEYS)[number], string | undefined>>>;
 
 export const gameSchema = z.object({
   name: z.string().min(1, "Le nom du jeu est requis").max(100, "Le nom est trop long"),

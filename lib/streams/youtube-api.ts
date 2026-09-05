@@ -1,7 +1,15 @@
 import "server-only";
 
 import { youtubeCallbackUrl, youtubeConfig } from "@/lib/streams/config";
-import { YOUTUBE_HUB_URL, YOUTUBE_LEASE_SECONDS, youtubeTopicUrl } from "@/lib/streams/youtube-websub";
+import type { YouTubeChannelRef } from "@/lib/streams/youtube-channels";
+import { youtubeFeedUrl } from "@/lib/streams/youtube-channels";
+import type { YouTubeFeedEntry } from "@/lib/streams/youtube-websub";
+import {
+  readYouTubeFeed,
+  YOUTUBE_HUB_URL,
+  YOUTUBE_LEASE_SECONDS,
+  youtubeTopicUrl,
+} from "@/lib/streams/youtube-websub";
 
 /**
  * YouTube, en deux morceaux qui ne se ressemblent pas.
@@ -11,11 +19,14 @@ import { YOUTUBE_HUB_URL, YOUTUBE_LEASE_SECONDS, youtubeTopicUrl } from "@/lib/s
  * quota quotidien de dix mille unités par défaut. C'est pourquoi une seule de
  * ses requêtes est utilisée en régime permanent, `videos.list`, qui coûte une
  * unité et accepte cinquante identifiants à la fois. `channels.list` n'est
- * appelée qu'à la liaison, une fois par compte.
+ * appelée qu'une fois par chaîne — à la liaison d'un compte, ou à la première
+ * lecture de l'adresse collée sur la fiche d'un jeu.
  *
  * `search.list`, qui répondrait directement « cette chaîne diffuse-t-elle ? »,
  * est délibérément absente : cent unités par appel, soit cent appels par jour
  * pour tout le site. Elle ne passe pas l'échelle, même à dix chaînes liées.
+ * Pour les chaînes que personne ne nous a liées — celles des éditeurs — le flux
+ * Atom public tient ce rôle, et ne coûte rien du tout.
  */
 
 export type YouTubeChannel = {
@@ -204,5 +215,90 @@ async function hubRequest(channelId: string, mode: "subscribe" | "unsubscribe"):
   } catch (error) {
     console.error(`Requête ${mode} au hub YouTube en échec:`, error);
     return { ok: false, error: "hub-injoignable" };
+  }
+}
+
+/**
+ * La chaîne désignée par une adresse publique, sans passer par un compte lié.
+ *
+ * C'est le pendant de `getYouTubeChannelForToken` pour les chaînes d'éditeurs :
+ * personne n'a d'OAuth ici, l'administration a seulement collé une adresse sur
+ * la fiche du jeu. Une unité de quota, payée **une fois** — le résultat est
+ * rangé sur le document et n'est redemandé que si l'adresse change.
+ *
+ * Une référence de type `id` n'a rien à résoudre ; l'appel n'est fait que pour
+ * en connaître le titre, et son échec n'empêche donc pas de suivre la chaîne.
+ */
+export async function resolveYouTubeChannel(ref: YouTubeChannelRef): Promise<YouTubeChannel | null> {
+  const config = youtubeConfig();
+
+  if (!config) {
+    return null;
+  }
+
+  const url = new URL("https://www.googleapis.com/youtube/v3/channels");
+  url.searchParams.set("part", "id,snippet");
+  url.searchParams.set("key", config.apiKey);
+  url.searchParams.set(
+    ref.kind === "id" ? "id" : ref.kind === "handle" ? "forHandle" : "forUsername",
+    ref.value,
+  );
+
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+
+    if (!response.ok) {
+      console.error("Résolution de chaîne YouTube refusée:", response.status, (await response.text()).slice(0, 200));
+      return ref.kind === "id" ? { id: ref.value, title: ref.value } : null;
+    }
+
+    const body = (await response.json()) as {
+      items?: { id: string; snippet?: { title?: string; customUrl?: string } }[];
+    };
+
+    const channel = body.items?.[0];
+
+    if (!channel?.id) {
+      // Un handle qui ne désigne rien : l'adresse de la fiche est fausse, ou la
+      // chaîne a disparu. Sauf pour `id`, où l'adresse porte déjà la réponse.
+      return ref.kind === "id" ? { id: ref.value, title: ref.value } : null;
+    }
+
+    return {
+      id: channel.id,
+      title: channel.snippet?.title ?? channel.id,
+      handle: channel.snippet?.customUrl ?? undefined,
+    };
+  } catch (error) {
+    console.error("Résolution de chaîne YouTube en échec:", error);
+    return ref.kind === "id" ? { id: ref.value, title: ref.value } : null;
+  }
+}
+
+/**
+ * Les dernières publications d'une chaîne, lues dans son flux Atom public.
+ *
+ * **Aucune unité de quota** : c'est tout l'intérêt, et c'est ce qui rend un
+ * sondage horaire tenable là où `search.list` coûterait cent unités par appel.
+ * Le flux ne dit pas « direct » — c'est `getYouTubeVideos` qui tranche, une
+ * unité par lot de cinquante identifiants.
+ *
+ * Le même document que le sujet WebSub des chaînes liées, et lu par le même
+ * analyseur : un éditeur ne nous a rien signé, on va donc le chercher nous-
+ * mêmes au lieu d'attendre qu'un hub le pousse.
+ */
+export async function fetchYouTubeChannelFeed(channelId: string): Promise<YouTubeFeedEntry[]> {
+  try {
+    const response = await fetch(youtubeFeedUrl(channelId), { cache: "no-store" });
+
+    if (!response.ok) {
+      console.error("Flux YouTube refusé:", channelId, response.status);
+      return [];
+    }
+
+    return readYouTubeFeed(await response.text());
+  } catch (error) {
+    console.error("Flux YouTube injoignable:", channelId, error);
+    return [];
   }
 }

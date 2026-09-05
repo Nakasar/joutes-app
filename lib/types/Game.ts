@@ -23,6 +23,19 @@ export type Game = {
   color: string;
   note: { [category: string]: number };
   gallery: string[];
+  /**
+   * Le site de l'éditeur et ses réseaux, saisis depuis `/admin/games`.
+   *
+   * Les clés connues sont décrites une seule fois, dans
+   * `lib/constants/game-links.ts` — le formulaire d'administration et la fiche
+   * publique se rendent tous deux à partir de cette table. La signature
+   * d'index reste : une clé posée à la main en base survit à un
+   * enregistrement, elle est seulement laissée hors du formulaire.
+   *
+   * `youtube` fait en plus autre chose qu'un lien : c'est la chaîne que le cron
+   * horaire interroge pour savoir si l'éditeur diffuse. Voir
+   * `docs/GAME_LIVES.md`.
+   */
   links: {
     website?: string;
     x?: string;
@@ -30,7 +43,11 @@ export type Game = {
     youtube?: string;
     twitch?: string;
     bluesky?: string;
-  } & { [social: string]: string; };
+    instagram?: string;
+    tiktok?: string;
+    facebook?: string;
+    reddit?: string;
+  } & { [social: string]: string | undefined; };
   metadata: {
     publisher?: string;
     releaseDate?: string;

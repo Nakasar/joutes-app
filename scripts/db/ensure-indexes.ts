@@ -1,17 +1,22 @@
 /**
- * Index des liaisons de chaînes de direct (`stream_links`).
+ * Index des directs : les chaînes liées à un compte (`stream_links`) et celles
+ * des éditeurs suivies depuis la fiche d'un jeu (`game_streams`).
  *
- * Les deux unicités sont des **règles**, pas des optimisations :
+ * Les unicités sont des **règles**, pas des optimisations :
  *
  * - une personne ne lie qu'une chaîne par plateforme — c'est déjà ce que le
  *   compte social autorise, et deux liaisons concurrentes annonceraient deux
  *   directs pour la même personne ;
  * - une chaîne n'appartient qu'à un compte — sinon un même direct s'annoncerait
- *   sur les destinations de deux personnes différentes.
+ *   sur les destinations de deux personnes différentes ;
+ * - un jeu ne suit qu'une chaîne par plateforme, parce que sa fiche ne porte
+ *   qu'un lien par réseau. C'est aussi la clé sur laquelle le cron horaire
+ *   fait son `upsert` : sans elle, deux tours qui se chevauchent créeraient
+ *   deux documents pour la même chaîne.
  *
  * Sans elles, la fonctionnalité *marche* jusqu'au jour où elle ne marche plus,
  * et la réparation demande alors de trancher entre des documents également
- * plausibles. Voir `docs/STREAM_LINKING.md`.
+ * plausibles. Voir `docs/STREAM_LINKING.md` et `docs/GAME_LIVES.md`.
  *
  * `createIndex` est idempotent : rejouer ce script ne coûte rien. Il est en
  * revanche **refusé** par MongoDB si des doublons existent déjà — c'est le
@@ -60,10 +65,21 @@ const INDEXES: IndexDefinition[] = [
     keys: { "subscription.expiresAt": 1 },
     why: "Le renouvellement des baux WebSub, qui ne veut que les échéances proches",
   },
+  {
+    collection: "game_streams",
+    keys: { gameId: 1, platform: 1 },
+    options: { unique: true },
+    why: "Un jeu ne suit qu'une chaîne par plateforme ; c'est aussi la clé de l'upsert du cron",
+  },
+  {
+    collection: "game_streams",
+    keys: { live: 1 },
+    why: "Les vitrines ne veulent que ce qui diffuse, et le cas courant est qu'il n'y en ait aucun",
+  },
 ];
 
 async function ensureIndexes() {
-  console.log("🚀 Création des index des liaisons de direct...");
+  console.log("🚀 Création des index des directs...");
 
   for (const { collection, keys, options, why } of INDEXES) {
     const name = await db.collection(collection).createIndex(keys, options ?? {});

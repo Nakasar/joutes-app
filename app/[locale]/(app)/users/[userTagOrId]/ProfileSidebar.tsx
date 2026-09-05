@@ -3,7 +3,7 @@ import { Award, Gamepad2, MapPin, Star, Users } from "lucide-react";
 
 import { Link } from "@/i18n/navigation.ts";
 
-import { ProfileLinkIcon } from "./ProfileLinkIcon.tsx";
+import { SocialLinkIcon } from "@/components/SocialLinkIcon.tsx";
 import {
   readFollowersCount,
   readProfileGames,
@@ -182,7 +182,7 @@ export async function FindMeCard({ userTagOrId }: { userTagOrId: string }) {
                 rel="noopener noreferrer nofollow"
                 className="flex items-center gap-2.5 rounded-lg border p-2.5 text-sm transition-colors hover:bg-accent"
               >
-                <ProfileLinkIcon kind={link.kind} className="size-4 shrink-0 text-muted-foreground" />
+                <SocialLinkIcon kind={link.kind} className="size-4 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 truncate">{link.label ?? link.host}</span>
               </a>
             </li>

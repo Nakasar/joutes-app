@@ -93,6 +93,16 @@ Une actualité peut être reprise d'un article publié ailleurs — la FAQ d'une
 
 Pour plus de détails, voir [docs/NEWS_IMPORT.md](docs/NEWS_IMPORT.md).
 
+### Liens des éditeurs et directs sur la fiche d'un jeu
+
+La fiche d'un jeu porte le site officiel de son éditeur et ses réseaux, saisis
+depuis `/admin/games`. Le lien YouTube fait en plus autre chose qu'ouvrir une
+page : un sondage horaire y détecte les directs, qui s'affichent alors en grand
+en tête de la fiche et dans le bandeau des directs de l'accueil pour qui suit ce
+jeu.
+
+Pour plus de détails, voir [docs/GAME_LIVES.md](docs/GAME_LIVES.md).
+
 ### Traduction des actualités
 
 Une actualité est écrite dans une langue et peut être traduite dans les autres. `/news/:newsId` la sert dans la langue de l'interface du lecteur ; `/news/:newsId/:lang` sert une langue précise, et chacune a donc son adresse partageable.

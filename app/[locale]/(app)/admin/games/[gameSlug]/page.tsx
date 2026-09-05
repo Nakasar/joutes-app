@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import GameTabsBar, { readGameTab } from "./GameTabsBar.tsx";
 import { GameIdentityForm } from "./GameIdentityForm.tsx";
+import { GameLinksForm } from "./GameLinksForm.tsx";
 import { GameFeaturesForm } from "./GameFeaturesForm.tsx";
 import { DeckBuilderForm } from "./DeckBuilderForm.tsx";
 import { FeaturedLairsManager } from "../FeaturedLairsManager.tsx";
@@ -18,8 +19,9 @@ import { FeaturedLairsManager } from "../FeaturedLairsManager.tsx";
  *
  * Ce que la modale d'édition tenait dans une boîte à `max-w-2xl` — identité,
  * images, fonctionnalités, lieux mis en avant — plus ce qu'elle n'aurait pas pu
- * tenir : les réglages du deck builder. Chaque onglet enregistre ses seuls
- * champs, de sorte qu'aucun n'écrase le travail d'un autre.
+ * tenir : les réglages du deck builder, le site et les réseaux de l'éditeur.
+ * Chaque onglet enregistre ses seuls champs, de sorte qu'aucun n'écrase le
+ * travail d'un autre.
  *
  * Adressée par le slug, avec repli sur l'identifiant : `getGameBySlugOrId`
  * accepte les deux, et un jeu sans slug reste ainsi joignable.
@@ -102,6 +104,8 @@ export default async function AdminGamePage({
         <GameTabsBar gameSlug={gameSlug} active={active} />
 
         {active === "identite" && <GameIdentityForm game={game} />}
+
+        {active === "liens" && <GameLinksForm game={game} />}
 
         {active === "fonctionnalites" && <GameFeaturesForm game={game} />}
 
