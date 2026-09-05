@@ -9,7 +9,7 @@ import {
   upsertGameStream,
 } from "@/lib/db/game-streams";
 import { getAllGames } from "@/lib/db/games";
-import { youtubeConfig } from "@/lib/streams/config";
+import { youtubeApiKey } from "@/lib/streams/config";
 import { fetchYouTubeChannelFeed, getYouTubeVideos, resolveYouTubeChannel } from "@/lib/streams/youtube-api";
 import { readYouTubeChannelRef } from "@/lib/streams/youtube-channels";
 import { mergeWatchedVideos, youtubeWatchUrl } from "@/lib/streams/youtube-websub";
@@ -77,7 +77,11 @@ export async function refreshGameLives(): Promise<GameLivesReport> {
     failed: 0,
   };
 
-  if (!youtubeConfig()) {
+  // La clé de l'API Data suffit : ce cron ne pose aucun abonnement chez Google,
+  // il lit un flux public et interroge `videos.list`. Exiger en plus le secret
+  // WebSub — ce que fait `youtubeConfig()` — l'éteindrait pour une valeur qu'il
+  // n'emploie nulle part.
+  if (!youtubeApiKey()) {
     return report;
   }
 

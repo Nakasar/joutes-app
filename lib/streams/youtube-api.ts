@@ -1,6 +1,6 @@
 import "server-only";
 
-import { youtubeCallbackUrl, youtubeConfig } from "@/lib/streams/config";
+import { youtubeApiKey, youtubeCallbackUrl, youtubeConfig } from "@/lib/streams/config";
 import type { YouTubeChannelRef } from "@/lib/streams/youtube-channels";
 import { youtubeFeedUrl } from "@/lib/streams/youtube-channels";
 import type { YouTubeFeedEntry } from "@/lib/streams/youtube-websub";
@@ -95,6 +95,22 @@ export type YouTubeVideo = {
   title?: string;
   /** ISO 8601 — le début réel du direct, que YouTube ne donne qu'une fois commencé. */
   startedAt?: string;
+  /**
+   * La durée, **telle que YouTube l'écrit** : une durée ISO 8601, `PT3M1S`.
+   *
+   * Elle vient de `contentDetails`, demandé dans le **même** appel : le quota de
+   * `videos.list` est d'une unité par appel quel que soit le nombre de `part`,
+   * si bien que cette information ne coûte ni unité ni aller-retour de plus.
+   *
+   * Rendue brute et non en secondes : ce module est un transport, et
+   * l'interprétation appartient au module pur qui, lui, se teste
+   * (`readIsoDurationSeconds` dans `lib/social/youtube-posts.ts`). C'est la même
+   * coupe qu'entre `fetchYouTubeChannelFeed` et `readYouTubeFeed`.
+   *
+   * Absente pour une vidéo privée ou supprimée, et pour un direct en cours —
+   * YouTube ne connaît la durée qu'une fois l'enregistrement clos.
+   */
+  duration?: string;
 };
 
 /**
@@ -106,10 +122,12 @@ export type YouTubeVideo = {
  * n'a rien à faire sur une vitrine.
  */
 export async function getYouTubeVideos(videoIds: string[]): Promise<Map<string, YouTubeVideo>> {
-  const config = youtubeConfig();
+  // La clé seule : lire une vidéo publique ne pose aucun abonnement et n'a donc
+  // que faire du secret WebSub qu'exige `youtubeConfig()`.
+  const apiKey = youtubeApiKey();
   const videos = new Map<string, YouTubeVideo>();
 
-  if (!config || videoIds.length === 0) {
+  if (!apiKey || videoIds.length === 0) {
     return videos;
   }
 
@@ -118,9 +136,12 @@ export async function getYouTubeVideos(videoIds: string[]): Promise<Map<string, 
 
     try {
       const url = new URL("https://www.googleapis.com/youtube/v3/videos");
-      url.searchParams.set("part", "snippet,liveStreamingDetails");
+      // `contentDetails` porte la durée, qui distingue un short d'une vidéo
+      // (`lib/social/youtube-posts.ts`). Ajouté au `part` plutôt que demandé à
+      // part : une unité par appel, quel que soit le nombre de `part`.
+      url.searchParams.set("part", "snippet,liveStreamingDetails,contentDetails");
       url.searchParams.set("id", batch.join(","));
-      url.searchParams.set("key", config.apiKey);
+      url.searchParams.set("key", apiKey);
 
       const response = await fetch(url, { cache: "no-store" });
 
@@ -134,6 +155,7 @@ export async function getYouTubeVideos(videoIds: string[]): Promise<Map<string, 
           id: string;
           snippet?: { channelId?: string; title?: string; liveBroadcastContent?: string };
           liveStreamingDetails?: { actualStartTime?: string; actualEndTime?: string };
+          contentDetails?: { duration?: string };
         }[];
       };
 
@@ -153,6 +175,7 @@ export async function getYouTubeVideos(videoIds: string[]): Promise<Map<string, 
           state,
           title: item.snippet?.title,
           startedAt: item.liveStreamingDetails?.actualStartTime,
+          duration: item.contentDetails?.duration,
         });
       }
     } catch (error) {
@@ -230,15 +253,16 @@ async function hubRequest(channelId: string, mode: "subscribe" | "unsubscribe"):
  * en connaître le titre, et son échec n'empêche donc pas de suivre la chaîne.
  */
 export async function resolveYouTubeChannel(ref: YouTubeChannelRef): Promise<YouTubeChannel | null> {
-  const config = youtubeConfig();
+  // La clé seule, même raison que `getYouTubeVideos` : c'est une lecture.
+  const apiKey = youtubeApiKey();
 
-  if (!config) {
+  if (!apiKey) {
     return null;
   }
 
   const url = new URL("https://www.googleapis.com/youtube/v3/channels");
   url.searchParams.set("part", "id,snippet");
-  url.searchParams.set("key", config.apiKey);
+  url.searchParams.set("key", apiKey);
   url.searchParams.set(
     ref.kind === "id" ? "id" : ref.kind === "handle" ? "forHandle" : "forUsername",
     ref.value,

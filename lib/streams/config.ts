@@ -87,6 +87,24 @@ export function youtubeConfig(): YouTubeConfig | null {
   return { apiKey, webSubSecret };
 }
 
+/**
+ * La seule clé de l'API Data, pour tout ce qui n'a rien à voir avec le hub.
+ *
+ * `youtubeConfig()` demande en plus `YOUTUBE_WEBSUB_SECRET`, et c'est justifié
+ * pour ce qui **pose** un abonnement chez Google : sans secret, impossible de
+ * signer, donc impossible de s'abonner. Mais lire une vidéo publique n'a que
+ * faire de ce secret, et l'exiger éteindrait la lecture faute d'une valeur
+ * qu'elle n'emploie pas.
+ *
+ * Le distinguo n'est pas théorique : les directs des éditeurs
+ * (`docs/GAME_LIVES.md`) ne posent aucun abonnement, et leur cron se coupait
+ * pourtant sans le secret WebSub — en contradiction avec sa propre
+ * documentation, qui annonçait « sans `YOUTUBE_API_KEY`, la détection dort ».
+ */
+export function youtubeApiKey(): string | null {
+  return process.env.YOUTUBE_API_KEY?.trim() || null;
+}
+
 /** Google porte la liaison YouTube : YouTube n'a pas d'OAuth à lui. */
 export function youtubeOAuthConfigured(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim());
