@@ -271,6 +271,13 @@ Un administrateur y voit les masquées, grisées, avec un « Réafficher » — 
 quoi le masquage serait irréversible faute de savoir ce qu'on a masqué. Le droit
 (`checkAdmin`) est lu **une fois pour la grille**, pas par vignette.
 
+La lecture d'administration fait **deux requêtes**, et c'est ce qui tient
+l'invariant : les visibles bornées à cent, et les masquées **toutes**, sans
+borne. Une lecture unique triée par date et coupée à cent laisserait une
+publication masquée un peu ancienne sortir de la fenêtre dès qu'assez de
+visibles plus récentes s'accumulent — introuvable, donc impossible à réafficher.
+Relever la borne ne ferait que repousser la falaise.
+
 ## Configuration
 
 Rien n'est obligatoire, et Bluesky ne demande **aucune** configuration : l'API

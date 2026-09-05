@@ -120,13 +120,18 @@ export async function upsertGameSocialPosts(
           thumbnail: post.thumbnail,
           publishedAt: post.publishedAt,
           durationSeconds: post.durationSeconds,
-          collectedAt: post.collectedAt,
           updatedAt: now,
         },
         $setOnInsert: {
           gameId,
           platform: post.platform,
           externalId: post.externalId,
+          // `collectedAt` date la **découverte**, et n'est donc écrit qu'ici.
+          // Le mettre dans `$set` le ferait dériver — mais chez Bluesky
+          // seulement, dont le flux entier est relu à chaque tour, là où
+          // YouTube n'interroge que les vidéos inconnues. Deux plateformes,
+          // deux sémantiques pour un même champ : le pire des deux mondes.
+          collectedAt: post.collectedAt,
           createdAt: now,
         },
       },
@@ -156,20 +161,38 @@ export async function listGameSocialPosts(
 /**
  * Ce qu'un administrateur voit : les masquées comprises.
  *
- * Sans cette lecture, le masquage serait irréversible faute de savoir ce qu'on
- * a masqué.
+ * **Deux lectures, et non une seule bornée.** Une lecture unique triée par date
+ * et coupée à cent laisserait une publication masquée un peu ancienne sortir de
+ * la fenêtre dès qu'assez de publications visibles plus récentes s'accumulent —
+ * elle deviendrait introuvable, donc impossible à réafficher, et le masquage
+ * serait irréversible par accident. Relever la borne ne ferait que repousser la
+ * falaise.
+ *
+ * Les masquées sont donc lues **toutes**, sans borne : elles se comptent en
+ * gestes de modération, c'est-à-dire en presque rien, et l'index
+ * `{ gameId, hiddenAt, publishedAt }` sert exactement cette question.
+ *
+ * La fusion se trie par comparaison de chaînes, ce qui est licite ici et
+ * seulement ici : `publishedAt` est normalisé en UTC sous une forme unique
+ * (`lib/social/instants.ts`), si bien que l'ordre lexicographique **est**
+ * l'ordre chronologique.
  */
 export async function listGameSocialPostsWithHidden(
   gameId: string,
   limit: number = GAME_SOCIAL_KEEP,
 ): Promise<GameSocialPost[]> {
-  const docs = await collection
-    .find({ gameId })
-    .sort({ publishedAt: -1 })
-    .limit(Math.max(1, Math.min(limit, GAME_SOCIAL_KEEP * 2)))
-    .toArray();
+  const [visible, hidden] = await Promise.all([
+    collection
+      .find({ gameId, hiddenAt: null })
+      .sort({ publishedAt: -1 })
+      .limit(Math.max(1, Math.min(limit, GAME_SOCIAL_KEEP)))
+      .toArray(),
+    collection.find({ gameId, hiddenAt: { $ne: null } }).sort({ publishedAt: -1 }).toArray(),
+  ]);
 
-  return docs.map(toGameSocialPost);
+  return [...visible, ...hidden]
+    .map(toGameSocialPost)
+    .sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : a.publishedAt > b.publishedAt ? -1 : 0));
 }
 
 /**
