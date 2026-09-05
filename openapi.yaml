@@ -48,6 +48,8 @@ tags:
     description: Shared groups for pooled collections, wishlists and sell lists.
   - name: Quizzes
     description: Quizzes, optionally linked to a game.
+  - name: Search
+    description: One query across games, cards, lairs, events and rules — what the site's command palette shows.
   - name: Sell Lists
     description: Cards a user or play group is offering for sale.
   - name: Trades
@@ -1602,6 +1604,40 @@ paths:
       responses:
         "200":
           description: The static `openapi.json` document served as-is.
+
+  # ---------------------------------------------------------------- Search
+  /search:
+    get:
+      tags: [Search]
+      summary: Search everything at once
+      description: |
+        The global search behind the site's command palette: one query, five short lists — games, cards, lairs, events and rules — each capped at 5 results. Meant for a "type and jump" box, not for browsing: use the per-resource listings for paging and filters.
+
+        Games, lairs and events match on their name (case-insensitive substring); cards on their name, one row per card name and game (printings are folded); rules are the game policies (full-text, falling back to a title match) and the embedded Riftbound comprehensive/tournament rules entries. Upcoming events come first; past events are only offered when nothing upcoming matches.
+
+        A query shorter than 2 characters returns five empty lists rather than an error. Anonymous callers see public lairs only; a session additionally surfaces private lairs the caller owns.
+
+        Each result carries a site `href` **and** a `kind` + `id` pair: a third-party client opens the resource by `kind`/`id` (with `gameSlug` for cards, policies and rules, and `doc` for a Riftbound rule) rather than by parsing the site's path.
+      security: [{}, { sessionAuth: [] }]
+      parameters:
+        - { name: q, in: query, required: true, description: "What to look for. Trimmed; shorter than 2 characters yields empty lists.", schema: { type: string } }
+      responses:
+        "200":
+          description: Results grouped by resource, each list at most 5 long.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [games, cards, lairs, events, rules]
+                properties:
+                  games: { type: array, items: { $ref: "#/components/schemas/SearchResult" } }
+                  cards: { type: array, items: { $ref: "#/components/schemas/SearchResult" } }
+                  lairs: { type: array, items: { $ref: "#/components/schemas/SearchResult" } }
+                  events: { type: array, items: { $ref: "#/components/schemas/SearchResult" } }
+                  rules:
+                    type: array
+                    description: "Game policies (`kind: policy`) and Riftbound rules entries (`kind: rule`), together."
+                    items: { $ref: "#/components/schemas/SearchResult" }
 
   # ---------------------------------------------------------------- Geo
   /geo/places:
@@ -5981,6 +6017,24 @@ components:
           type: array
           description: "The venue's usual rhythm: \"Friday night\" -> \"Riftbound\"."
           items: { type: object, properties: { label: { type: string }, value: { type: string } } }
+
+    SearchResult:
+      type: object
+      description: One hit of `GET /search`. `href` is the site's own path; a third-party client opens the hit by `kind` and `id` instead.
+      required: [label, href, kind, id]
+      properties:
+        label: { type: string, description: The name to show. }
+        sublabel: { type: string, description: "Context under the name: a game type, the card's game, a lair's address, an event's game and date, a rule's excerpt." }
+        href: { type: string, description: "Path on joutes.app, e.g. `/games/riftbound/cards/OGN-001`." }
+        image: { type: string, format: uri, description: A thumbnail, for cards only. }
+        kind:
+          type: string
+          enum: [game, card, lair, event, policy, rule]
+        id:
+          type: string
+          description: "What opens the hit: the game id, the `cardId` of `GET /games/{gameId}/cards/{cardId}`, the lair id, the event id, the policy id of `GET /games/{gameId}/policies/{policyId}`, or the rule entry id of `GET /games/{gameId}/rules`."
+        gameSlug: { type: string, description: "The game the hit belongs to (slug, or id when the game has no slug). Present for games, cards, policies and rules." }
+        doc: { type: string, enum: [CR, TR], description: "Riftbound rules only: comprehensive or tournament rules." }
 
     LairDetail:
       allOf:
