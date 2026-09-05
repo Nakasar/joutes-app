@@ -6,10 +6,20 @@ import { Link } from "@/i18n/navigation.ts";
 import { cn } from "@/lib/utils.ts";
 
 import { EtiquetteSection, Fiche, Punaise, Tirage, poseCoupure } from "./pieces.tsx";
-import { lireFil, MAX_FIL, TYPES_CONTENU, type EntreeFil, type TypeContenu } from "./accueil-data.ts";
+import { selectFeedEntries } from "@/lib/content/feed-mix.ts";
+import { SocialLinkIcon } from "@/components/SocialLinkIcon.tsx";
+
+import {
+  lireFil,
+  MAX_FIL,
+  PLAFONDS_FIL,
+  TYPES_CONTENU,
+  type EntreeFil,
+  type TypeContenu,
+} from "./accueil-data.ts";
 
 /**
- * Le fil : actualités, vidéos et listes sur une seule file.
+ * Le fil : actualités, vidéos, listes et publications sur une seule file.
  *
  * Les directs n'y sont PAS. Ils ont leur bandeau en haut de page ; les
  * répéter ici montrerait deux fois la même chose à trois cents pixels d'écart.
@@ -30,10 +40,15 @@ export default async function Fil({
   const locale = await getLocale();
   const [t, tout] = await Promise.all([getTranslations("Home.fil"), lireFil(jeuChoisi, locale)]);
 
-  const entrees = (typeChoisi ? tout.filter((entree) => entree.type === typeChoisi) : tout).slice(
-    0,
-    MAX_FIL,
-  );
+  /*
+   * Le plafond ne s'applique qu'à « Tout ». Un onglet de genre est une demande
+   * explicite : y borner les publications reviendrait à refuser ce qu'on vient
+   * de demander. Voir `lib/content/feed-mix.ts` pour la règle exacte — elle
+   * garantit leur place aux autres sources sans laisser le fil à moitié vide.
+   */
+  const entrees = typeChoisi
+    ? tout.filter((entree) => entree.type === typeChoisi).slice(0, MAX_FIL)
+    : selectFeedEntries(tout, { max: MAX_FIL, caps: PLAFONDS_FIL });
 
   const lien = (type: TypeContenu | undefined) => ({
     pathname: "/" as const,
@@ -146,6 +161,12 @@ function Coupure({
           </span>
           <span className="border-border h-px border-t" aria-hidden />
           <span className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
+            {/* Le logo dit d'où vient la publication sans qu'on ait à la lire,
+                comme sur la fiche du jeu. Les autres genres n'en ont pas : leur
+                source est Joutes, et la pastille de genre le dit déjà. */}
+            {entree.plateforme && (
+              <SocialLinkIcon kind={entree.plateforme} className="size-3.5 shrink-0" />
+            )}
             {entree.source && (
               <>
                 <span className="truncate">{entree.source}</span>

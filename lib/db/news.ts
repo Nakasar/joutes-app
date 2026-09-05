@@ -57,7 +57,16 @@ async function withAuthorBadges(news: News[]): Promise<News[]> {
 }
 
 export type GetNewsOptions = {
-  gameId?: string;
+  /**
+   * Un jeu, ou plusieurs.
+   *
+   * La liste sert le fil de l'accueil, qui montre les jeux qu'on suit : le
+   * filtrer en mémoire après une lecture bornée viderait le fil de qui suit un
+   * jeu discret parmi des jeux actifs. Une liste vide ne filtre rien, comme une
+   * valeur absente — c'est ce que veut dire « cette personne ne suit aucun
+   * jeu », et non « ne montre rien ».
+   */
+  gameId?: string | string[];
   tag?: string;
   dateFrom?: Date;
   dateTo?: Date;
@@ -79,8 +88,12 @@ export async function getNews(options: GetNewsOptions = {}): Promise<PaginatedNe
 
   const filter: Record<string, unknown> = {};
 
-  if (gameId) {
-    filter.gameIds = new ObjectId(gameId);
+  const gameIds = Array.isArray(gameId) ? gameId : gameId ? [gameId] : [];
+
+  if (gameIds.length === 1) {
+    filter.gameIds = new ObjectId(gameIds[0]);
+  } else if (gameIds.length > 1) {
+    filter.gameIds = { $in: gameIds.map((id) => new ObjectId(id)) };
   }
 
   if (tag) {

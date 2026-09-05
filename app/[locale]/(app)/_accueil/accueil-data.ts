@@ -11,6 +11,7 @@ import { getLairIdsNearLocation, getLairsByIds } from "@/lib/db/lairs.ts";
 import { getAllEvents, getEventsByLairIds, getEventsForUser } from "@/lib/db/events.ts";
 import { getNews } from "@/lib/db/news.ts";
 import { listRecentPublicContents } from "@/lib/db/user-contents.ts";
+import { listRecentSocialPosts } from "@/lib/db/game-social-posts.ts";
 import { getFeaturedDecks, searchDecks } from "@/lib/db/decks.ts";
 import { deckCoverPosition, resolveDeckCover } from "@/lib/decks/cover.ts";
 import { getPlayGroupsForUser } from "@/lib/db/play-groups.ts";
@@ -25,6 +26,9 @@ import type { PlayGroupSession } from "@/lib/types/PlayGroupSession";
 import type { Deck } from "@/lib/types/Deck";
 import type { News } from "@/lib/types/News";
 import type { UserContent } from "@/lib/types/UserContent";
+import type { GameSocialPost } from "@/lib/types/GameSocialPost";
+import type { SocialPlatform } from "@/lib/social/platforms.ts";
+import { formatSocialDuration } from "@/lib/social/youtube-posts.ts";
 import type { Game } from "@/lib/types/Game";
 
 /**
@@ -52,10 +56,24 @@ export const MAX_FIL = 6;
 /** Rayon par défaut d'une recherche « autour de moi », comme au calendrier. */
 export const RAYON_DEFAUT_KM = 15;
 
-export type TypeContenu = "actu" | "video" | "deck";
+export type TypeContenu = "actu" | "video" | "deck" | "social";
 
 /** Un onglet du fil, et ce qu'il garde. */
-export const TYPES_CONTENU: TypeContenu[] = ["actu", "video", "deck"];
+export const TYPES_CONTENU: TypeContenu[] = ["actu", "video", "deck", "social"];
+
+/**
+ * Ce qu'une source au plus peut prendre dans l'onglet « Tout ».
+ *
+ * Les trois premières sources publient au rythme d'une rédaction : une
+ * actualité par semaine, un deck de temps en temps. Les publications
+ * rapatriées des réseaux d'un éditeur, non — un compte actif poste plusieurs
+ * fois par jour, et un tri par date seul lui donnerait les six places.
+ *
+ * Le plafond garantit qu'**aucune autre source n'est évincée** ; il ne laisse
+ * pas le fil à moitié vide pour autant, les places qu'aucune autre ne prend
+ * revenant aux publications. Voir `lib/content/feed-mix.ts`.
+ */
+export const PLAFONDS_FIL: Partial<Record<TypeContenu, number>> = { social: 2 };
 
 /**
  * Une entrée du fil, quelle que soit son origine.
@@ -81,6 +99,13 @@ export type EntreeFil = {
    */
   cadrage?: "top" | "center";
   duree?: string;
+  /**
+   * La plateforme d'origine, pour les seules entrées `social`.
+   *
+   * Elle porte le logo affiché à côté du compte — la même exigence que sur la
+   * fiche du jeu : on doit voir d'où vient une publication sans la lire.
+   */
+  plateforme?: SocialPlatform;
 };
 
 /**
@@ -306,7 +331,19 @@ export const lireAgenda = cache(
     if (viewer) {
       evenements = await getEventsForUser(
         viewer.id,
-        jeu?.id ?? "all",
+        /*
+         * `"followed"` et non `"all"` : sans jeu choisi, l'agenda montre les
+         * jeux qu'on suit, pas tout ce qui se passe. `getEventsForUser` porte
+         * ce mode depuis toujours — c'est même sa valeur par défaut, et ce que
+         * passent déjà le push et l'e-mail hebdomadaires. Seul l'accueil
+         * demandait `"all"`, ce qui désactivait le filtre et proposait des
+         * événements de jeux qu'on ne suit pas.
+         *
+         * Le mode garde les événements privés dont on est l'auteur ou un
+         * participant, et ceux mis en favori, quel que soit leur jeu : ce sont
+         * des choix explicites, ils passent avant le filtre.
+         */
+        jeu?.id ?? "followed",
         undefined,
         undefined,
         position ? { latitude: position.latitude, longitude: position.longitude } : undefined,
@@ -371,18 +408,46 @@ export const lireAgenda = cache(
  * répéter ici montrerait deux fois la même chose à trois cents pixels d'écart.
  * Le fil garde ce qui se lit après coup.
  */
+/**
+ * Le fil, quatre sources mêlées et triées par date.
+ *
+ * ## Sur quels jeux
+ *
+ * Un jeu choisi dans les onglets l'emporte sur tout. Sinon, **les jeux qu'on
+ * suit** — ce que l'onglet promet déjà en s'appelant « Tous les miens ». Il ne
+ * le tenait pas : le fil lisait tous les jeux, et proposait donc des decks et
+ * des actualités de jeux auxquels on ne joue pas.
+ *
+ * Le repli reste « tout » pour un visiteur, et pour qui ne suit encore aucun
+ * jeu : à ceux-là, un fil vide n'apprendrait rien, alors que le fil est
+ * justement ce par quoi on découvre.
+ *
+ * Le filtrage est fait **en base**, chaque source acceptant une liste de jeux.
+ * Lire une fenêtre large puis filtrer en mémoire aurait vidé le fil de qui suit
+ * un jeu discret parmi des jeux bavards.
+ */
 export const lireFil = cache(
   async (gameId: string | null, locale: string): Promise<EntreeFil[]> => {
-    const [actus, contenus, decks] = await Promise.all([
-      getNews({ gameId: gameId ?? undefined, limit: MAX_FIL }),
-      listRecentPublicContents({ gameId: gameId ?? undefined, limit: MAX_FIL }),
-      getFeaturedDecks(gameId ?? undefined, MAX_FIL),
+    const viewer = gameId ? null : await lireViewer();
+    const suivis = viewer?.games ?? [];
+
+    // Un jeu choisi ; sinon les jeux suivis ; sinon rien, ce qui ne filtre pas.
+    const jeux = gameId ? [gameId] : suivis.length > 0 ? suivis : undefined;
+
+    const [actus, contenus, decks, publications] = await Promise.all([
+      getNews({ gameId: jeux, limit: MAX_FIL }),
+      listRecentPublicContents({ gameId: jeux, limit: MAX_FIL }),
+      getFeaturedDecks(jeux, MAX_FIL),
+      // La même fenêtre que les trois autres : le fil n'en montre que six, et
+      // le compteur de chaque onglet doit dire ce que l'onglet montrera.
+      listRecentSocialPosts({ gameIds: jeux, limit: MAX_FIL }),
     ]);
 
     const entrees: EntreeFil[] = [
       ...actus.news.map(versEntreeActu(locale)),
       ...contenus.map(versEntreeContenu),
       ...decks.map(versEntreeDeck),
+      ...publications.map(versEntreeSocial),
     ];
 
     return entrees.sort(
@@ -424,6 +489,33 @@ function versEntreeContenu(contenu: UserContent): EntreeFil {
     publieLe: contenu.publishedAt,
     vignette: contenu.thumbnail,
     duree: contenu.duration,
+  };
+}
+
+/**
+ * Une publication d'un réseau, ramenée à une entrée du fil.
+ *
+ * Le **texte est le titre** : une publication n'en a pas d'autre, et celui
+ * d'une vidéo YouTube est déjà son propos. Sans texte — une publication qui
+ * n'est qu'une image — on écrit le compte, que la vignette accompagne ; un
+ * titre vide laisserait une carte muette.
+ *
+ * `source` porte le compte et non la plateforme : celle-ci est dite par le
+ * logo, et la répéter en toutes lettres à côté volerait la place du handle,
+ * qui est l'information.
+ */
+function versEntreeSocial(post: GameSocialPost): EntreeFil {
+  return {
+    id: post.id,
+    type: "social",
+    titre: post.text ?? post.account.displayName ?? post.account.handle,
+    href: post.url,
+    source: post.account.handle,
+    gameId: post.gameId,
+    publieLe: post.publishedAt,
+    vignette: post.thumbnail,
+    duree: formatSocialDuration(post.durationSeconds),
+    plateforme: post.platform,
   };
 }
 

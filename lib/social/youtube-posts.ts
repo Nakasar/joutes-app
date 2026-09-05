@@ -81,6 +81,28 @@ export function youtubeThumbnailUrl(videoId: string): string {
   return `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
 }
 
+/**
+ * Une durée en secondes, telle qu'une vignette l'écrit : `2:45`, `1:02:03`.
+ *
+ * Partagée par la vignette de la fiche du jeu et par le fil de l'accueil.
+ * L'écrire deux fois la ferait diverger au premier ajustement — et les deux
+ * endroits montrent la même publication.
+ *
+ * Rend `undefined` pour ce qui n'a pas de durée : une publication Bluesky, une
+ * vidéo dont YouTube n'a rien dit. L'appelant n'affiche alors pas de pastille.
+ */
+export function formatSocialDuration(seconds: number | undefined): string | undefined {
+  if (seconds === undefined || seconds <= 0) {
+    return undefined;
+  }
+
+  const heures = seconds >= 3600;
+
+  return Duration.fromObject({ seconds })
+    .shiftTo(...(heures ? (["hours", "minutes", "seconds"] as const) : (["minutes", "seconds"] as const)))
+    .toFormat(heures ? "h:mm:ss" : "m:ss");
+}
+
 export type YouTubeSocialAccount = {
   /** L'identifiant `UC…` de la chaîne. */
   channelId: string;

@@ -122,7 +122,8 @@
       "types": {
         "actu": "Actu",
         "video": "Vidéo",
-        "deck": "Deck"
+        "deck": "Deck",
+        "social": "Réseaux"
       }
     },
     "lieux": {

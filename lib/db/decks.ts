@@ -627,11 +627,21 @@ export async function getDeckLegendFacets(gameId?: string): Promise<DeckLegendFa
  * publié il y a deux ans qui domine le classement des favoris n'est pas
  * l'actualité de la librairie.
  */
-export async function getFeaturedDecks(gameId?: string, limit = 3): Promise<Deck[]> {
+export async function getFeaturedDecks(
+  gameId?: string | string[],
+  limit = 3,
+): Promise<Deck[]> {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const query: Record<string, unknown> = { visibility: "public", updatedAt: { $gte: since } };
-  if (gameId) {
-    query.gameId = gameId;
+
+  // Un jeu, ou plusieurs : le fil de l'accueil demande les jeux qu'on suit.
+  // Une liste vide ne filtre rien, comme une valeur absente.
+  const gameIds = Array.isArray(gameId) ? gameId : gameId ? [gameId] : [];
+
+  if (gameIds.length === 1) {
+    query.gameId = gameIds[0];
+  } else if (gameIds.length > 1) {
+    query.gameId = { $in: gameIds };
   }
 
   let docs = await db

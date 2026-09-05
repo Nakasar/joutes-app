@@ -122,7 +122,8 @@
       "types": {
         "actu": "Notizia",
         "video": "Video",
-        "deck": "Mazzo"
+        "deck": "Mazzo",
+        "social": "Social"
       }
     },
     "lieux": {

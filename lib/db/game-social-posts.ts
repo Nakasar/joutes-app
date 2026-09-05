@@ -196,6 +196,36 @@ export async function listGameSocialPostsWithHidden(
 }
 
 /**
+ * Les publications les plus récentes, **tous jeux confondus**.
+ *
+ * Ce que lit le fil de l'accueil, là où `listGameSocialPosts` sert la fiche
+ * d'un jeu. La distinction n'est pas cosmétique : le fil mêle plusieurs jeux et
+ * doit donc trier entre eux, ce qu'une boucle de lectures par jeu ne saurait
+ * faire sans tout rapatrier.
+ *
+ * `gameIds` vide veut dire **« aucun jeu »**, et rend donc une liste vide —
+ * contrairement à `undefined`, qui ne filtre pas. C'est la même distinction que
+ * `listLiveGameStreams`, et pour la même raison : « cette personne ne suit
+ * aucun jeu » et « on ne filtre pas » ne demandent pas la même réponse.
+ */
+export async function listRecentSocialPosts({
+  gameIds,
+  limit = 12,
+}: { gameIds?: string[]; limit?: number } = {}): Promise<GameSocialPost[]> {
+  if (gameIds && gameIds.length === 0) {
+    return [];
+  }
+
+  const docs = await collection
+    .find({ hiddenAt: null, ...(gameIds ? { gameId: { $in: gameIds } } : {}) })
+    .sort({ publishedAt: -1 })
+    .limit(Math.max(1, Math.min(limit, GAME_SOCIAL_KEEP)))
+    .toArray();
+
+  return docs.map(toGameSocialPost);
+}
+
+/**
  * Les identifiants déjà connus d'un jeu, pour une plateforme.
  *
  * Sert la résolution paresseuse du tour YouTube : une publication déjà rangée
