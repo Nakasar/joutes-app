@@ -5,7 +5,8 @@ ses directs s'annoncer tout seuls sur les vitrines qu'on a choisies.
 
 > Ce document ne parle que des chaînes **liées à un compte**. Les chaînes des
 > **éditeurs**, suivies depuis la fiche de leur jeu, n'ont ni liaison ni OAuth
-> et ne passent pas par le hub : voir [GAME_LIVES.md](GAME_LIVES.md).
+> et ne passent pas par le hub : voir [GAME_LIVES.md](GAME_LIVES.md) pour leurs
+> directs, [GAME_SOCIAL.md](GAME_SOCIAL.md) pour leurs publications.
 
 ## Le principe
 

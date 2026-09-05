@@ -1,6 +1,8 @@
 /**
- * Index des directs : les chaînes liées à un compte (`stream_links`) et celles
- * des éditeurs suivies depuis la fiche d'un jeu (`game_streams`).
+ * Index des directs et des réseaux : les chaînes liées à un compte
+ * (`stream_links`), celles des éditeurs suivies depuis la fiche d'un jeu
+ * (`game_streams`), et les publications qu'on en rapatrie
+ * (`game_social_posts`).
  *
  * Les unicités sont des **règles**, pas des optimisations :
  *
@@ -12,7 +14,10 @@
  * - un jeu ne suit qu'une chaîne par plateforme, parce que sa fiche ne porte
  *   qu'un lien par réseau. C'est aussi la clé sur laquelle le cron horaire
  *   fait son `upsert` : sans elle, deux tours qui se chevauchent créeraient
- *   deux documents pour la même chaîne.
+ *   deux documents pour la même chaîne ;
+ * - une publication d'un réseau n'existe qu'une fois par jeu — même raison,
+ *   pour le cron biquotidien de `game_social_posts`, dont l'upsert est aussi
+ *   ce qui préserve un masquage administrateur d'un tour à l'autre.
  *
  * Sans elles, la fonctionnalité *marche* jusqu'au jour où elle ne marche plus,
  * et la réparation demande alors de trancher entre des documents également
@@ -75,6 +80,17 @@ const INDEXES: IndexDefinition[] = [
     collection: "game_streams",
     keys: { live: 1 },
     why: "Les vitrines ne veulent que ce qui diffuse, et le cas courant est qu'il n'y en ait aucun",
+  },
+  {
+    collection: "game_social_posts",
+    keys: { gameId: 1, platform: 1, externalId: 1 },
+    options: { unique: true },
+    why: "Une publication n'existe qu'une fois par jeu ; c'est la clé de l'upsert de la collecte",
+  },
+  {
+    collection: "game_social_posts",
+    keys: { gameId: 1, hiddenAt: 1, publishedAt: -1 },
+    why: "La lecture des vitrines et le tri de la purge, qui posent la même question",
   },
 ];
 

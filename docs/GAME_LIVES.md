@@ -4,6 +4,11 @@ Le site officiel et les réseaux de l'éditeur sur la fiche du jeu — et, pour 
 chaîne YouTube, un sondage horaire qui allume son direct sur Joutes dès qu'il
 commence.
 
+> La même chaîne YouTube sert une seconde fonctionnalité : la récolte de ses
+> vidéos et de ses shorts, deux fois par jour, décrite dans
+> [GAME_SOCIAL.md](GAME_SOCIAL.md). Les deux crons lisent `game_streams` — celui
+> des réseaux s'y sert du `channelId` déjà résolu plutôt que de le redemander.
+
 ## Le principe
 
 Deux fonctionnalités qui n'en font qu'une, parce que la seconde se sert de la
@@ -152,8 +157,14 @@ la détection dort.
 
 | Variable | Sans elle |
 | --- | --- |
-| `YOUTUBE_API_KEY` | Aucun direct n'est détecté (`youtubeConfig()` rend `null`) |
+| `YOUTUBE_API_KEY` | Aucun direct n'est détecté (`youtubeApiKey()` rend `null`) |
 | `CRON_SECRET` | Le cron refuse tout |
+
+`YOUTUBE_WEBSUB_SECRET` n'entre **pas** dans ce tableau, et c'est le sens de
+`youtubeApiKey()` : ce cron ne pose aucun abonnement chez Google, il lit un flux
+public et interroge `videos.list`. Il a longtemps exigé ce secret quand même —
+par `youtubeConfig()`, qui sert le chemin du hub — et se coupait donc pour une
+valeur qu'il n'emploie nulle part, en contradiction avec la ligne ci-dessus.
 
 Le cron est déclaré dans `vercel.json` :
 

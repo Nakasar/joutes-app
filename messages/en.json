@@ -375,6 +375,7 @@
       "decks": "Decks",
       "news": "News",
       "quizz": "Quizzes",
+      "social": "Socials",
       "cubes": "Cubes"
     },
     "explorer": {
@@ -398,6 +399,10 @@
         "title": "{channel} is live",
         "since": "for {duration}",
         "watchOn": "Watch on YouTube"
+      },
+      "social": {
+        "title": "On social media",
+        "viewAll": "See all posts"
       },
       "links": {
         "title": "Follow the publisher",
@@ -867,6 +872,29 @@
       "description": "The lists published by the community for {gameName}.",
       "create": "Create a deck",
       "signInToCreate": "Sign in to create a deck"
+    },
+    "social": {
+      "metadata": {
+        "notFoundTitle": "Game not found",
+        "title": "On social media — {gameName}",
+        "description": "The latest posts from the {gameName} publisher's accounts."
+      },
+      "title": "On social media — {gameName}",
+      "subtitle": "The latest posts from the publisher's accounts, collected twice a day.",
+      "back": "Back to the game",
+      "empty": "No posts for this game yet.",
+      "openOn": "Open on {platform}",
+      "kind": {
+        "post": "Post",
+        "video": "Video",
+        "short": "Short"
+      },
+      "moderation": {
+        "hide": "Hide",
+        "unhide": "Show again",
+        "hidden": "Hidden",
+        "error": "Hiding failed."
+      }
     },
     "news": {
       "metadata": {

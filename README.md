@@ -93,6 +93,16 @@ Une actualité peut être reprise d'un article publié ailleurs — la FAQ d'une
 
 Pour plus de détails, voir [docs/NEWS_IMPORT.md](docs/NEWS_IMPORT.md).
 
+### Réseaux d'un éditeur sur la fiche de son jeu
+
+Un jeu peut republier ce que publient les comptes de son éditeur : deux fois par
+jour, Joutes sonde son compte Bluesky et sa chaîne YouTube, et affiche leurs
+dernières publications, vidéos et shorts en grille — sur la fiche du jeu et sur
+sa page « Réseaux ». Un administrateur peut masquer une publication, et le
+masquage survit aux tours suivants.
+
+Pour plus de détails, voir [docs/GAME_SOCIAL.md](docs/GAME_SOCIAL.md).
+
 ### Liens des éditeurs et directs sur la fiche d'un jeu
 
 La fiche d'un jeu porte le site officiel de son éditeur et ses réseaux, saisis
