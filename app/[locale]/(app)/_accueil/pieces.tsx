@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Layers, Newspaper, Play, Radio } from "lucide-react";
+import { AtSign, Layers, Newspaper, Play, Radio } from "lucide-react";
 
 import { cn } from "@/lib/utils.ts";
 import { externalUrl } from "@/lib/lairs/urls.ts";
@@ -107,6 +107,10 @@ const ICONES_TIRAGE = {
   video: Play,
   deck: Layers,
   direct: Radio,
+  // Le repli d'une publication sans image. Le logo de sa plateforme, lui, est
+  // rendu par la coupure à côté du compte : il dit d'où vient la publication,
+  // là où cette icône ne dit que « il n'y avait pas d'image ».
+  social: AtSign,
 } as const;
 
 /**

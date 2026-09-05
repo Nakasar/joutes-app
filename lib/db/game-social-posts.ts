@@ -63,6 +63,27 @@ export const GAME_SOCIAL_KEEP = 100;
 /** Ce que la section de la fiche montre, avant le lien « voir tout ». */
 export const SOCIAL_SECTION_LIMIT = 12;
 
+/**
+ * La borne d'une lecture, ou `null` quand il n'y a rien à lire.
+ *
+ * Deux pièges se croisent ici, et un seul `Math.max` n'en évite qu'un.
+ * `limit(0)` chez MongoDB ne veut pas dire « aucun document » mais **« aucune
+ * borne »** — donc la collection entière ; une borne négative y veut dire « au
+ * plus tant, puis ferme le curseur ». Relever le plancher à un écarte ces deux
+ * lectures, mais rend alors **une** publication là où l'appelant n'en demandait
+ * aucune : la garde qui protège la base ment à l'appelant.
+ *
+ * D'où `null`. « Combien lire ? » n'a pas de réponse en nombre quand la réponse
+ * est « rien » — l'appelant rend une liste vide sans toucher la base, ce qui est
+ * à la fois exact et moins cher.
+ */
+function borneLecture(limit: number): number | null {
+  const borne = Math.min(Math.floor(limit), GAME_SOCIAL_KEEP);
+
+  // `NaN > 0` est faux, ce qui range aussi une borne illisible du bon côté.
+  return borne > 0 ? borne : null;
+}
+
 function toGameSocialPost(doc: WithId<Document>): GameSocialPost {
   return {
     id: doc._id.toString(),
@@ -149,10 +170,15 @@ export async function listGameSocialPosts(
   gameId: string,
   limit: number = GAME_SOCIAL_KEEP,
 ): Promise<GameSocialPost[]> {
+  const borne = borneLecture(limit);
+  if (borne === null) {
+    return [];
+  }
+
   const docs = await collection
     .find({ gameId, hiddenAt: null })
     .sort({ publishedAt: -1 })
-    .limit(Math.max(1, Math.min(limit, GAME_SOCIAL_KEEP)))
+    .limit(borne)
     .toArray();
 
   return docs.map(toGameSocialPost);
@@ -181,18 +207,56 @@ export async function listGameSocialPostsWithHidden(
   gameId: string,
   limit: number = GAME_SOCIAL_KEEP,
 ): Promise<GameSocialPost[]> {
+  const borne = borneLecture(limit);
+
   const [visible, hidden] = await Promise.all([
-    collection
-      .find({ gameId, hiddenAt: null })
-      .sort({ publishedAt: -1 })
-      .limit(Math.max(1, Math.min(limit, GAME_SOCIAL_KEEP)))
-      .toArray(),
+    // La borne ne concerne que les visibles ; les masquées se lisent toutes,
+    // pour la raison dite plus haut. Une borne nulle rend donc la seule liste
+    // de modération, ce qui est ce que l'appelant a demandé.
+    borne === null
+      ? Promise.resolve<WithId<Document>[]>([])
+      : collection
+          .find({ gameId, hiddenAt: null })
+          .sort({ publishedAt: -1 })
+          .limit(borne)
+          .toArray(),
     collection.find({ gameId, hiddenAt: { $ne: null } }).sort({ publishedAt: -1 }).toArray(),
   ]);
 
   return [...visible, ...hidden]
     .map(toGameSocialPost)
     .sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : a.publishedAt > b.publishedAt ? -1 : 0));
+}
+
+/**
+ * Les publications les plus récentes, **tous jeux confondus**.
+ *
+ * Ce que lit le fil de l'accueil, là où `listGameSocialPosts` sert la fiche
+ * d'un jeu. La distinction n'est pas cosmétique : le fil mêle plusieurs jeux et
+ * doit donc trier entre eux, ce qu'une boucle de lectures par jeu ne saurait
+ * faire sans tout rapatrier.
+ *
+ * `gameIds` vide veut dire **« aucun jeu »**, et rend donc une liste vide —
+ * contrairement à `undefined`, qui ne filtre pas. C'est la même distinction que
+ * `listLiveGameStreams`, et pour la même raison : « cette personne ne suit
+ * aucun jeu » et « on ne filtre pas » ne demandent pas la même réponse.
+ */
+export async function listRecentSocialPosts({
+  gameIds,
+  limit = 12,
+}: { gameIds?: string[]; limit?: number } = {}): Promise<GameSocialPost[]> {
+  const borne = borneLecture(limit);
+  if (borne === null || (gameIds && gameIds.length === 0)) {
+    return [];
+  }
+
+  const docs = await collection
+    .find({ hiddenAt: null, ...(gameIds ? { gameId: { $in: gameIds } } : {}) })
+    .sort({ publishedAt: -1 })
+    .limit(borne)
+    .toArray();
+
+  return docs.map(toGameSocialPost);
 }
 
 /**

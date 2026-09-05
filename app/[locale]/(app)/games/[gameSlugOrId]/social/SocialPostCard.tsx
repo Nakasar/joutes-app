@@ -1,9 +1,10 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { DateTime, Duration } from "luxon";
+import { DateTime } from "luxon";
 import { EyeOff } from "lucide-react";
 
 import { SocialLinkIcon } from "@/components/SocialLinkIcon.tsx";
 import { externalUrl } from "@/lib/lairs/urls.ts";
+import { formatSocialDuration } from "@/lib/social/youtube-posts.ts";
 import { socialPlatform } from "@/lib/social/platforms.ts";
 import type { GameSocialPost } from "@/lib/types/GameSocialPost";
 
@@ -42,12 +43,7 @@ export default async function SocialPostCard({
   const published = DateTime.fromISO(post.publishedAt).setLocale(locale);
   const relative = published.isValid ? published.toRelative() : null;
 
-  const duration =
-    post.durationSeconds && post.durationSeconds > 0
-      ? Duration.fromObject({ seconds: post.durationSeconds })
-          .shiftTo(...(post.durationSeconds >= 3600 ? (["hours", "minutes", "seconds"] as const) : (["minutes", "seconds"] as const)))
-          .toFormat(post.durationSeconds >= 3600 ? "h:mm:ss" : "m:ss")
-      : null;
+  const duration = formatSocialDuration(post.durationSeconds);
 
   return (
     <article

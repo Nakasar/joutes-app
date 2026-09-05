@@ -211,10 +211,17 @@ export async function listPublicContentsByAuthors(
 export async function listRecentPublicContents({
   gameId,
   limit = 12,
-}: { gameId?: string; limit?: number } = {}): Promise<UserContent[]> {
+}: { gameId?: string | string[]; limit?: number } = {}): Promise<UserContent[]> {
   const filter: Record<string, unknown> = { visibility: "public" };
-  if (gameId) {
-    filter.gameId = gameId;
+
+  // Un jeu, ou plusieurs : le fil de l'accueil demande les jeux qu'on suit.
+  // Une liste vide ne filtre rien, comme une valeur absente.
+  const gameIds = Array.isArray(gameId) ? gameId : gameId ? [gameId] : [];
+
+  if (gameIds.length === 1) {
+    filter.gameId = gameIds[0];
+  } else if (gameIds.length > 1) {
+    filter.gameId = { $in: gameIds };
   }
 
   const docs = await userContentsCollection

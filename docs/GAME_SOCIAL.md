@@ -35,6 +35,8 @@ vrille, on veut un interrupteur — pas un nettoyage de champ.
 | `lib/db/game-social-posts.ts` | La collection `game_social_posts`, ses index, ses écritures |
 | `app/api/cron/game-social/route.ts` | Le tour, à 1 h et 13 h |
 | `app/[locale]/(app)/games/[gameSlugOrId]/GameSocialSection.tsx` | La section de la fiche |
+| `app/[locale]/(app)/_accueil/accueil-data.ts` | La quatrième source du fil de l'accueil |
+| `lib/content/feed-mix.ts` | **Pur.** Le plafond qui empêche un éditeur bavard de noyer le fil |
 | `app/[locale]/(app)/games/[gameSlugOrId]/social/` | La page dédiée, la vignette, le masquage |
 | `components/brand/BrandMarks.tsx` | Les marques que `lucide-react` ne porte pas |
 
@@ -238,6 +240,15 @@ colonnes, puis « voir tout ».
 
 **La page dédiée** `/games/<jeu>/social` montre les cent. **Sans pagination**, et
 c'est à assumer : la rétention *est* la page.
+
+**Le fil de l'accueil** en est la troisième vitrine, sous son propre onglet
+« Réseaux » et mêlé aux autres sources dans « Tout ». Il ne montre que les jeux
+qu'on suit — comme le reste du fil — et un plafond y borne la part des
+publications : un éditeur qui poste cinq fois par jour prendrait sinon les six
+places. Le plafond garantit qu'**aucune autre source n'est évincée**, sans
+laisser le fil à moitié vide pour autant : les places qu'aucune autre ne prend
+reviennent aux publications. La règle est pure et testée
+(`lib/content/feed-mix.ts`).
 
 **Les images tierces** se rendent en balise `<img>` nue — `next.config.ts` ne
 déclare que l'hôte Vercel Blob pour l'optimiseur — filtrées par `externalUrl`
