@@ -375,6 +375,7 @@
       "decks": "Mazzi",
       "news": "Notizie",
       "quizz": "Quiz",
+      "social": "Social",
       "cubes": "Cubi"
     },
     "explorer": {
@@ -398,6 +399,10 @@
         "title": "{channel} è in diretta",
         "since": "da {duration}",
         "watchOn": "Guarda su YouTube"
+      },
+      "social": {
+        "title": "Sui social",
+        "viewAll": "Vedi tutti i post"
       },
       "links": {
         "title": "Segui l'editore",
@@ -867,6 +872,29 @@
       "description": "Le liste pubblicate dalla community per {gameName}.",
       "create": "Crea un mazzo",
       "signInToCreate": "Accedi per creare un mazzo"
+    },
+    "social": {
+      "metadata": {
+        "notFoundTitle": "Gioco non trovato",
+        "title": "Sui social — {gameName}",
+        "description": "Gli ultimi post degli account dell'editore di {gameName}."
+      },
+      "title": "Sui social — {gameName}",
+      "subtitle": "Gli ultimi post degli account dell'editore, raccolti due volte al giorno.",
+      "back": "Torna al gioco",
+      "empty": "Nessun post per questo gioco al momento.",
+      "openOn": "Apri su {platform}",
+      "kind": {
+        "post": "Post",
+        "video": "Video",
+        "short": "Short"
+      },
+      "moderation": {
+        "hide": "Nascondi",
+        "unhide": "Mostra di nuovo",
+        "hidden": "Nascosto",
+        "error": "Impossibile nascondere il post."
+      }
     },
     "news": {
       "metadata": {

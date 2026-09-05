@@ -59,6 +59,11 @@ export const GAME_FEATURES = {
     description:
       "Les parties de ce jeu se saisissent en rapport de bataille : listes d'armée, scénario et notes. Pour les jeux de figurines.",
   },
+  socialFeed: {
+    label: "Réseaux de l'éditeur",
+    description:
+      "Publie automatiquement les dernières publications des comptes déclarés dans l'onglet « Liens et réseaux » — sur la fiche du jeu et sur sa page « Réseaux ». Le fanion est l'autorisation de republier, les liens sont les sources : sans eux, la case ne fait rien.",
+  },
 } as const;
 
 export type GameFeatureKey = keyof typeof GAME_FEATURES;

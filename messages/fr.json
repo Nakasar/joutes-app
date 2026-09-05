@@ -375,6 +375,7 @@
       "decks": "Decks",
       "news": "Actualités",
       "quizz": "Quizz",
+      "social": "Réseaux",
       "cubes": "Cubes"
     },
     "explorer": {
@@ -398,6 +399,10 @@
         "title": "{channel} est en direct",
         "since": "depuis {duration}",
         "watchOn": "Regarder sur YouTube"
+      },
+      "social": {
+        "title": "Sur les réseaux",
+        "viewAll": "Voir toutes les publications"
       },
       "links": {
         "title": "Suivre l'éditeur",
@@ -867,6 +872,29 @@
       "description": "Les listes publiées par la communauté pour {gameName}.",
       "create": "Créer un deck",
       "signInToCreate": "Connectez-vous pour créer un deck"
+    },
+    "social": {
+      "metadata": {
+        "notFoundTitle": "Jeu introuvable",
+        "title": "Sur les réseaux — {gameName}",
+        "description": "Les dernières publications des comptes de l'éditeur de {gameName}."
+      },
+      "title": "Sur les réseaux — {gameName}",
+      "subtitle": "Les dernières publications des comptes de l'éditeur, reprises deux fois par jour.",
+      "back": "Retour au jeu",
+      "empty": "Aucune publication pour ce jeu pour le moment.",
+      "openOn": "Ouvrir sur {platform}",
+      "kind": {
+        "post": "Publication",
+        "video": "Vidéo",
+        "short": "Short"
+      },
+      "moderation": {
+        "hide": "Masquer",
+        "unhide": "Réafficher",
+        "hidden": "Masquée",
+        "error": "Le masquage a échoué."
+      }
     },
     "news": {
       "metadata": {

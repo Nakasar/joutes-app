@@ -33,11 +33,11 @@ export const GAME_LINKS = {
     label: "YouTube",
     placeholder: "https://www.youtube.com/@riftbound",
     /**
-     * Seule adresse de la table à faire autre chose qu'un lien : c'est la
-     * chaîne que le cron horaire interroge pour savoir si l'éditeur diffuse.
-     * Voir `docs/GAME_LIVES.md`.
+     * Cette adresse fait deux choses de plus qu'ouvrir une page : le cron
+     * horaire y cherche un direct (`docs/GAME_LIVES.md`), et le cron
+     * biquotidien y récolte vidéos et shorts (`docs/GAME_SOCIAL.md`).
      */
-    note: "La chaîne surveillée pour les directs de l'éditeur. Une adresse de chaîne (@handle, /channel/UC…), pas une vidéo.",
+    note: "La chaîne surveillée pour les directs, les vidéos et les shorts de l'éditeur. Une adresse de chaîne (@handle, /channel/UC…), pas une vidéo.",
   },
   twitch: {
     label: "Twitch",
@@ -45,10 +45,14 @@ export const GAME_LINKS = {
   },
   x: {
     label: "X",
+    /** Déclarée, mais non collectée — voir `lib/social/platforms.ts`. */
+    note: "Affiché comme lien. Les publications ne sont pas reprises : X n'a plus d'API de lecture gratuite.",
     placeholder: "https://x.com/playriftbound",
   },
   instagram: {
     label: "Instagram",
+    /** Déclarée, mais non collectée — voir `lib/social/platforms.ts`. */
+    note: "Affiché comme lien. Les publications ne sont pas reprises : Instagram n'expose pas les comptes de tiers.",
     placeholder: "https://www.instagram.com/playriftbound/",
   },
   tiktok: {
@@ -58,6 +62,8 @@ export const GAME_LINKS = {
   bluesky: {
     label: "Bluesky",
     placeholder: "https://bsky.app/profile/riftbound.bsky.social",
+    /** Le compte dont le cron biquotidien récolte les publications. */
+    note: "Le compte dont les publications sont reprises sur la fiche du jeu. Une adresse de profil, pas un message.",
   },
   facebook: {
     label: "Facebook",

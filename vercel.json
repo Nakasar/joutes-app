@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/game-lives",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/game-social",
+      "schedule": "0 1,13 * * *"
     }
   ]
 }

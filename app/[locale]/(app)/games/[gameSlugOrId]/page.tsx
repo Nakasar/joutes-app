@@ -2,6 +2,7 @@ import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getLairsByIds } from "@/lib/db/lairs.ts";
 import { getNews } from "@/lib/db/news.ts";
 import { getGameStream } from "@/lib/db/game-streams.ts";
+import { listGameSocialPosts, SOCIAL_SECTION_LIMIT } from "@/lib/db/game-social-posts.ts";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { GAME_TYPES } from "@/lib/constants/game-types.ts";
@@ -17,6 +18,7 @@ import FollowGameButton from "./FollowGameButton.tsx";
 import { FeaturedEventsAgenda } from "./FeaturedEventsAgenda.tsx";
 import GameLiveSection from "./GameLiveSection.tsx";
 import GamePublisherLinks from "./GamePublisherLinks.tsx";
+import { GameSocialSection } from "./GameSocialSection.tsx";
 import { GameNewsSection } from "./GameNewsSection.tsx";
 import { getTranslations } from "next-intl/server";
 import { Suspense, cache } from "react";
@@ -114,6 +116,16 @@ export default function GameDetailPage({ params }: GameDetailPageProps) {
 
         <Suspense fallback={<GameSectionSkeleton cards={3} columns={3} />}>
           <GameNews params={params} />
+        </Suspense>
+
+        {/* Les actualités sont la voix éditoriale de Joutes, les réseaux la voix
+            brute de l'éditeur : les deux répondent à « quoi de neuf », et un
+            agenda de lieux entre les deux casserait la lecture. Fallback `null`
+            pour la même raison que le direct — la silhouette serait rendue
+            avant que le fanion soit lu, donc sur toutes les fiches qui n'ont
+            rien à montrer. */}
+        <Suspense fallback={null}>
+          <GameSocial params={params} />
         </Suspense>
 
         {/* Pas de silhouette : cet agenda n'existe que pour les jeux qui ont des
@@ -429,6 +441,32 @@ async function GameLive({ params }: GameDetailPageProps) {
   }
 
   return <GameLiveSection stream={stream} gameName={game.name} />;
+}
+
+/**
+ * Les dernières publications des réseaux de l'éditeur.
+ *
+ * Lues dans `game_social_posts` et non sur le jeu : le catalogue est servi en
+ * cache pour des jours, et un contenu qui change deux fois par jour n'y aurait
+ * aucune fraîcheur. Voir `docs/GAME_SOCIAL.md`.
+ */
+async function GameSocial({ params }: GameDetailPageProps) {
+  const { gameSlugOrId } = await params;
+  const game = await requireGame(gameSlugOrId);
+
+  // Le fanion avant la base : la plupart des fiches sortent ici, sans requête
+  // et sans basculer au rendu dynamique.
+  if (!game.features?.socialFeed) {
+    return null;
+  }
+
+  // Le pilote Mongo touche à l'horloge en lisant, ce qu'un prérendu ne sait pas
+  // figer, et aucune frontière n'y change rien.
+  await connection();
+
+  const posts = await listGameSocialPosts(game.id, SOCIAL_SECTION_LIMIT);
+
+  return <GameSocialSection posts={posts} gameSlug={game.slug ?? gameSlugOrId} />;
 }
 
 async function GamePublisher({ params }: GameDetailPageProps) {

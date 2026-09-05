@@ -375,6 +375,7 @@
       "decks": "Decks",
       "news": "Neuigkeiten",
       "quizz": "Quiz",
+      "social": "Netzwerke",
       "cubes": "Cubes"
     },
     "explorer": {
@@ -398,6 +399,10 @@
         "title": "{channel} ist live",
         "since": "seit {duration}",
         "watchOn": "Auf YouTube ansehen"
+      },
+      "social": {
+        "title": "In den sozialen Netzwerken",
+        "viewAll": "Alle Beiträge ansehen"
       },
       "links": {
         "title": "Dem Publisher folgen",
@@ -867,6 +872,29 @@
       "description": "Die von der Community für {gameName} veröffentlichten Listen.",
       "create": "Deck erstellen",
       "signInToCreate": "Zum Erstellen eines Decks anmelden"
+    },
+    "social": {
+      "metadata": {
+        "notFoundTitle": "Spiel nicht gefunden",
+        "title": "In den sozialen Netzwerken — {gameName}",
+        "description": "Die neuesten Beiträge der Konten des {gameName}-Publishers."
+      },
+      "title": "In den sozialen Netzwerken — {gameName}",
+      "subtitle": "Die neuesten Beiträge der Konten des Publishers, zweimal täglich abgerufen.",
+      "back": "Zurück zum Spiel",
+      "empty": "Noch keine Beiträge für dieses Spiel.",
+      "openOn": "Auf {platform} öffnen",
+      "kind": {
+        "post": "Beitrag",
+        "video": "Video",
+        "short": "Short"
+      },
+      "moderation": {
+        "hide": "Ausblenden",
+        "unhide": "Wieder anzeigen",
+        "hidden": "Ausgeblendet",
+        "error": "Das Ausblenden ist fehlgeschlagen."
+      }
     },
     "news": {
       "metadata": {
