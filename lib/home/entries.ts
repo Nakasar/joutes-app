@@ -137,7 +137,9 @@ export function socialEntry(post: GameSocialPost): FeedSocialEntry {
   return {
     type: "social",
     id: post.id,
-    title: post.text ?? post.account.displayName ?? post.account.handle,
+    // `||` et non `??` : un texte vide — une publication qui n'est qu'une
+    // image — vaut « pas de texte », et laisserait sinon une carte muette.
+    title: post.text?.trim() || post.account.displayName || post.account.handle,
     source: post.account.handle,
     url: post.url,
     platform: post.platform,

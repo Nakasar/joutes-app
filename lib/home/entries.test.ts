@@ -101,6 +101,7 @@ describe("socialEntry", () => {
 
   it("titre par le texte, sinon par le nom du compte, sinon par le handle", () => {
     assert.equal(socialEntry({ ...post, text: "Bonjour" }).title, "Bonjour");
+    assert.equal(socialEntry({ ...post, text: "  " }).title, "La chaîne");
     assert.equal(socialEntry(post).title, "La chaîne");
     assert.equal(socialEntry({ ...post, account: { ...post.account, displayName: undefined } }).title, "@chaine");
   });

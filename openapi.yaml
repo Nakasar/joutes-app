@@ -1738,13 +1738,13 @@ paths:
       parameters:
         - { name: month, in: query, schema: { type: integer, minimum: 1, maximum: 12 } }
         - { name: year, in: query, schema: { type: integer, minimum: 2000, maximum: 3000 } }
-        - { name: gameId, in: query, description: "Game id, or the special value `followed`. Honoured on the authenticated and anonymous-geospatial branches alike (`followed` means no game filter for an anonymous caller).", schema: { type: string, default: followed } }
+        - { name: gameId, in: query, description: "Game id, or the special values `followed` and `all`. Honoured on the authenticated and anonymous-geospatial branches alike (`followed` means no game filter for an anonymous caller). Anything else answers 400.", schema: { type: string, default: followed } }
         - { name: lairId, in: query, description: "Scopes to one lair. The lair's privacy gate applies: a private lair is only readable by a follower, its team or an admin — anyone else gets 404, never 403.", schema: { type: string } }
         - { name: userLat, in: query, schema: { type: number } }
         - { name: userLon, in: query, schema: { type: number } }
         - { name: maxDistance, in: query, description: "Max distance in km, must be > 0.", schema: { type: number } }
-        - { name: afterDate, in: query, description: "ISO date-time lower bound on startDateTime, independent of month/year. Applied for an authenticated request and for the anonymous-geospatial branch (ignored when `lairId` scopes the request).", schema: { type: string, format: date-time } }
-        - { name: beforeDate, in: query, description: "ISO date-time upper bound on startDateTime, independent of month/year. Applied for an authenticated request and for the anonymous-geospatial branch (ignored when `lairId` scopes the request).", schema: { type: string, format: date-time } }
+        - { name: afterDate, in: query, description: "ISO date-time lower bound on startDateTime, independent of month/year, compared as instants (stored values may carry a UTC offset). Applied for an authenticated request and for the anonymous-geospatial branch (ignored when `lairId` scopes the request).", schema: { type: string, format: date-time } }
+        - { name: beforeDate, in: query, description: "ISO date-time upper bound on startDateTime, independent of month/year, compared as instants. Applied for an authenticated request and for the anonymous-geospatial branch (ignored when `lairId` scopes the request).", schema: { type: string, format: date-time } }
       responses:
         "200":
           description: Events.

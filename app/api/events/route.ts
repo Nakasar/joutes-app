@@ -1,9 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import { auth } from "@/lib/auth";
 import { getEventsByLairId, getEventsForUser, getEventsByLairIds } from "@/lib/db/events";
 import { Event } from "@/lib/types/Event";
 import { getLairIdsNearLocation } from "@/lib/db/lairs";
 import { findVisibleLair } from "@/lib/api/lairs";
+
+/**
+ * Marge de la requête sur les bornes `afterDate` / `beforeDate`.
+ *
+ * `startDateTime` n'est pas stocké dans une forme unique : les événements
+ * moissonnés portent un décalage explicite (`…+02:00`), ceux saisis sur le
+ * site la forme `Z`. Comparer ces chaînes à une borne UTC caractère par
+ * caractère revient à comparer une heure locale à un instant : un événement
+ * de 23 h à Paris sort avant ou après la borne selon sa forme, pas selon son
+ * heure. Même remède que `countUserAttendanceBetween` : la requête ratisse
+ * une journée plus large — elle reste indexable — et le tri fin se fait en
+ * mémoire, sur des instants réellement analysés.
+ */
+const SCAN_MARGIN_MS = 24 * 60 * 60 * 1000;
+
+function widened(iso: string | undefined, direction: -1 | 1): string | undefined {
+  if (!iso) return undefined;
+  return new Date(new Date(iso).getTime() + direction * SCAN_MARGIN_MS).toISOString();
+}
+
+function withinBounds(events: Event[], afterDate?: string, beforeDate?: string): Event[] {
+  if (!afterDate && !beforeDate) return events;
+  const after = afterDate ? Date.parse(afterDate) : -Infinity;
+  const before = beforeDate ? Date.parse(beforeDate) : Infinity;
+  return events.filter((event) => {
+    const start = Date.parse(event.startDateTime);
+    // Une date illisible ne se laisse pas ranger : on la garde plutôt que de
+    // la faire disparaître d'un agenda pour un défaut de forme.
+    if (Number.isNaN(start)) return true;
+    return start >= after && start <= before;
+  });
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,6 +82,16 @@ export async function GET(request: NextRequest) {
     }
     if (afterDate && beforeDate && afterDate > beforeDate) {
       return NextResponse.json({ error: "Paramètres de date invalides" }, { status: 400 });
+    }
+    // Ce que la base reçoit : les bornes élargies d'une journée ; ce que la
+    // réponse rend : les bornes exactes, appliquées sur des instants analysés.
+    const scanBounds = { afterDate: widened(afterDate, -1), beforeDate: widened(beforeDate, 1) };
+
+    // Un jeu se désigne par son identifiant, ou par les deux valeurs
+    // spéciales. Autre chose n'est pas un jeu : 400 plutôt qu'une conversion
+    // en ObjectId qui échouerait en base.
+    if (gameId !== "followed" && gameId !== "all" && !ObjectId.isValid(gameId)) {
+      return NextResponse.json({ error: "Paramètre gameId invalide" }, { status: 400 });
     }
 
     // Validate month and year
@@ -118,26 +161,33 @@ export async function GET(request: NextRequest) {
         // recevoir ceux du mois dernier, ni ceux d'un jeu qu'il n'a pas
         // demandé. `getEventsByLairIds` filtre déjà en base sur le mois et
         // l'année : le second tri en mémoire ne faisait que le répéter.
-        events = await getEventsByLairIds(nearbyLairIds, {
-          year: yearNum,
-          month: monthNum,
+        events = withinBounds(
+          await getEventsByLairIds(nearbyLairIds, {
+            year: yearNum,
+            month: monthNum,
+            ...scanBounds,
+            gameIds: gameId !== "followed" && gameId !== "all" ? [gameId] : undefined,
+          }),
           afterDate,
           beforeDate,
-          gameIds: gameId !== "followed" && gameId !== "all" ? [gameId] : undefined,
-        });
+        );
       } else if (!session?.user) {
         // Si pas d'utilisateur et pas de localisation, retourner un tableau vide
         return NextResponse.json({ events: [] });
       } else {
         // Utilisateur connecté, utiliser la fonction normale
-        events = await getEventsForUser(
-          session.user.id,
-          gameId,
-          monthNum,
-          yearNum,
-          userLocation,
-          maxDistanceNum,
-          { afterDate, beforeDate }
+        events = withinBounds(
+          await getEventsForUser(
+            session.user.id,
+            gameId,
+            monthNum,
+            yearNum,
+            userLocation,
+            maxDistanceNum,
+            scanBounds
+          ),
+          afterDate,
+          beforeDate,
         );
       }
     }
