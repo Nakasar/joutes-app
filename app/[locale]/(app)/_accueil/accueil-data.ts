@@ -14,10 +14,12 @@ import { listRecentPublicContents } from "@/lib/db/user-contents.ts";
 import { getFeaturedDecks, searchDecks } from "@/lib/db/decks.ts";
 import { deckCoverPosition, resolveDeckCover } from "@/lib/decks/cover.ts";
 import { getPlayGroupsForUser } from "@/lib/db/play-groups.ts";
+import { listLiveGameStreams } from "@/lib/db/game-streams.ts";
 import { listPlayGroupSessions } from "@/lib/db/play-group-sessions.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
+import { readLiveEmbed } from "@/lib/media/live-embed.ts";
 import type { Event } from "@/lib/types/Event";
-import type { Lair, LairLiveStream } from "@/lib/types/Lair";
+import type { Lair } from "@/lib/types/Lair";
 import type { User } from "@/lib/types/User";
 import type { PlayGroupSession } from "@/lib/types/PlayGroupSession";
 import type { Deck } from "@/lib/types/Deck";
@@ -81,11 +83,28 @@ export type EntreeFil = {
   duree?: string;
 };
 
+/**
+ * Un direct en cours, quelle que soit son origine.
+ *
+ * Deux sources n'ayant rien en commun se rejoignent sur cette carte : le direct
+ * posé sur un **lieu** (`options.live`, voir `docs/STREAM_LINKING.md`) et celui
+ * d'un **éditeur**, détecté sur sa chaîne YouTube (`docs/GAME_LIVES.md`). La
+ * conversion se fait ici, une fois, plutôt que dans le gabarit — comme pour les
+ * trois collections du fil.
+ */
 export type Direct = {
-  lairId: string;
-  lieu: string;
+  /** `lieu:<id>` ou `jeu:<id>` : deux sources, une seule clé de rendu. */
+  cle: string;
+  /** Où mène le clic : la vitrine du lieu, ou la fiche du jeu. */
+  href: string;
   titre: string;
-  live: LairLiveStream;
+  /** Ce qui diffuse — le nom du lieu, ou celui du jeu. */
+  source: string;
+  /** La vignette servie par la plateforme, quand il y en a une. */
+  vignette?: string;
+  viewers?: number;
+  /** Vrai pour un direct d'éditeur : le bandeau change alors de titre. */
+  jeu?: boolean;
 };
 
 /** La position que la page regarde, et d'où elle la tient. */
@@ -201,21 +220,66 @@ export const lireLieux = cache(async (position: Position | null): Promise<Lair[]
 });
 
 /**
- * Les directs en cours, tirés des lieux déjà lus.
+ * Les directs en cours : ceux des lieux, puis ceux des éditeurs.
  *
- * Aucune requête de plus : un direct est posé sur le lieu (`options.live`), et
- * la page vient de lire les lieux pour sa colonne de droite.
+ * Les premiers ne coûtent aucune requête — un direct est posé sur le lieu
+ * (`options.live`), et la page vient de lire les lieux pour sa colonne de
+ * droite. Les seconds en coûtent une, sur une collection où le cas courant est
+ * qu'il n'y ait aucune ligne.
+ *
+ * **Qui voit quoi.** Connecté, les jeux suivis : c'est le même principe que les
+ * lieux juste au-dessus — un choix explicite vaut mieux qu'une devinette. Un
+ * visiteur, lui, n'a rien à personnaliser, et les directs d'éditeurs sont
+ * publics et peu nombreux : il les voit tous, comme il voit les lieux autour de
+ * lui faute de lieux suivis.
+ *
+ * Les directs de jeux passent **en tête** : ils sont rares, et un direct
+ * d'éditeur relégué sous trois boutiques ne serait jamais vu.
  */
 export const lireDirects = cache(async (position: Position | null): Promise<Direct[]> => {
-  const lieux = await lireLieux(position);
+  const [lieux, viewer] = await Promise.all([lireLieux(position), lireViewer()]);
 
   const directs: Direct[] = [];
+
+  for (const stream of await listLiveGameStreams(viewer ? (viewer.games ?? []) : undefined)) {
+    const live = stream.live;
+    if (!live?.url) continue;
+
+    const jeu = await lireJeu(stream.gameId);
+    if (!jeu) continue;
+
+    directs.push({
+      cle: `jeu:${stream.gameId}`,
+      href: `/games/${jeu.slug ?? jeu.id}`,
+      titre: live.title ?? jeu.name,
+      source: stream.channelTitle ?? jeu.name,
+      // L'hôte ne sert qu'au `parent` du lecteur Twitch ; la vignette, elle, ne
+      // dépend de rien. La reconnaissance d'URL reste commune aux deux.
+      vignette: readLiveEmbed(live.url, "localhost")?.thumbnailUrl,
+      jeu: true,
+    });
+  }
+
   for (const lieu of lieux) {
     const live = lieu.options?.live;
     if (!live?.url) continue;
-    directs.push({ lairId: lieu.id, lieu: lieu.name, titre: live.title ?? lieu.name, live });
+
+    directs.push({
+      cle: `lieu:${lieu.id}`,
+      href: `/lairs/${lieu.id}`,
+      titre: live.title ?? lieu.name,
+      source: lieu.name,
+      viewers: live.viewers ?? undefined,
+    });
   }
+
   return directs;
+});
+
+/** Un jeu du catalogue par son identifiant, sans requête de plus. */
+const lireJeu = cache(async (gameId: string): Promise<Game | null> => {
+  const jeux = await readAllGames();
+  return jeux.find((jeu) => jeu.id === gameId) ?? null;
 });
 
 /**

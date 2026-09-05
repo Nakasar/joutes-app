@@ -8,6 +8,7 @@ import {
   gameIdSchema,
   gameFeaturesSchema,
   gameDeckBuilderSchema,
+  gameLinksSchema,
 } from "@/lib/schemas/game.schema.ts";
 import { z } from "zod";
 import * as gamesDb from "@/lib/db/games.ts";
@@ -297,5 +298,56 @@ export async function updateGameFeaturedLairs(
     }
     console.error("Erreur lors de la mise à jour des lieux mis en avant:", error);
     return { success: false, error: "Erreur lors de la mise à jour des lieux mis en avant" };
+  }
+}
+
+/**
+ * Le site de l'éditeur et ses réseaux.
+ *
+ * Une action à part de `updateGame`, comme les fonctionnalités et le deck
+ * builder : chaque onglet n'envoie que ses champs, et deux onglets ouverts côte
+ * à côte ne se recouvrent donc pas.
+ *
+ * Le direct de l'éditeur n'est **pas** rafraîchi ici. Changer l'adresse de la
+ * chaîne demande un appel d'API pour la résoudre, et le faire dans une action
+ * de formulaire ferait attendre l'enregistrement pour un résultat que le tour
+ * de cron suivant obtient de toute façon. Voir `docs/GAME_LIVES.md`.
+ */
+export async function updateGameLinks(id: string, links: unknown) {
+  try {
+    await requireAdmin();
+
+    const validatedId = gameIdSchema.parse(id);
+    const validatedLinks = gameLinksSchema.parse(links);
+
+    const game = await gamesDb.getGameById(validatedId);
+
+    if (!game) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    const updated = await gamesDb.setGameLinks(validatedId, validatedLinks);
+
+    if (!updated) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    // Les pages publiques lisent le catalogue en cache : sans cette invalidation,
+    // une édition n'y apparaîtrait qu'à l'expiration de `cacheLife`.
+    updateTag(GAMES_CACHE_TAG);
+    revalidatePath("/admin/games");
+    revalidatePath(`/admin/games/${game.slug ?? game.id}`);
+    revalidatePath(`/games/${game.slug ?? game.id}`);
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message || "Données invalides",
+      };
+    }
+    console.error("Erreur lors de la mise à jour des liens du jeu:", error);
+    return { success: false, error: "Erreur lors de la mise à jour des liens" };
   }
 }

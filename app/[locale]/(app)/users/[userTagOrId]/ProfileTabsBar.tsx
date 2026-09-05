@@ -10,7 +10,7 @@ import type { UserProfileTab } from "@/lib/users/profile-tabs.ts";
 import type { UserLink } from "@/lib/users/links.ts";
 import { cn } from "@/lib/utils.ts";
 
-import { ProfileLinkIcon } from "./ProfileLinkIcon.tsx";
+import { SocialLinkIcon } from "@/components/SocialLinkIcon.tsx";
 
 /**
  * La barre d'onglets de la vitrine.
@@ -119,7 +119,7 @@ export default function ProfileTabsBar({
                   title={link.label ?? link.host}
                   className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
-                  <ProfileLinkIcon kind={link.kind} className="size-4" />
+                  <SocialLinkIcon kind={link.kind} className="size-4" />
                   <span className="sr-only">{link.label ?? link.host}</span>
                 </a>
               ))}

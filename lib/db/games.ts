@@ -235,6 +235,51 @@ export async function setCurrentProductEdition(id: string, edition: string | nul
   return result.matchedCount > 0;
 }
 
+/**
+ * Le site de l'éditeur et ses réseaux.
+ *
+ * Une **fusion**, pas un remplacement : les clés absentes du formulaire — un
+ * réseau posé à la main en base, un champ ajouté depuis — ne sont pas
+ * effacées, et une clé reçue à `undefined` est retirée du document plutôt que
+ * d'y laisser une chaîne vide. Sans ce dernier point, `readGameLinks` verrait
+ * un lien là où l'administration vient d'en retirer un.
+ *
+ * Rend vrai dès que le jeu existe : réenregistrer les mêmes valeurs ne modifie
+ * aucun document, et ce n'est pas un échec.
+ */
+export async function setGameLinks(
+  id: string,
+  links: Record<string, string | undefined>
+): Promise<boolean> {
+  const set: Record<string, string> = {};
+  const unset: Record<string, ""> = {};
+
+  for (const [key, value] of Object.entries(links)) {
+    if (value === undefined) {
+      unset[`links.${key}`] = "";
+    } else {
+      set[`links.${key}`] = value;
+    }
+  }
+
+  // Mongo refuse une mise à jour vide. Le cas se présente pour un formulaire
+  // qui n'envoie aucune clé ; il vaut « rien à changer », pas une erreur.
+  if (Object.keys(set).length === 0 && Object.keys(unset).length === 0) {
+    const game = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(id) });
+    return game !== null;
+  }
+
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(id) },
+    {
+      ...(Object.keys(set).length > 0 ? { $set: set } : {}),
+      ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}),
+    }
+  );
+
+  return result.matchedCount > 0;
+}
+
 export async function deleteGame(id: string): Promise<boolean> {
   
   const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });

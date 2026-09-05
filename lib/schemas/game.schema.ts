@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { GAME_FEATURE_KEYS } from "@/lib/constants/game-features";
+import { GAME_LINK_KEYS } from "@/lib/constants/game-links";
+import { externalUrl } from "@/lib/lairs/urls";
 import { DECK_ZONE_KEYS } from "@/lib/decks/zones";
 import {
   tournamentResultModeSchema,
@@ -17,6 +19,46 @@ export const gameTypeSchema = z.enum(["TCG", "BoardGame", "VideoGame", "Miniatur
 export const gameFeaturesSchema = z.object(
   Object.fromEntries(GAME_FEATURE_KEYS.map((key) => [key, z.boolean().optional()]))
 ) as z.ZodType<Partial<Record<(typeof GAME_FEATURE_KEYS)[number], boolean>>>;
+
+/**
+ * Le site de l'éditeur et ses réseaux.
+ *
+ * Chaque clé est facultative, et la **chaîne vide vaut « aucun lien »** : c'est
+ * ce que rend un champ qu'on vide, et refuser l'enregistrement pour cette
+ * raison rendrait un lien impossible à retirer. La transformation en
+ * `undefined` est faite ici plutôt que dans le formulaire, pour que l'API et
+ * l'écran se comportent pareil.
+ *
+ * La validation est celle du rendu, `externalUrl`, et **pas une seconde règle
+ * qui lui ressemble**. Deux raisons :
+ *
+ * - `z.url()` accepte `javascript:` — le dépôt le note déjà dans
+ *   `lib/schemas/news.schema.ts` — et l'adresse trouverait une exécution au
+ *   clic dans le `href` de la fiche ;
+ * - un simple contrôle de préfixe laisserait passer ce que `new URL()` refuse
+ *   (`https://`, `http://a b`). L'enregistrement réussirait, et le lien
+ *   disparaîtrait en silence au rendu — la pire des deux issues, puisque rien
+ *   ne dirait pourquoi.
+ *
+ * Partager la fonction, c'est garantir que le formulaire refuse exactement ce
+ * que la fiche refuserait d'afficher.
+ */
+export const gameLinksSchema = z.object(
+  Object.fromEntries(
+    GAME_LINK_KEYS.map((key) => [
+      key,
+      z
+        .string()
+        .trim()
+        .max(500, "L'adresse est trop longue")
+        .refine((value) => value.length === 0 || externalUrl(value) !== null, {
+          message: "L'adresse doit être une URL http(s) valide",
+        })
+        .transform((value) => (value.length > 0 ? value : undefined))
+        .optional(),
+    ]),
+  ),
+) as z.ZodType<Partial<Record<(typeof GAME_LINK_KEYS)[number], string | undefined>>>;
 
 export const gameSchema = z.object({
   name: z.string().min(1, "Le nom du jeu est requis").max(100, "Le nom est trop long"),

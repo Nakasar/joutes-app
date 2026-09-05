@@ -88,6 +88,7 @@
       "enCours": "Live",
       "titreSuivis": "{count, plural, one {# live stream in your venues} other {# live streams in your venues}}",
       "titreProches": "{count, plural, one {# live stream near you} other {# live streams near you}}",
+      "titreMixte": "{count, plural, one {# live stream right now} other {# live streams right now}}",
       "tous": "All live streams",
       "spectateurs": "{count, plural, one {# viewer} other {# viewers}}"
     },
@@ -392,6 +393,16 @@
       "back": "Back to games",
       "viewEvents": "View events",
       "findLair": "Find a venue",
+      "live": {
+        "badge": "Live",
+        "title": "{channel} is live",
+        "since": "for {duration}",
+        "watchOn": "Watch on YouTube"
+      },
+      "links": {
+        "title": "Follow the publisher",
+        "description": "The official {gameName} website and its publisher's social accounts."
+      },
       "about": "About",
       "gameType": "Game type",
       "tools": "Tools",

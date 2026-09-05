@@ -3,6 +3,10 @@
 Lier sa chaîne à son compte Joutes, s'en servir pour se connecter, et laisser
 ses directs s'annoncer tout seuls sur les vitrines qu'on a choisies.
 
+> Ce document ne parle que des chaînes **liées à un compte**. Les chaînes des
+> **éditeurs**, suivies depuis la fiche de leur jeu, n'ont ni liaison ni OAuth
+> et ne passent pas par le hub : voir [GAME_LIVES.md](GAME_LIVES.md).
+
 ## Le principe
 
 Une chaîne ne prouve rien sur l'identité de son propriétaire. C'est pourquoi

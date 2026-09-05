@@ -1,6 +1,7 @@
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getLairsByIds } from "@/lib/db/lairs.ts";
 import { getNews } from "@/lib/db/news.ts";
+import { getGameStream } from "@/lib/db/game-streams.ts";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { GAME_TYPES } from "@/lib/constants/game-types.ts";
@@ -14,6 +15,8 @@ import { getUserById } from "@/lib/db/users.ts";
 import FavoriteGameButton from "./FavoriteGameButton.tsx";
 import FollowGameButton from "./FollowGameButton.tsx";
 import { FeaturedEventsAgenda } from "./FeaturedEventsAgenda.tsx";
+import GameLiveSection from "./GameLiveSection.tsx";
+import GamePublisherLinks from "./GamePublisherLinks.tsx";
 import { GameNewsSection } from "./GameNewsSection.tsx";
 import { getTranslations } from "next-intl/server";
 import { Suspense, cache } from "react";
@@ -95,6 +98,12 @@ export default function GameDetailPage({ params }: GameDetailPageProps) {
       </Suspense>
 
       <div className="relative z-20 max-w-7xl mx-auto px-8 py-16 space-y-16">
+        {/* Pas de silhouette : le cas courant est qu'aucun direct ne tourne, et
+            lui réserver sa place laisserait un trou sur toutes les fiches. */}
+        <Suspense fallback={null}>
+          <GameLive params={params} />
+        </Suspense>
+
         <Suspense fallback={<GameSectionSkeleton cards={1} />}>
           <GameAbout params={params} />
         </Suspense>
@@ -116,6 +125,13 @@ export default function GameDetailPage({ params }: GameDetailPageProps) {
 
         <Suspense fallback={<GameSectionSkeleton cards={3} columns={3} />}>
           <GameCommunity params={params} />
+        </Suspense>
+
+        {/* Les liens de l'éditeur ne viennent pas de la base et n'attendent
+            rien : leur frontière n'existe que pour ne pas retarder ce qui la
+            précède. */}
+        <Suspense fallback={null}>
+          <GamePublisher params={params} />
         </Suspense>
       </div>
     </div>
@@ -382,6 +398,44 @@ async function GameTools({ params }: GameDetailPageProps) {
         </div>
     </section>
   );
+}
+
+/**
+ * Le direct de l'éditeur, s'il y en a un.
+ *
+ * Lu dans `game_streams` et non sur le jeu : le catalogue est servi en cache
+ * pour des jours (`lib/db/games-cached.ts`), et un direct qui change toutes les
+ * heures n'y aurait aucune fraîcheur. Voir `docs/GAME_LIVES.md`.
+ */
+async function GameLive({ params }: GameDetailPageProps) {
+  const { gameSlugOrId } = await params;
+  const game = await requireGame(gameSlugOrId);
+
+  // Le lien se lit avant la base : un jeu qui ne déclare pas de chaîne n'en a
+  // aucune de suivie, et la section disparaît sans requête ni passage au rendu
+  // dynamique. C'est le cas de la plupart des fiches.
+  if (!game.links?.youtube) {
+    return null;
+  }
+
+  // Le pilote Mongo touche à l'horloge en lisant, ce qu'un prérendu ne sait pas
+  // figer, et aucune frontière n'y change rien.
+  await connection();
+
+  const stream = await getGameStream(game.id, "youtube");
+
+  if (!stream?.live) {
+    return null;
+  }
+
+  return <GameLiveSection stream={stream} gameName={game.name} />;
+}
+
+async function GamePublisher({ params }: GameDetailPageProps) {
+  const { gameSlugOrId } = await params;
+  const game = await requireGame(gameSlugOrId);
+
+  return <GamePublisherLinks game={game} />;
 }
 
 async function GameNews({ params }: GameDetailPageProps) {

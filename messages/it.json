@@ -96,6 +96,7 @@
       "enCours": "In diretta",
       "titreSuivis": "{count, plural, one {# diretta nei tuoi locali} other {# dirette nei tuoi locali}}",
       "titreProches": "{count, plural, one {# diretta vicino a te} other {# dirette vicino a te}}",
+      "titreMixte": "{count, plural, one {# diretta in questo momento} other {# dirette in questo momento}}",
       "tous": "Tutte le dirette",
       "spectateurs": "{count, plural, one {# spettatore} other {# spettatori}}"
     },
@@ -392,6 +393,16 @@
       "back": "Torna ai giochi",
       "viewEvents": "Vedi gli eventi",
       "findLair": "Trova un luogo",
+      "live": {
+        "badge": "In diretta",
+        "title": "{channel} è in diretta",
+        "since": "da {duration}",
+        "watchOn": "Guarda su YouTube"
+      },
+      "links": {
+        "title": "Segui l'editore",
+        "description": "Il sito ufficiale di {gameName} e i social del suo editore."
+      },
       "about": "Informazioni",
       "gameType": "Tipo di gioco",
       "tools": "Strumenti",
