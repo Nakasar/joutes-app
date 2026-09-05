@@ -108,6 +108,25 @@ paths:
         "200":
           description: Response shape depends on the Better Auth sub-route invoked.
 
+  /auth/get-session:
+    get:
+      tags: [Auth]
+      summary: Read the current session
+      description: |
+        The Better Auth session lookup, singled out from the catch-all above because clients rely on its shape. Answers `null` without a session.
+
+        Besides the Better Auth fields, `user` carries two **derived** decorations, computed on every read and never settable: `badges` (the subscription tier and the achievements shown as statuses — the same `UserBadges` a public profile exposes) and `avatar`, the image to show for the account — the uploaded profile picture, else the identity provider's picture, else the legacy `avatar` field. `image` stays Better Auth's own field and is not the one to display.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200":
+          description: The session, or `null`.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/SessionResponse"
+                  - type: "null"
+
   /auth/.well-known/oauth-authorization-server:
     get:
       tags: [Auth]
@@ -2645,6 +2664,57 @@ paths:
         "400": { $ref: "#/components/responses/NestedValidationError" }
         "404": { $ref: "#/components/responses/NestedNotFound" }
 
+  /games/{gameId}/live:
+    parameters:
+      - { name: gameId, in: path, required: true, description: Game id or slug., schema: { type: string } }
+    get:
+      tags: [Games]
+      summary: The publisher's live stream, if one is running
+      description: |
+        The YouTube live detected on the channel declared in `Game.links.youtube` (see `docs/GAME_LIVES.md`; an hourly job refreshes it). A separate route rather than a field of `GET /games/{gameId}`: the catalog is cached for long, a live changes every hour.
+
+        `live` is `null` when nothing is running — the usual case, and not an error.
+      security: []
+      responses:
+        "200":
+          description: The running live, or `null`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [live]
+                properties:
+                  live:
+                    oneOf:
+                      - $ref: "#/components/schemas/GameLive"
+                      - type: "null"
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /games/{gameId}/social-posts:
+    parameters:
+      - { name: gameId, in: path, required: true, description: Game id or slug., schema: { type: string } }
+    get:
+      tags: [Games]
+      summary: The publisher's latest posts on its networks
+      description: |
+        Posts and videos collected from the publisher's accounts (Bluesky, YouTube — see `docs/GAME_SOCIAL.md`), newest first, moderated posts excluded. Requires the game's `features.socialFeed` flag: answers 404 when it is off, like `/games/{gameId}/products` does for products.
+      security: []
+      parameters:
+        - { name: limit, in: query, description: "How many posts, newest first. Default 12 (what the game page shows), at most 100 (what a game keeps).", schema: { type: integer, default: 12, minimum: 1, maximum: 100 } }
+      responses:
+        "200":
+          description: The posts, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [posts]
+                properties:
+                  posts: { type: array, items: { $ref: "#/components/schemas/GameSocialPost" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /games/{gameId}/products:
     get:
       tags: [Games]
@@ -4613,6 +4683,75 @@ paths:
                         id: { type: string }
                         name: { type: string }
                         slug: { type: string, nullable: true }
+                  favoriteGameIds:
+                    type: array
+                    items: { type: string }
+                    description: The followed games the user marked as favorites — those the site's game menu shows first. Always a subset of `gameIds`.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /users/me/games/{gameId}:
+    parameters:
+      - { name: gameId, in: path, required: true, description: Game id or slug., schema: { type: string } }
+    put:
+      tags: [Users]
+      summary: Follow a game
+      description: Adds the game to the caller's followed games. Idempotent — following a game already followed changes nothing.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: The new follow state, with the full followed list.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameFollowState" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Users]
+      summary: Unfollow a game
+      description: Removes the game from the caller's followed games — and from the favorites, a favorite only making sense among followed games. Idempotent.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: The new follow state, with the full followed list.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameFollowState" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /users/me/games/{gameId}/favorite:
+    parameters:
+      - { name: gameId, in: path, required: true, description: Game id or slug., schema: { type: string } }
+    put:
+      tags: [Users]
+      summary: Mark a followed game as favorite
+      description: Favorites are chosen **among followed games**; marking a game the caller does not follow answers 409 rather than silently doing nothing. Idempotent otherwise.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: The new favorite state, with the full favorites list.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameFavoriteState" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: The game is not among the caller's followed games. }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Users]
+      summary: Remove a game from the favorites
+      description: Idempotent. The game stays followed.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: The new favorite state, with the full favorites list.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameFavoriteState" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
@@ -5359,8 +5498,9 @@ components:
             gallery: { type: array, items: { type: string } }
             links:
               type: object
+              description: "The publisher's site and networks, by network key. Only the keys listed here are shown on the game page (in this order); unknown keys are kept but not displayed. `youtube` is also the channel watched for lives and videos, `bluesky` the account whose posts are collected."
               additionalProperties: { type: string }
-              properties: { website: { type: string }, x: { type: string }, discord: { type: string }, youtube: { type: string }, twitch: { type: string }, bluesky: { type: string } }
+              properties: { website: { type: string }, youtube: { type: string }, twitch: { type: string }, x: { type: string }, instagram: { type: string }, tiktok: { type: string }, bluesky: { type: string }, facebook: { type: string }, discord: { type: string }, reddit: { type: string } }
             metadata:
               type: object
               properties:
@@ -5393,6 +5533,12 @@ components:
                 battleReports:
                   type: boolean
                   description: "Les parties de ce jeu se saisissent en rapport de bataille."
+                decks: { type: boolean, description: "The game has a deck library and editor." }
+                news: { type: boolean, description: "The game has its own news section." }
+                quizz: { type: boolean, description: "The game has quizzes." }
+                socialFeed:
+                  type: boolean
+                  description: "The publisher's posts are collected and shown. Gates `/games/{gameId}/social-posts`, which answers 404 when it is off."
 
     BoosterCard:
       type: object
@@ -5697,6 +5843,85 @@ components:
             - { type: string, format: uri, maxLength: 2000 }
             - { type: string, enum: [""] }
         blocks: { type: array, minItems: 1, items: { $ref: "#/components/schemas/QuizBlock" } }
+
+    GameLive:
+      type: object
+      description: A publisher's live stream running right now, as detected on the channel declared in `Game.links.youtube`.
+      required: [platform, url, startedAt, videoId]
+      properties:
+        platform: { type: string, enum: [youtube] }
+        url: { type: string, format: uri, description: The watch page. }
+        title: { type: string }
+        startedAt: { type: string, format: date-time, description: When the platform says it started. }
+        videoId: { type: string }
+        channelTitle: { type: string }
+        channelUrl: { type: string, format: uri }
+        thumbnail: { type: string, format: uri, description: The still served by the platform. }
+
+    SocialAccount:
+      type: object
+      description: The publisher's account a post comes from.
+      required: [handle, url]
+      properties:
+        handle: { type: string, example: "riftbound.bsky.social" }
+        displayName: { type: string }
+        avatar: { type: string, format: uri }
+        url: { type: string, format: uri, description: The account's public page. }
+
+    GameSocialPost:
+      type: object
+      description: A post collected from one of the publisher's networks. `text` is plain text, truncated at collection; a video's text is its title.
+      required: [id, gameId, platform, kind, url, account, publishedAt]
+      properties:
+        id: { type: string }
+        gameId: { type: string }
+        platform: { type: string, enum: [bluesky, youtube, x, instagram], description: "Only `bluesky` and `youtube` are collected today; the other two are declared for the link keys they read." }
+        kind: { type: string, enum: [post, video, short] }
+        url: { type: string, format: uri, description: The permalink. }
+        account: { $ref: "#/components/schemas/SocialAccount" }
+        text: { type: string }
+        thumbnail: { type: string, format: uri }
+        publishedAt: { type: string, format: date-time }
+        durationSeconds: { type: integer, description: Videos and shorts only. }
+
+    GameFollowState:
+      type: object
+      required: [gameId, following, gameIds]
+      properties:
+        gameId: { type: string, description: The game's id (resolved from the slug when one was given). }
+        following: { type: boolean }
+        gameIds: { type: array, items: { type: string }, description: The caller's followed games after the change. }
+
+    GameFavoriteState:
+      type: object
+      required: [gameId, favorite, favoriteGameIds]
+      properties:
+        gameId: { type: string }
+        favorite: { type: boolean }
+        favoriteGameIds: { type: array, items: { type: string }, description: The caller's favorite games after the change. }
+
+    SessionResponse:
+      type: object
+      description: What `GET /auth/get-session` answers with a session. Better Auth's own fields are not exhaustively listed.
+      required: [user, session]
+      properties:
+        user:
+          type: object
+          properties:
+            id: { type: string }
+            email: { type: string }
+            name: { type: string }
+            username: { type: string }
+            displayName: { type: string }
+            discriminator: { type: string }
+            image: { type: string, description: "Better Auth's own field. Show `avatar` instead." }
+            avatar: { type: string, format: uri, description: "The picture to show: uploaded profile picture, else the identity provider's, else the legacy field. Derived on every read." }
+            badges: { $ref: "#/components/schemas/UserBadges" }
+        session:
+          type: object
+          properties:
+            id: { type: string }
+            expiresAt: { type: string, format: date-time }
 
     Quiz:
       type: object
