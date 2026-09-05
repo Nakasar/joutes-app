@@ -32,6 +32,8 @@ tags:
     description: Friend list, friend requests and friend codes.
   - name: Geo
     description: Place lookup backing the "near me" location fields.
+  - name: Home
+    description: The home page in one read — what the site composes in six tiles, served to the mobile app as is.
   - name: Game Matches
     description: Casual game match invitations/joining.
   - name: Games
@@ -1692,6 +1694,35 @@ paths:
                         longitude: { type: number, example: 4.8357 }
         "502": { description: The upstream geocoder is unreachable or errored. }
 
+  # ---------------------------------------------------------------- Home
+  /feed:
+    get:
+      tags: [Home]
+      summary: The home page, in one read
+      description: |
+        Everything the home page shows, composed with the same rules as the site (`lib/home/read.ts`): the game tabs, the running lives, the next seven days of events (3 at most), the feed, the venues and the decks. One route rather than six because every tile shares the same session, position and chosen game — and a phone pays for each round trip.
+
+        **Who sees what.** With a session: the followed games drive the feed, the agenda and the lives; the followed venues fill `lairs`; the caller's own decks fill `decks`. A visitor (or an account following nothing) reads the feed unfiltered — the feed is how one discovers — and, with a position, the venues and events around it.
+
+        `feed` comes back **whole and sorted** (up to four times `limit`, one `limit` per source) so a client can count entries per type; the per-type cap that keeps a chatty publisher from swallowing the "All" tab (`social: 2` out of 6) is the client's to apply.
+      security: [{}, { sessionAuth: [] }]
+      parameters:
+        - { name: gameId, in: query, description: "Game id or slug. Restricts the lives, agenda, feed and featured decks to that game; absent, the caller's followed games apply (everything for a visitor). Unknown: 404.", schema: { type: string } }
+        - { name: lat, in: query, description: "With `lon`: the position to read venues and events around. Without both, the account's saved position applies, if any.", schema: { type: number } }
+        - { name: lon, in: query, schema: { type: number } }
+        - { name: radius, in: query, description: "Kilometres around the position. Default 15.", schema: { type: number, default: 15 } }
+        - { name: place, in: query, description: "The position's label, echoed back as `position.name`.", schema: { type: string } }
+        - { name: lang, in: query, description: "Language of the news titles. `de`, `en`, `fr`, `it`; anything else reads as `fr`.", schema: { type: string, default: fr } }
+        - { name: limit, in: query, description: "How many entries each feed source contributes. Default 6, at most 20.", schema: { type: integer, default: 6, minimum: 1, maximum: 20 } }
+      responses:
+        "200":
+          description: The home page.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HomeFeed" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   # ---------------------------------------------------------------- Events
   /events:
     get:
@@ -2927,7 +2958,12 @@ paths:
       summary: List/search news
       security: []
       parameters:
-        - { name: gameId, in: query, schema: { type: string, pattern: "^[0-9a-fA-F]{24}$" } }
+        - name: gameId
+          in: query
+          description: "One game, or several by repeating the parameter (`?gameId=a&gameId=b`) — what a client that follows several games asks for. Ids only."
+          style: form
+          explode: true
+          schema: { type: array, items: { type: string, pattern: "^[0-9a-fA-F]{24}$" } }
         - { name: tag, in: query, schema: { type: string } }
         - { name: dateFrom, in: query, schema: { type: string, format: date-time } }
         - { name: dateTo, in: query, schema: { type: string, format: date-time } }
@@ -5744,6 +5780,147 @@ components:
         banned: { type: boolean }
         recognized: { type: boolean }
         erratas: { type: array, items: { $ref: "#/components/schemas/Errata" } }
+
+    HomeFeed:
+      type: object
+      required: [games, game, position, lives, agenda, feed, lairs, decks]
+      properties:
+        games:
+          type: object
+          description: "The game tabs: the favorites, else the followed games, else three default games — the site's own menu rule."
+          required: [source, games]
+          properties:
+            source: { type: string, enum: [favorites, followed, defaults] }
+            games:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+                  slug: { type: string, nullable: true }
+                  icon: { type: string }
+        game:
+          type: object
+          nullable: true
+          description: The chosen game, resolved, or `null`.
+          properties:
+            id: { type: string }
+            name: { type: string }
+            slug: { type: string, nullable: true }
+        position:
+          type: object
+          nullable: true
+          description: The position the page looked around, or `null`.
+          properties:
+            latitude: { type: number }
+            longitude: { type: number }
+            radiusKm: { type: number }
+            name: { type: string }
+        lives: { type: array, items: { $ref: "#/components/schemas/HomeLive" } }
+        agenda:
+          type: array
+          description: The next seven days, 3 events at most, soonest first, cancelled ones excluded.
+          items: { $ref: "#/components/schemas/Event" }
+        feed:
+          type: array
+          description: Newest first, up to four times `limit`.
+          items: { $ref: "#/components/schemas/FeedEntry" }
+        lairs:
+          type: object
+          required: [source, lairs]
+          properties:
+            source: { type: string, enum: [followed, nearby, none], description: "`followed` for an account following venues, `nearby` around the position (nearest first), `none` when neither applies." }
+            lairs: { type: array, items: { $ref: "#/components/schemas/Lair" } }
+        decks:
+          type: object
+          required: [source, decks]
+          properties:
+            source: { type: string, enum: [mine, featured], description: "`mine` for the caller's own decks (most recently touched first), `featured` otherwise." }
+            decks: { type: array, items: { $ref: "#/components/schemas/Deck" } }
+
+    HomeLive:
+      type: object
+      description: "A stream running right now — a publisher's (`kind: game`) or a venue's (`kind: lair`). Publishers come first."
+      required: [key, kind, id, title, source, url]
+      properties:
+        key: { type: string, example: "game:64f…" }
+        kind: { type: string, enum: [game, lair] }
+        id: { type: string, description: The game id or the lair id. }
+        title: { type: string }
+        source: { type: string, description: What broadcasts — the channel's name, or the venue's. }
+        url: { type: string, format: uri, description: The watch page. }
+        thumbnail: { type: string, format: uri }
+        viewers: { type: integer }
+
+    FeedEntry:
+      description: One entry of the home feed. `type` says which of the four sources it comes from, and what opens it — an id for news and decks, an author and an id (or an external `url`) for a member's content, an external `url` for a social post.
+      oneOf:
+        - $ref: "#/components/schemas/FeedNewsEntry"
+        - $ref: "#/components/schemas/FeedContentEntry"
+        - $ref: "#/components/schemas/FeedDeckEntry"
+        - $ref: "#/components/schemas/FeedSocialEntry"
+      discriminator:
+        propertyName: type
+        mapping:
+          news: "#/components/schemas/FeedNewsEntry"
+          content: "#/components/schemas/FeedContentEntry"
+          deck: "#/components/schemas/FeedDeckEntry"
+          social: "#/components/schemas/FeedSocialEntry"
+
+    FeedEntryBase:
+      type: object
+      required: [type, id, title, source, publishedAt]
+      properties:
+        type: { type: string, enum: [news, content, deck, social] }
+        id: { type: string }
+        title: { type: string }
+        source: { type: string, description: "Who publishes: a news author, a social account's handle, a deck's creator, a content's summary." }
+        gameId: { type: string }
+        publishedAt: { type: string, format: date-time }
+        thumbnail: { type: string, format: uri }
+
+    FeedNewsEntry:
+      allOf:
+        - $ref: "#/components/schemas/FeedEntryBase"
+        - type: object
+          description: "A news article: opens `GET /news/{newsId}`. `title` is already in the requested language."
+
+    FeedContentEntry:
+      allOf:
+        - $ref: "#/components/schemas/FeedEntryBase"
+        - type: object
+          description: "A member's article, video or replay. An article reads on Joutes (`GET /users/{authorId}/contents/{id}`); a video or replay lives elsewhere, at `url`."
+          required: [kind, authorId]
+          properties:
+            kind: { type: string, enum: [video, article, replay] }
+            authorId: { type: string }
+            summary: { type: string }
+            url: { type: string, format: uri }
+            duration: { type: string, description: "As the author wrote it — « 12 min »." }
+
+    FeedDeckEntry:
+      allOf:
+        - $ref: "#/components/schemas/FeedEntryBase"
+        - type: object
+          description: "A public deck touched this week: opens `GET /decks/{deckId}`. `thumbnail` is its cover."
+          required: [framing]
+          properties:
+            framing: { type: string, enum: [top, center], description: "How to crop the cover: a card illustration carries its subject at the top, an uploaded image is centred." }
+
+    FeedSocialEntry:
+      allOf:
+        - $ref: "#/components/schemas/FeedEntryBase"
+        - type: object
+          description: "A post collected from a publisher's network: opens `url` outside the app. `title` is the post's text, or the account's name without one."
+          required: [url, platform, kind, accountUrl]
+          properties:
+            url: { type: string, format: uri }
+            platform: { type: string, enum: [bluesky, youtube, x, instagram] }
+            kind: { type: string, enum: [post, video, short] }
+            accountUrl: { type: string, format: uri }
+            avatar: { type: string, format: uri }
+            duration: { type: string, description: "« 12:34 » — videos and shorts only." }
 
     News:
       type: object

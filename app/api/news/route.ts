@@ -10,7 +10,12 @@ export async function GET(request: NextRequest) {
     const session = await auth.api.getSession({ headers: await headers() });
 
     const searchParams = request.nextUrl.searchParams;
-    const gameId = searchParams.get("gameId") ?? undefined;
+    // Un jeu, ou plusieurs (`?gameId=a&gameId=b`) : le fil d'un client qui
+    // suit plusieurs jeux les demande ensemble, et la lecture en base sait
+    // déjà le faire. Un seul reste un seul, pour les caches qui le clé.
+    const gameIdValues = searchParams.getAll("gameId").filter(Boolean);
+    const gameId: string | string[] | undefined =
+      gameIdValues.length === 0 ? undefined : gameIdValues.length === 1 ? gameIdValues[0] : gameIdValues;
     const tag = searchParams.get("tag") ?? undefined;
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
@@ -20,7 +25,7 @@ export async function GET(request: NextRequest) {
     const includeTags = searchParams.get("includeTags") === "true";
 
     const objectIdRegex = /^[0-9a-fA-F]{24}$/;
-    if (gameId && !objectIdRegex.test(gameId)) {
+    if (gameIdValues.some((value) => !objectIdRegex.test(value))) {
       return NextResponse.json({ error: "Paramètre gameId invalide" }, { status: 400 });
     }
 
