@@ -114,6 +114,19 @@ s'affichera, mais aucun direct ne sera détecté. Inventer une chaîne à partir
 d'une vidéo demanderait un appel de plus pour un résultat que personne n'a
 demandé.
 
+### Quand la résolution échoue
+
+Une adresse en forme de chaîne que YouTube ne connaît pas — handle mal recopié,
+chaîne supprimée, panne passagère de l'API — laisse le jeu sans chaîne résolue.
+Si un document existait déjà pour une **autre** adresse, son direct est éteint
+et la chaîne sort du tour : elle n'est plus celle que la fiche désigne, et
+continuer à l'afficher annoncerait le direct d'un tiers sur un jeu qui ne le
+revendique pas.
+
+Le document, lui, reste — avec son ancienne `sourceUrl`, si bien que le tour
+suivant retente. Une panne passagère se répare toute seule, et `lastError` dit
+en attendant ce qui cloche.
+
 ## Ce que le bandeau de l'accueil montre
 
 | Qui regarde | Directs de lieux | Directs de jeux |

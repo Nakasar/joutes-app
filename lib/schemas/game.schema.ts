@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { GAME_FEATURE_KEYS } from "@/lib/constants/game-features";
 import { GAME_LINK_KEYS } from "@/lib/constants/game-links";
+import { externalUrl } from "@/lib/lairs/urls";
 import { DECK_ZONE_KEYS } from "@/lib/decks/zones";
 import {
   tournamentResultModeSchema,
@@ -28,9 +29,19 @@ export const gameFeaturesSchema = z.object(
  * `undefined` est faite ici plutôt que dans le formulaire, pour que l'API et
  * l'écran se comportent pareil.
  *
- * `z.url()` accepte `javascript:` — le dépôt le note déjà dans
- * `lib/schemas/news.schema.ts`. Le protocole est donc vérifié en plus, faute de
- * quoi l'adresse trouverait une exécution au clic dans le `href` de la fiche.
+ * La validation est celle du rendu, `externalUrl`, et **pas une seconde règle
+ * qui lui ressemble**. Deux raisons :
+ *
+ * - `z.url()` accepte `javascript:` — le dépôt le note déjà dans
+ *   `lib/schemas/news.schema.ts` — et l'adresse trouverait une exécution au
+ *   clic dans le `href` de la fiche ;
+ * - un simple contrôle de préfixe laisserait passer ce que `new URL()` refuse
+ *   (`https://`, `http://a b`). L'enregistrement réussirait, et le lien
+ *   disparaîtrait en silence au rendu — la pire des deux issues, puisque rien
+ *   ne dirait pourquoi.
+ *
+ * Partager la fonction, c'est garantir que le formulaire refuse exactement ce
+ * que la fiche refuserait d'afficher.
  */
 export const gameLinksSchema = z.object(
   Object.fromEntries(
@@ -40,8 +51,8 @@ export const gameLinksSchema = z.object(
         .string()
         .trim()
         .max(500, "L'adresse est trop longue")
-        .refine((value) => value.length === 0 || /^https?:\/\//i.test(value), {
-          message: "L'adresse doit commencer par http:// ou https://",
+        .refine((value) => value.length === 0 || externalUrl(value) !== null, {
+          message: "L'adresse doit être une URL http(s) valide",
         })
         .transform((value) => (value.length > 0 ? value : undefined))
         .optional(),

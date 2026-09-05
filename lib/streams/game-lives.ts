@@ -114,6 +114,30 @@ export async function refreshGameLives(): Promise<GameLivesReport> {
     if (!channel) {
       report.failed += 1;
       console.error("Chaîne YouTube introuvable pour le jeu", gameId, sourceUrl);
+
+      /*
+       * Une adresse qui a changé et que YouTube ne sait pas résoudre — un
+       * handle mal recopié, une chaîne supprimée, une panne passagère de l'API.
+       * Le document existant pointe alors une chaîne que la fiche du jeu **ne
+       * désigne plus** : la laisser dans le tour ferait interroger l'ancienne
+       * chaîne et, pire, afficher son direct sur un jeu qui ne la revendique
+       * pas. On éteint donc ce qu'elle affichait et on la sort de ce tour.
+       *
+       * Le document, lui, reste : `sourceUrl` y est toujours l'ancienne, si
+       * bien que le tour suivant retentera la résolution. Une panne passagère
+       * se répare toute seule, et `lastError` dit à l'administration ce qui
+       * cloche en attendant.
+       */
+      if (existing) {
+        if (existing.live) {
+          await setGameStreamLive(existing.id, null);
+          report.stopped += 1;
+        }
+
+        await touchGameStream(existing.id, `chaine-non-resolue: ${sourceUrl}`);
+        known.delete(gameId);
+      }
+
       continue;
     }
 
