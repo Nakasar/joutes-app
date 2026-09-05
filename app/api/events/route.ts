@@ -112,22 +112,18 @@ export async function GET(request: NextRequest) {
           maxDistanceNum * 1000 // Convertir km en mètres
         );
         
-        // Récupérer les événements pour ces lairs
-        const allEvents = await getEventsByLairIds(nearbyLairIds, {
+        // Récupérer les événements pour ces lairs. Les bornes de dates et le
+        // jeu demandé valent ici comme pour une session : un visiteur qui
+        // cherche « les prochains événements autour de Lyon » n'a pas à
+        // recevoir ceux du mois dernier, ni ceux d'un jeu qu'il n'a pas
+        // demandé. `getEventsByLairIds` filtre déjà en base sur le mois et
+        // l'année : le second tri en mémoire ne faisait que le répéter.
+        events = await getEventsByLairIds(nearbyLairIds, {
           year: yearNum,
           month: monthNum,
-        });
-        
-        // Filtrer par mois/année si spécifié
-        events = allEvents.filter(event => {
-          const eventDate = new Date(event.startDateTime);
-          const eventMonth = eventDate.getMonth() + 1;
-          const eventYear = eventDate.getFullYear();
-          
-          if (monthNum && eventMonth !== monthNum) return false;
-          if (yearNum && eventYear !== yearNum) return false;
-          
-          return true;
+          afterDate,
+          beforeDate,
+          gameIds: gameId !== "followed" && gameId !== "all" ? [gameId] : undefined,
         });
       } else if (!session?.user) {
         // Si pas d'utilisateur et pas de localisation, retourner un tableau vide
