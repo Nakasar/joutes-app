@@ -402,14 +402,12 @@ export const lireAgenda = cache(
 );
 
 /**
- * Le fil : actualités, vidéos et listes, sur une seule file.
+ * Le fil : actualités, vidéos de membres, listes et publications des réseaux,
+ * quatre sources mêlées sur une seule file et triées par date.
  *
  * Les directs n'y sont pas. Ils ont leur bandeau en haut de page, et les
  * répéter ici montrerait deux fois la même chose à trois cents pixels d'écart.
  * Le fil garde ce qui se lit après coup.
- */
-/**
- * Le fil, quatre sources mêlées et triées par date.
  *
  * ## Sur quels jeux
  *
