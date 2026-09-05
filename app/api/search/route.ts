@@ -5,11 +5,30 @@ import { headers } from "next/headers";
 import db from "@/lib/mongodb";
 import { getRawEntries } from "@/lib/rules/riftbound";
 
+/**
+ * Un résultat, tel que la palette du site le lit — et tel qu'un client tiers
+ * le lit aussi.
+ *
+ * `href` est le chemin **du site** : la palette s'en sert tel quel. Un autre
+ * client (l'application mobile) a ses propres routes et ne peut pas deviner
+ * d'un chemin ce qu'il désigne — d'où `kind` et `id`, qui disent la nature du
+ * résultat et ce qu'il faut pour l'ouvrir. Les deux voyagent ensemble : le
+ * premier reste pour le site, les seconds pour tout le reste.
+ */
+export type SearchResultKind = "game" | "card" | "lair" | "event" | "policy" | "rule";
+
 export type SearchResult = {
   label: string;
   sublabel?: string;
   href: string;
   image?: string;
+  kind: SearchResultKind;
+  /** L'identifiant du résultat : celui qu'accepte l'API pour l'ouvrir. */
+  id: string;
+  /** Le jeu qui porte le résultat, pour les cartes, politiques et règles. */
+  gameSlug?: string;
+  /** Le document d'une règle Riftbound : règles complètes ou de tournoi. */
+  doc?: "CR" | "TR";
 };
 
 export type SearchResponse = {
@@ -36,6 +55,9 @@ async function searchGames(regex: { $regex: string; $options: string }): Promise
     label: game.name as string,
     sublabel: game.type as string | undefined,
     href: `/games/${game.slug ?? game._id.toString()}`,
+    kind: "game" as const,
+    id: game._id.toString(),
+    gameSlug: (game.slug as string | undefined) ?? game._id.toString(),
   }));
 }
 
@@ -74,6 +96,9 @@ async function searchCards(regex: { $regex: string; $options: string }): Promise
     sublabel: card.game.name as string,
     href: `/games/${card.game.slug ?? card.game._id.toString()}/cards/${card.cardId}`,
     image: card.image as string | undefined,
+    kind: "card" as const,
+    id: card.cardId as string,
+    gameSlug: (card.game.slug as string | undefined) ?? card.game._id.toString(),
   }));
 }
 
@@ -95,6 +120,8 @@ async function searchLairs(
     label: lair.name as string,
     sublabel: lair.address as string | undefined,
     href: `/lairs/${lair._id.toString()}`,
+    kind: "lair" as const,
+    id: lair._id.toString(),
   }));
 }
 
@@ -123,10 +150,13 @@ async function searchEvents(regex: { $regex: string; $options: string }): Promis
     const dateText = Number.isNaN(date.getTime())
       ? undefined
       : date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    const id = (event.id as string | undefined) ?? event._id.toString();
     return {
       label: event.name as string,
       sublabel: [event.gameName, dateText].filter(Boolean).join(" — ") || undefined,
-      href: `/events/${event.id ?? event._id.toString()}`,
+      href: `/events/${id}`,
+      kind: "event" as const,
+      id,
     };
   });
 }
@@ -135,19 +165,19 @@ async function searchPolicies(query: string): Promise<SearchResult[]> {
   // Les policies portent un index texte (voir lib/db/policies.ts) ; la
   // recherche plein-texte est tentée d'abord, avec repli sur le titre si
   // l'index venait à manquer.
-  type PolicyRow = { title?: string; gameId?: ObjectId };
+  type PolicyRow = { _id: ObjectId; title?: string; gameId?: ObjectId };
   let policies: PolicyRow[] = [];
   try {
     policies = await db
       .collection<PolicyRow>("policies")
-      .find({ $text: { $search: query } }, { projection: { title: 1, gameId: 1, score: { $meta: "textScore" } } })
+      .find({ $text: { $search: query } }, { projection: { _id: 1, title: 1, gameId: 1, score: { $meta: "textScore" } } })
       .sort({ score: { $meta: "textScore" } })
       .limit(LIMIT)
       .toArray();
   } catch {
     policies = await db
       .collection<PolicyRow>("policies")
-      .find({ title: { $regex: escapeRegex(query), $options: "i" } }, { projection: { title: 1, gameId: 1 } })
+      .find({ title: { $regex: escapeRegex(query), $options: "i" } }, { projection: { _id: 1, title: 1, gameId: 1 } })
       .limit(LIMIT)
       .toArray();
   }
@@ -163,10 +193,14 @@ async function searchPolicies(query: string): Promise<SearchResult[]> {
   return policies.flatMap((policy) => {
     const game = policy.gameId ? gamesById.get(policy.gameId.toString()) : undefined;
     if (!game || !policy.title) return [];
+    const gameSlug = (game.slug as string | undefined) ?? game._id.toString();
     return [{
       label: policy.title,
       sublabel: game.name as string,
-      href: `/games/${game.slug ?? game._id.toString()}/policies`,
+      href: `/games/${gameSlug}/policies`,
+      kind: "policy" as const,
+      id: policy._id.toString(),
+      gameSlug,
     }];
   });
 }
@@ -185,6 +219,10 @@ function searchRiftboundRules(query: string): SearchResult[] {
           label: `${doc} ${entry.id}`,
           sublabel: entry.content.length > 90 ? `${entry.content.slice(0, 90)}…` : entry.content,
           href: `/games/riftbound/rules/${doc.toLowerCase()}`,
+          kind: "rule" as const,
+          id: entry.id,
+          gameSlug: "riftbound",
+          doc,
         });
       }
     }

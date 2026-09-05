@@ -5,11 +5,9 @@ import { Link } from "@/i18n/navigation.ts";
 import { cn } from "@/lib/utils.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
 import { selectMenuGames } from "@/lib/games/nav-menu.ts";
+import { JEUX_PAR_DEFAUT } from "@/lib/home/constants.ts";
 
 import { lireViewer } from "./accueil-data.ts";
-
-/** Ce que la barre propose quand on ne sait rien des goûts du visiteur. */
-const JEUX_PAR_DEFAUT = ["riftbound", "mtg", "swu"];
 
 /**
  * Le filtre par jeu, en onglets.

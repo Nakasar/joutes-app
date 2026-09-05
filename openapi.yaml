@@ -32,6 +32,8 @@ tags:
     description: Friend list, friend requests and friend codes.
   - name: Geo
     description: Place lookup backing the "near me" location fields.
+  - name: Home
+    description: The home page in one read — what the site composes in six tiles, served to the mobile app as is.
   - name: Game Matches
     description: Casual game match invitations/joining.
   - name: Games
@@ -48,6 +50,8 @@ tags:
     description: Shared groups for pooled collections, wishlists and sell lists.
   - name: Quizzes
     description: Quizzes, optionally linked to a game.
+  - name: Search
+    description: One query across games, cards, lairs, events and rules — what the site's command palette shows.
   - name: Sell Lists
     description: Cards a user or play group is offering for sale.
   - name: Trades
@@ -105,6 +109,25 @@ paths:
       responses:
         "200":
           description: Response shape depends on the Better Auth sub-route invoked.
+
+  /auth/get-session:
+    get:
+      tags: [Auth]
+      summary: Read the current session
+      description: |
+        The Better Auth session lookup, singled out from the catch-all above because clients rely on its shape. Answers `null` without a session.
+
+        Besides the Better Auth fields, `user` carries two **derived** decorations, computed on every read and never settable: `badges` (the subscription tier and the achievements shown as statuses — the same `UserBadges` a public profile exposes) and `avatar`, the image to show for the account — the uploaded profile picture, else the identity provider's picture, else the legacy `avatar` field. `image` stays Better Auth's own field and is not the one to display.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200":
+          description: The session, or `null`.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/SessionResponse"
+                  - type: "null"
 
   /auth/.well-known/oauth-authorization-server:
     get:
@@ -1603,6 +1626,40 @@ paths:
         "200":
           description: The static `openapi.json` document served as-is.
 
+  # ---------------------------------------------------------------- Search
+  /search:
+    get:
+      tags: [Search]
+      summary: Search everything at once
+      description: |
+        The global search behind the site's command palette: one query, five short lists — games, cards, lairs, events and rules — each capped at 5 results. Meant for a "type and jump" box, not for browsing: use the per-resource listings for paging and filters.
+
+        Games, lairs and events match on their name (case-insensitive substring); cards on their name, one row per card name and game (printings are folded); rules are the game policies (full-text, falling back to a title match) and the embedded Riftbound comprehensive/tournament rules entries. Upcoming events come first; past events are only offered when nothing upcoming matches.
+
+        A query shorter than 2 characters returns five empty lists rather than an error. Anonymous callers see public lairs only; a session additionally surfaces private lairs the caller owns.
+
+        Each result carries a site `href` **and** a `kind` + `id` pair: a third-party client opens the resource by `kind`/`id` (with `gameSlug` for cards, policies and rules, and `doc` for a Riftbound rule) rather than by parsing the site's path.
+      security: [{}, { sessionAuth: [] }]
+      parameters:
+        - { name: q, in: query, required: true, description: "What to look for. Trimmed; shorter than 2 characters yields empty lists.", schema: { type: string } }
+      responses:
+        "200":
+          description: Results grouped by resource, each list at most 5 long.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [games, cards, lairs, events, rules]
+                properties:
+                  games: { type: array, items: { $ref: "#/components/schemas/SearchResult" } }
+                  cards: { type: array, items: { $ref: "#/components/schemas/SearchResult" } }
+                  lairs: { type: array, items: { $ref: "#/components/schemas/SearchResult" } }
+                  events: { type: array, items: { $ref: "#/components/schemas/SearchResult" } }
+                  rules:
+                    type: array
+                    description: "Game policies (`kind: policy`) and Riftbound rules entries (`kind: rule`), together."
+                    items: { $ref: "#/components/schemas/SearchResult" }
+
   # ---------------------------------------------------------------- Geo
   /geo/places:
     get:
@@ -1637,6 +1694,35 @@ paths:
                         longitude: { type: number, example: 4.8357 }
         "502": { description: The upstream geocoder is unreachable or errored. }
 
+  # ---------------------------------------------------------------- Home
+  /feed:
+    get:
+      tags: [Home]
+      summary: The home page, in one read
+      description: |
+        Everything the home page shows, composed with the same rules as the site (`lib/home/read.ts`): the game tabs, the running lives, the next seven days of events (3 at most), the feed, the venues and the decks. One route rather than six because every tile shares the same session, position and chosen game — and a phone pays for each round trip.
+
+        **Who sees what.** With a session: the followed games drive the feed, the agenda and the lives; the followed venues fill `lairs`; the caller's own decks fill `decks`. A visitor (or an account following nothing) reads the feed unfiltered — the feed is how one discovers — and, with a position, the venues and events around it.
+
+        `feed` comes back **whole and sorted** (up to four times `limit`, one `limit` per source) so a client can count entries per type; the per-type cap that keeps a chatty publisher from swallowing the "All" tab (`social: 2` out of 6) is the client's to apply.
+      security: [{}, { sessionAuth: [] }]
+      parameters:
+        - { name: gameId, in: query, description: "Game id or slug. Restricts the lives, agenda, feed and featured decks to that game; absent, the caller's followed games apply (everything for a visitor). Unknown: 404.", schema: { type: string } }
+        - { name: lat, in: query, description: "With `lon`: the position to read venues and events around. Without both, the account's saved position applies, if any.", schema: { type: number } }
+        - { name: lon, in: query, schema: { type: number } }
+        - { name: radius, in: query, description: "Kilometres around the position. Default 15.", schema: { type: number, default: 15 } }
+        - { name: place, in: query, description: "The position's label, echoed back as `position.name`.", schema: { type: string } }
+        - { name: lang, in: query, description: "Language of the news titles. `de`, `en`, `fr`, `it`; anything else reads as `fr`.", schema: { type: string, default: fr } }
+        - { name: limit, in: query, description: "How many entries each feed source contributes. Default 6, at most 20.", schema: { type: integer, default: 6, minimum: 1, maximum: 20 } }
+      responses:
+        "200":
+          description: The home page.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HomeFeed" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   # ---------------------------------------------------------------- Events
   /events:
     get:
@@ -1652,13 +1738,13 @@ paths:
       parameters:
         - { name: month, in: query, schema: { type: integer, minimum: 1, maximum: 12 } }
         - { name: year, in: query, schema: { type: integer, minimum: 2000, maximum: 3000 } }
-        - { name: gameId, in: query, description: "Game id, or the special value `followed`.", schema: { type: string, default: followed } }
+        - { name: gameId, in: query, description: "Game id, or the special values `followed` and `all`. Honoured on the authenticated and anonymous-geospatial branches alike (`followed` means no game filter for an anonymous caller). Anything else answers 400.", schema: { type: string, default: followed } }
         - { name: lairId, in: query, description: "Scopes to one lair. The lair's privacy gate applies: a private lair is only readable by a follower, its team or an admin — anyone else gets 404, never 403.", schema: { type: string } }
         - { name: userLat, in: query, schema: { type: number } }
         - { name: userLon, in: query, schema: { type: number } }
         - { name: maxDistance, in: query, description: "Max distance in km, must be > 0.", schema: { type: number } }
-        - { name: afterDate, in: query, description: "ISO date-time lower bound on startDateTime, independent of month/year. Only applied for an authenticated request (ignored for the lairId-scoped and anonymous-geospatial branches).", schema: { type: string, format: date-time } }
-        - { name: beforeDate, in: query, description: "ISO date-time upper bound on startDateTime, independent of month/year. Only applied for an authenticated request (ignored for the lairId-scoped and anonymous-geospatial branches).", schema: { type: string, format: date-time } }
+        - { name: afterDate, in: query, description: "ISO date-time lower bound on startDateTime, independent of month/year, compared as instants (stored values may carry a UTC offset). Applied for an authenticated request and for the anonymous-geospatial branch (ignored when `lairId` scopes the request).", schema: { type: string, format: date-time } }
+        - { name: beforeDate, in: query, description: "ISO date-time upper bound on startDateTime, independent of month/year, compared as instants. Applied for an authenticated request and for the anonymous-geospatial branch (ignored when `lairId` scopes the request).", schema: { type: string, format: date-time } }
       responses:
         "200":
           description: Events.
@@ -2609,6 +2695,57 @@ paths:
         "400": { $ref: "#/components/responses/NestedValidationError" }
         "404": { $ref: "#/components/responses/NestedNotFound" }
 
+  /games/{gameId}/live:
+    parameters:
+      - { name: gameId, in: path, required: true, description: Game id or slug., schema: { type: string } }
+    get:
+      tags: [Games]
+      summary: The publisher's live stream, if one is running
+      description: |
+        The YouTube live detected on the channel declared in `Game.links.youtube` (see `docs/GAME_LIVES.md`; an hourly job refreshes it). A separate route rather than a field of `GET /games/{gameId}`: the catalog is cached for long, a live changes every hour.
+
+        `live` is `null` when nothing is running — the usual case, and not an error.
+      security: []
+      responses:
+        "200":
+          description: The running live, or `null`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [live]
+                properties:
+                  live:
+                    oneOf:
+                      - $ref: "#/components/schemas/GameLive"
+                      - type: "null"
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /games/{gameId}/social-posts:
+    parameters:
+      - { name: gameId, in: path, required: true, description: Game id or slug., schema: { type: string } }
+    get:
+      tags: [Games]
+      summary: The publisher's latest posts on its networks
+      description: |
+        Posts and videos collected from the publisher's accounts (Bluesky, YouTube — see `docs/GAME_SOCIAL.md`), newest first, moderated posts excluded. Requires the game's `features.socialFeed` flag: answers 404 when it is off, like `/games/{gameId}/products` does for products.
+      security: []
+      parameters:
+        - { name: limit, in: query, description: "How many posts, newest first. Default 12 (what the game page shows), at most 100 (what a game keeps).", schema: { type: integer, default: 12, minimum: 1, maximum: 100 } }
+      responses:
+        "200":
+          description: The posts, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [posts]
+                properties:
+                  posts: { type: array, items: { $ref: "#/components/schemas/GameSocialPost" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /games/{gameId}/products:
     get:
       tags: [Games]
@@ -2821,7 +2958,12 @@ paths:
       summary: List/search news
       security: []
       parameters:
-        - { name: gameId, in: query, schema: { type: string, pattern: "^[0-9a-fA-F]{24}$" } }
+        - name: gameId
+          in: query
+          description: "One game, or several by repeating the parameter (`?gameId=a&gameId=b`) — what a client that follows several games asks for. Ids only."
+          style: form
+          explode: true
+          schema: { type: array, items: { type: string, pattern: "^[0-9a-fA-F]{24}$" } }
         - { name: tag, in: query, schema: { type: string } }
         - { name: dateFrom, in: query, schema: { type: string, format: date-time } }
         - { name: dateTo, in: query, schema: { type: string, format: date-time } }
@@ -4577,6 +4719,75 @@ paths:
                         id: { type: string }
                         name: { type: string }
                         slug: { type: string, nullable: true }
+                  favoriteGameIds:
+                    type: array
+                    items: { type: string }
+                    description: The followed games the user marked as favorites — those the site's game menu shows first. Always a subset of `gameIds`.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /users/me/games/{gameId}:
+    parameters:
+      - { name: gameId, in: path, required: true, description: Game id or slug., schema: { type: string } }
+    put:
+      tags: [Users]
+      summary: Follow a game
+      description: Adds the game to the caller's followed games. Idempotent — following a game already followed changes nothing.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: The new follow state, with the full followed list.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameFollowState" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Users]
+      summary: Unfollow a game
+      description: Removes the game from the caller's followed games — and from the favorites, a favorite only making sense among followed games. Idempotent.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: The new follow state, with the full followed list.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameFollowState" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /users/me/games/{gameId}/favorite:
+    parameters:
+      - { name: gameId, in: path, required: true, description: Game id or slug., schema: { type: string } }
+    put:
+      tags: [Users]
+      summary: Mark a followed game as favorite
+      description: Favorites are chosen **among followed games**; marking a game the caller does not follow answers 409 rather than silently doing nothing. Idempotent otherwise.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: The new favorite state, with the full favorites list.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameFavoriteState" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: The game is not among the caller's followed games. }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Users]
+      summary: Remove a game from the favorites
+      description: Idempotent. The game stays followed.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: The new favorite state, with the full favorites list.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameFavoriteState" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
@@ -5323,8 +5534,9 @@ components:
             gallery: { type: array, items: { type: string } }
             links:
               type: object
+              description: "The publisher's site and networks, by network key. Only the keys listed here are shown on the game page (in this order); unknown keys are kept but not displayed. `youtube` is also the channel watched for lives and videos, `bluesky` the account whose posts are collected."
               additionalProperties: { type: string }
-              properties: { website: { type: string }, x: { type: string }, discord: { type: string }, youtube: { type: string }, twitch: { type: string }, bluesky: { type: string } }
+              properties: { website: { type: string }, youtube: { type: string }, twitch: { type: string }, x: { type: string }, instagram: { type: string }, tiktok: { type: string }, bluesky: { type: string }, facebook: { type: string }, discord: { type: string }, reddit: { type: string } }
             metadata:
               type: object
               properties:
@@ -5357,6 +5569,12 @@ components:
                 battleReports:
                   type: boolean
                   description: "Les parties de ce jeu se saisissent en rapport de bataille."
+                decks: { type: boolean, description: "The game has a deck library and editor." }
+                news: { type: boolean, description: "The game has its own news section." }
+                quizz: { type: boolean, description: "The game has quizzes." }
+                socialFeed:
+                  type: boolean
+                  description: "The publisher's posts are collected and shown. Gates `/games/{gameId}/social-posts`, which answers 404 when it is off."
 
     BoosterCard:
       type: object
@@ -5563,6 +5781,147 @@ components:
         recognized: { type: boolean }
         erratas: { type: array, items: { $ref: "#/components/schemas/Errata" } }
 
+    HomeFeed:
+      type: object
+      required: [games, game, position, lives, agenda, feed, lairs, decks]
+      properties:
+        games:
+          type: object
+          description: "The game tabs: the favorites, else the followed games, else three default games — the site's own menu rule."
+          required: [source, games]
+          properties:
+            source: { type: string, enum: [favorites, followed, defaults] }
+            games:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+                  slug: { type: string, nullable: true }
+                  icon: { type: string }
+        game:
+          type: object
+          nullable: true
+          description: The chosen game, resolved, or `null`.
+          properties:
+            id: { type: string }
+            name: { type: string }
+            slug: { type: string, nullable: true }
+        position:
+          type: object
+          nullable: true
+          description: The position the page looked around, or `null`.
+          properties:
+            latitude: { type: number }
+            longitude: { type: number }
+            radiusKm: { type: number }
+            name: { type: string }
+        lives: { type: array, items: { $ref: "#/components/schemas/HomeLive" } }
+        agenda:
+          type: array
+          description: The next seven days, 3 events at most, soonest first, cancelled ones excluded.
+          items: { $ref: "#/components/schemas/Event" }
+        feed:
+          type: array
+          description: Newest first, up to four times `limit`.
+          items: { $ref: "#/components/schemas/FeedEntry" }
+        lairs:
+          type: object
+          required: [source, lairs]
+          properties:
+            source: { type: string, enum: [followed, nearby, none], description: "`followed` for an account following venues, `nearby` around the position (nearest first), `none` when neither applies." }
+            lairs: { type: array, items: { $ref: "#/components/schemas/Lair" } }
+        decks:
+          type: object
+          required: [source, decks]
+          properties:
+            source: { type: string, enum: [mine, featured], description: "`mine` for the caller's own decks (most recently touched first), `featured` otherwise." }
+            decks: { type: array, items: { $ref: "#/components/schemas/Deck" } }
+
+    HomeLive:
+      type: object
+      description: "A stream running right now — a publisher's (`kind: game`) or a venue's (`kind: lair`). Publishers come first."
+      required: [key, kind, id, title, source, url]
+      properties:
+        key: { type: string, example: "game:64f…" }
+        kind: { type: string, enum: [game, lair] }
+        id: { type: string, description: The game id or the lair id. }
+        title: { type: string }
+        source: { type: string, description: What broadcasts — the channel's name, or the venue's. }
+        url: { type: string, format: uri, description: The watch page. }
+        thumbnail: { type: string, format: uri }
+        viewers: { type: integer }
+
+    FeedEntry:
+      description: One entry of the home feed. `type` says which of the four sources it comes from, and what opens it — an id for news and decks, an author and an id (or an external `url`) for a member's content, an external `url` for a social post.
+      oneOf:
+        - $ref: "#/components/schemas/FeedNewsEntry"
+        - $ref: "#/components/schemas/FeedContentEntry"
+        - $ref: "#/components/schemas/FeedDeckEntry"
+        - $ref: "#/components/schemas/FeedSocialEntry"
+      discriminator:
+        propertyName: type
+        mapping:
+          news: "#/components/schemas/FeedNewsEntry"
+          content: "#/components/schemas/FeedContentEntry"
+          deck: "#/components/schemas/FeedDeckEntry"
+          social: "#/components/schemas/FeedSocialEntry"
+
+    FeedEntryBase:
+      type: object
+      required: [type, id, title, source, publishedAt]
+      properties:
+        type: { type: string, enum: [news, content, deck, social] }
+        id: { type: string }
+        title: { type: string }
+        source: { type: string, description: "Who publishes: a news author, a social account's handle, a deck's creator, a content's summary." }
+        gameId: { type: string }
+        publishedAt: { type: string, format: date-time }
+        thumbnail: { type: string, format: uri }
+
+    FeedNewsEntry:
+      allOf:
+        - $ref: "#/components/schemas/FeedEntryBase"
+        - type: object
+          description: "A news article: opens `GET /news/{newsId}`. `title` is already in the requested language."
+
+    FeedContentEntry:
+      allOf:
+        - $ref: "#/components/schemas/FeedEntryBase"
+        - type: object
+          description: "A member's article, video or replay. An article reads on Joutes (`GET /users/{authorId}/contents/{id}`); a video or replay lives elsewhere, at `url`."
+          required: [kind, authorId]
+          properties:
+            kind: { type: string, enum: [video, article, replay] }
+            authorId: { type: string }
+            summary: { type: string }
+            url: { type: string, format: uri }
+            duration: { type: string, description: "As the author wrote it — « 12 min »." }
+
+    FeedDeckEntry:
+      allOf:
+        - $ref: "#/components/schemas/FeedEntryBase"
+        - type: object
+          description: "A public deck touched this week: opens `GET /decks/{deckId}`. `thumbnail` is its cover."
+          required: [framing]
+          properties:
+            framing: { type: string, enum: [top, center], description: "How to crop the cover: a card illustration carries its subject at the top, an uploaded image is centred." }
+
+    FeedSocialEntry:
+      allOf:
+        - $ref: "#/components/schemas/FeedEntryBase"
+        - type: object
+          description: "A post collected from a publisher's network: opens `url` outside the app. `title` is the post's text, or the account's name without one."
+          required: [url, platform, kind, accountUrl]
+          properties:
+            url: { type: string, format: uri }
+            platform: { type: string, enum: [bluesky, youtube, x, instagram] }
+            kind: { type: string, enum: [post, video, short] }
+            accountUrl: { type: string, format: uri }
+            avatar: { type: string, format: uri }
+            duration: { type: string, description: "« 12:34 » — videos and shorts only." }
+
     News:
       type: object
       properties:
@@ -5661,6 +6020,85 @@ components:
             - { type: string, format: uri, maxLength: 2000 }
             - { type: string, enum: [""] }
         blocks: { type: array, minItems: 1, items: { $ref: "#/components/schemas/QuizBlock" } }
+
+    GameLive:
+      type: object
+      description: A publisher's live stream running right now, as detected on the channel declared in `Game.links.youtube`.
+      required: [platform, url, startedAt, videoId]
+      properties:
+        platform: { type: string, enum: [youtube] }
+        url: { type: string, format: uri, description: The watch page. }
+        title: { type: string }
+        startedAt: { type: string, format: date-time, description: When the platform says it started. }
+        videoId: { type: string }
+        channelTitle: { type: string }
+        channelUrl: { type: string, format: uri }
+        thumbnail: { type: string, format: uri, description: The still served by the platform. }
+
+    SocialAccount:
+      type: object
+      description: The publisher's account a post comes from.
+      required: [handle, url]
+      properties:
+        handle: { type: string, example: "riftbound.bsky.social" }
+        displayName: { type: string }
+        avatar: { type: string, format: uri }
+        url: { type: string, format: uri, description: The account's public page. }
+
+    GameSocialPost:
+      type: object
+      description: A post collected from one of the publisher's networks. `text` is plain text, truncated at collection; a video's text is its title.
+      required: [id, gameId, platform, kind, url, account, publishedAt]
+      properties:
+        id: { type: string }
+        gameId: { type: string }
+        platform: { type: string, enum: [bluesky, youtube, x, instagram], description: "Only `bluesky` and `youtube` are collected today; the other two are declared for the link keys they read." }
+        kind: { type: string, enum: [post, video, short] }
+        url: { type: string, format: uri, description: The permalink. }
+        account: { $ref: "#/components/schemas/SocialAccount" }
+        text: { type: string }
+        thumbnail: { type: string, format: uri }
+        publishedAt: { type: string, format: date-time }
+        durationSeconds: { type: integer, description: Videos and shorts only. }
+
+    GameFollowState:
+      type: object
+      required: [gameId, following, gameIds]
+      properties:
+        gameId: { type: string, description: The game's id (resolved from the slug when one was given). }
+        following: { type: boolean }
+        gameIds: { type: array, items: { type: string }, description: The caller's followed games after the change. }
+
+    GameFavoriteState:
+      type: object
+      required: [gameId, favorite, favoriteGameIds]
+      properties:
+        gameId: { type: string }
+        favorite: { type: boolean }
+        favoriteGameIds: { type: array, items: { type: string }, description: The caller's favorite games after the change. }
+
+    SessionResponse:
+      type: object
+      description: What `GET /auth/get-session` answers with a session. Better Auth's own fields are not exhaustively listed.
+      required: [user, session]
+      properties:
+        user:
+          type: object
+          properties:
+            id: { type: string }
+            email: { type: string }
+            name: { type: string }
+            username: { type: string }
+            displayName: { type: string }
+            discriminator: { type: string }
+            image: { type: string, description: "Better Auth's own field. Show `avatar` instead." }
+            avatar: { type: string, format: uri, description: "The picture to show: uploaded profile picture, else the identity provider's, else the legacy field. Derived on every read." }
+            badges: { $ref: "#/components/schemas/UserBadges" }
+        session:
+          type: object
+          properties:
+            id: { type: string }
+            expiresAt: { type: string, format: date-time }
 
     Quiz:
       type: object
@@ -5844,7 +6282,19 @@ components:
         registeredParticipantsCount: { type: integer }
         maxParticipants: { type: integer }
         favoritedBy: { type: array, items: { type: string } }
-        lair: { type: object, properties: { id: { type: string }, name: { type: string }, address: { type: string }, owners: { type: array, items: { type: string } } } }
+        lair:
+          type: object
+          description: "The lair the event takes place at, joined on read. `location` is the lair's GeoJSON point (`[longitude, latitude]`), when the lair has one."
+          properties:
+            id: { type: string }
+            name: { type: string }
+            address: { type: string }
+            owners: { type: array, items: { type: string } }
+            location:
+              type: object
+              properties:
+                type: { type: string, enum: [Point] }
+                coordinates: { type: array, items: { type: number }, minItems: 2, maxItems: 2 }
         discordBoards: { type: array, items: { type: object, properties: { channelId: { type: string }, messageId: { type: string } } } }
         boardsNeedsUpdate: { type: boolean }
 
@@ -5981,6 +6431,24 @@ components:
           type: array
           description: "The venue's usual rhythm: \"Friday night\" -> \"Riftbound\"."
           items: { type: object, properties: { label: { type: string }, value: { type: string } } }
+
+    SearchResult:
+      type: object
+      description: One hit of `GET /search`. `href` is the site's own path; a third-party client opens the hit by `kind` and `id` instead.
+      required: [label, href, kind, id]
+      properties:
+        label: { type: string, description: The name to show. }
+        sublabel: { type: string, description: "Context under the name: a game type, the card's game, a lair's address, an event's game and date, a rule's excerpt." }
+        href: { type: string, description: "Path on joutes.app, e.g. `/games/riftbound/cards/OGN-001`." }
+        image: { type: string, format: uri, description: A thumbnail, for cards only. }
+        kind:
+          type: string
+          enum: [game, card, lair, event, policy, rule]
+        id:
+          type: string
+          description: "What opens the hit: the game id, the `cardId` of `GET /games/{gameId}/cards/{cardId}`, the lair id, the event id, the policy id of `GET /games/{gameId}/policies/{policyId}`, or the rule entry id of `GET /games/{gameId}/rules`."
+        gameSlug: { type: string, description: "The game the hit belongs to (slug, or id when the game has no slug). Present for games, cards, policies and rules." }
+        doc: { type: string, enum: [CR, TR], description: "Riftbound rules only: comprehensive or tournament rules." }
 
     LairDetail:
       allOf:
