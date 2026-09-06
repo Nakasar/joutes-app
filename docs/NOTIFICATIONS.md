@@ -325,7 +325,7 @@ await notifyEventAll(
 
 #### Tournois
 
-Six moments d'un tournoi déclenchent des notifications, tous décrits par
+Sept moments d'un tournoi déclenchent des notifications, tous décrits par
 `lib/tournaments/notification-messages.ts` (module pur, testé) et envoyés par
 `lib/tournaments/notifications.ts`.
 
@@ -337,6 +337,7 @@ Six moments d'un tournoi déclenchent des notifications, tous décrits par
 | Résultat contesté | l'organisation | même route, action `dispute` |
 | Ronde complète | l'organisation | même route, à la dernière confirmation |
 | Début et fin du tournoi | tous les joueurs inscrits | route `…/[tournamentId]`, sur la transition de statut |
+| Table attribuée pour un puzzle | chaque joueur placé, ou dont la table change | routes `…/phases/[phaseId]/puzzle-seats` |
 
 Trois choses valent d'être sues :
 

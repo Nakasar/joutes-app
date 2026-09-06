@@ -99,6 +99,26 @@ export function roundPairedMessage(input: RoundPairedInput): NotificationMessage
 }
 
 /**
+ * La table d'un joueur pour un puzzle.
+ *
+ * Même logique que l'appariement d'une ronde : le numéro de table d'abord,
+ * c'est l'information qui fait se lever. Le nom du puzzle suit quand la phase
+ * en a un, pour qu'on sache ce qu'on va trouver sur la table.
+ */
+export function puzzleTableMessage(input: {
+  tournamentName: string;
+  phaseName: string;
+  puzzleName?: string;
+  tableNumber: number;
+}): NotificationMessage {
+  const puzzle = input.puzzleName ? ` Puzzle : ${input.puzzleName}.` : "";
+  return {
+    title: `${input.tournamentName} — ${input.phaseName}`,
+    description: `Table ${input.tableNumber} — installez-vous, le puzzle va commencer.${puzzle}`,
+  };
+}
+
+/**
  * Une annonce de l'organisation.
  *
  * Le message est repris tel quel : c'est l'organisateur qui l'a écrit, et le

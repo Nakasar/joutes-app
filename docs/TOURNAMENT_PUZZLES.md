@@ -80,6 +80,39 @@ Côté joueur, la carte de match cède la place au chronomètre et au bouton
 « J'ai terminé le puzzle » quand le self-reporting est activé ; sinon, un
 message dit que l'organisation relèvera le temps.
 
+## Tables
+
+Un puzzle n'a pas de match, donc rien qui porte un numéro de table — et
+pourtant chacun doit savoir où s'installer. Chaque joueur reçoit donc **sa**
+table, un siège par (phase, joueur), dans la collection
+`tournament-puzzle-seats` — deux index uniques, (phase, joueur) et (phase,
+table) : un joueur n'a qu'une table, une table n'a qu'un joueur, et c'est
+l'index qui le garantit face à deux écritures concurrentes. La distribution suit
+les règles des matchs, transposées à un joueur seul : sa table fixe prime tant
+qu'elle est libre, les autres prennent les numéros dans l'ordre à partir de
+`settings.firstTableNumber`, un joueur retiré n'a pas de table. Le calcul est
+pur (`lib/tournaments/puzzle-seats.ts`, testé).
+
+| Route | Qui | Effet |
+| --- | --- | --- |
+| `GET /api/tournaments/:id/phases/:phaseId/puzzle-seats` | staff et joueurs | Tables attribuées, dans l'ordre des tables. |
+| `POST .../puzzle-seats` | staff | Distribue les tables à tous les joueurs actifs. Sans `reset`, ceux déjà placés gardent leur table et seuls les nouveaux venus en reçoivent une ; avec `reset: true`, tout est redistribué. |
+| `PUT .../puzzle-seats/:playerId` | staff | Pose ou corrige la table d'un joueur. Une table déjà occupée est refusée. |
+| `DELETE .../puzzle-seats/:playerId` | staff | Retire la table du joueur. |
+
+**Chaque joueur dont la table vient d'être attribuée ou de changer est
+prévenu** (`notifyPuzzleSeats`) : le numéro de table d'abord, puis le nom du
+puzzle. Un joueur déjà installé n'est pas dérangé par l'arrivée d'un
+retardataire — c'est la raison du mode sans `reset`.
+
+Côté organisateur, la section **Puzzle** porte une colonne « Table » saisie en
+ligne et deux boutons : « Attribuer les tables » (ou « Placer les N sans
+table ») et « Tout réattribuer », ce dernier derrière une confirmation. Côté
+joueur, la table apparaît en tête de la carte du puzzle (site et application),
+servie par `GET /api/tournaments/:id/live` (`puzzleSeats`) dès que la phase en
+cours est un puzzle : elle s'affiche sans recharger, au moment où
+l'organisation la distribue.
+
 ## Classement
 
 `calculateMultiplayerStandings` reçoit les temps par joueur et les expose sur

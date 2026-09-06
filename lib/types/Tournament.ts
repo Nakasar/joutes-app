@@ -437,6 +437,21 @@ export type TournamentPuzzleResult = {
   updatedAt?: Date;
 };
 
+// Table attribuée à un joueur pour le puzzle d'une phase. Une phase puzzle n'a
+// pas de match, donc rien qui porte un numéro de table : chaque joueur reçoit
+// le sien, pour savoir où s'installer. Un seul siège par (phase, joueur).
+export type TournamentPuzzleSeat = {
+  id: string;
+  tournamentId: string;
+  phaseId: string;
+  playerId: string;
+  tableNumber: number;
+  // Id utilisateur du membre du staff qui a attribué (ou corrigé) la table.
+  assignedBy: string;
+  createdAt: Date;
+  updatedAt?: Date;
+};
+
 // Classement figé d'une ronde : snapshot calculé et persisté au moment où
 // l'organisateur valide la ronde, pour ne pas le recalculer à chaque lecture.
 // Réutilise PlayerStanding (source du calcul) et n'ajoute que les champs
@@ -599,7 +614,9 @@ export type TournamentActivityType =
   | "penalty-issued"
   | "puzzle-solved"
   | "puzzle-time-edited"
-  | "puzzle-cleared";
+  | "puzzle-cleared"
+  | "puzzle-tables-assigned"
+  | "puzzle-table-set";
 
 export type TournamentActivity = {
   id: string;
@@ -652,6 +669,14 @@ export type TournamentActivityDb = Omit<TournamentActivity, "id" | "tournamentId
 export type TournamentPlayerDb = Omit<TournamentPlayer, "id" | "tournamentId"> & { tournamentId: ObjectId };
 export type TournamentPuzzleResultDb = Omit<
   TournamentPuzzleResult,
+  "id" | "tournamentId" | "phaseId" | "playerId"
+> & {
+  tournamentId: ObjectId;
+  phaseId: ObjectId;
+  playerId: ObjectId;
+};
+export type TournamentPuzzleSeatDb = Omit<
+  TournamentPuzzleSeat,
   "id" | "tournamentId" | "phaseId" | "playerId"
 > & {
   tournamentId: ObjectId;

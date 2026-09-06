@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
-import { listPuzzleResults } from "@/lib/db/tournaments.ts";
+import { listPuzzleResults, listPuzzleSeats } from "@/lib/db/tournaments.ts";
 import { resolveDisplayPhase } from "@/lib/tournaments/current-round.ts";
 import { loadOrganizerContext } from "../organizerContext.ts";
 import { OrganizerPageHeader } from "../OrganizerPageHeader.tsx";
@@ -42,8 +42,12 @@ async function OrganizerPuzzlePageSection({ params }: { params: Params }) {
     );
   }
 
-  const results = await listPuzzleResults(tournamentId, phase.id);
+  const [results, seats] = await Promise.all([
+    listPuzzleResults(tournamentId, phase.id),
+    listPuzzleSeats(tournamentId, phase.id),
+  ]);
   const resultByPlayerId = new Map(results.map((result) => [result.playerId, result]));
+  const tableByPlayerId = new Map(seats.map((seat) => [seat.playerId, seat.tableNumber]));
 
   const rows: PuzzleBoardRow[] = players
     .filter((player) => player.status !== "dropped" || resultByPlayerId.has(player.id))
@@ -54,6 +58,7 @@ async function OrganizerPuzzlePageSection({ params }: { params: Params }) {
       dropped: player.status === "dropped",
       durationSeconds: resultByPlayerId.get(player.id)?.durationSeconds ?? null,
       selfReported: resultByPlayerId.get(player.id)?.selfReported ?? false,
+      tableNumber: tableByPlayerId.get(player.id) ?? null,
     }));
 
   return (

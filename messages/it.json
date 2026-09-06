@@ -3496,7 +3496,18 @@
                      "noPhase": "Nessuna fase puzzle configurata per questo torneo.",
                      "pageDescriptionNamed": "Fase « {phase} » · {puzzle}. Avvia il cronometro, poi segna ogni giocatore che finisce.",
                      "pageDescription": "Fase « {phase} ». Avvia il cronometro, poi segna ogni giocatore che finisce.",
-                     "pageTitle": "Puzzle"
+                     "pageTitle": "Puzzle",
+                     "columnTable": "Tavolo",
+                     "assignSeats": "Assegna i tavoli",
+                     "assignMissingSeats": "Sistema i {count} senza tavolo",
+                     "reassignSeats": "Riassegna tutto",
+                     "reassignDialogTitle": "Riassegnare tutti i tavoli?",
+                     "reassignDialogDescription": "I tavoli vengono ridistribuiti dal primo tavolo del torneo. Ogni giocatore il cui tavolo cambia viene avvisato.",
+                     "assignError": "Impossibile assegnare i tavoli",
+                     "seatError": "Impossibile salvare il tavolo",
+                     "seatAria": "Tavolo di {name}",
+                     "noSeats": "Nessun tavolo assegnato. I giocatori avvisati sapranno dove sedersi.",
+                     "seatedCount": "{seated} / {total} giocatori hanno un tavolo"
                    },
                    "puzzle": {
                      "reportError": "Impossibile registrare il tuo tempo",
@@ -3507,7 +3518,8 @@
                      "runningHint": "Segnala non appena hai finito.",
                      "puzzleLabel": "Puzzle",
                      "yourTime": "Il tuo tempo",
-                     "elapsed": "Tempo trascorso"
+                     "elapsed": "Tempo trascorso",
+                     "yourTable": "Il tuo tavolo"
                    },
                    "stopwatch": {
                      "livePanelHint": "I tempi si registrano dalla sezione « Puzzle »",
@@ -4498,6 +4510,8 @@
       "staffActor": "l'organizzazione",
       "types": {
                  "puzzle-cleared": "Tempo di {player} cancellato",
+                 "puzzle-tables-assigned": "Tavoli del puzzle assegnati · {count} giocatore/i avvisato/i",
+                 "puzzle-table-set": "{player} sistemato al tavolo {table}",
                  "puzzle-time-edited": "Tempo di {player} corretto ({time})",
                  "puzzle-solved": "{player} ha risolto il puzzle in {time}",
                  "match-forfeited": "{actor} ha registrato una vittoria a tavolino al tavolo {table}",
@@ -4520,6 +4534,21 @@
     },
     "form": {
       "builderTitle": "Modulo di iscrizione",
+      "responses": {
+        "title": "Risposte al modulo",
+        "description": "{answered} / {total} giocatori hanno risposto. Una riga per giocatore, una colonna per domanda.",
+        "noForm": "Questo torneo non ha un modulo d'iscrizione.",
+        "backToForm": "Modulo",
+        "downloadCsv": "Scarica (CSV)",
+        "searchPlaceholder": "Cerca un giocatore…",
+        "answeredOnly": "Solo chi ha risposto",
+        "columnAnsweredAt": "Ultima risposta",
+        "noMatch": "Nessun giocatore corrisponde.",
+        "open": "Vedi le risposte",
+        "parseError": "Lista non verificata",
+        "yes": "Sì",
+        "no": "No"
+      },
       "builderDescription": "Le informazioni richieste ai giocatori. Ognuno risponde dal proprio portale; l'organizzazione può correggere le risposte dalla scheda del giocatore.",
       "rulesTitle": "Regole di risposta",
       "playerEditable": "I giocatori possono modificare le risposte",
