@@ -3519,7 +3519,7 @@
                      "puzzleLabel": "Puzzle",
                      "yourTime": "Ihre Zeit",
                      "elapsed": "Vergangene Zeit",
-                     "yourTable": "Dein Tisch"
+                     "yourTable": "Ihr Tisch"
                    },
                    "stopwatch": {
                      "livePanelHint": "Zeiten werden unter „Puzzle“ erfasst",
