@@ -12,8 +12,8 @@
  *
  * - sans option : télécharge le catalogue, l'écrit dans `cards.json`, puis le
  *   pousse en base et dans l'index de recherche ;
- * - `--fetch-only` : télécharge seulement (utile pour relire le résultat avant
- *   d'écrire quoi que ce soit) ;
+ * - `--fetch-only` : s'arrête à `cards.json`, sans rien pousser en base ni dans
+ *   l'index (utile pour relire le catalogue avant de l'écrire) ;
  * - `--from-file` : réécrit en base depuis `cards.json`, sans retélécharger.
  *
  * Variables d'environnement : `MONGODB_URI`, `MEILISEARCH_ENDPOINT`,
@@ -1011,11 +1011,11 @@ async function main() {
   const fromFile = args.includes("--from-file");
   const fetchOnly = args.includes("--fetch-only");
 
-  // Les deux options s'excluent : l'une télécharge sans écrire, l'autre écrit
-  // sans télécharger. Ensemble, elles ne feraient rien du tout, en ayant l'air
-  // d'avoir travaillé.
+  // Les deux options s'excluent : l'une télécharge sans rien pousser en base,
+  // l'autre écrit en base sans retélécharger. Ensemble, elles ne feraient rien
+  // du tout, en ayant l'air d'avoir travaillé.
   if (fromFile && fetchOnly) {
-    throw new Error("--fetch-only télécharge sans rien écrire, --from-file écrit sans télécharger : choisissez.");
+    throw new Error("--fetch-only ne pousse rien en base, --from-file ne retélécharge rien : choisissez.");
   }
 
   const cards: DnpCard[] = fromFile ? JSON.parse(await readFile(CARDS_FILE, "utf-8")) : await fetchCatalog();
