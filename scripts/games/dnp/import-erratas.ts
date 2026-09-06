@@ -240,12 +240,14 @@ async function importEntry(
   }
 
   // La limite est celle de l'application : au-delà, la clarification serait
-  // refusée à la première modification depuis l'administration.
+  // refusée à la première modification depuis l'administration. Les cartes sont
+  // rendues quand même : refuser d'écrire n'efface pas l'entrée du compendium,
+  // et la taire ferait passer la clarification déjà en base pour disparue.
   if (cardIds.length > MAX_ERRATA_CARDS) {
     console.warn(
       `« ${entry.name} » (page ${entry.page}) : ${cardIds.length} cartes de ce nom, plus que les ${MAX_ERRATA_CARDS} autorisées.`
     );
-    return { outcome: "trop de cartes", cardIds: [] };
+    return { outcome: "trop de cartes", cardIds };
   }
 
   const details = clarificationDetails(entry);

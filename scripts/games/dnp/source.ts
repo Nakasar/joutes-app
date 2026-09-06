@@ -55,8 +55,12 @@ export async function fetchBytes(url: string): Promise<Uint8Array> {
   return new Uint8Array(await (await fetchResource(url)).arrayBuffer());
 }
 
-/** Adresse d'un PDF, où qu'elle se trouve dans la page. */
-const PDF_LINK = /https?:\/\/[^"'\\\s]+\.pdf/gi;
+/**
+ * Adresse d'un PDF, où qu'elle se trouve dans la page — le paramètre de requête
+ * compris, faute de quoi une adresse versionnée (`…/regles.pdf?v=3`) serait
+ * demandée sans sa version.
+ */
+const PDF_LINK = /https?:\/\/[^"'\\\s]+\.pdf(?:\?[^"'\\\s]*)?/gi;
 
 /**
  * Les PDF d'une page, dans leur ordre d'apparition.
