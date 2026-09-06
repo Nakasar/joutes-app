@@ -6,6 +6,7 @@ import {
   listMatchesByRound,
   listPhases,
   listPlayers,
+  listPuzzleSeats,
   listRounds,
   TournamentError,
 } from "@/lib/db/tournaments";
@@ -48,6 +49,18 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     let standings: unknown[] | null = null;
     let matches: unknown[] | null = null;
+
+    // Phase puzzle : les tables attribuées aux joueurs voyagent avec l'état
+    // live, que les téléphones interrogent déjà. Un joueur voit ainsi sa table
+    // apparaître sans recharger — et c'est le seul moment où l'information
+    // compte, quand l'organisation vient de la distribuer.
+    const puzzleSeats =
+      activePhase?.type === "time-race"
+        ? (await listPuzzleSeats(tournamentId, activePhase.id)).map((seat) => ({
+            playerId: seat.playerId,
+            tableNumber: seat.tableNumber,
+          }))
+        : null;
 
     if (display === "standings") {
       const rows = await getStandings(tournamentId, activePhase?.id);
@@ -105,6 +118,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       // Type de la phase en cours : l'écran de salle et le portail joueur s'en
       // servent pour montrer le chronomètre plutôt que le minuteur.
       phaseType: activePhase?.type ?? null,
+      puzzleSeats,
       standings,
       matches,
       serverNow: new Date().toISOString(),

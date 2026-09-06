@@ -159,6 +159,17 @@ export const updatePuzzleResultSchema = z.object({
   durationSeconds: puzzleDurationSecondsSchema,
 });
 
+// Attribution des tables d'une phase puzzle. `reset` redistribue tout depuis
+// la première table ; sans lui, seuls les joueurs sans table en reçoivent une.
+export const assignPuzzleSeatsSchema = z.object({
+  reset: z.boolean().optional().default(false),
+});
+
+// Table d'un seul joueur, posée ou corrigée par l'organisation.
+export const setPuzzleSeatSchema = z.object({
+  tableNumber: z.number().int().min(1).max(9999),
+});
+
 // Rejoindre un tournoi via son code. Sans session, `displayName` est requis
 // (joueur invité) ; avec session, il est ignoré (nom du compte utilisé).
 export const joinTournamentSchema = z.object({
@@ -494,6 +505,8 @@ export type TimerActionInput = z.infer<typeof timerActionSchema>;
 export type StopwatchActionInput = z.infer<typeof stopwatchActionSchema>;
 export type RecordPuzzleResultInput = z.infer<typeof recordPuzzleResultSchema>;
 export type UpdatePuzzleResultInput = z.infer<typeof updatePuzzleResultSchema>;
+export type AssignPuzzleSeatsInput = z.infer<typeof assignPuzzleSeatsSchema>;
+export type SetPuzzleSeatInput = z.infer<typeof setPuzzleSeatSchema>;
 export type CreateTournamentPenaltyInput = z.infer<typeof createTournamentPenaltySchema>;
 export type CreateTournamentNoteInput = z.infer<typeof createTournamentNoteSchema>;
 export type UpdateTournamentDecklistInput = z.infer<typeof updateTournamentDecklistSchema>;

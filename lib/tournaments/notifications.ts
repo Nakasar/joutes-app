@@ -4,6 +4,7 @@ import { notifyUser } from "@/lib/services/notifications";
 import {
   announcementMessage,
   formatDeadline,
+  puzzleTableMessage,
   resultDisputedMessage,
   resultToConfirmMessage,
   roundCompleteMessage,
@@ -15,7 +16,9 @@ import type {
   Tournament,
   TournamentAnnouncementLevel,
   TournamentMatch,
+  TournamentPhase,
   TournamentPlayer,
+  TournamentPuzzleSeat,
   TournamentRound,
 } from "@/lib/types/Tournament";
 
@@ -93,6 +96,39 @@ export async function notifyRoundPaired(
         await notifyUser(player.userId, title, description, { link });
       })
     )
+  );
+}
+
+/**
+ * Prévient chaque joueur de la table qui lui est attribuée pour un puzzle.
+ *
+ * Seuls les sièges passés en argument sont annoncés : l'appelant donne ceux
+ * qui viennent d'être attribués ou de changer, pas toute la salle — un joueur
+ * déjà installé n'a pas à être dérangé pour l'arrivée d'un retardataire.
+ */
+export async function notifyPuzzleSeats(
+  tournament: Tournament,
+  phase: TournamentPhase,
+  seats: Pick<TournamentPuzzleSeat, "playerId" | "tableNumber">[],
+  players: TournamentPlayer[]
+): Promise<void> {
+  const playersById = new Map(players.map((player) => [player.id, player]));
+  const link = tournamentLink(tournament.id);
+
+  await Promise.all(
+    seats.map(async (seat) => {
+      const player = playersById.get(seat.playerId);
+      if (!isReachable(player)) return;
+
+      const { title, description } = puzzleTableMessage({
+        tournamentName: tournament.name,
+        phaseName: phase.name,
+        puzzleName: phase.scenarios?.[0]?.name,
+        tableNumber: seat.tableNumber,
+      });
+
+      await notifyUser(player.userId, title, description, { link });
+    })
   );
 }
 

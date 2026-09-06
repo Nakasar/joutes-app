@@ -92,10 +92,22 @@ export function PuzzleCard({
 
   const myResult = results?.find((result) => result.playerId === myPlayerId) ?? null;
   const done = myResult !== null;
+  // La table attribuée voyage avec l'état live : elle apparaît dès que
+  // l'organisation la distribue, sans recharger.
+  const myTable =
+    state?.puzzleSeats?.find((seat) => seat.playerId === myPlayerId)?.tableNumber ?? null;
 
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
+        {myTable !== null && (
+          <div className="mb-4 rounded-xl bg-neutral-950 px-4 py-3 text-white">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-400">
+              {t("puzzle.yourTable")}
+            </p>
+            <p className="font-mono text-4xl font-bold leading-tight tabular-nums">{myTable}</p>
+          </div>
+        )}
         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
           {done ? t("puzzle.yourTime") : t("puzzle.elapsed")}
         </p>

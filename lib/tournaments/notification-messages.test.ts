@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   announcementMessage,
   formatDeadline,
+  puzzleTableMessage,
   resultDisputedMessage,
   resultToConfirmMessage,
   roundCompleteMessage,
@@ -187,5 +188,32 @@ describe("formatDeadline", () => {
 
     assert.ok(/août/.test(formatted), formatted);
     assert.ok(/h/.test(formatted), formatted);
+  });
+});
+
+describe("puzzleTableMessage", () => {
+  it("met la table en tête et nomme le puzzle", () => {
+    const message = puzzleTableMessage({
+      tournamentName: "Coupe de printemps",
+      phaseName: "Puzzle 1",
+      puzzleName: "Mat en deux",
+      tableNumber: 4,
+    });
+
+    assert.equal(message.title, "Coupe de printemps — Puzzle 1");
+    assert.equal(
+      message.description,
+      "Table 4 — installez-vous, le puzzle va commencer. Puzzle : Mat en deux."
+    );
+  });
+
+  it("se passe du nom du puzzle quand la phase n'en a pas", () => {
+    const message = puzzleTableMessage({
+      tournamentName: "Coupe de printemps",
+      phaseName: "Puzzle 1",
+      tableNumber: 4,
+    });
+
+    assert.equal(message.description, "Table 4 — installez-vous, le puzzle va commencer.");
   });
 });

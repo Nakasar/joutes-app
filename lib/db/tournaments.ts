@@ -45,6 +45,8 @@ import {
   TournamentPlayerDb,
   TournamentPuzzleResult,
   TournamentPuzzleResultDb,
+  TournamentPuzzleSeat,
+  TournamentPuzzleSeatDb,
   TournamentResultMode,
   TournamentRound,
   TournamentRoundDb,
@@ -83,6 +85,7 @@ import {
   resolveDisplayPhase,
 } from "@/lib/tournaments/current-round";
 import { parseDecklistAnswer } from "@/lib/tournaments/decklist-parsing";
+import { planPuzzleSeats } from "@/lib/tournaments/puzzle-seats";
 import {
   createInvitedUserByEmail,
   getUserByEmail,
@@ -113,6 +116,10 @@ const ACTIVITY = "tournament-activity";
 // ranger — mais le seul format proposé aujourd'hui est le puzzle, d'où le nom
 // de la collection et du vocabulaire alentour.
 const PUZZLE_RESULTS = "tournament-puzzle-results";
+// Tables attribuées aux joueurs pendant une phase puzzle. Un puzzle n'a pas de
+// match, et donc rien qui porte un numéro de table : le siège est attaché au
+// joueur lui-même, un par (phase, joueur).
+const PUZZLE_SEATS = "tournament-puzzle-seats";
 
 // Nombre d'événements conservés dans le journal d'activité d'un tournoi. Les
 // plus anciens sont purgés à l'écriture : le journal est un fil de suivi en
@@ -152,6 +159,16 @@ const puzzleResultsIndexReady = db
   .createIndex({ phaseId: 1, playerId: 1 }, { unique: true })
   .catch((error) => {
     console.error("Impossible de créer l'index unique des résultats de puzzle:", error);
+  });
+
+// Index unique (phase, joueur) des sièges de puzzle, pour la même raison : une
+// attribution en masse et une correction manuelle simultanées ne doivent pas
+// donner deux tables au même joueur.
+const puzzleSeatsIndexReady = db
+  .collection(PUZZLE_SEATS)
+  .createIndex({ phaseId: 1, playerId: 1 }, { unique: true })
+  .catch((error) => {
+    console.error("Impossible de créer l'index unique des sièges de puzzle:", error);
   });
 
 // Index unique partiel : un code de participation ne peut être partagé par deux
@@ -1259,6 +1276,7 @@ export async function deleteTournament(tournamentId: string): Promise<void> {
     db.collection(FEAT_AWARDS).deleteMany({ tournamentId: _id }),
     db.collection(ACTIVITY).deleteMany({ tournamentId: _id }),
     db.collection(PUZZLE_RESULTS).deleteMany({ tournamentId: _id }),
+    db.collection(PUZZLE_SEATS).deleteMany({ tournamentId: _id }),
   ]);
 }
 
@@ -2282,6 +2300,174 @@ export async function deletePuzzleResult(
 }
 
 // =====================
+// SIÈGES DE PUZZLE
+// =====================
+
+function toPuzzleSeat(doc: WithId<TournamentPuzzleSeatDb>): TournamentPuzzleSeat {
+  return {
+    id: doc._id.toString(),
+    tournamentId: doc.tournamentId.toString(),
+    phaseId: doc.phaseId.toString(),
+    playerId: doc.playerId.toString(),
+    tableNumber: doc.tableNumber,
+    assignedBy: doc.assignedBy,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+  };
+}
+
+/** Les tables attribuées sur le puzzle d'une phase, dans l'ordre des tables. */
+export async function listPuzzleSeats(
+  tournamentId: string,
+  phaseId: string
+): Promise<TournamentPuzzleSeat[]> {
+  const docs = await db
+    .collection<TournamentPuzzleSeatDb>(PUZZLE_SEATS)
+    .find({
+      tournamentId: parseObjectId(tournamentId, "Tournoi"),
+      phaseId: parseObjectId(phaseId, "Phase"),
+    })
+    .sort({ tableNumber: 1 })
+    .toArray();
+  return docs.map(toPuzzleSeat);
+}
+
+/**
+ * Distribue les tables du puzzle d'une phase à tous les joueurs actifs, selon
+ * `planPuzzleSeats` : tables fixes d'abord, puis la séquence à partir de la
+ * première table du tournoi. Sans `reset`, les joueurs déjà placés gardent
+ * leur table et seuls les nouveaux venus en reçoivent une.
+ *
+ * Renvoie l'ensemble des sièges, et à part ceux qui viennent d'être attribués
+ * ou de changer : ce sont les seuls à annoncer aux joueurs.
+ */
+export async function assignPuzzleSeats(
+  tournamentId: string,
+  phaseId: string,
+  options: { reset: boolean; assignedBy: string }
+): Promise<{ seats: TournamentPuzzleSeat[]; changed: TournamentPuzzleSeat[] }> {
+  const tournament = await requireTournament(tournamentId);
+  await requirePuzzlePhase(tournamentId, phaseId);
+
+  const [players, existing] = await Promise.all([
+    listPlayers(tournamentId),
+    listPuzzleSeats(tournamentId, phaseId),
+  ]);
+
+  const plan = planPuzzleSeats({
+    players: players.map((player) => ({
+      id: player.id,
+      status: player.status,
+      fixedTableNumber: player.fixedTableNumber,
+    })),
+    existing: existing.map((seat) => ({ playerId: seat.playerId, tableNumber: seat.tableNumber })),
+    firstTable: tournament.settings.firstTableNumber ?? 1,
+    reset: options.reset,
+  });
+
+  await puzzleSeatsIndexReady;
+  const collection = db.collection<TournamentPuzzleSeatDb>(PUZZLE_SEATS);
+  const tId = new ObjectId(tournamentId);
+  const pId = new ObjectId(phaseId);
+  const now = new Date();
+
+  // Le plan fait foi : les sièges qui n'y figurent plus (joueur retiré, ou
+  // remise à zéro) disparaissent, les autres sont posés ou corrigés.
+  const planned = new Set(plan.seats.map((seat) => seat.playerId));
+  const stale = existing.filter((seat) => !planned.has(seat.playerId));
+  if (stale.length > 0) {
+    await collection.deleteMany({
+      _id: { $in: stale.map((seat) => new ObjectId(seat.id)) },
+    });
+  }
+  if (plan.changed.length > 0) {
+    await collection.bulkWrite(
+      plan.changed.map((seat) => ({
+        updateOne: {
+          filter: { tournamentId: tId, phaseId: pId, playerId: new ObjectId(seat.playerId) },
+          update: {
+            $set: { tableNumber: seat.tableNumber, assignedBy: options.assignedBy, updatedAt: now },
+            $setOnInsert: { createdAt: now },
+          },
+          upsert: true,
+        },
+      }))
+    );
+  }
+
+  const seats = await listPuzzleSeats(tournamentId, phaseId);
+  const changedIds = new Set(plan.changed.map((seat) => seat.playerId));
+  return { seats, changed: seats.filter((seat) => changedIds.has(seat.playerId)) };
+}
+
+/**
+ * Attribue ou corrige la table d'un seul joueur. Une table déjà occupée par un
+ * autre joueur de la phase est refusée : deux personnes à la même table, c'est
+ * précisément ce que l'attribution doit éviter.
+ */
+export async function setPuzzleSeat(
+  tournamentId: string,
+  phaseId: string,
+  playerId: string,
+  tableNumber: number,
+  assignedBy: string
+): Promise<TournamentPuzzleSeat> {
+  await requirePuzzlePhase(tournamentId, phaseId);
+  const player = await getPlayerById(tournamentId, playerId);
+  if (!player) {
+    throw new TournamentError("not-found", "Joueur non trouvé");
+  }
+  if (player.status === "dropped") {
+    throw new TournamentError("conflict", "Ce joueur ne participe plus au tournoi");
+  }
+
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const pId = parseObjectId(phaseId, "Phase");
+  const collection = db.collection<TournamentPuzzleSeatDb>(PUZZLE_SEATS);
+  const taken = await collection.findOne({
+    tournamentId: tId,
+    phaseId: pId,
+    tableNumber,
+    playerId: { $ne: new ObjectId(playerId) },
+  });
+  if (taken) {
+    throw new TournamentError("conflict", `La table ${tableNumber} est déjà attribuée à un autre joueur`);
+  }
+
+  await puzzleSeatsIndexReady;
+  const now = new Date();
+  const result = await collection.findOneAndUpdate(
+    { tournamentId: tId, phaseId: pId, playerId: new ObjectId(playerId) },
+    {
+      $set: { tableNumber, assignedBy, updatedAt: now },
+      $setOnInsert: { createdAt: now },
+    },
+    { upsert: true, returnDocument: "after" }
+  );
+  if (!result) {
+    throw new TournamentError("not-found", "Siège de puzzle non trouvé");
+  }
+  return toPuzzleSeat(result);
+}
+
+/** Retire la table d'un joueur : il redevient « sans table ». */
+export async function deletePuzzleSeat(
+  tournamentId: string,
+  phaseId: string,
+  playerId: string
+): Promise<void> {
+  await requirePuzzlePhase(tournamentId, phaseId);
+  const result = await db.collection<TournamentPuzzleSeatDb>(PUZZLE_SEATS).deleteOne({
+    tournamentId: parseObjectId(tournamentId, "Tournoi"),
+    phaseId: parseObjectId(phaseId, "Phase"),
+    playerId: parseObjectId(playerId, "Joueur"),
+  });
+  if (result.deletedCount === 0) {
+    throw new TournamentError("not-found", "Aucune table attribuée à ce joueur");
+  }
+}
+
+// =====================
 // PLAYERS
 // =====================
 
@@ -2679,6 +2865,8 @@ export async function removePlayer(tournamentId: string, playerId: string): Prom
   // Les hauts faits suivent le joueur : sans lui, ils ne créditeraient personne
   // à la clôture et resteraient affichés dans les compteurs de la ronde.
   await db.collection(FEAT_AWARDS).deleteMany({ tournamentId: tId, playerId: pId });
+  // Sa table de puzzle aussi : elle bloquerait sinon un numéro pour personne.
+  await db.collection(PUZZLE_SEATS).deleteMany({ tournamentId: tId, playerId: pId });
 }
 
 // =====================
@@ -2931,6 +3119,7 @@ export async function deletePhase(tournamentId: string, phaseId: string): Promis
   await db.collection(ROUNDS).deleteMany({ tournamentId: tId, phaseId: pId });
   await db.collection(MATCHES).deleteMany({ tournamentId: tId, phaseId: pId });
   await db.collection(PUZZLE_RESULTS).deleteMany({ tournamentId: tId, phaseId: pId });
+  await db.collection(PUZZLE_SEATS).deleteMany({ tournamentId: tId, phaseId: pId });
   await db
     .collection<TournamentDb>(TOURNAMENTS)
     .updateOne({ _id: tId, currentPhaseId: phaseId }, { $unset: { currentPhaseId: "" } });

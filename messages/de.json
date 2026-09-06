@@ -3496,7 +3496,18 @@
                      "noPhase": "Für dieses Turnier ist keine Puzzle-Phase eingerichtet.",
                      "pageDescriptionNamed": "Phase „{phase}“ · {puzzle}. Stoppuhr starten und dann jeden Spieler abhaken, der fertig ist.",
                      "pageDescription": "Phase „{phase}“. Stoppuhr starten und dann jeden Spieler abhaken, der fertig ist.",
-                     "pageTitle": "Puzzle"
+                     "pageTitle": "Puzzle",
+                     "columnTable": "Tisch",
+                     "assignSeats": "Tische zuweisen",
+                     "assignMissingSeats": "Die {count} ohne Tisch setzen",
+                     "reassignSeats": "Alle neu zuweisen",
+                     "reassignDialogTitle": "Alle Tische neu zuweisen?",
+                     "reassignDialogDescription": "Die Tische werden ab dem ersten Tisch des Turniers neu verteilt. Jeder Spieler, dessen Tisch sich ändert, wird benachrichtigt.",
+                     "assignError": "Tische konnten nicht zugewiesen werden",
+                     "seatError": "Tisch konnte nicht gespeichert werden",
+                     "seatAria": "Tisch von {name}",
+                     "noSeats": "Noch kein Tisch zugewiesen. Benachrichtigte Spieler wissen, wo sie sitzen.",
+                     "seatedCount": "{seated} / {total} Spieler haben einen Tisch"
                    },
                    "puzzle": {
                      "reportError": "Ihre Zeit konnte nicht erfasst werden",
@@ -3507,7 +3518,8 @@
                      "runningHint": "Melden Sie sich, sobald Sie fertig sind.",
                      "puzzleLabel": "Puzzle",
                      "yourTime": "Ihre Zeit",
-                     "elapsed": "Vergangene Zeit"
+                     "elapsed": "Vergangene Zeit",
+                     "yourTable": "Dein Tisch"
                    },
                    "stopwatch": {
                      "livePanelHint": "Zeiten werden unter „Puzzle“ erfasst",
@@ -4498,6 +4510,8 @@
       "staffActor": "die Organisation",
       "types": {
                  "puzzle-cleared": "Zeit von {player} gelöscht",
+                 "puzzle-tables-assigned": "Puzzle-Tische zugewiesen · {count} Spieler benachrichtigt",
+                 "puzzle-table-set": "{player} an Tisch {table} gesetzt",
                  "puzzle-time-edited": "Zeit von {player} korrigiert ({time})",
                  "puzzle-solved": "{player} hat das Puzzle in {time} gelöst",
                  "match-forfeited": "{actor} hat ein Forfait an Tisch {table} eingetragen",
@@ -4520,6 +4534,21 @@
     },
     "form": {
       "builderTitle": "Anmeldeformular",
+      "responses": {
+        "title": "Antworten auf das Formular",
+        "description": "{answered} / {total} Spieler haben geantwortet. Eine Zeile pro Spieler, eine Spalte pro Frage.",
+        "noForm": "Dieses Turnier hat kein Anmeldeformular.",
+        "backToForm": "Formular",
+        "downloadCsv": "Herunterladen (CSV)",
+        "searchPlaceholder": "Spieler suchen…",
+        "answeredOnly": "Nur die, die geantwortet haben",
+        "columnAnsweredAt": "Letzte Antwort",
+        "noMatch": "Kein Spieler passt.",
+        "open": "Antworten ansehen",
+        "parseError": "Ungeprüfte Liste",
+        "yes": "Ja",
+        "no": "Nein"
+      },
       "builderDescription": "Die Angaben, die von den Spielern verlangt werden. Jeder antwortet über sein Portal; die Organisation kann Antworten im Spielerblatt korrigieren.",
       "rulesTitle": "Antwortregeln",
       "playerEditable": "Spieler dürfen ihre Antworten ändern",

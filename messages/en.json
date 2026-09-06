@@ -3496,7 +3496,18 @@
                      "noPhase": "No puzzle phase configured for this tournament.",
                      "pageDescriptionNamed": "Phase “{phase}” · {puzzle}. Start the stopwatch, then tick off each player as they finish.",
                      "pageDescription": "Phase “{phase}”. Start the stopwatch, then tick off each player as they finish.",
-                     "pageTitle": "Puzzle"
+                     "pageTitle": "Puzzle",
+                     "columnTable": "Table",
+                     "assignSeats": "Assign tables",
+                     "assignMissingSeats": "Seat the {count} without a table",
+                     "reassignSeats": "Reassign all",
+                     "reassignDialogTitle": "Reassign every table?",
+                     "reassignDialogDescription": "Tables are handed out again from the tournament's first table. Every player whose table changes is notified.",
+                     "assignError": "Could not assign tables",
+                     "seatError": "Could not save the table",
+                     "seatAria": "Table of {name}",
+                     "noSeats": "No table assigned yet. Notified players will know where to sit.",
+                     "seatedCount": "{seated} / {total} players have a table"
                    },
                    "puzzle": {
                      "reportError": "Could not record your time",
@@ -3507,7 +3518,8 @@
                      "runningHint": "Let us know as soon as you are done.",
                      "puzzleLabel": "Puzzle",
                      "yourTime": "Your time",
-                     "elapsed": "Elapsed time"
+                     "elapsed": "Elapsed time",
+                     "yourTable": "Your table"
                    },
                    "stopwatch": {
                      "livePanelHint": "Record times from the “Puzzle” section",
@@ -4498,6 +4510,8 @@
       "staffActor": "the organisers",
       "types": {
                  "puzzle-cleared": "{player}'s time cleared",
+                 "puzzle-tables-assigned": "Puzzle tables assigned · {count} player(s) notified",
+                 "puzzle-table-set": "{player} seated at table {table}",
                  "puzzle-time-edited": "{player}'s time corrected ({time})",
                  "puzzle-solved": "{player} solved the puzzle in {time}",
                  "match-forfeited": "{actor} recorded a forfeit at table {table}",
@@ -4520,6 +4534,21 @@
     },
     "form": {
       "builderTitle": "Registration form",
+      "responses": {
+        "title": "Form responses",
+        "description": "{answered} / {total} players answered. One row per player, one column per question.",
+        "noForm": "This tournament has no registration form.",
+        "backToForm": "Form",
+        "downloadCsv": "Download (CSV)",
+        "searchPlaceholder": "Search a player…",
+        "answeredOnly": "Only those who answered",
+        "columnAnsweredAt": "Last answer",
+        "noMatch": "No player matches.",
+        "open": "View responses",
+        "parseError": "Unverified list",
+        "yes": "Yes",
+        "no": "No"
+      },
       "builderDescription": "The information you ask players for. Each player answers from their portal; staff can correct answers from the player sheet.",
       "rulesTitle": "Answering rules",
       "playerEditable": "Players can edit their answers",

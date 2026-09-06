@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "@/i18n/navigation.ts";
+import { Link, useRouter } from "@/i18n/navigation.ts";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
-import { ArrowDown, ArrowUp, Check, Plus, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ListChecks, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
@@ -178,12 +178,22 @@ export function FormBuilder({
         title={t("form.builderTitle")}
         description={t("form.builderDescription")}
         actions={
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             {saved && (
               <span className="flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
                 <Check className="size-4" />
                 {t("form.saved")}
               </span>
+            )}
+            {/* Les réponses ne se lisent pas ici : la page voisine les met
+                toutes à plat, et les exporte. */}
+            {(initialForm?.fields.length ?? 0) > 0 && (
+              <Button variant="outline" asChild>
+                <Link href={`/tournaments/${tournamentId}/organizer/form/responses`}>
+                  <ListChecks className="size-4" />
+                  {t("form.responses.open")}
+                </Link>
+              </Button>
             )}
             <Button onClick={save} disabled={busy}>
               {t("common.save")}

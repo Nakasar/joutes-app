@@ -36,6 +36,8 @@ const TONE: Record<TournamentActivityType, string> = {
   "puzzle-solved": "bg-emerald-500",
   "puzzle-time-edited": "bg-amber-500",
   "puzzle-cleared": "bg-amber-500",
+  "puzzle-tables-assigned": "bg-sky-500",
+  "puzzle-table-set": "bg-sky-500",
 };
 
 /**

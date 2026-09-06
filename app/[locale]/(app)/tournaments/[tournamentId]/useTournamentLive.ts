@@ -38,6 +38,9 @@ export type LiveState = {
   // type de la phase en cours (`phaseType`) est « puzzle ».
   stopwatch: LiveStopwatch;
   phaseType: TournamentPhaseType | null;
+  // Tables attribuées aux joueurs de la phase puzzle en cours ; null hors
+  // phase puzzle.
+  puzzleSeats: { playerId: string; tableNumber: number }[] | null;
   serverNow: string;
   // Panneau demandé par l'organisateur pour l'écran de la salle. Les deux
   // listes ne sont servies que par le panneau qui les affiche.
