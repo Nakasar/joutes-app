@@ -16,6 +16,11 @@ const CARD_ID_SEPARATOR_BY_GAME: Record<string, string> = {
   // Cyberpunk numérote ses cartes `005a`, `012b` : collés au code d'extension,
   // `WNC005a` se lirait mal, et `WNCB005a` ne dirait plus où finit l'extension.
   cp: "-",
+  // Donjon & Procrastination nomme ses extensions `S1`, `DS4`, `STR` et
+  // numérote à partir de `00` : collés, `S1` et `00` donneraient `S100`, qu'une
+  // dixième série rendrait ambigu — et `S4-01-A`, la version promo de la carte
+  // 01, ne se lirait plus du tout.
+  dnp: "-",
 };
 
 export function cardIdSeparator(gameSlug?: string): string {

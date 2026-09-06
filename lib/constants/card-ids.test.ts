@@ -21,6 +21,11 @@ describe("buildCardId", () => {
     assert.equal(buildCardId("sorcery", "got", "abaddon-succubus"), "GOT-abaddon-succubus");
     // Cyberpunk suffixe ses numéros d'une lettre : le tiret dit où finit l'extension.
     assert.equal(buildCardId("cp", "wncb", "005a"), "WNCB-005a");
+    // Donjon & Procrastination numérote à partir de `00` : collés, `S1` et `00`
+    // donneraient `S100`, qu'une dixième série rendrait ambigu.
+    assert.equal(buildCardId("dnp", "s1", "00"), "S1-00");
+    // La version promo d'une carte porte le numéro de celle qu'elle décline.
+    assert.equal(buildCardId("dnp", "s4", "01-A"), "S4-01-A");
   });
 
   it("ne rend rien tant que l'extension ou le numéro manque", () => {
