@@ -50,6 +50,11 @@ export function planPuzzleReport(
 ): PuzzleReportPlan | PuzzleReportRefusal {
   // Le joueur désigné : ce que la requête demande, sinon la propre inscription
   // de son auteur. Ce repli vaut aussi pour l'organisation qui joue.
+  //
+  // Une identité n'a qu'une inscription par tournoi — `addPlayer` refuse un
+  // second `userId`, `joinTournament` rend celle qui existe déjà, et une clé de
+  // synchronisation ne porte qu'un joueur — donc `playerIds[0]` désigne sans
+  // ambiguïté, et ce repli n'a personne d'autre à départager.
   const designated = request.playerId !== undefined;
 
   if (!actor.isOrganizer) {
@@ -67,13 +72,26 @@ export function planPuzzleReport(
         message: "Vous ne pouvez rapporter que votre propre temps",
       };
     }
-    // Une correction du temps reste la main de l'organisation : le joueur
-    // rapporte l'instant où il a terminé, pas un temps de son choix.
-    if (request.durationSeconds !== undefined) {
+  }
+
+  // Un temps saisi à la main appartient au geste de l'organisation qui désigne :
+  // c'est ainsi qu'on rattrape un relevé manqué, sur un joueur nommé. Un
+  // « j'ai terminé » ne porte que l'instant où il arrive — y compris celui
+  // d'une organisation qui joue, sans quoi elle inscrirait sous l'étiquette du
+  // self-report un temps qu'elle a choisi.
+  if (request.durationSeconds !== undefined) {
+    if (!actor.isOrganizer) {
       return {
         ok: false,
         kind: "forbidden",
         message: "Seule l'organisation peut saisir un temps : signalez simplement la fin du puzzle",
+      };
+    }
+    if (!designated) {
+      return {
+        ok: false,
+        kind: "invalid",
+        message: "Un temps saisi doit désigner le joueur auquel il s'applique",
       };
     }
   }

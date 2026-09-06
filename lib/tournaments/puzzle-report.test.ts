@@ -48,6 +48,23 @@ describe("planPuzzleReport", () => {
     assert.equal(plan.ok && plan.overwrite, false);
   });
 
+  it("refuse un temps saisi par l'organisation sans joueur désigné", () => {
+    // Le rattrapage d'un relevé manqué nomme son joueur : sans lui, le temps
+    // choisi s'inscrirait sous l'étiquette du self-report.
+    assert.deepEqual(planPuzzleReport({ durationSeconds: 300 }, playingOrganizer, open), {
+      ok: false,
+      kind: "invalid",
+      message: "Un temps saisi doit désigner le joueur auquel il s'applique",
+    });
+  });
+
+  it("laisse l'organisation se désigner elle-même pour corriger son temps", () => {
+    assert.deepEqual(
+      planPuzzleReport({ playerId: "p9", durationSeconds: 300 }, playingOrganizer, open),
+      { ok: true, playerId: "p9", selfReported: false, overwrite: true }
+    );
+  });
+
   it("refuse le self-reporting quand le tournoi le désactive", () => {
     assert.deepEqual(planPuzzleReport({}, player, { allowSelfReporting: false }), {
       ok: false,

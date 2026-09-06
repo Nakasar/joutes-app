@@ -60,8 +60,8 @@ export async function POST(request: NextRequest, { params }: Params) {
     const actor = await buildMatchActor(tournament, principal);
     const isOrganizer = principalCanManage(tournament, principal);
 
-    // Le joueur visé : celui demandé par l'organisation, sinon l'auteur de la
-    // requête. Un joueur inscrit deux fois (rare) doit préciser lequel.
+    // Le joueur visé : celui désigné par la requête, sinon l'inscription de son
+    // auteur — une identité n'en a qu'une par tournoi.
     const plan = planPuzzleReport(
       validated,
       { playerIds: actor.playerIds, isOrganizer },
