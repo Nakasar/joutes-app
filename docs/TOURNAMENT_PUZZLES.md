@@ -85,7 +85,9 @@ message dit que l'organisation relèvera le temps.
 Un puzzle n'a pas de match, donc rien qui porte un numéro de table — et
 pourtant chacun doit savoir où s'installer. Chaque joueur reçoit donc **sa**
 table, un siège par (phase, joueur), dans la collection
-`tournament-puzzle-seats` (index unique sur ce couple). La distribution suit
+`tournament-puzzle-seats` — deux index uniques, (phase, joueur) et (phase,
+table) : un joueur n'a qu'une table, une table n'a qu'un joueur, et c'est
+l'index qui le garantit face à deux écritures concurrentes. La distribution suit
 les règles des matchs, transposées à un joueur seul : sa table fixe prime tant
 qu'elle est libre, les autres prennent les numéros dans l'ordre à partir de
 `settings.firstTableNumber`, un joueur retiré n'a pas de table. Le calcul est

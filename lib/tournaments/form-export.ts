@@ -185,7 +185,7 @@ export function buildFormResponsesCsv(
 export function buildFormResponsesCsvFileName(tournamentName: string): string {
   const slug = tournamentName
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase()

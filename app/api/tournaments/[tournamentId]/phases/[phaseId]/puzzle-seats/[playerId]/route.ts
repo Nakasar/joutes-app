@@ -30,7 +30,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const tournament = await requireTournament(tournamentId);
     assertCanManage(tournament, user.userId);
 
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const validated = setPuzzleSeatSchema.parse(body);
 
     const seat = await setPuzzleSeat(

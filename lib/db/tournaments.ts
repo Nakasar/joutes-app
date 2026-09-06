@@ -161,15 +161,16 @@ const puzzleResultsIndexReady = db
     console.error("Impossible de créer l'index unique des résultats de puzzle:", error);
   });
 
-// Index unique (phase, joueur) des sièges de puzzle, pour la même raison : une
-// attribution en masse et une correction manuelle simultanées ne doivent pas
-// donner deux tables au même joueur.
-const puzzleSeatsIndexReady = db
-  .collection(PUZZLE_SEATS)
-  .createIndex({ phaseId: 1, playerId: 1 }, { unique: true })
-  .catch((error) => {
-    console.error("Impossible de créer l'index unique des sièges de puzzle:", error);
-  });
+// Deux index uniques sur les sièges de puzzle : (phase, joueur) — un joueur
+// n'a qu'une table — et (phase, table) — une table n'a qu'un joueur. Le second
+// est ce qui rend le « table déjà prise » robuste : un contrôle par lecture
+// préalable laisse passer deux requêtes concurrentes, l'index non.
+const puzzleSeatsIndexReady = Promise.all([
+  db.collection(PUZZLE_SEATS).createIndex({ phaseId: 1, playerId: 1 }, { unique: true }),
+  db.collection(PUZZLE_SEATS).createIndex({ phaseId: 1, tableNumber: 1 }, { unique: true }),
+]).catch((error) => {
+  console.error("Impossible de créer les index uniques des sièges de puzzle:", error);
+});
 
 // Index unique partiel : un code de participation ne peut être partagé par deux
 // tournois non terminés (à venir / en cours). Best-effort : un échec (base
@@ -2372,27 +2373,44 @@ export async function assignPuzzleSeats(
   const now = new Date();
 
   // Le plan fait foi : les sièges qui n'y figurent plus (joueur retiré, ou
-  // remise à zéro) disparaissent, les autres sont posés ou corrigés.
+  // remise à zéro) disparaissent, ceux qui changent sont retirés puis reposés.
+  // Retirer avant de reposer, et non corriger en place : une redistribution
+  // échange des tables entre joueurs, et l'index unique (phase, table)
+  // refuserait la première écriture tant que l'ancien occupant est encore là.
   const planned = new Set(plan.seats.map((seat) => seat.playerId));
   const stale = existing.filter((seat) => !planned.has(seat.playerId));
-  if (stale.length > 0) {
+  const removed = [
+    ...stale.map((seat) => seat.playerId),
+    ...plan.changed.map((seat) => seat.playerId),
+  ];
+  if (removed.length > 0) {
     await collection.deleteMany({
-      _id: { $in: stale.map((seat) => new ObjectId(seat.id)) },
+      tournamentId: tId,
+      phaseId: pId,
+      playerId: { $in: removed.map((playerId) => new ObjectId(playerId)) },
     });
   }
   if (plan.changed.length > 0) {
-    await collection.bulkWrite(
-      plan.changed.map((seat) => ({
-        updateOne: {
-          filter: { tournamentId: tId, phaseId: pId, playerId: new ObjectId(seat.playerId) },
-          update: {
-            $set: { tableNumber: seat.tableNumber, assignedBy: options.assignedBy, updatedAt: now },
-            $setOnInsert: { createdAt: now },
-          },
-          upsert: true,
-        },
-      }))
-    );
+    try {
+      await collection.insertMany(
+        plan.changed.map((seat) => ({
+          tournamentId: tId,
+          phaseId: pId,
+          playerId: new ObjectId(seat.playerId),
+          tableNumber: seat.tableNumber,
+          assignedBy: options.assignedBy,
+          createdAt: now,
+        }))
+      );
+    } catch (error) {
+      // Une correction manuelle concurrente a pris une table entre le retrait
+      // et la repose : l'organisateur relance, le plan repart de l'état réel.
+      if (!isDuplicateKeyError(error)) throw error;
+      throw new TournamentError(
+        "conflict",
+        "Les tables ont changé pendant l'attribution : relancez-la"
+      );
+    }
   }
 
   const seats = await listPuzzleSeats(tournamentId, phaseId);
@@ -2436,14 +2454,23 @@ export async function setPuzzleSeat(
 
   await puzzleSeatsIndexReady;
   const now = new Date();
-  const result = await collection.findOneAndUpdate(
-    { tournamentId: tId, phaseId: pId, playerId: new ObjectId(playerId) },
-    {
-      $set: { tableNumber, assignedBy, updatedAt: now },
-      $setOnInsert: { createdAt: now },
-    },
-    { upsert: true, returnDocument: "after" }
-  );
+  let result;
+  try {
+    result = await collection.findOneAndUpdate(
+      { tournamentId: tId, phaseId: pId, playerId: new ObjectId(playerId) },
+      {
+        $set: { tableNumber, assignedBy, updatedAt: now },
+        $setOnInsert: { createdAt: now },
+      },
+      { upsert: true, returnDocument: "after" }
+    );
+  } catch (error) {
+    // Course perdue sur l'index unique (phase, table) : quelqu'un a pris la
+    // table entre le contrôle ci-dessus et l'écriture. Même réponse qu'au
+    // contrôle, plutôt qu'une erreur interne.
+    if (!isDuplicateKeyError(error)) throw error;
+    throw new TournamentError("conflict", `La table ${tableNumber} est déjà attribuée à un autre joueur`);
+  }
   if (!result) {
     throw new TournamentError("not-found", "Siège de puzzle non trouvé");
   }

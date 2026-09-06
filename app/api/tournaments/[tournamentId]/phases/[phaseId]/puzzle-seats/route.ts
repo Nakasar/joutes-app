@@ -20,7 +20,11 @@ import {
 
 type Params = { params: Promise<{ tournamentId: string; phaseId: string }> };
 
-/** Les tables attribuées sur le puzzle de la phase, dans l'ordre des tables. */
+/**
+ * Les tables attribuées sur le puzzle de la phase, dans l'ordre des tables.
+ * Lisible par les joueurs : seule la forme publique sort — qui est à quelle
+ * table — sans l'auteur de l'attribution ni ses horodatages.
+ */
 export async function GET(request: NextRequest, { params }: Params) {
   try {
     const { tournamentId, phaseId } = await params;
@@ -30,7 +34,10 @@ export async function GET(request: NextRequest, { params }: Params) {
     const tournament = await requireTournament(tournamentId);
     await assertPrincipalCanRead(tournament, principal);
 
-    return NextResponse.json(await listPuzzleSeats(tournamentId, phaseId));
+    const seats = await listPuzzleSeats(tournamentId, phaseId);
+    return NextResponse.json(
+      seats.map((seat) => ({ playerId: seat.playerId, tableNumber: seat.tableNumber }))
+    );
   } catch (error) {
     return tournamentErrorResponse(error);
   }
