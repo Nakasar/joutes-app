@@ -5,9 +5,7 @@ import {Locale} from "@/i18n/config";
 
 export type ErrataType = "errata" | "clarification" | "ruling";
 
-// La création étant ouverte à tous, un errata ne peut pas viser une liste de
-// cartes arbitrairement longue (chaque carte entraîne une revalidation de page).
-export const MAX_ERRATA_CARDS = 20;
+export { MAX_ERRATA_CARDS } from "@/lib/constants/errata";
 
 export type ErrataVoteType = "positive" | "negative";
 

@@ -139,7 +139,6 @@ import path, { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ObjectId } from "mongodb";
 import { parse as parseHtml } from "node-html-parser";
-import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import type { EnqueuedTaskPromise } from "meilisearch";
 import db from "../../../lib/mongodb.ts";
 import meilisearch, { cardIndexSettings, ensureCardIndex, indexes } from "../../../lib/meilisearch.ts";
@@ -147,10 +146,22 @@ import { getGameCardFilterFacets } from "../../../lib/db/cards.ts";
 import { importedCardSearchDocument } from "../../../lib/cards/import-search.ts";
 import { buildCardId, slugSegment } from "../../../lib/constants/card-ids.ts";
 import type { CardPrinting } from "../../../lib/types/card.ts";
+import {
+  blockCenter,
+  blocksOf,
+  fetchBytes,
+  fetchPage,
+  joinFragments,
+  linesOf,
+  readPdf,
+  pdfLinks,
+  SITE,
+  squeeze,
+  type Fragment,
+} from "./source.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const SITE = "https://donjonprocrastination.com";
 const CARDS_PAGE = `${SITE}/les-cartes`;
 
 /** Convention d'identifiant du jeu, indépendante du slug qu'il porte en base. */
@@ -183,49 +194,6 @@ export type DnpCard = {
   rarity?: string;
 };
 
-// --- Accès HTTP ----------------------------------------------------------
-
-/**
- * Requête que le site refuse : une page déplacée, un PDF retiré. Elle sera
- * refusée autant à la cinquième tentative, et la reprendre ne ferait que
- * retarder l'erreur — qui dit, elle, ce qui ne va pas.
- */
-class RefusedRequest extends Error {}
-
-/**
- * Une ressource du site. Un échec isolé — le CDN répond ponctuellement en 5xx —
- * ne doit pas coûter tout l'import : la requête est reprise quelques fois avant
- * d'abandonner.
- */
-async function fetchResource(url: string, attempt = 1): Promise<Response> {
-  const MAX_ATTEMPTS = 5;
-
-  try {
-    const response = await fetch(url, { headers: { accept: "*/*" } });
-
-    if (!response.ok) {
-      const message = `HTTP ${response.status} sur ${url}`;
-      throw response.status < 500 ? new RefusedRequest(message) : new Error(message);
-    }
-
-    return response;
-  } catch (error) {
-    if (error instanceof RefusedRequest || attempt >= MAX_ATTEMPTS) {
-      throw error;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** (attempt - 1)));
-    return fetchResource(url, attempt + 1);
-  }
-}
-
-async function fetchPage(url: string): Promise<string> {
-  return (await fetchResource(url)).text();
-}
-
-async function fetchBytes(url: string): Promise<Uint8Array> {
-  return new Uint8Array(await (await fetchResource(url)).arrayBuffer());
-}
-
 // --- Lecture du site -----------------------------------------------------
 
 /** Une image de carte publiée sur la page d'une série. */
@@ -251,22 +219,14 @@ function setPageUrls(html: string): string[] {
   return [...new Set(links)];
 }
 
-/** Adresse d'un PDF, où qu'elle se trouve dans la page. */
-const PDF_LINK = /https?:\/\/[^"'\\\s]+\.pdf/gi;
-
 /**
  * L'inventaire d'une série et ses illustrations.
  *
- * Le PDF ne se cherche pas dans le document : le bouton « Télécharger la liste
- * d'effets en PDF » n'est posé qu'à l'exécution du script de la page, et son
- * adresse ne se lit donc, dans le HTML servi, que dans les données que le
- * gabarit emporte avec lui. Elle est repêchée du texte de la page — un PDF est
- * une adresse trop reconnaissable pour valoir un moteur de rendu en dépendance.
- *
- * Le CDN sert aussi les conditions de vente et les mentions légales, présentes
- * en pied de chaque page : seul le PDF dont le nom annonce une liste est
- * retenu, faute de quoi une page sans inventaire s'importerait comme une série
- * vide — ou pire, comme les conditions de vente.
+ * Des PDF que porte la page (cf. `pdfLinks`), seul celui dont le nom annonce
+ * une liste est retenu : le CDN sert aussi les conditions de vente et les
+ * mentions légales, présentes en pied de chaque page, et sans ce tri une page
+ * sans inventaire s'importerait comme une série vide — ou pire, comme les
+ * conditions de vente.
  *
  * Les illustrations, elles, sont bien dans le document : elles sont lues dans
  * la balise `source` de chaque `picture`, qui porte le WebP d'origine là où le
@@ -276,9 +236,7 @@ const PDF_LINK = /https?:\/\/[^"'\\\s]+\.pdf/gi;
 function readSetPage(url: string, html: string): SetPage | undefined {
   const document = parseHtml(html);
 
-  const pdf = [...html.matchAll(PDF_LINK)]
-    .map(([link]) => link)
-    .find((link) => /liste/i.test(link.split("/").pop() ?? ""));
+  const pdf = pdfLinks(html).find((link) => /liste/i.test(link.split("/").pop() ?? ""));
 
   if (!pdf) {
     console.warn(`${url} : aucun inventaire PDF, la page est ignorée.`);
@@ -301,12 +259,6 @@ function readSetPage(url: string, html: string): SetPage | undefined {
 
 // --- Lecture de l'inventaire PDF ----------------------------------------
 
-/** Un fragment de texte du PDF, avec la place qu'il occupe sur la page. */
-type Fragment = { str: string; x: number; y: number; width: number; height: number };
-
-/** Les fragments posés sur une même ligne de base. */
-type Line = { y: number; height: number; fragments: Fragment[] };
-
 /** Les colonnes de l'inventaire, dans l'ordre où elles peuvent apparaître. */
 const COLUMNS = ["N°", "Nom", "Classe", "Valeur", "Type", "Archétype", "Rareté", "Effet"] as const;
 
@@ -318,80 +270,6 @@ type Column = (typeof COLUMNS)[number];
  * sur une lecture qui, elle, ne s'appuie que sur des coordonnées.
  */
 type SetTable = { code: string; title: string; announced?: number; rows: Map<Column, string>[] };
-
-const squeeze = (value: string): string => value.replace(/\s+/g, " ").trim();
-
-/**
- * Fragments d'une même ligne, recollés dans l'ordre de lecture.
- *
- * L'espace n'est pas ajouté entre deux fragments mais déduit de la place qui
- * les sépare : le PDF coupe un mot en deux fragments jointifs sur une ligature
- * (`fi` + `n de partie`), qu'un espace systématique écrirait « fi n de partie ».
- */
-function joinFragments(fragments: Fragment[]): string {
-  let line = "";
-  let end: number | undefined;
-
-  for (const fragment of [...fragments].sort((a, b) => a.x - b.x)) {
-    if (end !== undefined && fragment.x - end > 0.4) {
-      line += " ";
-    }
-    line += fragment.str;
-    end = Math.max(end ?? -Infinity, fragment.x + fragment.width);
-  }
-
-  return line;
-}
-
-/** Les fragments rangés par ligne de base, de haut en bas. */
-function linesOf(fragments: Fragment[]): Line[] {
-  const lines: Line[] = [];
-
-  for (const fragment of [...fragments].sort((a, b) => b.y - a.y)) {
-    const line = lines.find((candidate) => Math.abs(candidate.y - fragment.y) < 1.5);
-
-    if (line) {
-      line.fragments.push(fragment);
-      line.height = Math.max(line.height, fragment.height);
-    } else {
-      lines.push({ y: fragment.y, height: fragment.height, fragments: [fragment] });
-    }
-  }
-
-  return lines;
-}
-
-/**
- * Les lignes d'une colonne réunies en blocs, un par cellule.
- *
- * Deux lignes d'une même cellule sont séparées d'un interligne — un cinquième
- * de plus que le corps du texte —, deux cellules d'un filet du tableau, qui
- * laisse nettement plus de place. Le partage se fait donc sur l'écart, rapporté
- * à la taille du texte : rien ne dit qu'une ligne du tableau ait la hauteur des
- * autres — celle d'une carte dont l'effet tient sur six lignes fait le double —,
- * et une hauteur de ligne moyenne verserait la moitié d'un effet dans la carte
- * du dessus.
- */
-function blocksOf(lines: Line[]): Line[][] {
-  const blocks: Line[][] = [];
-
-  for (const line of lines) {
-    const previous = blocks.at(-1)?.at(-1);
-
-    if (previous && previous.y - line.y <= 1.45 * Math.max(previous.height, line.height)) {
-      blocks.at(-1)?.push(line);
-    } else {
-      blocks.push([line]);
-    }
-  }
-
-  return blocks;
-}
-
-/** Le milieu d'un bloc, qui est aussi celui de la ligne du tableau qui le porte. */
-function blockCenter(block: Line[]): number {
-  return (block[0].y + block[block.length - 1].y) / 2;
-}
 
 /** Le contenu d'une cellule : ses lignes de haut en bas, recollées. */
 function cellText(fragments: Fragment[]): string {
@@ -504,24 +382,7 @@ function readTable(fragments: Fragment[]): SetTable | undefined {
 
 /** Les extensions d'un inventaire : une par page qui porte un tableau. */
 async function readInventory(pdf: Uint8Array): Promise<SetTable[]> {
-  const document = await getDocument({ data: pdf, useSystemFonts: true }).promise;
-  const tables: SetTable[] = [];
-
-  for (let index = 1; index <= document.numPages; index++) {
-    const content = await (await document.getPage(index)).getTextContent();
-    const fragments = content.items.flatMap((item): Fragment[] =>
-      "str" in item && item.str.trim()
-        ? [{ str: item.str, x: item.transform[4], y: item.transform[5], width: item.width, height: item.height }]
-        : []
-    );
-
-    const table = readTable(fragments);
-    if (table) {
-      tables.push(table);
-    }
-  }
-
-  return tables;
+  return (await readPdf(pdf)).pages.flatMap((fragments) => readTable(fragments) ?? []);
 }
 
 // --- Rapprochement des illustrations ------------------------------------
