@@ -11,6 +11,7 @@ import {
   requireTournament,
   TournamentError,
 } from "@/lib/db/tournaments";
+import { planPuzzleReport } from "@/lib/tournaments/puzzle-report";
 import { formatDuration } from "@/lib/tournament-timer";
 import {
   resolveTournamentPrincipal,
@@ -41,7 +42,8 @@ export async function GET(request: NextRequest, { params }: Params) {
  * temps courant du chronomètre (ou celui fourni, pour rattraper un relevé
  * manqué). L'organisation peut désigner n'importe quel joueur ; un joueur ne
  * peut se signaler que lui-même, et seulement si le tournoi autorise le
- * self-reporting.
+ * self-reporting. Sans joueur désigné, la requête vise l'inscription de son
+ * auteur — y compris quand celui-ci organise le tournoi qu'il joue.
  */
 export async function POST(request: NextRequest, { params }: Params) {
   try {
@@ -58,44 +60,26 @@ export async function POST(request: NextRequest, { params }: Params) {
     const actor = await buildMatchActor(tournament, principal);
     const isOrganizer = principalCanManage(tournament, principal);
 
-    // Le joueur visé : celui demandé par l'organisation, sinon l'auteur de la
-    // requête. Un joueur inscrit deux fois (rare) doit préciser lequel.
-    let playerId = validated.playerId;
-    if (!isOrganizer) {
-      if (!tournament.settings.allowSelfReporting) {
-        throw new TournamentError(
-          "forbidden",
-          "Le self-reporting est désactivé sur ce tournoi : voyez l'organisation"
-        );
-      }
-      if (playerId && !actor.playerIds.includes(playerId)) {
-        throw new TournamentError("forbidden", "Vous ne pouvez rapporter que votre propre temps");
-      }
-      playerId = playerId ?? actor.playerIds[0];
-      // Une correction du temps reste la main de l'organisation : le joueur
-      // rapporte l'instant où il a terminé, pas un temps de son choix.
-      if (validated.durationSeconds !== undefined) {
-        throw new TournamentError(
-          "forbidden",
-          "Seule l'organisation peut saisir un temps : signalez simplement la fin du puzzle"
-        );
-      }
-    }
-    if (!playerId) {
-      throw new TournamentError("invalid", "Aucun joueur désigné");
+    // Le joueur visé : celui désigné par la requête, sinon l'inscription de son
+    // auteur — une identité n'en a qu'une par tournoi.
+    const plan = planPuzzleReport(
+      validated,
+      { playerIds: actor.playerIds, isOrganizer },
+      { allowSelfReporting: tournament.settings.allowSelfReporting }
+    );
+    if (!plan.ok) {
+      throw new TournamentError(plan.kind, plan.message);
     }
 
     const result = await recordPuzzleResult(tournamentId, phaseId, {
-      playerId,
+      playerId: plan.playerId,
       durationSeconds: validated.durationSeconds,
-      selfReported: !isOrganizer,
+      selfReported: plan.selfReported,
       reportedBy: actor.id,
-      // Un puzzle ne se termine qu'une fois : le joueur ne réécrit pas son
-      // propre temps. L'organisation, elle, repointe qui elle veut.
-      overwrite: isOrganizer,
+      overwrite: plan.overwrite,
     });
 
-    const player = await getPlayerById(tournamentId, playerId);
+    const player = await getPlayerById(tournamentId, plan.playerId);
     await recordActivity(
       tournamentId,
       "puzzle-solved",
