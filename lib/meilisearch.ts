@@ -66,6 +66,13 @@ export const indexes: { [gameSlug: string]: CardIndexConfig } = {
       collectorNumber: 'collectorNumber',
     },
   },
+  dnp: {
+    name: 'dnp-cards',
+    keys: {
+      set: 'setCode',
+      collectorNumber: 'collectorNumber',
+    },
+  },
   cp: {
     name: 'cp-cards',
     keys: {
