@@ -188,7 +188,7 @@ async function GameHero({ params }: GameDetailPageProps) {
         </Link>
       </div>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-8 pt-28 pb-16 space-y-6">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-8 pt-24 pb-16 space-y-6">
         {game.icon && (
           <div className="w-32 h-32 rounded-lg overflow-hidden shadow-2xl border-4 border-white/20">
             <img

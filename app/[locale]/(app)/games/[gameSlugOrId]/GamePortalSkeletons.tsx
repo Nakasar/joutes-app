@@ -26,7 +26,7 @@ export function GameHeroSkeleton() {
     >
       <span className="sr-only">Chargement du portail du jeu…</span>
 
-      <div className="relative z-10 mx-auto w-full max-w-7xl animate-pulse space-y-6 px-8 pt-28 pb-16" aria-hidden>
+      <div className="relative z-10 mx-auto w-full max-w-7xl animate-pulse space-y-6 px-8 pt-24 pb-16" aria-hidden>
         <div className="h-32 w-32 rounded-lg border-4 border-white/10 bg-white/10" />
         <div className="h-16 w-2/3 max-w-2xl rounded bg-white/15 md:h-20" />
         <div className="h-9 w-40 rounded-full bg-white/10" />
