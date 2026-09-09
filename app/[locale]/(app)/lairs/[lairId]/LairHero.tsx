@@ -17,6 +17,11 @@ import { readViewer, requireVisibleLair } from "./lair-data.ts";
  * Le dégradé remonte du bas — opaque sous le texte, presque transparent en
  * haut — pour que le titre tienne sur n'importe quelle bannière sans voiler
  * l'image entière.
+ *
+ * La hauteur est un plancher, pas une mesure : un nom long, une adresse qui
+ * passe à la ligne, et la colonne dépasse la bannière. Posée en absolu, elle
+ * sortait alors par le haut et le logo se retrouvait coupé sous l'en-tête ;
+ * restée dans le flux, elle fait simplement grandir la bannière avec elle.
  */
 export default async function LairHero({ lairId }: { lairId: string }) {
   const [lair, t, locale] = await Promise.all([
@@ -37,7 +42,7 @@ export default async function LairHero({ lairId }: { lairId: string }) {
         : null;
 
   return (
-    <div className="relative h-72 w-full bg-gradient-to-br from-primary/80 to-purple-600/80 md:h-[300px]">
+    <div className="relative flex min-h-72 w-full items-end bg-gradient-to-br from-primary/80 to-purple-600/80 md:min-h-[300px]">
       {lair.banner ? (
         <img
           src={lair.banner}
@@ -45,15 +50,15 @@ export default async function LairHero({ lairId }: { lairId: string }) {
           className="absolute inset-0 h-full w-full object-cover object-center"
         />
       ) : (
-        <div className="flex h-full items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center">
           <Gamepad2 className="h-24 w-24 text-white" />
         </div>
       )}
 
       <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(8,6,4,.92)_12%,rgba(8,6,4,.35)_60%,rgba(8,6,4,.15))]" />
 
-      <div className="absolute inset-x-0 bottom-0">
-        <div className="container mx-auto flex max-w-7xl items-end gap-5 px-4 pb-6 lg:px-10">
+      <div className="relative z-10 w-full">
+        <div className="container mx-auto flex max-w-7xl items-end gap-5 px-4 pt-8 pb-6 lg:px-10">
           {logo && (
             <div className="relative hidden size-24 shrink-0 overflow-hidden rounded-[14px] border border-[var(--lair-accent-45)] bg-black/40 sm:block">
               <Image src={logo} alt="" fill className="object-cover" sizes="96px" />

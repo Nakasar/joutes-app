@@ -150,12 +150,21 @@ export default function GameDetailPage({ params }: GameDetailPageProps) {
   );
 }
 
+/**
+ * Le héros du jeu : sa bannière, son icône, son nom, et de quoi agir.
+ *
+ * La hauteur est un plancher, pas une mesure : sur un écran bas, une longue
+ * description pousse la colonne au-delà des 70 % de la fenêtre, et une hauteur
+ * fixe la faisait alors sortir par le haut — l'icône coupée sous l'en-tête.
+ * Le contenu reste donc dans le flux, aligné en bas d'un conteneur qui grandit
+ * avec lui ; `overflow-hidden` ne recadre plus que la bannière.
+ */
 async function GameHero({ params }: GameDetailPageProps) {
   const { gameSlugOrId } = await params;
   const [game, t] = await Promise.all([requireGame(gameSlugOrId), getTranslations("Games")]);
 
   return (
-    <div className="relative h-[70vh] min-h-[500px] overflow-hidden">
+    <div className="relative flex min-h-[max(70vh,500px)] items-end overflow-hidden">
       {game.banner ? (
         <div className="absolute inset-0">
           <img
@@ -179,52 +188,50 @@ async function GameHero({ params }: GameDetailPageProps) {
         </Link>
       </div>
 
-      <div className="absolute inset-0 flex items-end z-10">
-        <div className="w-full max-w-7xl mx-auto px-8 pb-16 space-y-6">
-          {game.icon && (
-            <div className="w-32 h-32 rounded-lg overflow-hidden shadow-2xl border-4 border-white/20">
-              <img
-                src={game.icon}
-                alt={game.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
-
-          <h1 className="text-5xl md:text-7xl font-bold text-white drop-shadow-2xl animate-fade-in">
-            {game.name}
-          </h1>
-
-          <div className="flex gap-3 items-center animate-fade-in animate-delay-100">
-            <Badge variant="secondary" className="text-base px-4 py-2 bg-white/20 backdrop-blur-sm text-white border-white/30">
-              {GAME_TYPES[game.type]}
-            </Badge>
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-8 pt-28 pb-16 space-y-6">
+        {game.icon && (
+          <div className="w-32 h-32 rounded-lg overflow-hidden shadow-2xl border-4 border-white/20">
+            <img
+              src={game.icon}
+              alt={game.name}
+              className="w-full h-full object-cover"
+            />
           </div>
+        )}
 
-          <p className="text-xl text-gray-200 max-w-3xl leading-relaxed drop-shadow-lg animate-fade-in animate-delay-200">
-            {game.description}
-          </p>
+        <h1 className="text-5xl md:text-7xl font-bold text-white drop-shadow-2xl animate-fade-in">
+          {game.name}
+        </h1>
 
-          <div className="flex flex-wrap gap-4 pt-4 animate-fade-in animate-delay-300">
-            {/* Les boutons de suivi demandent la session, et le compte derrière
-                elle. Leur frontière est ici plutôt qu'autour du héros : le nom
-                du jeu n'a aucune raison d'attendre l'identité du visiteur. */}
-            <Suspense fallback={<GameActionsSkeleton />}>
-              <GameActions gameId={game.id} />
-            </Suspense>
-            <Link href={`/events?gameId=${game.id}`}>
-              <Button size="lg" variant="secondary" className="bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70 px-8">
-                <Calendar className="h-5 w-5 mr-2" />
-                {t("detail.viewEvents")}
-              </Button>
-            </Link>
-            <Link href={`/lairs?gameId=${game.id}`}>
-              <Button size="lg" variant="secondary" className="bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70 px-8">
-                <MapPin className="h-5 w-5 mr-2" />
-                {t("detail.findLair")}
-              </Button>
-            </Link>
-          </div>
+        <div className="flex gap-3 items-center animate-fade-in animate-delay-100">
+          <Badge variant="secondary" className="text-base px-4 py-2 bg-white/20 backdrop-blur-sm text-white border-white/30">
+            {GAME_TYPES[game.type]}
+          </Badge>
+        </div>
+
+        <p className="text-xl text-gray-200 max-w-3xl leading-relaxed drop-shadow-lg animate-fade-in animate-delay-200">
+          {game.description}
+        </p>
+
+        <div className="flex flex-wrap gap-4 pt-4 animate-fade-in animate-delay-300">
+          {/* Les boutons de suivi demandent la session, et le compte derrière
+              elle. Leur frontière est ici plutôt qu'autour du héros : le nom
+              du jeu n'a aucune raison d'attendre l'identité du visiteur. */}
+          <Suspense fallback={<GameActionsSkeleton />}>
+            <GameActions gameId={game.id} />
+          </Suspense>
+          <Link href={`/events?gameId=${game.id}`}>
+            <Button size="lg" variant="secondary" className="bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70 px-8">
+              <Calendar className="h-5 w-5 mr-2" />
+              {t("detail.viewEvents")}
+            </Button>
+          </Link>
+          <Link href={`/lairs?gameId=${game.id}`}>
+            <Button size="lg" variant="secondary" className="bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70 px-8">
+              <MapPin className="h-5 w-5 mr-2" />
+              {t("detail.findLair")}
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
