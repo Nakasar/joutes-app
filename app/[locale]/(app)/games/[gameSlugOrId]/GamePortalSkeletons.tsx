@@ -20,23 +20,21 @@
 export function GameHeroSkeleton() {
   return (
     <div
-      className="relative h-[70vh] min-h-[500px] overflow-hidden bg-gradient-to-br from-gray-800 via-gray-900 to-black"
+      className="relative flex min-h-[max(70vh,500px)] items-end overflow-hidden bg-gradient-to-br from-gray-800 via-gray-900 to-black"
       role="status"
       aria-busy="true"
     >
       <span className="sr-only">Chargement du portail du jeu…</span>
 
-      <div className="absolute inset-0 z-10 flex items-end" aria-hidden>
-        <div className="mx-auto w-full max-w-7xl animate-pulse space-y-6 px-8 pb-16">
-          <div className="h-32 w-32 rounded-lg border-4 border-white/10 bg-white/10" />
-          <div className="h-16 w-2/3 max-w-2xl rounded bg-white/15 md:h-20" />
-          <div className="h-9 w-40 rounded-full bg-white/10" />
-          <div className="h-7 w-full max-w-3xl rounded bg-white/10" />
-          <div className="flex flex-wrap gap-4 pt-4">
-            <div className="h-11 w-40 rounded-md bg-white/10" />
-            <div className="h-11 w-44 rounded-md bg-white/10" />
-            <div className="h-11 w-44 rounded-md bg-white/10" />
-          </div>
+      <div className="relative z-10 mx-auto w-full max-w-7xl animate-pulse space-y-6 px-8 pt-28 pb-16" aria-hidden>
+        <div className="h-32 w-32 rounded-lg border-4 border-white/10 bg-white/10" />
+        <div className="h-16 w-2/3 max-w-2xl rounded bg-white/15 md:h-20" />
+        <div className="h-9 w-40 rounded-full bg-white/10" />
+        <div className="h-7 w-full max-w-3xl rounded bg-white/10" />
+        <div className="flex flex-wrap gap-4 pt-4">
+          <div className="h-11 w-40 rounded-md bg-white/10" />
+          <div className="h-11 w-44 rounded-md bg-white/10" />
+          <div className="h-11 w-44 rounded-md bg-white/10" />
         </div>
       </div>
     </div>
