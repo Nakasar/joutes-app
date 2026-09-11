@@ -58,7 +58,7 @@ export default async function LairHero({ lairId }: { lairId: string }) {
       <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(8,6,4,.92)_12%,rgba(8,6,4,.35)_60%,rgba(8,6,4,.15))]" />
 
       <div className="relative z-10 w-full">
-        <div className="container mx-auto flex max-w-7xl items-end gap-5 px-4 pt-8 pb-6 lg:px-10">
+        <div className="container mx-auto flex max-w-7xl items-end gap-5 px-4 pb-6 lg:px-10">
           {logo && (
             <div className="relative hidden size-24 shrink-0 overflow-hidden rounded-[14px] border border-[var(--lair-accent-45)] bg-black/40 sm:block">
               <Image src={logo} alt="" fill className="object-cover" sizes="96px" />
