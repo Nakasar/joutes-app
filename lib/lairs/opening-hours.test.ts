@@ -5,6 +5,7 @@ import {
   findOverlappingDay,
   formatOpeningRange,
   formatOpeningRanges,
+  LAIR_TIMEZONE,
   readOpeningState,
   weekOf,
 } from "./opening-hours";
@@ -12,17 +13,25 @@ import {
 /**
  * Les horaires d'un lieu, et la pastille « Ouvert » qui en découle.
  *
- * Trois pièges valent d'être verrouillés : un lieu qui ferme après minuit ne
+ * Quatre pièges valent d'être verrouillés : un lieu qui ferme après minuit ne
  * doit pas être déclaré fermé toute sa soirée, un lieu sans horaires ne doit
- * jamais être annoncé ouvert — ni fermé — mais rester muet, et un horaire coupé
- * ne doit pas promettre la fermeture du soir pendant la pause de midi.
+ * jamais être annoncé ouvert — ni fermé — mais rester muet, un horaire coupé
+ * ne doit pas promettre la fermeture du soir pendant la pause de midi, et
+ * l'heure lue est celle du lieu, non celle du serveur qui rend la page.
+ *
+ * Les moments de ce fichier sont donc tous posés dans le fuseau du lieu : une
+ * heure locale au processus ferait passer ou échouer les tests selon le `TZ` de
+ * la machine qui les lance.
  *
  * Exécution : `npm run test`.
  */
 
-/** Un jeudi, à l'heure demandée, en heure locale. */
+/** Un jeudi, à l'heure demandée, à l'heure du lieu. */
 const jeudi = (heure: number, minute = 0) =>
-  DateTime.fromObject({ year: 2026, month: 8, day: 20, hour: heure, minute });
+  DateTime.fromObject(
+    { year: 2026, month: 8, day: 20, hour: heure, minute },
+    { zone: LAIR_TIMEZONE },
+  );
 
 describe("readOpeningState", () => {
   it("reste muet sans horaires enregistrés", () => {
@@ -73,6 +82,27 @@ describe("readOpeningState", () => {
     assert.equal(readOpeningState(hours, "fr", jeudi(23)).isOpen, true);
     assert.equal(readOpeningState(hours, "fr", jeudi(24).plus({ hours: 1 })).isOpen, true);
     assert.equal(readOpeningState(hours, "fr", jeudi(24).plus({ hours: 3 })).isOpen, false);
+  });
+
+  it("lit l'heure du lieu, non celle du serveur qui rend la page", () => {
+    // Le serveur de production tourne en UTC : à 19h24 à Thionville, un mercredi,
+    // `DateTime.now()` y rend 17h24. Lu tel quel, un lieu ouvert « 10h — 19h »
+    // s'affichait « Ouvert, ferme à 19h » vingt-quatre minutes après avoir fermé.
+    const hours = [{ day: 3, open: "10:00", close: "19:00" }];
+    const serveur = DateTime.fromISO("2026-09-16T19:24", { zone: LAIR_TIMEZONE }).setZone("UTC");
+    const state = readOpeningState(hours, "fr", serveur);
+
+    assert.equal(state.isOpen, false);
+    assert.equal(state.closesAt, null);
+  });
+
+  it("souligne le jour du lieu quand le serveur est encore la veille", () => {
+    // Jeudi 0h30 à Paris, c'est mercredi 22h30 en UTC : le jour courant se lit
+    // lui aussi dans le fuseau du lieu, sans quoi la semaine mettait
+    // « Aujourd'hui » sur la ligne de la veille.
+    const serveur = jeudi(0, 30).setZone("UTC");
+
+    assert.equal(readOpeningState([{ day: 4, open: "10:00", close: "19:00" }], "fr", serveur).todayDay, 4);
   });
 
   it("ignore une plage sans heure d'ouverture", () => {
