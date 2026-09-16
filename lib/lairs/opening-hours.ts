@@ -6,6 +6,18 @@ const TIME = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 const DAY = 24 * 60;
 
 /**
+ * Le fuseau dans lequel se lisent les horaires d'un lieu.
+ *
+ * « 10h — 19h » est l'heure de la vitrine, jamais celle du serveur : en
+ * production celui-ci tourne en UTC, où il est 17h24 quand il est 19h24 à
+ * Thionville, et la pastille annonçait « Ouvert, ferme à 19h » deux heures
+ * après que le rideau soit tombé. Le fuseau est celui de l'application, comme
+ * pour les événements et les affiches ; un lieu hors d'Europe centrale
+ * demanderait un fuseau par lieu, qu'aucun n'enregistre aujourd'hui.
+ */
+export const LAIR_TIMEZONE = "Europe/Paris";
+
+/**
  * Le nombre de plages qu'un même jour peut porter.
  *
  * Trois suffisent au cas réel — matin, après-midi, soirée. Au-delà, ce n'est
@@ -138,6 +150,12 @@ function isWithin(hours: LairOpeningHours, minutes: number): boolean {
 /**
  * L'état d'ouverture du lieu, maintenant.
  *
+ * `now` est un instant, d'où qu'il vienne : il est ramené au fuseau du lieu
+ * avant d'être lu, faute de quoi c'est l'heure du serveur qui déciderait de
+ * l'ouverture. Le jour courant en dépend autant que l'heure — à 0h30 à Paris,
+ * un serveur en UTC est encore la veille, et la vitrine soulignait la mauvaise
+ * ligne de la semaine.
+ *
  * Sur des horaires coupés, c'est la plage **en cours** qui donne l'heure de
  * fermeture annoncée : à 11h, un lieu ouvert « 10h — 12h » puis « 14h — 19h »
  * ferme à 12h, et promettre 19h enverrait le visiteur devant une porte close.
@@ -147,7 +165,8 @@ export function readOpeningState(
   locale: string,
   now: DateTime = DateTime.now(),
 ): LairOpeningState {
-  const todayDay = now.weekday;
+  const local = now.setZone(LAIR_TIMEZONE);
+  const todayDay = local.weekday;
 
   if (!openingHours || openingHours.length === 0) {
     return { isOpen: null, today: [], todayDay, closesAt: null };
@@ -156,7 +175,7 @@ export function readOpeningState(
   const today = rangesOfDay(openingHours, todayDay);
   const yesterday = rangesOfDay(openingHours, todayDay === 1 ? 7 : todayDay - 1);
 
-  const nowMinutes = now.hour * 60 + now.minute;
+  const nowMinutes = local.hour * 60 + local.minute;
 
   // La veille compte aussi : sa dernière plage peut déborder sur la nuit, et
   // c'est alors elle qui tient le lieu ouvert à 1h du matin.
