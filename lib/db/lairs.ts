@@ -76,7 +76,14 @@ function toDocument(lair: Omit<Lair, "id">): Omit<LairDocument, "_id"> {
     website: lair.website,
     isPrivate: lair.isPrivate || false,
     invitationCode: lair.invitationCode,
-    options: lair.options,
+    // `options` absent plutôt que `null`. Le driver écrit `null` pour une
+    // valeur `undefined` — `ignoreUndefined` vaut `false` par défaut —, et un
+    // lieu naît sans personnalisation : tous portaient donc `options: null`.
+    // Or Mongo refuse d'écrire sous un `null` : `$set` sur
+    // « options.calendar.mode » échouait par « Cannot create field 'calendar'
+    // in element {options: null} », et la vue du calendrier ne s'enregistrait
+    // sur aucun lieu neuf. Le champ manquant, lui, se laisse creuser.
+    ...(lair.options ? { options: lair.options } : {}),
   };
 }
 
@@ -332,20 +339,42 @@ export async function updateLair(id: string, lair: Partial<Omit<Lair, "id">>): P
 /**
  * Vue du calendrier d'un lieu.
  *
- * Écriture sur le seul chemin `options.calendar.mode`, et c'est tout l'objet de
- * cette fonction : `updateLair({ options: { calendar: { mode } } })` remplace
- * `options` **en entier**, ce que fait `$set` d'un sous-document. Changer la vue
- * du calendrier effaçait donc au passage le thème du lieu, l'ordre de ses
- * sections, ses annonces, ses liens, ses horaires et sa page « À propos ».
+ * Écriture sur le seul `mode`, et c'est tout l'objet de cette fonction :
+ * `updateLair({ options: { calendar: { mode } } })` remplace `options` **en
+ * entier**, ce que fait `$set` d'un sous-document. Changer la vue du calendrier
+ * effaçait donc au passage le thème du lieu, l'ordre de ses sections, ses
+ * annonces, ses liens, ses horaires et sa page « À propos ».
+ *
+ * Le chemin pointé qui s'imposait ici — `$set` sur « options.calendar.mode » —
+ * ne marchait pourtant sur aucun lieu neuf : `toDocument` les faisait naître
+ * avec `options: null`, et Mongo refuse de creuser sous un `null` (« Cannot
+ * create field 'calendar' in element {options: null} »). Ces lieux-là existent
+ * toujours en base, et c'est pourquoi l'écriture passe par un pipeline qui
+ * **fusionne** au lieu de pointer : `$ifNull` ramène un `options` — ou un
+ * `options.calendar` — nul ou absent à un objet vide, que `$mergeObjects`
+ * complète. Le lieu est réparé par l'écriture même qui le règle, sans
+ * migration, et ses autres réglages restent intacts.
  */
 export async function setLairCalendarMode(
   id: string,
   mode: 'CALENDAR' | 'AGENDA' | 'CONFERENCE'
 ): Promise<boolean> {
-  const result = await db.collection(COLLECTION_NAME).updateOne(
-    { _id: new ObjectId(id) },
-    { $set: { "options.calendar.mode": mode } }
-  );
+  const result = await db.collection(COLLECTION_NAME).updateOne({ _id: new ObjectId(id) }, [
+    {
+      $set: {
+        options: {
+          $mergeObjects: [
+            { $ifNull: ["$options", {}] },
+            {
+              calendar: {
+                $mergeObjects: [{ $ifNull: ["$options.calendar", {}] }, { mode }],
+              },
+            },
+          ],
+        },
+      },
+    },
+  ]);
 
   return result.matchedCount > 0;
 }
