@@ -1,0 +1,135 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+.screen{width:1280px}
+.hero{height:210px;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 45%,#0c4a6e 100%);position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(11,11,12,.96),rgba(11,11,12,.25) 60%,transparent)}
+.hero .in{position:absolute;left:28px;right:28px;bottom:16px;z-index:2}
+.logo{width:62px;height:62px;border-radius:14px;background:#0b0b0c;border:1px solid var(--bd2);display:flex;align-items:center;justify-content:center;font-size:24px}
+.livebar{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);border-radius:12px;padding:11px 14px}
+.pin{border-left:3px solid var(--vio)}
+</style></head><body>
+<div class="screen">
+  <!-- top nav -->
+  <div class="row btw" style="height:52px;padding:0 28px;border-bottom:1px solid var(--bd);background:#0e0e10">
+    <div class="row g20">
+      <div class="row g8"><div class="gicon" style="background:linear-gradient(135deg,#8b5cf6,#38bdf8);width:22px;height:22px">J</div><b style="font-size:15px">Joutes</b></div>
+      <div class="row g16 t-s mut"><span>Jeux</span><span>Événements</span><span>Lieux</span><span>Tournois</span><span>Ligues</span></div>
+    </div>
+    <div class="row g10"><div class="chip">Rechercher</div><div class="av">KT</div></div>
+  </div>
+  <!-- hero -->
+  <div class="hero"><div class="in row btw" style="align-items:flex-end">
+    <div class="row g14" style="gap:14px">
+      <div class="logo">🎲</div>
+      <div class="col g6">
+        <div class="row g8 wrap"><span class="chip on">Boutique &amp; salle de jeu</span><span class="chip grn"><i class="dot"></i>Ouvert aujourd'hui jusqu'à 19h00</span></div>
+        <div class="t-xxl">L'Antre-Temps</div>
+        <div class="t-s mut">12 rue de la Joute, 69001 Lyon · 4 jeux joués ici · 312 abonnés</div>
+      </div>
+    </div>
+    <div class="row g8"><div class="btn gho">Itinéraire</div><div class="btn pri">Suivre ce lieu</div></div>
+  </div></div>
+  <!-- tabs -->
+  <div class="pad" style="padding-bottom:0">
+    <div class="tabs"><div class="tab on">Actualités</div><div class="tab">Agenda</div><div class="tab">Jeux joués ici</div><div class="tab">À propos</div></div>
+  </div>
+  <!-- body -->
+  <div class="pad row g24" style="align-items:flex-start">
+    <div class="f1 col g16">
+      <div class="livebar row btw">
+        <div class="row g10"><span class="chip red"><i class="dot" style="background:#ef4444"></i>EN DIRECT</span><div class="col"><b class="t-m">Finale du tournoi Riftbound</b><span class="t-xs mut">depuis 1 h 12 · 84 spectateurs</span></div></div>
+        <div class="btn sm">Ouvrir sur Twitch</div>
+      </div>
+
+      <div class="card">
+        <div class="row btw" style="padding:14px 16px 10px"><div class="col"><b class="t-l">Actualités</b><span class="t-xs mut2">mises à jour par le lieu</span></div></div>
+        <div style="padding:0 16px 14px" class="col g10">
+          <div class="card2 pin" style="padding:12px 14px">
+            <div class="row g8" style="margin-bottom:5px"><span class="chip vio">ÉPINGLÉ</span><span class="chip">Nouveauté</span><span class="t-xs mut2">18 septembre</span></div>
+            <b class="t-m">Arrivage : la nouvelle extension arrive samedi</b>
+            <div class="t-s mut" style="margin-top:4px;line-height:1.5">Boosters et decks de précommande disponibles dès 10h. Soirée d'ouverture à 19h avec table d'initiation.</div>
+          </div>
+          <div class="card2" style="padding:12px 14px">
+            <div class="row g8" style="margin-bottom:5px"><span class="chip">Horaires</span><span class="t-xs mut2">12 septembre</span></div>
+            <b class="t-m">Fermeture exceptionnelle le 1er novembre</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:rgba(56,189,248,.35)">
+        <div class="row g8" style="padding:13px 16px 8px"><span class="chip on">À LA UNE</span><span class="t-xs mut2">choisi par le lieu</span></div>
+        <div class="row btw" style="padding:0 16px 15px;align-items:flex-end">
+          <div class="col g6">
+            <b class="t-xl">Tournoi du samedi — Riftbound</b>
+            <div class="t-s mut">samedi 26 septembre · 14h00 – 19h00 · 10 €</div>
+            <div class="row g10" style="margin-top:4px"><div class="bar" style="width:190px"><i style="width:75%"></i></div><span class="t-s">18 / 24 inscrits</span></div>
+          </div>
+          <div class="row g8"><div class="btn gho">Détails de l'événement</div><div class="btn sky">S'inscrire</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row btw" style="padding:14px 16px 10px">
+          <b class="t-l">Prochains événements</b>
+          <div class="row g6"><span class="chip on">Mes jeux</span><span class="chip">Tous les jeux</span></div>
+        </div>
+        <div style="padding:0 16px 14px" class="col g8">
+          <div class="card2 row btw" style="padding:11px 14px">
+            <div class="row g10"><div class="col ctr" style="width:42px"><b class="t-l">29</b><span class="t-xs mut2">LUN</span></div>
+              <div class="col g4"><b class="t-m">Soirée Commander</b><div class="row g6 t-xs mut"><span class="gicon" style="background:#d9482b;width:15px;height:15px;font-size:9px">M</span>Magic · 19h30 – 23h00 · entrée libre</div></div></div>
+            <div class="row g8"><span class="chip">sans inscription</span><div class="btn sm">Y aller</div></div>
+          </div>
+          <div class="card2 row btw" style="padding:11px 14px">
+            <div class="row g10"><div class="col ctr" style="width:42px"><b class="t-l">01</b><span class="t-xs mut2">MER</span></div>
+              <div class="col g4"><b class="t-m">Tournoi Nexus</b><div class="row g6 t-xs mut"><span class="gicon" style="background:#c8842a;width:15px;height:15px;font-size:9px">R</span>Riftbound · 19h30 – 23h00 · 10 €</div></div></div>
+            <div class="row g8"><span class="chip">14 / 24 inscrits</span><div class="btn sm sky">S'inscrire</div></div>
+          </div>
+          <div class="card2 row btw" style="padding:11px 14px;opacity:.75">
+            <div class="row g10"><div class="col ctr" style="width:42px"><b class="t-l">03</b><span class="t-xs mut2">VEN</span></div>
+              <div class="col g4"><b class="t-m">Draft Standard</b><div class="row g6 t-xs mut"><span class="gicon" style="background:#3b7dd8;width:15px;height:15px;font-size:9px">O</span>One Piece · 19h00 – 22h00 · 25 €</div></div></div>
+            <div class="row g8"><span class="chip amb">Complet</span></div>
+          </div>
+          <div class="t-s mut2" style="margin-top:2px">Filtré sur les 2 jeux que vous suivez — 3 autres événements à venir sur les autres jeux du lieu.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- side -->
+    <div class="col g16" style="width:322px;flex-shrink:0">
+      <div class="card" style="padding:15px 16px">
+        <b class="t-l">Informations pratiques</b>
+        <div class="col g10" style="margin-top:12px">
+          <div class="row g8 t-s"><span class="mut2" style="width:74px">Adresse</span><span class="f1">12 rue de la Joute, 69001 Lyon</span></div>
+          <div class="row g8 t-s"><span class="mut2" style="width:74px">Téléphone</span><span class="f1">04 78 00 00 00</span></div>
+          <div class="row g8 t-s"><span class="mut2" style="width:74px">Transports</span><span class="f1">Métro A — Hôtel de Ville, 4 min</span></div>
+          <div class="row g8 t-s"><span class="mut2" style="width:74px">Parking</span><span class="f1">Parking des Terreaux, 100 m</span></div>
+        </div>
+        <div class="row g8" style="margin-top:13px"><div class="btn sm f1 ctr">Itinéraire</div><div class="btn sm f1 ctr">Appeler</div></div>
+      </div>
+      <div class="card" style="padding:15px 16px">
+        <div class="row btw"><b class="t-l">Horaires</b><span class="chip grn">Ouvert</span></div>
+        <div class="col g6" style="margin-top:11px">
+          <div class="row btw t-s"><span class="mut">Lundi</span><span>14h — 19h</span></div>
+          <div class="row btw t-s" style="background:rgba(56,189,248,.08);margin:0 -6px;padding:3px 6px;border-radius:6px"><b>Aujourd'hui</b><b>10h — 12h · 14h — 19h</b></div>
+          <div class="row btw t-s"><span class="mut">Mercredi</span><span>10h — 19h</span></div>
+          <div class="row btw t-s"><span class="mut">Jeudi</span><span>10h — 19h</span></div>
+          <div class="row btw t-s"><span class="mut">Vendredi</span><span>10h — 23h</span></div>
+          <div class="row btw t-s"><span class="mut">Samedi</span><span>10h — 20h</span></div>
+          <div class="row btw t-s"><span class="mut">Dimanche</span><span class="mut2">Fermé</span></div>
+        </div>
+      </div>
+      <div class="card" style="padding:15px 16px">
+        <b class="t-l">Rythme habituel</b>
+        <div class="col g8" style="margin-top:11px">
+          <div class="row btw t-s"><span class="mut">Vendredi soir</span><span>Riftbound</span></div>
+          <div class="row btw t-s"><span class="mut">Samedi après-midi</span><span>Initiation, tables libres</span></div>
+        </div>
+      </div>
+      <div class="card" style="padding:15px 16px">
+        <b class="t-l">Suivre le lieu</b>
+        <div class="t-s mut" style="margin-top:7px;line-height:1.5">312 joueurs suivent ce lieu et reçoivent ses annonces.</div>
+        <div class="btn pri" style="width:100%;justify-content:center;margin-top:11px">Suivre ce lieu</div>
+      </div>
+    </div>
+  </div>
+</div></body></html>
