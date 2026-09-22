@@ -1,7 +1,7 @@
 import 'server-only';
 
 import db from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import type { ObjectId } from "mongodb";
 import type { CardPrice, CardPriceSource } from "@/lib/types/card-price";
 import { CARD_PRICE_SOURCES } from "@/lib/types/card-price";
 import { cardPriceAmount, type MarketPrice } from "@/lib/prices/display";

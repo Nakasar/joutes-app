@@ -24,6 +24,29 @@ type CardPriceImportDoc = ImportCoverage & {
 
 const collection = () => db.collection<CardPriceImportDoc>("card-price-imports");
 
+let indexesReady: Promise<void> | null = null;
+
+/**
+ * Un seul bilan par (jeu, place de marché) : sans cette unicité, deux imports
+ * lancés ensemble — le cron et le script — en écriraient chacun un, et le
+ * garde-fou se comparerait à l'un ou l'autre au hasard.
+ *
+ * L'échec n'est pas mémorisé : la tentative suivante réessaie.
+ */
+function ensureCardPriceImportIndexes(): Promise<void> {
+  if (!indexesReady) {
+    indexesReady = collection()
+      .createIndex({ gameId: 1, source: 1 }, { unique: true, name: "gameId_source_unique" })
+      .then(() => undefined)
+      .catch((error) => {
+        indexesReady = null;
+        throw error;
+      });
+  }
+
+  return indexesReady;
+}
+
 export async function getLastCardPriceImport(
   gameId: ObjectId,
   source: CardPriceSource
@@ -37,6 +60,7 @@ export async function recordCardPriceImport(
   source: CardPriceSource,
   report: ImportCoverage & { written: number; sourceUpdatedAt: Date; importedAt: Date }
 ): Promise<void> {
+  await ensureCardPriceImportIndexes();
   await collection().updateOne(
     { gameId, source },
     {
