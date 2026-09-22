@@ -1,7 +1,7 @@
 # Prix des cartes
 
-Les cartes portent un relevé de prix du marché de l'occasion, importé à la
-main depuis Cardmarket ou CardNexus. C'est un indicateur, pas une cotation : le
+Les cartes portent un relevé de prix du marché de l'occasion, importé chaque
+jour depuis Cardmarket et CardNexus. C'est un indicateur, pas une cotation : le
 relevé date du dernier import, il ne vaut que pour l'édition anglaise, et
 toutes les cartes n'en ont pas.
 
@@ -541,9 +541,60 @@ compareraient sur des bases différentes sans que rien ne le signale.
 
 ## Lancer un import
 
-Un script par fournisseur, tous deux lancés à la main depuis la racine du dépôt.
-Ils sont indépendants et rejouables : deux imports de suite réécrivent les mêmes
-documents, et l'un n'efface jamais les relevés de l'autre.
+### Chaque jour, par le cron
+
+Deux crons Vercel (`vercel.json`) importent chaque matin les prix de tous les
+jeux qu'ils savent coter, un fournisseur chacun :
+
+| Route | Heure (UTC) | Jeux |
+| --- | --- | --- |
+| `/api/cron/prices-cardmarket` | 5 h 00 | ceux qui ont un identifiant **et** un profil Cardmarket |
+| `/api/cron/prices-cardnexus` | 5 h 30 | ceux qui ont un identifiant CardNexus |
+
+Un jeu n'est traité que s'il existe en base, et n'écrit rien s'il n'y a pas de
+cartes (Magic). Un jeu en échec n'arrête pas les autres. `?game=<slug>` limite
+un appel à un seul jeu. Les deux routes ont 300 s : un import Riftbound prend
+quelques secondes, mais si un jeu venait à les dépasser, il faudrait séparer les
+jeux en plusieurs appels.
+
+Les routes demandent `CRON_SECRET`, et celle de CardNexus `CARDNEXUS_API_KEY`
+dans les variables d'environnement de Vercel.
+
+Le travail est dans `lib/services/price-imports.ts`, partagé avec les scripts
+ci-dessous.
+
+### Le garde-fou
+
+Lancé à la main, un import montrait son bilan avant d'écrire. Par le cron,
+personne ne le lit : un rapprochement effondré — Cardmarket qui renomme ses
+extensions, un feed tronqué — écrirait des prix faux sans que personne ne le
+voie.
+
+Chaque import écrit se souvient donc de son bilan (collection
+`card-price-imports`, un document par jeu et fournisseur), et le suivant s'y
+compare (`lib/prices/import-guard.ts`). **Rien n'est écrit** si :
+
+- aucune carte n'est cotée ;
+- le nombre de cartes cotées a chuté de **plus de 10 %** depuis le dernier
+  import écrit.
+
+C'est le nombre de cartes cotées qui compte, pas leur part du catalogue : une
+extension ajoutée chez nous avant que la place de marché ne la vende fait
+baisser la part sans rien casser.
+
+Un import refusé laisse les relevés de la veille en place, et rend l'appel du
+cron en erreur (500) dans les journaux de Vercel. S'il était légitime — un
+catalogue volontairement réduit, par exemple —, relancez-le à la main avec
+`--force`. Un import refusé ne devient pas la référence : deux chutes de 8 %
+d'affilée ne passent pas à la faveur de la première.
+
+### À la main
+
+Un script par fournisseur, lancé depuis la racine du dépôt : pour importer hors
+du rythme du cron, regarder un rapprochement sans rien écrire, ou forcer un
+import que le garde-fou a refusé. Ils sont indépendants et rejouables : deux
+imports de suite réécrivent les mêmes documents, et l'un n'efface jamais les
+relevés de l'autre.
 
 ```sh
 node --conditions=react-server --import ./scripts/ts-paths-hook.mjs \
@@ -556,8 +607,9 @@ node --conditions=react-server --import ./scripts/ts-paths-hook.mjs \
 | Option | CardNexus | Cardmarket |
 | --- | --- | --- |
 | `--game <slug>` | le jeu à traiter (`riftbound` par défaut) | idem (`fab` par défaut) |
-| `--dry-run` | rapproche et affiche le bilan sans rien écrire | idem |
+| `--dry-run` | rapproche, affiche le bilan et l'avis du garde-fou, sans rien écrire | idem |
 | détail des extensions | `--sets`, la moins couverte en tête | `--expansions` |
+| `--force` | écrit même si le garde-fou refuse | idem |
 
 Les deux affichent à chaque fois combien de cartes ont été rapprochées, combien
 de produits ont été écartés et pourquoi, et les extensions les moins couvertes.
@@ -565,6 +617,14 @@ de produits ont été écartés et pourquoi, et les extensions les moins couvert
 `MONGODB_URI` est nécessaire aux deux ; l'import CardNexus demande en plus
 `CARDNEXUS_API_KEY`, quand les fichiers de Cardmarket ne demandent aucune
 authentification.
+
+### Ce que le rythme quotidien ne change pas
+
+- **Un relevé n'est jamais effacé.** Une carte qui n'est plus cotée garde son
+  dernier relevé, daté par `sourceUpdatedAt`.
+- **La valeur des collections reste celle de son calcul.** Elle est écrite et
+  datée (`collection-values`), et ne suit les nouveaux prix qu'au prochain
+  recalcul demandé par son propriétaire.
 
 ## Ajouter un jeu
 
@@ -647,5 +707,12 @@ chiffres disent ce qu'il manque, et `CARDNEXUS_GAME_PROFILES`
   `app/api/collection/value` et `app/api/collection/games/[gameSlug]/value`.
 - `app/collection/CollectionValueSection.tsx` : l'affichage et son bouton,
   partagé par la vue d'ensemble et la page d'un jeu.
+- `lib/services/price-imports.ts` : les deux imports, et la boucle sur les jeux
+  que lance le cron.
+- `lib/prices/import-guard.ts` : le garde-fou, couvert par `import-guard.test.ts` ;
+  `lib/db/card-price-imports.ts` : le bilan du dernier import écrit.
+- `lib/db/card-price-writes.ts` : l'écriture des relevés.
+- `app/api/cron/prices-cardmarket` et `app/api/cron/prices-cardnexus` : les
+  crons quotidiens.
 - `scripts/prices/import-cardnexus.ts` et `scripts/prices/import-cardmarket.ts` :
-  les deux imports, lancés à la main.
+  les mêmes imports, à la main.
