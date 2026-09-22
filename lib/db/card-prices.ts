@@ -1,7 +1,7 @@
 import 'server-only';
 
 import db from "@/lib/mongodb";
-import { ObjectId, type AnyBulkWriteOperation } from "mongodb";
+import type { ObjectId } from "mongodb";
 import type { CardPrice, CardPriceSource } from "@/lib/types/card-price";
 import { CARD_PRICE_SOURCES } from "@/lib/types/card-price";
 import { cardPriceAmount, type MarketPrice } from "@/lib/prices/display";
@@ -30,7 +30,7 @@ import { viewerPriceSources } from "@/lib/prices/viewer";
  * un export — le passe explicitement.
  */
 
-type CardPriceDoc = Omit<CardPrice, "sourceUpdatedAt" | "updatedAt"> & {
+export type CardPriceDoc = Omit<CardPrice, "sourceUpdatedAt" | "updatedAt"> & {
   gameId: ObjectId;
   sourceUpdatedAt: Date;
   updatedAt: Date;
@@ -48,47 +48,6 @@ function toCardPrice(doc: CardPriceDoc): CardPrice {
     sourceUpdatedAt: doc.sourceUpdatedAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
   };
-}
-
-/**
- * L'unicité de `{gameId, cardId, source}` est ce qui rend l'import
- * rejouable : deux imports de suite réécrivent le même document au lieu d'en
- * empiler. Idempotent — `createIndex` ne fait rien si l'index existe déjà.
- */
-export async function ensureCardPriceIndexes(): Promise<void> {
-  await collection().createIndex({ gameId: 1, cardId: 1, source: 1 }, { unique: true, name: "gameId_cardId_source_unique" });
-  await collection().createIndex({ gameId: 1, source: 1 }, { name: "gameId_source" });
-}
-
-/** Écrit les relevés d'un import, par paquets pour ne pas tenir un ordre géant. */
-export async function upsertCardPrices(gameId: ObjectId, prices: CardPrice[]): Promise<{ written: number }> {
-  const BATCH = 500;
-  let written = 0;
-
-  for (let index = 0; index < prices.length; index += BATCH) {
-    const batch = prices.slice(index, index + BATCH);
-
-    const operations: AnyBulkWriteOperation<CardPriceDoc>[] = batch.map((price) => ({
-      updateOne: {
-        filter: { gameId, cardId: price.cardId, source: price.source },
-        update: {
-          $set: {
-            currency: price.currency,
-            prices: price.prices,
-            offers: price.offers,
-            sourceUpdatedAt: new Date(price.sourceUpdatedAt),
-            updatedAt: new Date(price.updatedAt),
-          },
-        },
-        upsert: true,
-      },
-    }));
-
-    const result = await collection().bulkWrite(operations);
-    written += result.upsertedCount + result.modifiedCount;
-  }
-
-  return { written };
 }
 
 /**
