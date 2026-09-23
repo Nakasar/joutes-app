@@ -308,7 +308,39 @@
     },
     "priceFree": "Gratuito",
     "participantsCount": "{count} iscritto/i",
-    "participantsCountWithMax": "{count} / {max} iscritto/i"
+    "participantsCountWithMax": "{count} / {max} iscritto/i",
+    "waitlist": {
+      "title": "Lista d'attesa",
+      "count": "{count} in lista d'attesa",
+      "fullExplanation": "Tutti i posti sono occupati. Iscriviti alla lista d'attesa: se un iscritto rinuncia, riceverai una notifica quando sarà il tuo turno, sul sito e nell'app.",
+      "join": "Iscriviti alla lista d'attesa",
+      "wouldBe": "Saresti {position}° in lista",
+      "position": "Sei {position}° in lista d'attesa",
+      "positionDetail": "In lista dal {date}. Riceverai una notifica appena si libera un posto per te.",
+      "leave": "Lascia la lista d'attesa",
+      "leaveConfirm": "Lasciare la lista d'attesa? Perderai il tuo posto in lista.",
+      "offerTitle": "Si è liberato un posto per te",
+      "offerDescription": "È riservato per te fino al {date}. Se rifiuti, lasci la lista d'attesa e il posto passa al giocatore successivo.",
+      "accept": "Accetta il posto",
+      "decline": "Rifiuta",
+      "declineConfirm": "Rifiutare il posto? Lascerai la lista d'attesa.",
+      "full": "Evento al completo",
+      "loading": "Caricamento...",
+      "error": "Si è verificato un errore",
+      "registeredAt": "iscritto il {date}",
+      "manager": {
+        "description": "In ordine di arrivo. Un posto liberato viene proposto al primo della lista.",
+        "empty": "Nessuno è in attesa per ora.",
+        "joinedAt": "in lista dal {date}",
+        "offered": "Posto proposto",
+        "offerUntil": "risposta attesa entro il {date}",
+        "promote": "Iscrivi",
+        "remove": "Rimuovi {name} dalla lista d'attesa",
+        "responseDelay": "Tempo di risposta",
+        "responseDelayHelp": "Trascorso questo tempo, il posto viene proposto al giocatore successivo.",
+        "hours": "{count} h"
+      }
+    }
   },
   "EventJoin": {
     "pending": "I folletti di Joutes stanno convalidando la tua iscrizione, attendi un momento!",

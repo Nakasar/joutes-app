@@ -44,6 +44,8 @@ import {
 import {DateTime} from "luxon";
 import {ObjectId} from "mongodb";
 import {RegistrationStatus} from "@/lib/types/Event";
+import {canJoinDirectly} from "@/lib/events/waitlist";
+import {advanceEventWaitlist} from "@/lib/events/waitlist-service";
 import {
   makeEventDiscordInfoMessage,
   makeEventsBoardDiscordMessages
@@ -446,6 +448,31 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
       );
       return NextResponse.json({success: true}, {status: 200});
     } else if (currentRegistrationStatus === 'NOT_REGISTERED') {
+      if (event.allowJoin && !canJoinDirectly(event, new Date())) {
+        // Complet : la liste d'attente se rejoint sur Joutes, où l'offre d'une
+        // place libérée arrive en notification.
+        await rest.post(
+          Routes.interactionCallback(interaction.id, interaction.token),
+          {
+            body: {
+              type: 4,
+              data: {
+                content: `Bonjour ${user.displayName ?? 'utilisateur anonyme'}#${user.discriminator ?? ''} ! Cet évènement est complet. Vous pouvez rejoindre la liste d'attente sur Joutes : vous serez prévenu si une place se libère.`,
+                flags: 64, // Ephemeral
+                components: [
+                  new ActionRowBuilder<ButtonBuilder>().addComponents(
+                    new ButtonBuilder()
+                      .setLabel("Rejoindre la liste d'attente")
+                      .setURL(`https://joutes.app/events/${event.id}`)
+                      .setStyle(ButtonStyle.Link),
+                  ),
+                ],
+              },
+            },
+          },
+        );
+        return NextResponse.json({success: true}, {status: 200});
+      }
       if (event.allowJoin) {
         if (event.preRegistration) {
           await addParticipantToEvent(eventId, user._id.toString(), "PRE_REGISTERED");
@@ -539,7 +566,7 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
       return NextResponse.json({success: true}, {status: 200});
     }
 
-    const eventId = interaction.data.custom_id.split('event-registration-')[1];
+    const eventId = interaction.data.custom_id.split('event-unregister-')[1];
     const event = await getEventById(eventId);
 
     if (!event) {
@@ -570,6 +597,8 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
 
     if (currentRegistrationStatus === 'REGISTERED' || currentRegistrationStatus === 'PRE_REGISTERED') {
       await removeParticipantFromEvent(eventId, user._id.toString());
+      // Une place se libère : elle est offerte au premier de la liste d'attente.
+      await advanceEventWaitlist(eventId);
 
       await rest.post(
         Routes.interactionCallback(interaction.id, interaction.token),

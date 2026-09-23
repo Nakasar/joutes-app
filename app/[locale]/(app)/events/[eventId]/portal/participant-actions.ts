@@ -12,6 +12,8 @@ import {
 } from "@/lib/schemas/event-portal.schema.ts";
 import { EventDocument, getEventById } from "@/lib/db/events.ts";
 import { getUserByUsernameAndDiscriminator, getUserByEmail } from "@/lib/db/users.ts";
+import { advanceEventWaitlist } from "@/lib/events/waitlist-service.ts";
+import { orderParticipants, sortedWaitlist } from "@/lib/events/waitlist.ts";
 
 const GUEST_PARTICIPANTS_COLLECTION = "event-guest-participants";
 const EVENTS_COLLECTION = "events";
@@ -79,7 +81,7 @@ export async function addParticipantToEvent(eventId: string, data: unknown) {
       return { success: false, error: "L'événement est complet" };
     }
 
-    const eventsCollection = db.collection(EVENTS_COLLECTION);
+    const eventsCollection = db.collection<EventDocument>(EVENTS_COLLECTION);
     const guestsCollection = db.collection<GuestParticipant>(GUEST_PARTICIPANTS_COLLECTION);
 
     // Traiter selon le type de participant
@@ -107,7 +109,11 @@ export async function addParticipantToEvent(eventId: string, data: unknown) {
         { id: eventId },
         {
           $addToSet: { participants: user.id },
-          $set: { [`participantRegistrations.${user.id}`]: 'REGISTERED' },
+          $set: {
+            [`participantRegistrations.${user.id}`]: 'REGISTERED',
+            [`participantRegisteredAt.${user.id}`]: new Date().toISOString(),
+          },
+          $pull: { waitlist: { userId: user.id } },
         }
       );
 
@@ -134,7 +140,11 @@ export async function addParticipantToEvent(eventId: string, data: unknown) {
           { id: eventId },
           {
             $addToSet: { participants: existingUser.id },
-            $set: { [`participantRegistrations.${existingUser.id}`]: 'REGISTERED' },
+            $set: {
+              [`participantRegistrations.${existingUser.id}`]: 'REGISTERED',
+              [`participantRegisteredAt.${existingUser.id}`]: new Date().toISOString(),
+            },
+            $pull: { waitlist: { userId: existingUser.id } },
           }
         );
 
@@ -190,7 +200,11 @@ export async function addParticipantToEvent(eventId: string, data: unknown) {
         { id: eventId },
         {
           $addToSet: { participants: userId },
-          $set: { [`participantRegistrations.${userId}`]: 'REGISTERED' },
+          $set: {
+            [`participantRegistrations.${userId}`]: 'REGISTERED',
+            [`participantRegisteredAt.${userId}`]: new Date().toISOString(),
+          },
+          $pull: { waitlist: { userId: userId } },
         }
       );
 
@@ -272,7 +286,10 @@ export async function removeParticipantFromEvent(eventId: string, participantId:
           { id: eventId },
           {
             $pull: { participants: guestParticipant.userId },
-            $unset: { [`participantRegistrations.${guestParticipant.userId}`]: "" },
+            $unset: {
+              [`participantRegistrations.${guestParticipant.userId}`]: "",
+              [`participantRegisteredAt.${guestParticipant.userId}`]: "",
+            },
           }
         );
       }
@@ -281,11 +298,17 @@ export async function removeParticipantFromEvent(eventId: string, participantId:
       await eventsCollection.updateOne(
         { id: eventId },
         {
-            $pull: { participants: participantId },
-          $unset: { [`participantRegistrations.${participantId}`]: "" },
+          $pull: { participants: participantId },
+          $unset: {
+            [`participantRegistrations.${participantId}`]: "",
+            [`participantRegisteredAt.${participantId}`]: "",
+          },
         }
       );
     }
+
+    // Une place se libère : elle est offerte au premier de la liste d'attente.
+    await advanceEventWaitlist(eventId);
 
     return { success: true };
   } catch (error) {
@@ -327,9 +350,16 @@ export async function getEventParticipants(eventId: string) {
         }).toArray()
       : [];
 
+    // Les comptes dans l'ordre de leur inscription (`find` ne garde pas celui
+    // du tableau), puis les invités ajoutés à la main.
+    const usersById = new Map(userParticipants.map(user => [user._id.toString(), user]));
+    const orderedUsers = orderParticipants(event.participants, event.participantRegisteredAt)
+      .map(id => usersById.get(id))
+      .filter((user): user is NonNullable<typeof user> => Boolean(user));
+
     // Combiner les participants
     const participants = [
-      ...userParticipants.map(user => ({
+      ...orderedUsers.map(user => ({
         id: user._id.toString(),
         username: user.displayName || user.username,
         discriminator: user.discriminator,
@@ -337,6 +367,7 @@ export async function getEventParticipants(eventId: string) {
         profileImage: user.profileImage,
         type: "user" as const,
         registrationStatus: event.participantRegistrations?.[user._id.toString()] || 'REGISTERED',
+        registeredAt: event.participantRegisteredAt?.[user._id.toString()],
       })),
       ...guestParticipants.map(guest => ({
         id: guest.id,
@@ -345,8 +376,16 @@ export async function getEventParticipants(eventId: string) {
         email: guest.email,
         type: guest.type,
         registrationStatus: 'REGISTERED' as const,
+        registeredAt: guest.addedAt,
       })),
-    ];
+    ].sort((a, b) => {
+      // Tri stable : les inscriptions sans date (antérieures au champ) restent
+      // en tête dans leur ordre, les autres suivent leur date.
+      if (!a.registeredAt || !b.registeredAt) {
+        return (a.registeredAt ? 1 : 0) - (b.registeredAt ? 1 : 0);
+      }
+      return Date.parse(a.registeredAt) - Date.parse(b.registeredAt);
+    });
 
     return {
       success: true,
@@ -385,5 +424,52 @@ export async function getGuestParticipants(eventId: string) {
   } catch (error) {
     console.error("Erreur lors de la récupération des participants invités:", error);
     return { success: false, error: "Erreur lors de la récupération des participants invités" };
+  }
+}
+
+/**
+ * La liste d'attente d'un événement, nommée, pour l'organisation.
+ */
+export async function getEventWaitlist(eventId: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const isOrganizer = await isEventOrganizer(eventId, session.user.id);
+    if (!isOrganizer) {
+      return { success: false, error: "Accès non autorisé" };
+    }
+
+    const event = await getEventById(eventId);
+    if (!event) {
+      return { success: false, error: "Événement non trouvé" };
+    }
+
+    const queue = sortedWaitlist(event.waitlist);
+    const users = queue.length > 0
+      ? await db.collection(USERS_COLLECTION).find({
+          _id: { $in: queue.map(entry => ObjectId.createFromHexString(entry.userId)) }
+        }).toArray()
+      : [];
+    const usersById = new Map(users.map(user => [user._id.toString(), user]));
+
+    return {
+      success: true,
+      data: queue.map((entry, index) => {
+        const user = usersById.get(entry.userId);
+        return {
+          ...entry,
+          position: index + 1,
+          username: user?.displayName || user?.username || "Utilisateur supprimé",
+          discriminator: user?.discriminator as string | undefined,
+          profileImage: user?.profileImage as string | undefined,
+        };
+      }),
+    };
+  } catch (error) {
+    console.error("Erreur lors de la récupération de la liste d'attente:", error);
+    return { success: false, error: "Erreur lors de la récupération de la liste d'attente" };
   }
 }

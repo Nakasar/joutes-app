@@ -308,7 +308,39 @@
     },
     "priceFree": "Kostenlos",
     "participantsCount": "{count} angemeldet",
-    "participantsCountWithMax": "{count} / {max} angemeldet"
+    "participantsCountWithMax": "{count} / {max} angemeldet",
+    "waitlist": {
+      "title": "Warteliste",
+      "count": "{count} auf der Warteliste",
+      "fullExplanation": "Alle Plätze sind vergeben. Trag dich in die Warteliste ein: Wenn jemand absagt, wirst du benachrichtigt, sobald du an der Reihe bist – auf der Website und in der App.",
+      "join": "Auf die Warteliste",
+      "wouldBe": "Du wärst {position}. in der Reihe",
+      "position": "Du bist {position}. auf der Warteliste",
+      "positionDetail": "In der Warteliste seit {date}. Du wirst benachrichtigt, sobald ein Platz für dich frei wird.",
+      "leave": "Warteliste verlassen",
+      "leaveConfirm": "Warteliste verlassen? Du verlierst deinen Platz in der Reihe.",
+      "offerTitle": "Ein Platz ist für dich frei geworden",
+      "offerDescription": "Er ist bis {date} für dich reserviert. Wenn du ablehnst, verlässt du die Warteliste und der Platz geht an die nächste Person.",
+      "accept": "Platz annehmen",
+      "decline": "Ablehnen",
+      "declineConfirm": "Platz ablehnen? Du verlässt die Warteliste.",
+      "full": "Ausgebucht",
+      "loading": "Laden...",
+      "error": "Ein Fehler ist aufgetreten",
+      "registeredAt": "angemeldet am {date}",
+      "manager": {
+        "description": "In der Reihenfolge der Anmeldung. Ein frei gewordener Platz wird der ersten Person angeboten.",
+        "empty": "Noch wartet niemand.",
+        "joinedAt": "wartet seit {date}",
+        "offered": "Platz angeboten",
+        "offerUntil": "Antwort bis {date}",
+        "promote": "Anmelden",
+        "remove": "{name} von der Warteliste entfernen",
+        "responseDelay": "Antwortfrist",
+        "responseDelayHelp": "Nach Ablauf der Frist wird der Platz der nächsten Person angeboten.",
+        "hours": "{count} Std."
+      }
+    }
   },
   "EventJoin": {
     "pending": "Die Turnierwichtel prüfen gerade deine Anmeldung, bitte hab etwas Geduld!",

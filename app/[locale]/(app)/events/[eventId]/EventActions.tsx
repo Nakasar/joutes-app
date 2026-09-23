@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button.tsx";
 import { Alert, AlertDescription } from "@/components/ui/alert.tsx";
-import { AlertCircle, Clock } from "lucide-react";
-import { joinEventAction, leaveEventAction } from "../actions.ts";
+import { AlertCircle, Clock, Hourglass } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { DateTime } from "luxon";
+import { joinEventAction, joinEventWaitlistAction, leaveEventAction, leaveEventWaitlistAction } from "../actions.ts";
 import { useRouter } from "@/i18n/navigation.ts";
 import { RegistrationStatus } from "@/lib/types/Event.ts";
+import type { ViewerWaitlistStatus } from "@/lib/events/waitlist.ts";
 
 type EventActionsProps = {
   eventId: string;
@@ -17,10 +20,17 @@ type EventActionsProps = {
   runningState?: 'not-started' | 'ongoing' | 'completed';
   registrationStatus?: RegistrationStatus;
   preRegistration?: boolean;
+  /** Place de la personne connectée dans la liste d'attente, si elle y est. */
+  waitlist?: ViewerWaitlistStatus | null;
+  /** La file accepte-t-elle de nouveaux joueurs ? */
+  waitlistOpen?: boolean;
+  waitlistCount?: number;
 };
 
-export default function EventActions({ eventId, isParticipant, isCreator, isFull, allowJoin, runningState = 'not-started', registrationStatus, preRegistration }: EventActionsProps) {
+export default function EventActions({ eventId, isParticipant, isCreator, isFull, allowJoin, runningState = 'not-started', registrationStatus, preRegistration, waitlist, waitlistOpen = false, waitlistCount = 0 }: EventActionsProps) {
   const router = useRouter();
+  const t = useTranslations("EventDetail.waitlist");
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,6 +80,35 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
     }
   };
 
+  // Même enveloppe pour les deux gestes de la file : erreur affichée, page
+  // rafraîchie pour relire la position.
+  const runWaitlistAction = async (action: (eventId: string) => Promise<{ success: boolean; error?: string }>) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await action(eventId);
+
+      if (result.success) {
+        router.refresh();
+      } else {
+        setError(result.error || t("error"));
+      }
+    } catch (err) {
+      console.error(err);
+      setError(t("error"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLeaveWaitlist = () => {
+    if (!confirm(t("leaveConfirm"))) {
+      return;
+    }
+    void runWaitlistAction(leaveEventWaitlistAction);
+  };
+
   if (isCreator) {
     return (
       <Alert>
@@ -115,6 +154,45 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
           >
             {loading ? "Chargement..." : "Se désinscrire"}
           </Button>
+        </div>
+      ) : waitlist ? (
+        <div className="space-y-2">
+          <div className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+            <Hourglass className="h-4 w-4 mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">{t("position", { position: waitlist.position })}</p>
+              <p className="text-xs">
+                {t("positionDetail", {
+                  date: DateTime.fromISO(waitlist.joinedAt, { locale }).toLocaleString(DateTime.DATETIME_MED),
+                })}
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={handleLeaveWaitlist}
+            disabled={loading}
+            variant="outline"
+            className="w-full"
+          >
+            {loading ? t("loading") : t("leave")}
+          </Button>
+        </div>
+      ) : allowJoin && !isEventStartedOrCompleted && isFull && waitlistOpen ? (
+        <div className="space-y-2">
+          <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+            {t("fullExplanation")}
+          </p>
+          <Button
+            onClick={() => void runWaitlistAction(joinEventWaitlistAction)}
+            disabled={loading}
+            className="w-full"
+          >
+            <Hourglass className="h-4 w-4 mr-2" />
+            {loading ? t("loading") : t("join")}
+          </Button>
+          <p className="text-xs text-center text-muted-foreground">
+            {t("wouldBe", { position: waitlistCount + 1 })}
+          </p>
         </div>
       ) : allowJoin && !isEventStartedOrCompleted ? (
         <Button

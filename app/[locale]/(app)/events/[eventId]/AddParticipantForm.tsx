@@ -26,6 +26,8 @@ import { addParticipantToEvent, removeParticipantFromEvent } from "./portal/part
 import { updateParticipantRegistrationStatusAction } from "../actions.ts";
 import { RegistrationStatus } from "@/lib/types/Event.ts";
 import { AddParticipant } from "@/lib/schemas/event-portal.schema.ts";
+import { useLocale, useTranslations } from "next-intl";
+import { DateTime } from "luxon";
 
 export type Participant = {
   id: string;
@@ -35,6 +37,8 @@ export type Participant = {
   profileImage?: string;
   type: "user" | "email" | "guest";
   registrationStatus?: RegistrationStatus;
+  /** Date d'inscription (ISO), absente des inscriptions anciennes. */
+  registeredAt?: string;
 };
 
 type AddParticipantFormProps = {
@@ -57,6 +61,8 @@ export default function AddParticipantForm({
   readOnly = false,
 }: AddParticipantFormProps) {
   const router = useRouter();
+  const tWaitlist = useTranslations("EventDetail.waitlist");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -198,12 +204,13 @@ export default function AddParticipantForm({
       {participants.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Participants ({participants.length})</h3>
-          {participants.map((participant) => (
+          {participants.map((participant, index) => (
             <div
               key={participant.id}
               className="flex flex-wrap items-center justify-between gap-2 p-2 rounded hover:bg-gray-50 border"
             >
               <div className="flex items-center gap-2 flex-1">
+                <span className="w-5 text-right text-xs tabular-nums text-muted-foreground">{index + 1}</span>
                 {participant.profileImage ? (
                   <img
                     src={participant.profileImage}
@@ -231,6 +238,13 @@ export default function AddParticipantForm({
                   )}
                   {participant.type === "guest" && (
                     <div className="text-xs text-muted-foreground">Invité (sans compte)</div>
+                  )}
+                  {participant.registeredAt && (
+                    <div className="text-xs text-muted-foreground">
+                      {tWaitlist("registeredAt", {
+                        date: DateTime.fromISO(participant.registeredAt, { locale }).toLocaleString(DateTime.DATETIME_MED),
+                      })}
+                    </div>
                   )}
                 </div>
               </div>

@@ -308,7 +308,39 @@
     },
     "priceFree": "Gratuit",
     "participantsCount": "{count} inscrit(s)",
-    "participantsCountWithMax": "{count} / {max} inscrit(s)"
+    "participantsCountWithMax": "{count} / {max} inscrit(s)",
+    "waitlist": {
+      "title": "Liste d'attente",
+      "count": "{count} en liste d'attente",
+      "fullExplanation": "Toutes les places sont prises. Rejoignez la liste d'attente : si un inscrit se désiste, vous serez notifié à votre tour, sur le site et sur l'application.",
+      "join": "Rejoindre la liste d'attente",
+      "wouldBe": "Vous seriez {position, selectordinal, one {#re} other {#e}} dans la file",
+      "position": "Vous êtes {position, selectordinal, one {#re} other {#e}} sur la liste d'attente",
+      "positionDetail": "En file depuis le {date}. Vous serez notifié dès qu'une place se libère pour vous.",
+      "leave": "Quitter la liste d'attente",
+      "leaveConfirm": "Quitter la liste d'attente ? Vous perdrez votre place dans la file.",
+      "offerTitle": "Une place s'est libérée pour vous",
+      "offerDescription": "Elle vous est réservée jusqu'au {date}. Si vous déclinez, vous quittez la liste d'attente et la place est proposée au joueur suivant.",
+      "accept": "Accepter la place",
+      "decline": "Décliner",
+      "declineConfirm": "Décliner la place ? Vous quitterez la liste d'attente.",
+      "full": "Événement complet",
+      "loading": "Chargement...",
+      "error": "Une erreur est survenue",
+      "registeredAt": "inscrit le {date}",
+      "manager": {
+        "description": "Classée par ordre d'arrivée. Une place libérée est proposée au premier de la file.",
+        "empty": "Personne n'attend pour le moment.",
+        "joinedAt": "en file depuis le {date}",
+        "offered": "Place proposée",
+        "offerUntil": "réponse attendue avant le {date}",
+        "promote": "Inscrire",
+        "remove": "Retirer {name} de la liste d'attente",
+        "responseDelay": "Délai de réponse",
+        "responseDelayHelp": "Passé ce délai, la place est proposée au joueur suivant.",
+        "hours": "{count} h"
+      }
+    }
   },
   "EventJoin": {
     "pending": "Les lutins de joutes sont en train de valider votre inscription, patientez un peu !",

@@ -22,6 +22,7 @@ type Participant = {
   profileImage?: string;
   type: "user" | "email" | "guest";
   registrationStatus?: RegistrationStatus;
+  registeredAt?: string;
 };
 
 type ParticipantManagerWrapperProps = {

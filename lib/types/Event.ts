@@ -3,6 +3,23 @@ import {GameTypeKey} from "@/lib/constants/game-types";
 
 export type RegistrationStatus = 'NOT_REGISTERED' | 'PRE_REGISTERED' | 'REGISTERED' | 'EXCLUDED';
 
+/**
+ * Une place dans la liste d'attente d'un événement complet.
+ *
+ * La file est ordonnée par `joinedAt`. Quand une place se libère, le premier
+ * qui n'a pas encore d'offre en reçoit une : `offeredAt` et `offerExpiresAt`
+ * sont alors posés, et la place lui est réservée jusqu'à l'échéance. Il
+ * l'accepte (il devient inscrit et sort de la file), la décline ou la laisse
+ * expirer (il sort de la file, et le suivant est notifié).
+ * Voir `lib/events/waitlist.ts`.
+ */
+export type WaitlistEntry = {
+  userId: string;
+  joinedAt: string;
+  offeredAt?: string;
+  offerExpiresAt?: string;
+};
+
 export type Event = {
   id: string;
   lairId?: string;
@@ -51,8 +68,17 @@ export type Event = {
   preRegistration?: boolean; // Si true, les nouveaux inscrits ont le statut PRE_REGISTERED
   participants?: string[]; // IDs des utilisateurs inscrits à l'événement
   participantRegistrations?: { [userId: string]: RegistrationStatus }; // Statut d'inscription par participant
+  /**
+   * Date d'inscription de chaque participant (ISO), qui ordonne la liste des
+   * inscrits. Absente pour les inscriptions antérieures à ce champ : elles
+   * gardent l'ordre du tableau `participants`, et aucune date n'est affichée.
+   */
+  participantRegisteredAt?: { [userId: string]: string };
   registeredParticipantsCount?: number; // Nombre de participants inscrits
   maxParticipants?: number; // Nombre maximum de participants (optionnel)
+  waitlist?: WaitlistEntry[]; // Liste d'attente, ouverte quand l'événement est complet
+  /** Délai laissé pour accepter une place libérée, en heures. 48 h par défaut. */
+  waitlistResponseHours?: number;
   favoritedBy?: string[]; // IDs des utilisateurs qui ont mis cet événement en favori
   lair?: {
     id: string;

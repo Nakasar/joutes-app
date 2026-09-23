@@ -9,9 +9,18 @@ import { nanoid } from 'nanoid';
 import { Event, RegistrationStatus } from "@/lib/types/Event.ts";
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
-import { notifyEventAll } from "@/lib/services/notifications.ts";
+import { notifyEventAll, notifyUser } from "@/lib/services/notifications.ts";
 import { isUserOrganizer } from "@/lib/utils/permissions.ts";
 import {generateDiscriminator, generateUserNamme} from "@/lib/utils.ts";
+import { canJoinDirectly, WAITLIST_RESPONSE_HOURS_OPTIONS } from "@/lib/events/waitlist.ts";
+import {
+  acceptEventWaitlistOffer,
+  advanceEventWaitlist,
+  declineEventWaitlistOffer,
+  joinEventWaitlist,
+  leaveEventWaitlist,
+} from "@/lib/events/waitlist-service.ts";
+import { removeFromEventWaitlist, setWaitlistResponseHours } from "@/lib/db/event-waitlist.ts";
 
 type CreateEventInput = {
   name: string;
@@ -159,6 +168,11 @@ export async function updateEventDetailsAction(input: UpdateEventDetailsInput) {
       maxParticipants: input.maxParticipants,
     });
 
+    // Une capacité augmentée libère des places : la file avance.
+    if (updated) {
+      await advanceEventWaitlist(input.eventId);
+    }
+
     revalidatePath(`/events/${input.eventId}`);
     revalidatePath(`/events/${input.eventId}/portal/organizer`);
     revalidatePath("/events");
@@ -201,14 +215,15 @@ export async function joinEventAction(eventId: string) {
       return { success: false, error: "Impossible de rejoindre un événement déjà commencé ou terminé" };
     }
 
-    // Vérifier si l'événement est complet (ne compter que les REGISTERED)
-    if (event.maxParticipants && (event.registeredParticipantsCount ?? 0) >= event.maxParticipants) {
-      return { success: false, error: "Cet événement est complet" };
-    }
-
     // Vérifier si l'utilisateur est déjà inscrit
     if (event.participants?.includes(session.user.id)) {
       return { success: false, error: "Vous êtes déjà inscrit à cet événement" };
+    }
+
+    // Complet — places réservées aux offres de la file comprises —, ou des
+    // joueurs attendent déjà : l'inscription passe par la liste d'attente.
+    if (!canJoinDirectly(event, new Date())) {
+      return { success: false, error: "Cet événement est complet", full: true };
     }
 
     const user = await getUserById(session.user.id);
@@ -256,6 +271,9 @@ export async function leaveEventAction(eventId: string) {
       return { success: false, error: "Impossible de quitter l'événement" };
     }
 
+    // Une place se libère : elle est offerte au premier de la liste d'attente.
+    await advanceEventWaitlist(eventId);
+
     revalidatePath(`/events/${eventId}`);
     revalidatePath("/events");
 
@@ -294,6 +312,8 @@ export async function removeParticipantAction(eventId: string, userId: string) {
     if (!removed) {
       return { success: false, error: "Impossible de retirer ce participant" };
     }
+
+    await advanceEventWaitlist(eventId);
 
     revalidatePath(`/events/${eventId}`);
     revalidatePath("/events");
@@ -443,6 +463,9 @@ export async function toggleAllowJoinAction(eventId: string, allowJoin: boolean)
       return { success: false, error: "Impossible de mettre à jour l'événement" };
     }
 
+    // Des inscriptions rouvertes relancent la file, suspendue entre-temps.
+    await advanceEventWaitlist(eventId);
+
     revalidatePath(`/events/${eventId}`);
     revalidatePath("/events");
 
@@ -490,6 +513,9 @@ export async function startEventAction(eventId: string) {
     if (!updated) {
       return { success: false, error: "Impossible de démarrer l'événement" };
     }
+
+    // Plus aucune place ne se libérera : la liste d'attente est vidée.
+    await advanceEventWaitlist(eventId);
 
     revalidatePath(`/events/${eventId}`);
     revalidatePath("/events");
@@ -582,6 +608,18 @@ export async function cancelEventAction(eventId: string, reason?: string) {
     if (!updated) {
       return { success: false, error: "Impossible d'annuler l'événement" };
     }
+
+    // La notification d'annulation ne vise que les inscrits : les joueurs en
+    // liste d'attente sont prévenus un par un, puis la file est vidée.
+    await Promise.all((event.waitlist ?? []).map((entry) =>
+      notifyUser(
+        entry.userId,
+        "🚫 Événement annulé",
+        `L'événement "${event.name}" pour lequel vous étiez en liste d'attente a été annulé.`,
+        { link: `/events/${eventId}` }
+      ).catch((notifError) => console.error("Erreur lors de l'envoi de la notification:", notifError))
+    ));
+    await advanceEventWaitlist(eventId);
 
     // Envoyer une notification à tous les participants et au créateur
     try {
@@ -706,6 +744,9 @@ export async function updateParticipantRegistrationStatusAction(
       return { success: false, error: "Impossible de modifier le statut d'inscription" };
     }
 
+    // Un inscrit repassé en pré-inscrit ou exclu libère sa place.
+    await advanceEventWaitlist(eventId);
+
     revalidatePath(`/events/${eventId}`);
     revalidatePath("/events");
 
@@ -749,5 +790,215 @@ export async function togglePreRegistrationAction(eventId: string, preRegistrati
   } catch (error) {
     console.error("Erreur lors de la modification de la pré-inscription:", error);
     return { success: false, error: "Une erreur est survenue lors de la modification" };
+  }
+}
+
+// =====================
+// LISTE D'ATTENTE
+// =====================
+
+async function readWaitlistContext(eventId: string) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    return { error: "Vous devez être connecté" } as const;
+  }
+
+  const event = await getEventById(eventId);
+
+  if (!event) {
+    return { error: "Événement introuvable" } as const;
+  }
+
+  return { userId: session.user.id, event } as const;
+}
+
+function revalidateEvent(eventId: string) {
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/events");
+}
+
+export async function joinEventWaitlistAction(eventId: string) {
+  try {
+    const context = await readWaitlistContext(eventId);
+    if ("error" in context) {
+      return { success: false, error: context.error };
+    }
+
+    // L'organisation doit pouvoir nommer qui attend : même règle qu'à
+    // l'inscription directe.
+    const user = await getUserById(context.userId);
+    if (!user) {
+      return { success: false, error: "Utilisateur introuvable" };
+    }
+    if (!user.displayName && !user.discriminator) {
+      await updateUserDisplayName(context.userId, generateUserNamme(), generateDiscriminator());
+    }
+
+    const result = await joinEventWaitlist(context.event, context.userId);
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    revalidateEvent(eventId);
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de l'inscription en liste d'attente:", error);
+    return { success: false, error: "Une erreur est survenue lors de l'inscription en liste d'attente" };
+  }
+}
+
+export async function leaveEventWaitlistAction(eventId: string) {
+  try {
+    const context = await readWaitlistContext(eventId);
+    if ("error" in context) {
+      return { success: false, error: context.error };
+    }
+
+    const result = await leaveEventWaitlist(context.event, context.userId);
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    revalidateEvent(eventId);
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors du départ de la liste d'attente:", error);
+    return { success: false, error: "Une erreur est survenue" };
+  }
+}
+
+export async function acceptWaitlistOfferAction(eventId: string) {
+  try {
+    const context = await readWaitlistContext(eventId);
+    if ("error" in context) {
+      return { success: false, error: context.error };
+    }
+
+    const result = await acceptEventWaitlistOffer(context.event, context.userId);
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    revalidateEvent(eventId);
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de l'acceptation de la place:", error);
+    return { success: false, error: "Une erreur est survenue" };
+  }
+}
+
+export async function declineWaitlistOfferAction(eventId: string) {
+  try {
+    const context = await readWaitlistContext(eventId);
+    if ("error" in context) {
+      return { success: false, error: context.error };
+    }
+
+    const result = await declineEventWaitlistOffer(context.event, context.userId);
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    revalidateEvent(eventId);
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors du refus de la place:", error);
+    return { success: false, error: "Une erreur est survenue" };
+  }
+}
+
+/** L'organisation retire un joueur de la file. */
+export async function removeFromWaitlistAction(eventId: string, userId: string) {
+  try {
+    const context = await readWaitlistContext(eventId);
+    if ("error" in context) {
+      return { success: false, error: context.error };
+    }
+
+    if (!isUserOrganizer(context.event, context.userId)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent gérer la liste d'attente" };
+    }
+
+    const removed = await removeFromEventWaitlist(eventId, [userId]);
+    if (!removed) {
+      return { success: false, error: "Ce joueur n'est pas sur la liste d'attente" };
+    }
+
+    // S'il tenait une offre, la place passe au suivant.
+    await advanceEventWaitlist(eventId);
+
+    revalidateEvent(eventId);
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors du retrait de la liste d'attente:", error);
+    return { success: false, error: "Une erreur est survenue" };
+  }
+}
+
+/**
+ * L'organisation inscrit directement un joueur de la file, sans attendre
+ * qu'il soit son tour. La capacité reste la limite.
+ */
+export async function promoteFromWaitlistAction(eventId: string, userId: string) {
+  try {
+    const context = await readWaitlistContext(eventId);
+    if ("error" in context) {
+      return { success: false, error: context.error };
+    }
+
+    const { event } = context;
+    if (!isUserOrganizer(event, context.userId)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent gérer la liste d'attente" };
+    }
+
+    if (!event.waitlist?.some((entry) => entry.userId === userId)) {
+      return { success: false, error: "Ce joueur n'est pas sur la liste d'attente" };
+    }
+
+    if (event.maxParticipants && (event.registeredParticipantsCount ?? 0) >= event.maxParticipants) {
+      return { success: false, error: "Cet événement est complet : augmentez le nombre de places pour inscrire ce joueur" };
+    }
+
+    // `addParticipantToEvent` le sort aussi de la file.
+    const added = await addParticipantToEvent(eventId, userId, "REGISTERED");
+    if (!added) {
+      return { success: false, error: "Impossible d'inscrire ce joueur" };
+    }
+
+    revalidateEvent(eventId);
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de l'inscription depuis la liste d'attente:", error);
+    return { success: false, error: "Une erreur est survenue" };
+  }
+}
+
+export async function updateWaitlistResponseHoursAction(eventId: string, hours: number) {
+  try {
+    const context = await readWaitlistContext(eventId);
+    if ("error" in context) {
+      return { success: false, error: context.error };
+    }
+
+    if (!isUserOrganizer(context.event, context.userId)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent modifier ce paramètre" };
+    }
+
+    if (!(WAITLIST_RESPONSE_HOURS_OPTIONS as readonly number[]).includes(hours)) {
+      return { success: false, error: "Délai de réponse invalide" };
+    }
+
+    // Le nouveau délai vaut pour les prochaines offres : celles en cours
+    // gardent l'échéance annoncée à leur destinataire.
+    await setWaitlistResponseHours(eventId, hours);
+
+    revalidateEvent(eventId);
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la modification du délai de réponse:", error);
+    return { success: false, error: "Une erreur est survenue" };
   }
 }
