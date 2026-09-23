@@ -3353,6 +3353,7 @@
             "Quatre onglets : actualités, agenda, jeux joués ici, à propos",
             "Actualités du lieu, dont une épinglée, et un événement à la une",
             "Agenda filtrable sur les jeux que vous suivez, inscription en quelques secondes",
+            "Événement complet ? Rejoignez la liste d'attente : une place libérée vous est proposée par notification, sur le site comme sur l'application",
             "Horaires du jour, itinéraire, photos et équipements",
             "Suivez un lieu pour recevoir ses annonces"
           ]
@@ -5281,15 +5282,14 @@
         "bullets": [
           "Inscription depuis le web, depuis Discord ou depuis le mobile",
           "Nombre de places limité, décompte tenu en direct",
+          "Inscrits classés par date d'inscription, affichée à côté de chaque nom",
+          "Liste d'attente automatique : une place libérée est proposée au premier de la file, réservée 48 h (délai réglable par événement), puis au suivant s'il décline ou ne répond pas",
           "Pré-inscription : vous validez chaque demande une par une",
           "Pointage à l'arrivée le jour de l'événement",
           "Formulaire d'inscription sur mesure : texte, nombre, choix, carte du jeu, liste de deck analysée automatiquement",
           "Date limite de réponse, et réponses tardives signalées comme telles",
           "Annulation de l'événement : tous les inscrits prévenus, motif compris",
           "Annonces de l'organisation poussées aux participants"
-        ],
-        "soon": [
-          "Liste d'attente automatique, qui promeut le suivant dès qu'une place se libère"
         ]
       },
       "tournaments": {
