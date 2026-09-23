@@ -5810,6 +5810,14 @@
         "title": "Actualités de Joutes",
         "description": "Tenez-vous au courant des dernières nouveautés de la plateforme Joutes.",
         "emailHint": "Recevez nos actualités par courriel."
+      },
+      "discord": {
+        "title": "Messages privés Discord",
+        "description": "Recevez aussi vos notifications Joutes en message privé du bot Joutes sur Discord, en plus des autres canaux activés.",
+        "switchLabel": "Discord",
+        "switchHint": "Le bot vous envoie un premier message pour vérifier qu'il peut vous écrire. Vous pouvez aussi utiliser /notifications activer sur Discord.",
+        "notLinked": "Liez votre compte Discord pour activer ce canal.",
+        "linkAction": "Lier mon compte Discord"
       }
     },
     "showcase": {

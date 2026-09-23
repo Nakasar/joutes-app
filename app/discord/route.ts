@@ -45,6 +45,8 @@ import {DateTime} from "luxon";
 import {ObjectId} from "mongodb";
 import {RegistrationStatus} from "@/lib/types/Event";
 import {canJoinDirectly} from "@/lib/events/waitlist";
+import {findUserIdByDiscordId} from "@/lib/db/discord-notifications";
+import {disableDiscordDm, discordOptInErrorMessage, enableDiscordDm} from "@/lib/notifications/discord-optin";
 import {advanceEventWaitlist} from "@/lib/events/waitlist-service";
 import {
   makeEventDiscordInfoMessage,
@@ -871,6 +873,8 @@ async function handleApplicationCommand(
         return handleEventsBoardCommand(body);
       case 'affiche':
         return handleAfficheCommand(body);
+      case 'notifications':
+        return handleNotificationsCommand(body);
     }
   } else if (isApplicationCommandContextMenuInteraction(body)) {
     return handleContextualMessageCommand(body);
@@ -2173,5 +2177,73 @@ async function replyWithAffiche(
     });
   }
 
+  return NextResponse.json({success: true}, {status: 200});
+}
+
+/**
+ * `/notifications activer` et `/notifications désactiver` : les notifications
+ * Joutes, aussi en message privé.
+ *
+ * Même chemin que la page Notifications du compte (`lib/notifications/
+ * discord-optin.ts`) : l'activation envoie un premier MP, et échoue en le
+ * disant si le bot ne peut pas écrire au joueur. La réponse est différée — ce
+ * premier MP fait deux appels à Discord, qui peuvent dépasser les trois
+ * secondes laissées à une interaction.
+ */
+async function handleNotificationsCommand(interaction: APIChatInputApplicationCommandInteraction) {
+  const subCommand = interaction.data.options?.find(o => o.type === 1);
+  const reply = async (content: string, linkButton?: { label: string; url: string }) => {
+    await rest.patch(
+      Routes.webhookMessage(interaction.application_id, interaction.token, "@original"),
+      {
+        body: {
+          content,
+          components: linkButton
+            ? [
+              new ActionRowBuilder<ButtonBuilder>().addComponents(
+                new ButtonBuilder().setLabel(linkButton.label).setURL(linkButton.url).setStyle(ButtonStyle.Link),
+              ),
+            ]
+            : [],
+        },
+      },
+    );
+  };
+
+  await rest.post(
+    Routes.interactionCallback(interaction.id, interaction.token),
+    { body: { type: 5, data: { flags: 64 } } }, // Réponse différée, éphémère
+  );
+
+  const discordUserId = interaction.user?.id || interaction.member?.user?.id;
+  const joutesUserId = discordUserId ? await findUserIdByDiscordId(discordUserId) : null;
+  if (!joutesUserId) {
+    await reply(
+      "Votre compte Discord ne semble pas connecté à un compte Joutes.",
+      { label: "Lier mon compte Joutes", url: "https://joutes.app/account/security" },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  if (subCommand?.name === 'off') {
+    await disableDiscordDm(joutesUserId);
+    await reply("C'est noté : vous ne recevrez plus vos notifications Joutes en message privé. Elles restent disponibles sur le site et l'application.");
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  if (subCommand?.name === 'on') {
+    const result = await enableDiscordDm(joutesUserId);
+    await reply(
+      result.ok
+        ? "C'est activé : vos notifications Joutes arriveront aussi en message privé. Je viens de vous en envoyer un premier."
+        : discordOptInErrorMessage(result.reason),
+      result.ok || result.reason !== "not-linked"
+        ? undefined
+        : { label: "Lier mon compte Joutes", url: "https://joutes.app/account/security" },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  await reply("Commande inconnue.");
   return NextResponse.json({success: true}, {status: 200});
 }

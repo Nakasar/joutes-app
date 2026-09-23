@@ -132,6 +132,22 @@ export async function registerDiscordCommands() {
           .setDescriptionLocalization('fr', "Afficher un tableau d'information mis à jour automatiquement pour un évènement")
           .addStringOption(option => option.setName('link').setDescription('Event ID or URL').setDescriptionLocalization('fr', "ID ou URL d'évènement").setRequired(true))
       ),
+    new SlashCommandBuilder()
+      .setName('notifications')
+      .setDescription('Receive your Joutes notifications as direct messages')
+      .setDescriptionLocalization('fr', 'Recevoir vos notifications Joutes en message privé')
+      .addSubcommand(builder =>
+        builder.setName('on')
+          .setNameLocalization('fr', 'activer')
+          .setDescription('Also send my Joutes notifications to my Discord DMs')
+          .setDescriptionLocalization('fr', 'Recevoir aussi mes notifications Joutes en message privé')
+      )
+      .addSubcommand(builder =>
+        builder.setName('off')
+          .setNameLocalization('fr', 'désactiver')
+          .setDescription('Stop sending my Joutes notifications to my Discord DMs')
+          .setDescriptionLocalization('fr', 'Ne plus recevoir mes notifications Joutes en message privé')
+      ),
     new ContextMenuCommandBuilder()
       .setName('Verify Deck')
       .setNameLocalization('fr', 'Vérifier le deck')

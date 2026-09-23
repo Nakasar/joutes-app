@@ -5810,6 +5810,14 @@
         "title": "Joutes news",
         "description": "Keep up with what is new on the Joutes platform.",
         "emailHint": "Get our news by email."
+      },
+      "discord": {
+        "title": "Discord direct messages",
+        "description": "Also receive your Joutes notifications as direct messages from the Joutes bot on Discord, on top of your other enabled channels.",
+        "switchLabel": "Discord",
+        "switchHint": "The bot sends you a first message to check it can reach you. You can also use /notifications on in Discord.",
+        "notLinked": "Link your Discord account to enable this channel.",
+        "linkAction": "Link my Discord account"
       }
     },
     "showcase": {
