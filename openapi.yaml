@@ -6336,7 +6336,7 @@ components:
           additionalProperties: { type: string, enum: [NOT_REGISTERED, PRE_REGISTERED, REGISTERED, EXCLUDED] }
         registeredParticipantsCount: { type: integer }
         maxParticipants: { type: integer }
-        waitlistResponseHours: { type: integer, description: "Time left to accept a freed spot, in hours (48 by default)." }
+        waitlistResponseHours: { type: integer, description: "Response window granted to each waitlist offer, in hours (48 by default). The deadline of a given offer is `viewerWaitlist.offer.expiresAt`." }
         waitlistCount: { type: integer, description: "Waitlist size (detail endpoint only)." }
         waitlistOpen: { type: boolean, description: "Whether the waitlist accepts new players (detail endpoint only)." }
         canJoinDirectly: { type: boolean, description: "Whether a spot is free with nobody waiting (detail endpoint only)." }

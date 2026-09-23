@@ -130,7 +130,15 @@ export async function joinEventWaitlist(event: Event, userId: string, now: Date 
   }
 
   const added = await addToEventWaitlist(event.id, userId, now);
-  return added ? { success: true } : fail("Impossible de rejoindre la liste d'attente", 409);
+  if (!added) {
+    return fail("Impossible de rejoindre la liste d'attente", 409);
+  }
+
+  // Une place a pu se libérer entre la lecture de l'événement et l'écriture :
+  // sans avancer ici, elle resterait bloquée derrière la file jusqu'au
+  // prochain déclencheur. Sans effet si l'événement est toujours complet.
+  await advanceEventWaitlist(event.id);
+  return { success: true };
 }
 
 /** Quitter la file. Une offre en cours est abandonnée : la place passe au suivant. */

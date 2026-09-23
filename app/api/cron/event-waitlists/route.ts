@@ -11,8 +11,13 @@ import { advanceEventWaitlist } from "@/lib/events/waitlist-service";
  * suivant, et vide les files des événements commencés, annulés ou passés.
  */
 export async function GET(req: Request) {
-  if (req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Contrôle de présence en plus de la comparaison : sans lui, un `CRON_SECRET`
+  // non défini ferait comparer à la chaîne littérale « Bearer undefined », que
+  // n'importe qui peut envoyer.
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (!cronSecret || req.headers.get("Authorization") !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
