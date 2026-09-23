@@ -80,7 +80,9 @@ export const SUBSCRIPTION_PLANS = {
     // Un abonnement joueur ne parraine aucun lieu.
     lairSeats: 0,
     includes: ["supporter"],
-    entitlements: ["sub:poster-styles", "sub:poster-library"],
+    // `sub:poster-digest` : les affiches choisies envoyées chaque lundi en
+    // message privé Discord (`lib/posters/digest.ts`).
+    entitlements: ["sub:poster-styles", "sub:poster-library", "sub:poster-digest"],
     permissions: ["trades:full_history", "collection:advanced"],
     tone: "amethyst",
   },

@@ -11,6 +11,8 @@ import { getPostersByUser } from "@/lib/db/posters.ts";
 import { visibleLairsAmong } from "@/lib/lairs/visible.ts";
 import { getUserById } from "@/lib/db/users.ts";
 import { hasEntitlement } from "@/lib/subscriptions/access.ts";
+import { getPosterDigest } from "@/lib/db/poster-digest.ts";
+import { findDiscordAccountId } from "@/lib/db/discord-notifications.ts";
 import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
 import type { Lair } from "@/lib/types/Lair";
 
@@ -112,6 +114,19 @@ async function readMyPosters(): Promise<BuilderPoster[] | null> {
   }));
 }
 
+/**
+ * L'envoi du lundi en MP Discord, vu depuis la bibliothèque : réservé à
+ * Joutes Expert, `null` pour qui n'y a pas droit — le bouton ne s'affiche pas.
+ */
+async function readMyPosterDigest(): Promise<{ refs: string[]; linked: boolean } | null> {
+  const session = await auth.api.getSession({ headers: await headers() });
+  const userId = session?.user?.id;
+  if (!userId || !(await hasEntitlement("sub:poster-digest"))) return null;
+
+  const [{ refs }, discordId] = await Promise.all([getPosterDigest(userId), findDiscordAccountId(userId)]);
+  return { refs, linked: Boolean(discordId) };
+}
+
 async function PosterBuilderPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -120,13 +135,14 @@ async function PosterBuilderPage({ params }: { params: Promise<{ locale: string 
   // ne sait pas figer.
   await connection();
 
-  const [t, myLairs, games, unlocked, library, saved] = await Promise.all([
+  const [t, myLairs, games, unlocked, library, saved, digest] = await Promise.all([
     getTranslations("Posters"),
     readMyLairs(),
     readAllGames(),
     hasEntitlement("sub:poster-styles"),
     hasEntitlement("sub:poster-library"),
     readMyPosters(),
+    readMyPosterDigest(),
   ]);
 
   // Tous les jeux, et non ceux des seuls lieux connus : la recherche peut
@@ -151,6 +167,7 @@ async function PosterBuilderPage({ params }: { params: Promise<{ locale: string 
         unlocked={unlocked}
         saved={saved}
         unlimited={library}
+        digest={digest}
       />
     </div>
   );

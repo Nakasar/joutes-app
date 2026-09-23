@@ -55,6 +55,10 @@
     {
       "path": "/api/cron/event-waitlists",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/discord-poster-digest",
+      "schedule": "0 6-23 * * 1"
     }
   ]
 }

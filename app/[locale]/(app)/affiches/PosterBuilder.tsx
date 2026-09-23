@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
-import { BookMarked, ChevronLeft, ChevronRight, ExternalLink, Loader2, Lock, MapPin, Plus, Printer, Save, Search, Trash2, X } from "lucide-react";
+import { BookMarked, ChevronLeft, ChevronRight, ExternalLink, Loader2, Lock, MapPin, MessageCircle, Plus, Printer, Save, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { getPathname } from "@/i18n/navigation.ts";
@@ -34,7 +34,7 @@ import {
   type PosterStyleKey,
 } from "@/lib/posters/styles.ts";
 
-import { deleteMyPoster, saveMyPoster, type SavePosterError } from "./poster-actions.ts";
+import { deleteMyPoster, saveMyPoster, togglePosterDigest, type PosterDigestError, type SavePosterError } from "./poster-actions.ts";
 
 /** Un lieu, réduit à ce que l'écran en montre et en envoie. */
 export type BuilderLair = {
@@ -114,6 +114,7 @@ export default function PosterBuilder({
   unlocked,
   saved,
   unlimited,
+  digest = null,
 }: {
   myLairs: BuilderLair[];
   games: BuilderGame[];
@@ -123,6 +124,11 @@ export default function PosterBuilder({
   saved: BuilderPoster[] | null;
   /** Joutes Expert ou Joutes Pro : le compte en garde autant qu'il veut. */
   unlimited: boolean;
+  /**
+   * L'envoi du lundi en MP Discord (Joutes Expert) : les références retenues,
+   * et si un compte Discord est lié. `null` sans le droit : pas de bouton.
+   */
+  digest?: { refs: string[]; linked: boolean } | null;
 }) {
   const t = useTranslations("Posters");
   const tStyles = useTranslations("Lairs.poster.styles");
@@ -152,6 +158,9 @@ export default function PosterBuilder({
   /** Le geste en cours, pour que le rouet ne tourne que sur le bouton pressé. */
   const [isSaving, setIsSaving] = useState<"update" | "create" | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  /** Les affiches envoyées chaque lundi, tenues localement comme la bibliothèque. */
+  const [digestRefs, setDigestRefs] = useState<string[]>(digest?.refs ?? []);
+  const [isTogglingDigest, setIsTogglingDigest] = useState<string | null>(null);
 
   const isFull = selected.length >= MAX_POSTER_LAIRS;
 
@@ -378,6 +387,42 @@ export default function PosterBuilder({
     }
   };
 
+  const DIGEST_ERROR_KEYS: Record<PosterDigestError, string> = {
+    UNAUTHENTICATED: "library.digest.errors.failed",
+    NOT_ENTITLED: "library.digest.errors.notEntitled",
+    FULL: "library.digest.errors.full",
+    NOT_FOUND: "library.digest.errors.failed",
+    FAILED: "library.digest.errors.failed",
+  };
+
+  const toggleDigest = async (poster: BuilderPoster, enabled: boolean) => {
+    setIsTogglingDigest(poster.id);
+
+    try {
+      const result = await togglePosterDigest(poster.id, enabled);
+
+      if (!result.success) {
+        toast.error(t(DIGEST_ERROR_KEYS[result.error]));
+        return;
+      }
+
+      setDigestRefs(result.refs);
+      if (!enabled) {
+        toast.success(t("library.digest.removed", { name: poster.name }));
+      } else if (digest?.linked) {
+        toast.success(t("library.digest.added", { name: poster.name }));
+      } else {
+        // Retenue, mais rien ne partira tant que Discord n'est pas lié : le
+        // dire tout de suite plutôt que de laisser attendre un lundi.
+        toast.warning(t("library.digest.addedNotLinked", { name: poster.name }));
+      }
+    } catch {
+      failed();
+    } finally {
+      setIsTogglingDigest(null);
+    }
+  };
+
   const posterHref = (extra: Record<string, string> = {}) => {
     const params = new URLSearchParams({
       lairs: selected.map((lair) => lair.id).join(","),
@@ -456,6 +501,35 @@ export default function PosterBuilder({
                         })}
                       </span>
                     </button>
+                    {/* Recevoir cette affiche chaque lundi en MP Discord : le
+                        même réglage que dans les notifications du compte,
+                        là où on regarde l'affiche. */}
+                    {digest !== null && (() => {
+                      const inDigest = digestRefs.includes(`poster:${poster.id}`);
+                      const label = inDigest
+                        ? t("library.digest.disable", { name: poster.name })
+                        : t("library.digest.enable", { name: poster.name });
+
+                      return (
+                        <Button
+                          type="button"
+                          variant={inDigest ? "default" : "outline"}
+                          size="sm"
+                          aria-pressed={inDigest}
+                          aria-label={label}
+                          title={label}
+                          disabled={isTogglingDigest === poster.id}
+                          onClick={() => toggleDigest(poster, !inDigest)}
+                        >
+                          {isTogglingDigest === poster.id ? (
+                            <Loader2 className="animate-spin" aria-hidden />
+                          ) : (
+                            <MessageCircle className="size-3.5" aria-hidden />
+                          )}
+                          {inDigest ? t("library.digest.on") : t("library.digest.off")}
+                        </Button>
+                      );
+                    })()}
                     {/* Une affiche gardée ne se perd pas d'un clic : ne pas
                         avoir à la recomposer est tout ce qu'elle sert. */}
                     <AlertDialog>

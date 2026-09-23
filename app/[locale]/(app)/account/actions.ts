@@ -24,6 +24,10 @@ import {
   type NotificationPreferenceType,
 } from "@/lib/notifications/preferences.ts";
 import { disableDiscordDm, discordOptInErrorMessage, enableDiscordDm } from "@/lib/notifications/discord-optin.ts";
+import { hasEntitlement } from "@/lib/subscriptions/access.ts";
+import { listAccountPosters } from "@/lib/posters/library.ts";
+import { sanitizeDigestRefs } from "@/lib/posters/digest.ts";
+import { setPosterDigestRefs } from "@/lib/db/poster-digest.ts";
 import { listPushDevicesForUser, revokePushDevice } from "@/lib/db/push-devices.ts";
 import { toPushDeviceSummary, type PushDeviceSummary } from "@/lib/types/PushDevice.ts";
 
@@ -365,6 +369,41 @@ export async function revokePushDeviceAction(
     return { success: true };
   } catch (error) {
     console.error("Erreur lors du retrait d'un appareil :", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+/**
+ * Les affiches envoyées chaque lundi en message privé Discord (Joutes Expert).
+ *
+ * Une liste vide coupe l'envoi. Les références sont filtrées sur ce que le
+ * compte peut vraiment afficher — ses affiches gardées et les lieux qu'il
+ * suit —, et plafonnées : l'interface ne décide de rien.
+ */
+export async function updatePosterDigestAction(
+  refs: string[],
+): Promise<{ success: boolean; error?: string; refs?: string[] }> {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    if (!Array.isArray(refs) || refs.some((ref) => typeof ref !== "string")) {
+      return { success: false, error: "Sélection invalide." };
+    }
+
+    // Couper reste permis sans abonnement : on ne retient personne.
+    if (refs.length > 0 && !(await hasEntitlement("sub:poster-digest"))) {
+      return { success: false, error: "L'envoi hebdomadaire des affiches est réservé à Joutes Expert." };
+    }
+
+    const kept = sanitizeDigestRefs(refs, await listAccountPosters(session.user.id));
+    await setPosterDigestRefs(session.user.id, kept);
+
+    return { success: true, refs: kept };
+  } catch (error) {
+    console.error("Erreur lors de l'enregistrement des affiches hebdomadaires :", error);
     return { success: false, error: "Erreur serveur" };
   }
 }

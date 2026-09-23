@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { DiscordAPIError, REST } from "@discordjs/rest";
+import { DiscordAPIError, REST, type RawFile } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v10";
 import type { DiscordDmMessage } from "@/lib/notifications/discord-message";
 
@@ -38,7 +38,14 @@ export function isDiscordDmConfigured(): boolean {
   return Boolean(process.env.DISCORD_TOKEN);
 }
 
-export async function sendDiscordDm(discordUserId: string, message: DiscordDmMessage): Promise<DiscordDmResult> {
+/** Un message privé : un texte, des embeds, ou les deux. */
+export type DiscordDmBody = Partial<DiscordDmMessage> & { content?: string };
+
+export async function sendDiscordDm(
+  discordUserId: string,
+  message: DiscordDmBody,
+  files?: RawFile[]
+): Promise<DiscordDmResult> {
   const api = client();
   if (!api) return { ok: false, reason: "error", detail: "DISCORD_TOKEN absent" };
 
@@ -47,7 +54,7 @@ export async function sendDiscordDm(discordUserId: string, message: DiscordDmMes
       body: { recipient_id: discordUserId },
     })) as { id: string };
 
-    await api.post(Routes.channelMessages(channel.id), { body: message });
+    await api.post(Routes.channelMessages(channel.id), { body: message, ...(files?.length ? { files } : {}) });
     return { ok: true };
   } catch (error) {
     if (error instanceof DiscordAPIError && typeof error.code === "number" && UNREACHABLE_CODES.has(error.code)) {

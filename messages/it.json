@@ -5468,7 +5468,8 @@
           "L'accesso a una sezione dedicata sul server Discord",
           "Lo storico completo dei tuoi scambi, con filtri e ricerca",
           "Gestione avanzata della collezione",
-          "Funzionalità avanzate per i tuoi gruppi di gioco"
+          "Funzionalità avanzate per i tuoi gruppi di gioco",
+          "Le tue locandine della settimana in messaggio diretto su Discord, ogni lunedì"
         ]
       },
       "pro": {
@@ -5819,6 +5820,22 @@
         "switchHint": "Il bot ti invia un primo messaggio per verificare che possa scriverti. Puoi anche usare /notifications on su Discord.",
         "notLinked": "Collega il tuo account Discord per attivare questo canale.",
         "linkAction": "Collega il mio account Discord"
+      },
+      "posterDigest": {
+        "title": "Le locandine della settimana su Discord",
+        "description": "Ogni lunedì mattina il bot Joutes ti invia in messaggio diretto le locandine che hai scelto, aggiornate per la settimana che inizia.",
+        "expertOnly": "Solo per Joutes Expert: scegli fino a cinque locandine — le tue o quelle dei luoghi che segui — e ricevile ogni lunedì su Discord.",
+        "discoverExpert": "Scopri Joutes Expert",
+        "notLinked": "Collega il tuo account Discord per ricevere le tue locandine.",
+        "pick": "Scegli fino a {max} locandine tra le tue e quelle dei luoghi che segui.",
+        "empty": "Non hai ancora locandine salvate né luoghi seguiti. Crea una locandina dalla pagina Locandine, o segui un luogo.",
+        "kindPoster": "Locandina",
+        "kindLair": "Luogo",
+        "save": "Salva",
+        "saving": "Salvataggio…",
+        "saved": "{count, plural, one {# locandina ti sarà inviata} other {# locandine ti saranno inviate}} ogni lunedì.",
+        "disabled": "Invio settimanale disattivato.",
+        "error": "Impostazione non salvata."
       }
     },
     "showcase": {
@@ -5988,6 +6005,20 @@
       "pro": "Expert"
     },
     "library": {
+      "digest": {
+        "on": "Discord · lunedì",
+        "off": "Discord",
+        "enable": "Ricevi «{name}» ogni lunedì in messaggio diretto Discord",
+        "disable": "Non ricevere più «{name}» su Discord",
+        "added": "«{name}» ti sarà inviata ogni lunedì su Discord.",
+        "addedNotLinked": "«{name}» è salvata, ma collega il tuo account Discord per riceverla.",
+        "removed": "«{name}» non ti sarà più inviata su Discord.",
+        "errors": {
+          "full": "Ricevi già cinque locandine ogni lunedì: rimuovine prima una.",
+          "notEntitled": "L'invio settimanale su Discord è riservato a Joutes Expert.",
+          "failed": "Impostazione non salvata."
+        }
+      },
       "title": "Le vostre locandine",
       "description": "Riprendete una locandina salvata: i luoghi e lo stile tornano, il periodo riparte da oggi.",
       "summary": "{lairs, plural, one {# luogo} other {# luoghi}} · {period} · {style}",
