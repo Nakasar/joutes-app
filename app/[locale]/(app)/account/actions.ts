@@ -23,6 +23,7 @@ import {
   type NotificationChannel,
   type NotificationPreferenceType,
 } from "@/lib/notifications/preferences.ts";
+import { disableDiscordDm, discordOptInErrorMessage, enableDiscordDm } from "@/lib/notifications/discord-optin.ts";
 import { listPushDevicesForUser, revokePushDevice } from "@/lib/db/push-devices.ts";
 import { toPushDeviceSummary, type PushDeviceSummary } from "@/lib/types/PushDevice.ts";
 
@@ -302,6 +303,19 @@ export async function updateNotificationsPreference(
     // « récapitulatif plateforme ». La matrice les nomme un par un.
     if (!isNotificationPreference(channel, type)) {
       return { success: false, error: "Réglage de notification inconnu." };
+    }
+
+    // Les messages privés Discord ont leur propre chemin : l'activation vérifie
+    // la liaison du compte et que le bot peut vraiment écrire au joueur.
+    if (channel === "discord") {
+      if (!enable) {
+        await disableDiscordDm(session.user.id);
+        return { success: true };
+      }
+      const result = await enableDiscordDm(session.user.id);
+      return result.ok
+        ? { success: true }
+        : { success: false, error: discordOptInErrorMessage(result.reason) };
     }
 
     await db.collection<User>('user').updateOne({

@@ -141,6 +141,25 @@ await markNotificationAsReadAction(notificationId);
 await markAllNotificationsAsReadAction();
 ```
 
+## Messages privés Discord
+
+En plus de la page des notifications et du push, un joueur peut recevoir ses notifications **en message privé du bot Discord**. Le canal est **opt-in** : désactivé tant que le joueur ne l'a pas demandé.
+
+- **Activer** : depuis l'onglet Notifications du compte (carte « Messages privés Discord »), ou par la commande `/notifications activer` (`on`) du bot. Il faut un compte Discord lié (page Sécurité). L'activation **envoie un premier MP** : s'il ne passe pas (aucun serveur en commun avec le bot, MP fermés), le réglage reste éteint et le joueur sait pourquoi.
+- **Couper** : même interrupteur, ou `/notifications désactiver` (`off`).
+- **Envoi** : `createNotification` appelle `scheduleDiscordFanout` à côté du push. L'audience est résolue comme pour le push, puis restreinte aux comptes qui ont `notifications.discord.dm.enabled` et une liaison Discord. Au plus 100 MP par notification.
+- **Joueur injoignable** : si Discord refuse durablement (codes 50007 ou 10013), le réglage est coupé automatiquement, plutôt que de réessayer à chaque notification.
+
+| Fichier | Rôle |
+|---|---|
+| `lib/notifications/discord-message.ts` | L'embed d'une notification (lien absolu, limites de Discord) — pur, testé |
+| `lib/notifications/discord-dispatch.ts` | Le fan-out, planifié après la réponse HTTP, incapable de lever |
+| `lib/notifications/discord-optin.ts` | Activer/couper, partagé par le site et le bot |
+| `lib/discord/dm.ts` | L'envoi d'un MP (ouverture du salon privé, puis message) |
+| `lib/db/discord-notifications.ts` | Liaisons Discord et réglage |
+
+La commande `/notifications` est déclarée dans `app/[locale]/(app)/admin/discord/actions.ts` : relancer la mise à jour des commandes depuis l'administration pour qu'elle apparaisse sur Discord.
+
 ## Structure de données
 
 ### Base de données (MongoDB)

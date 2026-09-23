@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { BellIcon, Calendar1Icon, MailIcon, SmartphoneIcon } from "lucide-react";
+import { BellIcon, Calendar1Icon, MailIcon, MessageCircleIcon, SmartphoneIcon } from "lucide-react";
 import { ObjectId } from "mongodb";
 
 import {
@@ -15,6 +15,9 @@ import type { User } from "@/lib/types/User";
 import { listMyPushDevicesAction } from "@/app/[locale]/(app)/account/actions.ts";
 import { NotificationPreferenceSwitch } from "./components.tsx";
 import { PushDevicesSection } from "./PushDevicesSection.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Link } from "@/i18n/navigation.ts";
+import { findDiscordAccountId } from "@/lib/db/discord-notifications.ts";
 
 /**
  * L'onglet « Notifications ».
@@ -25,12 +28,13 @@ import { PushDevicesSection } from "./PushDevicesSection.tsx";
  * seul champ utile, telle qu'elle était déjà écrite.
  */
 export default async function NotificationsTabView({ user }: { user: User }) {
-  const [document, devices, t] = await Promise.all([
+  const [document, devices, discordAccountId, t] = await Promise.all([
     db.collection<Pick<User, "notifications">>("user").findOne(
       { _id: new ObjectId(user.id) },
       { projection: { _id: 1, notifications: 1 } },
     ),
     listMyPushDevicesAction(),
+    findDiscordAccountId(user.id),
     getTranslations("Account.notifications"),
   ]);
 
@@ -96,6 +100,34 @@ export default async function NotificationsTabView({ user }: { user: User }) {
             <h3 className="text-sm font-medium">{t("push.devices")}</h3>
             <PushDevicesSection devices={devices} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageCircleIcon className="h-5 w-5" aria-hidden />
+            {t("discord.title")}
+          </CardTitle>
+          <CardDescription>{t("discord.description")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <FieldGroup className="w-full">
+            <NotificationPreferenceSwitch
+              type="dm"
+              channel="discord"
+              label={t("discord.switchLabel")}
+              icon={<MessageCircleIcon className="mr-2 h-4 w-4" />}
+              description={discordAccountId ? t("discord.switchHint") : t("discord.notLinked")}
+              initialEnabled={Boolean(discordAccountId) && notifications?.discord?.dm?.enabled === true}
+              disabled={!discordAccountId}
+            />
+          </FieldGroup>
+          {!discordAccountId && (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/account/security">{t("discord.linkAction")}</Link>
+            </Button>
+          )}
         </CardContent>
       </Card>
 

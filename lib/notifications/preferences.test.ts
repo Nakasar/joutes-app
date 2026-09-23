@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { isNotificationPreference, isPushEnabledForUser } from "./preferences";
+import { isDiscordDmEnabledForUser, isNotificationPreference, isPushEnabledForUser } from "./preferences";
 
 /**
  * Tests des réglages de notification.
@@ -18,6 +18,7 @@ describe("isNotificationPreference", () => {
     assert.ok(isNotificationPreference("emails", "platform"));
     assert.ok(isNotificationPreference("app", "weekly"));
     assert.ok(isNotificationPreference("app", "push"));
+    assert.ok(isNotificationPreference("discord", "dm"));
   });
 
   it("refuse les couples que la validation par appartenance laissait passer", () => {
@@ -25,6 +26,8 @@ describe("isNotificationPreference", () => {
     // jamais existé, ni dans le type, ni dans l'interface.
     assert.ok(!isNotificationPreference("emails", "push"));
     assert.ok(!isNotificationPreference("app", "platform"));
+    assert.ok(!isNotificationPreference("discord", "push"));
+    assert.ok(!isNotificationPreference("app", "dm"));
   });
 
   it("refuse ce qui n'est pas un canal", () => {
@@ -47,5 +50,18 @@ describe("isPushEnabledForUser", () => {
   it("seul un refus explicite coupe", () => {
     assert.ok(!isPushEnabledForUser({ app: { push: { enabled: false } } }));
     assert.ok(isPushEnabledForUser({ app: { push: { enabled: true } } }));
+  });
+});
+
+describe("isDiscordDmEnabledForUser", () => {
+  it("vaut désactivé tant que le joueur ne l'a pas demandé", () => {
+    assert.ok(!isDiscordDmEnabledForUser(undefined));
+    assert.ok(!isDiscordDmEnabledForUser({}));
+    assert.ok(!isDiscordDmEnabledForUser({ discord: {} }));
+    assert.ok(!isDiscordDmEnabledForUser({ discord: { dm: { enabled: false } } }));
+  });
+
+  it("vaut activé une fois demandé", () => {
+    assert.ok(isDiscordDmEnabledForUser({ discord: { dm: { enabled: true } } }));
   });
 });

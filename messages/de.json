@@ -5810,6 +5810,14 @@
         "title": "Joutes-Neuigkeiten",
         "description": "Bleib auf dem Laufenden, was es auf der Plattform Neues gibt.",
         "emailHint": "Erhalte unsere Neuigkeiten per E-Mail."
+      },
+      "discord": {
+        "title": "Discord-Direktnachrichten",
+        "description": "Erhalte deine Joutes-Benachrichtigungen zusätzlich als Direktnachricht vom Joutes-Bot auf Discord, neben deinen anderen aktivierten Kanälen.",
+        "switchLabel": "Discord",
+        "switchHint": "Der Bot schickt dir eine erste Nachricht, um zu prüfen, dass er dich erreicht. Du kannst auch /notifications on auf Discord verwenden.",
+        "notLinked": "Verknüpfe dein Discord-Konto, um diesen Kanal zu aktivieren.",
+        "linkAction": "Discord-Konto verknüpfen"
       }
     },
     "showcase": {

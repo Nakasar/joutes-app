@@ -140,6 +140,16 @@ export type User = {
       push?: {
         enabled: boolean;
       },
-    }
+    },
+    /**
+     * Les notifications reçues aussi en message privé par le bot Discord, en
+     * plus des autres canaux. Absent vaut désactivé ; demande un compte
+     * Discord lié.
+     */
+    discord?: {
+      dm?: {
+        enabled: boolean;
+      },
+    },
   }
 };

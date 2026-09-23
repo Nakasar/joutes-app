@@ -3,6 +3,7 @@ import { NewNotification, Notification } from "@/lib/types/Notification";
 import { Document, ObjectId } from "mongodb";
 import { getUserById } from "./users";
 import { schedulePushFanout } from "@/lib/push/dispatch";
+import { scheduleDiscordFanout } from "@/lib/notifications/discord-dispatch";
 
 const COLLECTION_NAME = "notifications";
 
@@ -303,6 +304,9 @@ export async function createNotification(notification: NewNotification): Promise
     // notification enregistrée sans push vaut infiniment mieux qu'une demande
     // d'ami annulée parce qu'Apple était indisponible.
     schedulePushFanout(notificationDoc);
+    // Même contrat pour les messages privés Discord, réservés à ceux qui les
+    // ont demandés.
+    scheduleDiscordFanout(notificationDoc);
 
     return notificationDoc;
   } catch (error) {

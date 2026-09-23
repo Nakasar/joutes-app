@@ -15,10 +15,11 @@ import type { User } from "@/lib/types/User";
 export const NOTIFICATION_PREFERENCES = {
   emails: ["weekly", "platform"],
   app: ["weekly", "push"],
+  discord: ["dm"],
 } as const;
 
 export type NotificationChannel = keyof typeof NOTIFICATION_PREFERENCES;
-export type NotificationPreferenceType = "weekly" | "platform" | "push";
+export type NotificationPreferenceType = "weekly" | "platform" | "push" | "dm";
 
 /**
  * Un couple canal/type qui existe vraiment.
@@ -48,4 +49,15 @@ export function isNotificationPreference(
  */
 export function isPushEnabledForUser(notifications: User["notifications"] | undefined): boolean {
   return notifications?.app?.push?.enabled !== false;
+}
+
+/**
+ * Les messages privés Discord sont-ils ouverts pour ce compte ?
+ *
+ * À l'inverse du push, absent vaut **désactivé** : un message privé arrive dans
+ * un outil que le joueur n'a pas choisi pour Joutes, on ne l'y envoie que s'il
+ * l'a demandé — depuis ses réglages ou par `/notifications activer`.
+ */
+export function isDiscordDmEnabledForUser(notifications: User["notifications"] | undefined): boolean {
+  return notifications?.discord?.dm?.enabled === true;
 }
