@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/prices-cardnexus",
       "schedule": "30 5 * * *"
+    },
+    {
+      "path": "/api/cron/event-waitlists",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

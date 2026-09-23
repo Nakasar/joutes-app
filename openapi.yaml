@@ -1786,6 +1786,61 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /events/{eventId}/waitlist:
+    parameters:
+      - { name: eventId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Events]
+      summary: Join the waitlist of a full event
+      description: Only when the event is full (spots held by pending offers count as taken) or players are already waiting. When a spot frees up, the first player in line gets a notification and the spot is held for them for `waitlistResponseHours`.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200": { description: Joined., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: Already registered or waiting, waitlist closed, or spots still free. }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Events]
+      summary: Leave the waitlist
+      description: A pending offer is given up and the spot goes to the next player.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200": { description: Left., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Event not found, or caller not on the waitlist. }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /events/{eventId}/waitlist/accept:
+    parameters:
+      - { name: eventId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Events]
+      summary: Accept the spot offered from the waitlist
+      description: The caller becomes a registered participant and leaves the waitlist.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200": { description: Registered., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Event not found, or caller not on the waitlist. }
+        "409": { description: No pending offer for the caller, or the offer has expired. }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /events/{eventId}/waitlist/decline:
+    parameters:
+      - { name: eventId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Events]
+      summary: Decline the spot offered from the waitlist
+      description: The caller leaves the waitlist and the next player is notified.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200": { description: Declined., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Event not found, or no pending offer for the caller. }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /events/{eventId}/favorited-users:
     parameters:
       - { name: eventId, in: path, required: true, schema: { type: string } }
@@ -6281,6 +6336,24 @@ components:
           additionalProperties: { type: string, enum: [NOT_REGISTERED, PRE_REGISTERED, REGISTERED, EXCLUDED] }
         registeredParticipantsCount: { type: integer }
         maxParticipants: { type: integer }
+        waitlistResponseHours: { type: integer, description: "Time left to accept a freed spot, in hours (48 by default)." }
+        waitlistCount: { type: integer, description: "Waitlist size (detail endpoint only)." }
+        waitlistOpen: { type: boolean, description: "Whether the waitlist accepts new players (detail endpoint only)." }
+        canJoinDirectly: { type: boolean, description: "Whether a spot is free with nobody waiting (detail endpoint only)." }
+        viewerWaitlist:
+          type: object
+          nullable: true
+          description: The caller's place on the waitlist (detail endpoint only), `null` when not waiting.
+          properties:
+            position: { type: integer, description: Rank in line, starting at 1. }
+            total: { type: integer }
+            joinedAt: { type: string, format: date-time }
+            offer:
+              type: object
+              description: Present when a freed spot is held for the caller.
+              properties:
+                offeredAt: { type: string, format: date-time }
+                expiresAt: { type: string, format: date-time }
         favoritedBy: { type: array, items: { type: string } }
         lair:
           type: object

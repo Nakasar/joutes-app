@@ -41,7 +41,10 @@ import { TournamentLinkCard } from "./TournamentLinkCard.tsx";
 import ReportButton from "@/components/ReportButton.tsx";
 import { Trophy } from "lucide-react";
 import { DateTime } from "luxon";
-import { getEventParticipants } from "./portal/participant-actions.ts";
+import { getEventParticipants, getEventWaitlist } from "./portal/participant-actions.ts";
+import WaitlistOfferBanner from "./WaitlistOfferBanner.tsx";
+import WaitlistManager, { type WaitlistManagerEntry } from "./WaitlistManager.tsx";
+import { canJoinDirectly, isWaitlistOpen, responseHoursOf, viewerWaitlistStatus } from "@/lib/events/waitlist.ts";
 import ReactMarkdown from "react-markdown";
 import { getLocale, getTranslations } from "next-intl/server";
 
@@ -286,8 +289,23 @@ async function EventBody({ params }: Pick<EventPageProps, "params">) {
     ? participantsResult.data
     : [];
 
-  const registeredCount = allParticipants.filter((p) => p.registrationStatus === "REGISTERED").length;
-  const isFull = event.maxParticipants ? registeredCount >= event.maxParticipants : false;
+  // Le compte vient de l'événement, pas de la liste : elle n'est chargée que
+  // pour l'organisation, et tout le monde doit lire le même remplissage.
+  const registeredCount = event.registeredParticipantsCount ?? 0;
+
+  // Liste d'attente : « complet » tient compte des places réservées aux
+  // offres en cours et des joueurs qui attendent déjà (cf. lib/events/waitlist).
+  const now = new Date();
+  const isFull = !canJoinDirectly(event, now);
+  const waitlistCount = event.waitlist?.length ?? 0;
+  const viewerWaitlist = session?.user ? viewerWaitlistStatus(event, session.user.id, now) : null;
+
+  const waitlistResult = isCreator && event.maxParticipants
+    ? await getEventWaitlist(event.id)
+    : { success: true, data: [] };
+  const waitlistEntries: WaitlistManagerEntry[] = waitlistResult.success && waitlistResult.data
+    ? waitlistResult.data
+    : [];
 
   return (
     <>
@@ -298,6 +316,10 @@ async function EventBody({ params }: Pick<EventPageProps, "params">) {
             {t("privateEvent.description")}
           </AlertDescription>
         </Alert>
+      )}
+
+      {viewerWaitlist?.offer && (
+        <WaitlistOfferBanner eventId={event.id} expiresAt={viewerWaitlist.offer.expiresAt} />
       )}
 
       {/* Boutons d'accès aux portails */}
@@ -457,6 +479,7 @@ async function EventBody({ params }: Pick<EventPageProps, "params">) {
                 {event.maxParticipants
                   ? t("participantsCountWithMax", { count: registeredCount, max: event.maxParticipants })
                   : t("participantsCount", { count: registeredCount })}
+                {waitlistCount > 0 && ` · ${t("waitlist.count", { count: waitlistCount })}`}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -499,6 +522,11 @@ async function EventBody({ params }: Pick<EventPageProps, "params">) {
                     isFull={isFull}
                     allowJoin={event.allowJoin}
                     runningState={event.runningState}
+                    registrationStatus={session.user ? event.participantRegistrations?.[session.user.id] : undefined}
+                    preRegistration={event.preRegistration}
+                    waitlist={viewerWaitlist}
+                    waitlistOpen={isWaitlistOpen(event, now)}
+                    waitlistCount={waitlistCount}
                   />
                   <FavoriteButton
                     eventId={event.id}
@@ -536,6 +564,15 @@ async function EventBody({ params }: Pick<EventPageProps, "params">) {
               )}
             </CardContent>
           </Card>
+
+          {isCreator && event.maxParticipants && (
+            <WaitlistManager
+              eventId={event.id}
+              entries={waitlistEntries}
+              responseHours={responseHoursOf(event)}
+              now={now.toISOString()}
+            />
+          )}
         </div>
       </div>
     </>

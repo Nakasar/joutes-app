@@ -1083,8 +1083,11 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     registeredParticipantsCount: (event.participants ?? []).filter(
       (userId: string) => (event.participantRegistrations?.[userId] ?? 'REGISTERED') === 'REGISTERED'
     ).length,
+    participantRegisteredAt: event.participantRegisteredAt,
     preRegistration: event.preRegistration,
     maxParticipants: event.maxParticipants,
+    waitlist: event.waitlist ?? [],
+    waitlistResponseHours: event.waitlistResponseHours,
     favoritedBy: event.favoritedBy,
     allowJoin: event.allowJoin,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
@@ -1185,7 +1188,14 @@ export async function addParticipantToEvent(eventId: string, userId: string, reg
     {id: eventId},
     {
       $addToSet: {participants: userId},
-      $set: {[`participantRegistrations.${userId}`]: registrationStatus, boardsNeedsUpdate: true},
+      $set: {
+        [`participantRegistrations.${userId}`]: registrationStatus,
+        [`participantRegisteredAt.${userId}`]: new Date().toISOString(),
+        boardsNeedsUpdate: true,
+      },
+      // Inscrit, il n'a plus rien à attendre : une inscription faite à la main
+      // par l'organisation le sort de la file.
+      $pull: {waitlist: {userId}},
     }
   );
 
@@ -1203,7 +1213,7 @@ export async function removeParticipantFromEvent(eventId: string, userId: string
     {id: eventId},
     {
       $pull: {participants: userId},
-      $unset: {[`participantRegistrations.${userId}`]: ""},
+      $unset: {[`participantRegistrations.${userId}`]: "", [`participantRegisteredAt.${userId}`]: ""},
       $set: {boardsNeedsUpdate: true},
     }
   );
