@@ -13,6 +13,8 @@ import {
 import * as lairsDb from "@/lib/db/lairs.ts";
 import { isLairPro } from "@/lib/lairs/pro.ts";
 import type { LairNewsItem } from "@/lib/types/Lair";
+import { newlyPinnedNews } from "@/lib/lairs/news-pin.ts";
+import { notifyLairPinnedNews } from "@/lib/lairs/lair-notifications.ts";
 
 /**
  * Les échecs, en codes plutôt qu'en phrases : ces actions ne savent pas dans
@@ -138,6 +140,12 @@ export async function updateLairNews(
     await lairsDb.updateLair(validatedId, {
       options: { ...(lair.options ?? {}), news: parsed.data },
     });
+
+    // Une annonce nouvellement épinglée est portée à ceux qui suivent le lieu.
+    const pinned = newlyPinnedNews(lair.options?.news, parsed.data);
+    if (pinned) {
+      await notifyLairPinnedNews(lair, pinned);
+    }
 
     revalidatePath(`/lairs/${validatedId}`);
     revalidatePath(`/lairs/${validatedId}/manage`);

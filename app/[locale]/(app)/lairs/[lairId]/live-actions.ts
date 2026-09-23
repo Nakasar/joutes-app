@@ -6,6 +6,7 @@ import { requireAdminOrOwner } from "@/lib/middleware/admin.ts";
 import { lairIdSchema } from "@/lib/schemas/lair.schema.ts";
 import * as lairsDb from "@/lib/db/lairs.ts";
 import { isSupportedLiveUrl } from "@/lib/media/live-embed.ts";
+import { notifyLairLive } from "@/lib/lairs/lair-notifications.ts";
 
 /**
  * Les échecs possibles, en codes plutôt qu'en phrases.
@@ -53,6 +54,12 @@ export async function setLairLiveStream(lairId: string, url: string): Promise<Li
         },
       },
     });
+
+    // Un nouveau direct — pas une correction du lien en cours — est annoncé à
+    // ceux qui suivent le lieu.
+    if (current?.url !== value) {
+      await notifyLairLive(lair);
+    }
 
     revalidatePath(`/lairs/${validatedId}`);
 

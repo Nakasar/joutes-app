@@ -4,6 +4,7 @@ import {getUserById} from "@/lib/db/users";
 import {getLairIdsNearLocation} from "./lairs";
 import {AnyBulkWriteOperation, ObjectId, UpdateFilter} from "mongodb";
 import {DateTime} from "luxon";
+import {notifyEventRescheduledIfNeeded} from "@/lib/events/event-notifications";
 import {
   AUTOMATED_EVENT_AUTHORS,
   reconcileSourceEvents,
@@ -611,6 +612,16 @@ export async function upsertEventsForLair(
     } finally {
       await session.endSession();
     }
+  }
+
+  // Un agenda relu peut déplacer une date où des joueurs sont inscrits : ils
+  // doivent l'apprendre comme si l'organisation l'avait changée à la main.
+  for (const {existing: match, patch} of verdict.toUpdate) {
+    await notifyEventRescheduledIfNeeded(
+      {id: match.id, name: patch.name ?? match.name, participants: match.participants},
+      {startDateTime: match.startDateTime, endDateTime: match.endDateTime},
+      {startDateTime: patch.startDateTime, endDateTime: patch.endDateTime},
+    );
   }
 
   return {

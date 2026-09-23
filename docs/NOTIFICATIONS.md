@@ -141,6 +141,21 @@ await markNotificationAsReadAction(notificationId);
 await markAllNotificationsAsReadAction();
 ```
 
+## Qui est prévenu, et quand
+
+| Déclencheur | Destinataires | Où c'est émis |
+|---|---|---|
+| Événement **annulé** | Inscrits, créateur, liste d'attente | `cancelEventAction` |
+| Événement **supprimé** (par l'organisation ou la modération) | Inscrits et liste d'attente, sauf l'auteur de la suppression — notifications **par joueur**, l'événement n'existant plus pour résoudre une audience | `lib/events/event-notifications.ts` |
+| Événement **décalé** (début ou fin), à la main ou par la relecture d'un agenda connecté | Inscrits | `notifyEventRescheduledIfNeeded` |
+| **Annonce** d'un événement | Inscrits et créateur | `createAnnouncement` (portail) |
+| **Annonce** d'un tournoi | Joueurs du tournoi, sauf l'auteur | `notifyAnnouncement` |
+| Annonce **épinglée** par un lieu (nouvel épinglage seulement) | Abonnés du lieu | `lib/lairs/lair-notifications.ts` |
+| Lieu **en direct** (nouveau direct, manuel ou détecté sur une plateforme) | Abonnés du lieu | `notifyLairLive` |
+| Place libérée sur une **liste d'attente** | Le premier de la file | `lib/events/waitlist-service.ts` |
+
+Un report se juge sur des **instants** (`lib/events/schedule-change.ts`) : une date réécrite dans un autre format mais au même horaire ne notifie personne.
+
 ## Messages privés Discord
 
 En plus de la page des notifications et du push, un joueur peut recevoir ses notifications **en message privé du bot Discord**. Le canal est **opt-in** : désactivé tant que le joueur ne l'a pas demandé.

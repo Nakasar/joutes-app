@@ -7,6 +7,7 @@ import { locales } from "@/i18n/config";
 import * as lairsDb from "@/lib/db/lairs";
 import * as playGroupsDb from "@/lib/db/play-groups";
 import { setStreamLinkLive } from "@/lib/db/stream-links";
+import { notifyLairLive } from "@/lib/lairs/lair-notifications";
 import type { StreamAnnouncement, StreamLink, StreamLinkLive, StreamTarget } from "@/lib/types/StreamLink";
 
 /**
@@ -178,12 +179,20 @@ async function writeToLair(
     return null;
   }
 
+  const alreadyLive = lair.options?.live?.url === live.url;
+
   await lairsDb.updateLair(lairId, {
     options: {
       ...lair.options,
       live: { url: live.url, title: live.title, startedAt },
     },
   });
+
+  // Le relevé des plateformes repasse toutes les cinq minutes : seul le
+  // premier passage d'un direct le fait sonner chez ceux qui suivent le lieu.
+  if (!alreadyLive) {
+    await notifyLairLive(lair, live.title);
+  }
 
   return { target: { kind: "lair", id: lairId } };
 }

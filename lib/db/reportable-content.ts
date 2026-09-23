@@ -12,7 +12,8 @@ import { deleteWishlistAsModerator, deleteWishlistsForPlayGroup } from "@/lib/db
 import { deleteSellListAsModerator, deleteSellListsForPlayGroup } from "@/lib/db/sell-lists";
 import { deletePlayGroup } from "@/lib/db/play-groups";
 import { deletePlayGroupSessions } from "@/lib/db/play-group-sessions";
-import { deleteEvent } from "@/lib/db/events";
+import { deleteEvent, getEventById } from "@/lib/db/events";
+import { notifyEventDeleted } from "@/lib/events/event-notifications";
 import { deleteLair } from "@/lib/db/lairs";
 import { deleteLeague } from "@/lib/db/leagues";
 import { deleteTournament } from "@/lib/db/tournaments";
@@ -214,7 +215,13 @@ const HANDLERS: Record<ReportableContentType, ReportableContentHandler> = {
         url: `/events/${encodeURIComponent(id)}`,
       };
     },
-    moderate: (id) => deleteEvent(id),
+    moderate: async (id) => {
+      // Les inscrits sont prévenus avant l'effacement : après, plus rien ne
+      // dit qui l'était.
+      const event = await getEventById(id);
+      if (event) await notifyEventDeleted(event);
+      return deleteEvent(id);
+    },
   },
   lair: {
     preview: async (id) => {
