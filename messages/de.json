@@ -2795,6 +2795,7 @@
             "Vier Tabs: News, Kalender, hier gespielte Spiele, Über den Ort",
             "News des Ortes, eine davon angeheftet, und ein hervorgehobenes Event",
             "Kalender, gefiltert auf die Spiele, denen du folgst, Anmeldung in Sekunden",
+            "Ausgebucht? Trag dich in die Warteliste ein: Ein frei gewordener Platz wird dir per Benachrichtigung angeboten, auf der Website wie in der App",
             "Öffnungszeiten des Tages, Anfahrt, Fotos und Ausstattung",
             "Folge einem Ort, um seine Ankündigungen zu erhalten"
           ]
@@ -5281,15 +5282,14 @@
         "bullets": [
           "Anmeldung über das Web, über Discord oder über die Mobil-App",
           "Begrenzte Platzzahl, live mitgezählt",
+          "Angemeldete nach Anmeldedatum sortiert, das neben jedem Namen steht",
+          "Automatische Warteliste: Ein frei gewordener Platz wird der ersten Person angeboten und 48 Std. reserviert (pro Veranstaltung einstellbar), bei Absage oder ohne Antwort der nächsten",
           "Voranmeldung: du bestätigst jede Anfrage einzeln",
           "Einchecken am Veranstaltungstag",
           "Maßgeschneidertes Anmeldeformular: Text, Zahl, Auswahl, Karte aus dem Spiel, automatisch ausgewertete Deckliste",
           "Antwortfrist, verspätete Antworten werden als solche gekennzeichnet",
           "Veranstaltung abgesagt: alle Angemeldeten werden benachrichtigt, samt Grund",
           "Ankündigungen der Organisation an die Teilnehmenden"
-        ],
-        "soon": [
-          "Automatische Warteliste, die nachrückt, sobald ein Platz frei wird"
         ]
       },
       "tournaments": {

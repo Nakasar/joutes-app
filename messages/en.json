@@ -3353,6 +3353,7 @@
             "Four tabs: news, agenda, games played here, about",
             "Venue news, one of them pinned, and a featured event",
             "Agenda filtered on the games you follow, sign-up in seconds",
+            "Event full? Join the waiting list: a freed seat is offered to you by notification, on the website and in the app",
             "Today's opening hours, directions, photos and amenities",
             "Follow a venue to receive its announcements"
           ]
@@ -5281,15 +5282,14 @@
         "bullets": [
           "Registration from the web, from Discord or from mobile",
           "Capped seat count, with a live tally",
+          "Registered players listed by sign-up date, shown next to each name",
+          "Automatic waiting list: a freed seat is offered to the first in line, held for 48 h (configurable per event), then to the next one if they decline or don't answer",
           "Pre-registration: you approve each request one by one",
           "Check-in on the day of the event",
           "Custom registration form: text, number, choice, a card from the game, decklist parsed automatically",
           "Answer deadline, with late answers flagged as such",
           "Event cancelled: every registered player is notified, reason included",
           "Organizer announcements pushed to participants"
-        ],
-        "soon": [
-          "Automatic waiting list that promotes the next player as soon as a seat frees up"
         ]
       },
       "tournaments": {

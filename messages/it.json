@@ -3353,6 +3353,7 @@
             "Quattro schede: notizie, calendario, giochi giocati qui, informazioni",
             "Notizie del luogo, una delle quali fissata in cima, e un evento in primo piano",
             "Calendario filtrabile sui giochi che segui, iscrizione in pochi secondi",
+            "Evento al completo? Iscriviti alla lista d'attesa: un posto liberato ti viene proposto con una notifica, sul sito come nell'app",
             "Orari del giorno, itinerario, foto e attrezzature",
             "Segui un luogo per ricevere i suoi annunci"
           ]
@@ -5281,15 +5282,14 @@
         "bullets": [
           "Iscrizione dal web, da Discord o da mobile",
           "Numero di posti limitato, conteggio aggiornato in tempo reale",
+          "Iscritti ordinati per data di iscrizione, indicata accanto a ogni nome",
+          "Lista d'attesa automatica: un posto liberato viene proposto al primo in lista, riservato per 48 h (regolabile per evento), poi al successivo se rifiuta o non risponde",
           "Pre-iscrizione: confermi ogni richiesta una per una",
           "Registrazione degli arrivi il giorno dell'evento",
           "Modulo d'iscrizione su misura: testo, numero, scelta, carta del gioco, lista mazzo analizzata automaticamente",
           "Scadenza per le risposte, con le risposte tardive segnalate come tali",
           "Evento annullato: tutti gli iscritti avvisati, motivo compreso",
           "Annunci dell'organizzazione inviati ai partecipanti"
-        ],
-        "soon": [
-          "Lista d'attesa automatica, che promuove il primo in coda appena si libera un posto"
         ]
       },
       "tournaments": {
