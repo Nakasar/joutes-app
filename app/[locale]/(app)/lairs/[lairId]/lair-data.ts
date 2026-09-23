@@ -12,6 +12,7 @@ import { getLairById } from "@/lib/db/lairs.ts";
 import { getEventsByLairId } from "@/lib/db/events.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { countUsersFollowingLair, getUserById } from "@/lib/db/users.ts";
+import { lairNotificationPreference } from "@/lib/lairs/notification-prefs.ts";
 import type { Event } from "@/lib/types/Event";
 import type { Game } from "@/lib/types/Game";
 
@@ -72,6 +73,8 @@ export const readViewer = cache(async (lairId: string) => {
     /** Les jeux suivis par le visiteur — la bascule « Mes jeux » s'en sert. */
     followedGameIds: user?.games ?? [],
     isFollowing: user?.lairs?.includes(lairId) ?? false,
+    /** Ce que le visiteur reçoit du lieu, s'il le suit. */
+    notificationPreference: lairNotificationPreference(user?.lairNotificationPrefs, lairId),
     hasGames: Boolean(user?.games && user.games.length > 0),
     canManageLair: await checkAdminOrOwner(lairId),
   };

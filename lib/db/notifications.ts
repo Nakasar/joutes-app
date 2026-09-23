@@ -1,7 +1,8 @@
 import db from "@/lib/mongodb";
 import { NewNotification, Notification } from "@/lib/types/Notification";
 import { Document, ObjectId } from "mongodb";
-import { getUserById } from "./users";
+import { getLairFollowState } from "./lair-notification-prefs";
+import { followerNotificationBranches, type StoredLairNotificationPref } from "@/lib/lairs/notification-prefs";
 import { schedulePushFanout } from "@/lib/push/dispatch";
 import { scheduleDiscordFanout } from "@/lib/notifications/discord-dispatch";
 
@@ -23,7 +24,11 @@ export type NotificationDocument = Notification;
  * les deux doivent dire la même chose, sans quoi un push atteindrait quelqu'un
  * à qui le site ne montre rien.
  */
-function notificationAccessStages(userId: string, followedLairIds: string[]): Document[] {
+function notificationAccessStages(
+  userId: string,
+  followedLairIds: string[],
+  lairPrefs: StoredLairNotificationPref[]
+): Document[] {
   return [
     // Ce que l'utilisateur a masqué ne le concerne plus.
     { $match: { hiddenBy: { $ne: userId } } },
@@ -54,7 +59,8 @@ function notificationAccessStages(userId: string, followedLairIds: string[]): Do
         $or: [
           { type: 'user', userId },
           { type: 'lair', target: { $in: ['owners', 'all'] }, 'lair.owners': userId },
-          { type: 'lair', target: { $in: ['followers', 'all'] }, lairId: { $in: followedLairIds } },
+          // Les lieux suivis, selon ce que l'abonné a choisi d'en recevoir.
+          ...followerNotificationBranches(followedLairIds, lairPrefs),
           { type: 'event', target: { $in: ['participants', 'all'] }, 'event.participants': userId },
           { type: 'event', target: { $in: ['creator', 'all'] }, 'event.creatorId': userId },
         ],
@@ -75,18 +81,18 @@ export async function getUserNotifications(
 ): Promise<{ notifications: Notification[]; total: number }> {
   try {
     const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
-    const user = await getUserById(userId);
+    const user = await getLairFollowState(userId);
 
     if (!user) {
       throw new Error("Utilisateur non trouvé");
     }
 
-    const followedLairIds = user.lairs || [];
+    const followedLairIds = user.lairs;
 
     const pipeline: Document[] = [
       // Qui a le droit de voir quoi, d'abord : les jointures d'enrichissement
       // qui suivent ne travaillent alors que sur ce qui reste.
-      ...notificationAccessStages(userId, followedLairIds),
+      ...notificationAccessStages(userId, followedLairIds, user.prefs),
       {
         $addFields: {
           leagueObjectId: {
@@ -208,7 +214,7 @@ export async function getUserNotifications(
     // les matchs et leurs joueurs pour n'en garder qu'un nombre était payer
     // deux fois l'enrichissement d'une page qu'on ne rend qu'une.
     const countResult = await collection
-      .aggregate([...notificationAccessStages(userId, followedLairIds), { $count: 'total' }])
+      .aggregate([...notificationAccessStages(userId, followedLairIds, user.prefs), { $count: 'total' }])
       .toArray();
     const total = countResult.length > 0 ? countResult[0].total : 0;
 
@@ -361,13 +367,13 @@ export async function markNotificationAsRead(notificationId: string, userId: str
  */
 export async function countUnreadNotifications(userId: string): Promise<number> {
   try {
-    const user = await getUserById(userId);
+    const user = await getLairFollowState(userId);
     if (!user) return 0;
 
     const result = await db
       .collection<NotificationDocument>(COLLECTION_NAME)
       .aggregate([
-        ...notificationAccessStages(userId, user.lairs || []),
+        ...notificationAccessStages(userId, user.lairs, user.prefs),
         { $match: { readBy: { $ne: userId } } },
         { $count: 'total' },
       ])
@@ -393,14 +399,14 @@ export async function countUnreadNotifications(userId: string): Promise<number> 
  */
 export async function markAllNotificationsAsRead(userId: string): Promise<void> {
   try {
-    const user = await getUserById(userId);
+    const user = await getLairFollowState(userId);
     if (!user) return;
 
     const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
 
     const unread = await collection
       .aggregate([
-        ...notificationAccessStages(userId, user.lairs || []),
+        ...notificationAccessStages(userId, user.lairs, user.prefs),
         { $match: { readBy: { $ne: userId } } },
         { $project: { id: 1 } },
       ])

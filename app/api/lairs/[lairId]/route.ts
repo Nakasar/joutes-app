@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { findVisibleLair } from "@/lib/api/lairs";
-import { countUsersFollowingLair, getUserById } from "@/lib/db/users";
+import { countUsersFollowingLair } from "@/lib/db/users";
+import { getLairFollowState } from "@/lib/db/lair-notification-prefs";
+import { lairNotificationPreference } from "@/lib/lairs/notification-prefs";
 import { lairHasPro } from "@/lib/subscriptions/access";
 
 type Params = Promise<{ lairId: string }>;
@@ -12,7 +14,7 @@ type Params = Promise<{ lairId: string }>;
  * Le `Lair` est rendu tel quel — `toLair` en écarte déjà `proGrant`, dont le
  * motif est du texte libre écrit par l'équipe. Ce qui s'y ajoute ne vit pas sur
  * le document : `isPro` (**un booléen seul, jamais le motif**), le nombre
- * d'abonnés, et si l'appelant en fait partie.
+ * d'abonnés, si l'appelant en fait partie, et ce qu'il reçoit alors du lieu.
  *
  * Session facultative : elle ouvre les lieux privés qu'on suit ou qu'on gère,
  * et renseigne `isFollowing`. Sans elle, seuls les lieux publics répondent.
@@ -30,17 +32,20 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
       return NextResponse.json({ error: "Lieu introuvable" }, { status: 404 });
     }
 
-    const [isPro, followersCount, user] = await Promise.all([
+    const [isPro, followersCount, follow] = await Promise.all([
       lairHasPro(lairId),
       countUsersFollowingLair(lairId),
-      viewer ? getUserById(viewer.userId) : null,
+      viewer ? getLairFollowState(viewer.userId) : null,
     ]);
+
+    const isFollowing = follow?.lairs.includes(lairId) ?? false;
 
     return NextResponse.json({
       ...lair,
       isPro,
       followersCount,
-      isFollowing: user?.lairs?.includes(lairId) ?? false,
+      isFollowing,
+      notificationPreference: isFollowing && follow ? lairNotificationPreference(follow.prefs, lairId) : null,
     });
   } catch (error) {
     console.error("Error fetching lair:", error);

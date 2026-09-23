@@ -115,7 +115,7 @@ export default async function LairHero({ lairId }: { lairId: string }) {
 }
 
 async function LairHeroActions({ lairId }: { lairId: string }) {
-  const [{ session, isFollowing, canManageLair }, t] = await Promise.all([
+  const [{ session, isFollowing, notificationPreference, canManageLair }, t] = await Promise.all([
     readViewer(lairId),
     getTranslations("Lairs"),
   ]);
@@ -123,7 +123,12 @@ async function LairHeroActions({ lairId }: { lairId: string }) {
   return (
     <>
       {session?.user && (
-        <FollowLairButton lairId={lairId} isFollowing={isFollowing} isAuthenticated={!!session?.user} />
+        <FollowLairButton
+          lairId={lairId}
+          isFollowing={isFollowing}
+          isAuthenticated={!!session?.user}
+          notificationPreference={notificationPreference}
+        />
       )}
       {canManageLair && (
         <Button variant="default" asChild size="sm">

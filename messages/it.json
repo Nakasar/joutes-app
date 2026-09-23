@@ -1515,6 +1515,37 @@
       "followGamesDescription": "Seleziona i giochi che ti interessano per vedere i loro eventi",
       "manageGames": "Gestisci i miei giochi"
     },
+    "notificationLevel": {
+      "trigger": "Notifiche del luogo: {level}",
+      "title": "Notifiche di questo luogo",
+      "description": "Scegli cosa ricevere da questo luogo, sul sito, nell'app e su Discord.",
+      "levels": {
+        "all": {
+          "label": "Tutte",
+          "description": "Tutte le notifiche che il luogo invia a chi lo segue."
+        },
+        "custom": {
+          "label": "Personalizzate",
+          "description": "Solo i tipi che selezioni."
+        },
+        "none": {
+          "label": "Nessuna",
+          "description": "Continui a seguire il luogo, senza ricevere le sue notifiche."
+        }
+      },
+      "categories": {
+        "announcements": {
+          "label": "Annunci in evidenza",
+          "description": "Quando il luogo mette in evidenza un annuncio in cima alla sua pagina."
+        },
+        "live": {
+          "label": "Dirette",
+          "description": "Quando il luogo inizia una diretta."
+        }
+      },
+      "emptyCustom": "Nessun tipo selezionato: non riceverai nulla da questo luogo.",
+      "error": "Impossibile salvare l'impostazione."
+    },
     "follow": {
       "follow": "Segui",
       "following": "Seguito",

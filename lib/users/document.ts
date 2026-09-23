@@ -34,6 +34,7 @@ export function toUser(doc: WithId<Document>): User {
           ? doc.createdAt
           : undefined,
     lairs: doc.lairs || [],
+    lairNotificationPrefs: doc.lairNotificationPrefs || [],
     games: doc.games || [],
     favoriteGames: doc.favoriteGames || [],
     friends: doc.friends || [],

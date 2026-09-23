@@ -98,6 +98,7 @@ describe("toUser", () => {
       avatar: "https://example.test/a.png",
       createdAt: "2024-01-02T03:04:05.000Z",
       lairs: ["l1"],
+      lairNotificationPrefs: [{ lairId: "l1", level: "none" }],
       games: ["g1"],
       favoriteGames: ["g1"],
       friends: ["u2"],

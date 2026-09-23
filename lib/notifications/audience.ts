@@ -1,4 +1,5 @@
 import type { NotificationTarget } from "@/lib/types/Notification";
+import type { LairNotificationCategory } from "@/lib/lairs/notification-prefs";
 
 /**
  * Destinataires réels d'une notification.
@@ -24,14 +25,24 @@ import type { NotificationTarget } from "@/lib/types/Notification";
 /** Ce qu'il faut charger pour connaître les destinataires d'une notification. */
 export type AudienceSource =
   | { kind: "user"; userId: string }
-  | { kind: "lair"; lairId: string; owners: boolean; followers: boolean }
+  | {
+      kind: "lair";
+      lairId: string;
+      owners: boolean;
+      followers: boolean;
+      /** Le type de la notification, que filtre le réglage de chaque abonné. */
+      category?: LairNotificationCategory;
+    }
   | { kind: "event"; eventId: string; participants: boolean; creator: boolean };
 
 /** Les listes chargées en base, telles que le module pur les attend. */
 export type LoadedAudience = {
   /** `lair.owners` — des identifiants d'utilisateurs. */
   owners?: string[];
-  /** Les utilisateurs dont `user.lairs` contient le lair. */
+  /**
+   * Les utilisateurs dont `user.lairs` contient le lair **et dont le réglage
+   * laisse passer la notification** (`followerAudienceFilter`).
+   */
   followers?: string[];
   /** `event.participants`. */
   participants?: string[];
@@ -47,7 +58,9 @@ export type LoadedAudience = {
  * L'écrire autrement priverait de push la moitié des destinataires d'une
  * annonce, sans que rien ne le signale.
  */
-export function describeAudience(target: NotificationTarget): AudienceSource {
+export function describeAudience(
+  target: NotificationTarget & { category?: LairNotificationCategory }
+): AudienceSource {
   switch (target.type) {
     case "user":
       return { kind: "user", userId: target.userId };
@@ -57,6 +70,7 @@ export function describeAudience(target: NotificationTarget): AudienceSource {
         lairId: target.lairId,
         owners: target.target === "owners" || target.target === "all",
         followers: target.target === "followers" || target.target === "all",
+        ...(target.category ? { category: target.category } : {}),
       };
     case "event":
       return {

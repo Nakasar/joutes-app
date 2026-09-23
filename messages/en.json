@@ -1515,6 +1515,37 @@
       "followGamesDescription": "Select the games that interest you to see their events",
       "manageGames": "Manage my games"
     },
+    "notificationLevel": {
+      "trigger": "Venue notifications: {level}",
+      "title": "Notifications from this venue",
+      "description": "Choose what you receive from this venue, on the site, the app and Discord.",
+      "levels": {
+        "all": {
+          "label": "All",
+          "description": "Every notification the venue sends to its followers."
+        },
+        "custom": {
+          "label": "Custom",
+          "description": "Only the types you tick."
+        },
+        "none": {
+          "label": "None",
+          "description": "You still follow the venue, without receiving its notifications."
+        }
+      },
+      "categories": {
+        "announcements": {
+          "label": "Pinned announcements",
+          "description": "When the venue pins an announcement at the top of its page."
+        },
+        "live": {
+          "label": "Live streams",
+          "description": "When the venue goes live."
+        }
+      },
+      "emptyCustom": "Nothing ticked: you won't receive anything from this venue.",
+      "error": "The setting could not be saved."
+    },
     "follow": {
       "follow": "Follow",
       "following": "Following",
