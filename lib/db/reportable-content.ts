@@ -12,7 +12,8 @@ import { deleteWishlistAsModerator, deleteWishlistsForPlayGroup } from "@/lib/db
 import { deleteSellListAsModerator, deleteSellListsForPlayGroup } from "@/lib/db/sell-lists";
 import { deletePlayGroup } from "@/lib/db/play-groups";
 import { deletePlayGroupSessions } from "@/lib/db/play-group-sessions";
-import { deleteEvent } from "@/lib/db/events";
+import { deleteEvent, getEventById } from "@/lib/db/events";
+import { notifyEventDeleted } from "@/lib/events/event-notifications";
 import { deleteLair } from "@/lib/db/lairs";
 import { deleteLeague } from "@/lib/db/leagues";
 import { deleteTournament } from "@/lib/db/tournaments";
@@ -92,7 +93,8 @@ type ReportableContentHandler = {
    * Action « supprimer » de la modération. Pour les profils utilisateurs, le
    * compte est conservé et seule la biographie est remplacée.
    */
-  moderate: (contentId: string) => Promise<boolean>;
+  /** `actorId` : l'administrateur qui modère, quand un effet de bord doit l'exclure. */
+  moderate: (contentId: string, actorId?: string) => Promise<boolean>;
 };
 
 const HANDLERS: Record<ReportableContentType, ReportableContentHandler> = {
@@ -214,7 +216,13 @@ const HANDLERS: Record<ReportableContentType, ReportableContentHandler> = {
         url: `/events/${encodeURIComponent(id)}`,
       };
     },
-    moderate: (id) => deleteEvent(id),
+    moderate: async (id, actorId) => {
+      // Les inscrits sont prévenus avant l'effacement : après, plus rien ne
+      // dit qui l'était. Le modérateur, s'il était inscrit, ne l'est pas.
+      const event = await getEventById(id);
+      if (event) await notifyEventDeleted(event, actorId);
+      return deleteEvent(id);
+    },
   },
   lair: {
     preview: async (id) => {
@@ -346,12 +354,13 @@ export async function getReportedContentPreview(
  */
 export async function moderateReportedContent(
   contentType: ReportableContentType,
-  contentId: string
+  contentId: string,
+  actorId?: string
 ): Promise<boolean> {
   const handler = HANDLERS[contentType];
   if (!handler) {
     return false;
   }
 
-  return handler.moderate(contentId);
+  return handler.moderate(contentId, actorId);
 }

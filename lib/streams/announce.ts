@@ -7,6 +7,7 @@ import { locales } from "@/i18n/config";
 import * as lairsDb from "@/lib/db/lairs";
 import * as playGroupsDb from "@/lib/db/play-groups";
 import { setStreamLinkLive } from "@/lib/db/stream-links";
+import { notifyLairLive } from "@/lib/lairs/lair-notifications";
 import type { StreamAnnouncement, StreamLink, StreamLinkLive, StreamTarget } from "@/lib/types/StreamLink";
 
 /**
@@ -178,12 +179,23 @@ async function writeToLair(
     return null;
   }
 
+  // Même direct déjà affiché : même URL **et** même début. L'URL seule ne
+  // suffit pas — une chaîne Twitch garde la sienne d'un direct à l'autre.
+  const current = lair.options?.live;
+  const alreadyLive = current?.url === live.url && current?.startedAt === startedAt;
+
   await lairsDb.updateLair(lairId, {
     options: {
       ...lair.options,
       live: { url: live.url, title: live.title, startedAt },
     },
   });
+
+  // Une annonce par direct : `announceLive` n'est appelée qu'à un nouvel
+  // identifiant de direct, et cette garde couvre une livraison répétée.
+  if (!alreadyLive) {
+    await notifyLairLive(lair, live.title);
+  }
 
   return { target: { kind: "lair", id: lairId } };
 }

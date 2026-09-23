@@ -21,6 +21,7 @@ import {
   leaveEventWaitlist,
 } from "@/lib/events/waitlist-service.ts";
 import { removeFromEventWaitlist, setWaitlistResponseHours } from "@/lib/db/event-waitlist.ts";
+import { notifyEventDeleted, notifyEventRescheduledIfNeeded } from "@/lib/events/event-notifications.ts";
 
 type CreateEventInput = {
   name: string;
@@ -168,9 +169,14 @@ export async function updateEventDetailsAction(input: UpdateEventDetailsInput) {
       maxParticipants: input.maxParticipants,
     });
 
-    // Une capacité augmentée libère des places : la file avance.
     if (updated) {
+      // Une capacité augmentée libère des places : la file avance.
       await advanceEventWaitlist(input.eventId);
+      // Un événement déplacé : ses inscrits doivent le savoir.
+      await notifyEventRescheduledIfNeeded(event, event, {
+        startDateTime: input.startDateTime,
+        endDateTime: input.endDateTime,
+      });
     }
 
     revalidatePath(`/events/${input.eventId}`);
@@ -670,17 +676,10 @@ export async function deleteEventAction(eventId: string) {
       return { success: false, error: "Seuls les organisateurs de l'événement peuvent supprimer l'événement" };
     }
 
-    // Envoyer une notification à tous les participants et au créateur AVANT de supprimer
-    try {
-      await notifyEventAll(
-        eventId,
-        "🗑️ Événement supprimé",
-        `L'événement "${event.name}" a été supprimé.`
-      );
-    } catch (notifError) {
-      console.error("Erreur lors de l'envoi de la notification:", notifError);
-      // On continue quand même la suppression même si la notification échoue
-    }
+    // Prévenir les inscrits et la liste d'attente AVANT de supprimer : une
+    // notification qui viserait l'événement ne trouverait plus personne une
+    // fois celui-ci effacé. Des notifications par joueur, donc.
+    await notifyEventDeleted(event, session.user.id);
 
     // Supprimer l'événement et toutes les données associées
     const deleted = await deleteEvent(eventId);
