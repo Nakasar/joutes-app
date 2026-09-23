@@ -179,7 +179,10 @@ async function writeToLair(
     return null;
   }
 
-  const alreadyLive = lair.options?.live?.url === live.url;
+  // Même direct déjà affiché : même URL **et** même début. L'URL seule ne
+  // suffit pas — une chaîne Twitch garde la sienne d'un direct à l'autre.
+  const current = lair.options?.live;
+  const alreadyLive = current?.url === live.url && current?.startedAt === startedAt;
 
   await lairsDb.updateLair(lairId, {
     options: {
@@ -188,8 +191,8 @@ async function writeToLair(
     },
   });
 
-  // Le relevé des plateformes repasse toutes les cinq minutes : seul le
-  // premier passage d'un direct le fait sonner chez ceux qui suivent le lieu.
+  // Une annonce par direct : `announceLive` n'est appelée qu'à un nouvel
+  // identifiant de direct, et cette garde couvre une livraison répétée.
   if (!alreadyLive) {
     await notifyLairLive(lair, live.title);
   }

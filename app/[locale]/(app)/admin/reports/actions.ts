@@ -45,7 +45,7 @@ export async function ignoreReportedContentAction(input: ModerationInput): Promi
  */
 export async function deleteReportedContentAction(input: ModerationInput): Promise<ModerationResult> {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
 
     const parsed = moderateReportSchema.safeParse(input);
     if (!parsed.success) {
@@ -53,7 +53,7 @@ export async function deleteReportedContentAction(input: ModerationInput): Promi
     }
 
     const { contentType, contentId } = parsed.data;
-    const moderated = await moderateReportedContent(contentType, contentId);
+    const moderated = await moderateReportedContent(contentType, contentId, session.user.id);
 
     if (!moderated) {
       // La modération peut échouer parce que le contenu n'existe plus (le

@@ -93,7 +93,8 @@ type ReportableContentHandler = {
    * Action « supprimer » de la modération. Pour les profils utilisateurs, le
    * compte est conservé et seule la biographie est remplacée.
    */
-  moderate: (contentId: string) => Promise<boolean>;
+  /** `actorId` : l'administrateur qui modère, quand un effet de bord doit l'exclure. */
+  moderate: (contentId: string, actorId?: string) => Promise<boolean>;
 };
 
 const HANDLERS: Record<ReportableContentType, ReportableContentHandler> = {
@@ -215,11 +216,11 @@ const HANDLERS: Record<ReportableContentType, ReportableContentHandler> = {
         url: `/events/${encodeURIComponent(id)}`,
       };
     },
-    moderate: async (id) => {
+    moderate: async (id, actorId) => {
       // Les inscrits sont prévenus avant l'effacement : après, plus rien ne
-      // dit qui l'était.
+      // dit qui l'était. Le modérateur, s'il était inscrit, ne l'est pas.
       const event = await getEventById(id);
-      if (event) await notifyEventDeleted(event);
+      if (event) await notifyEventDeleted(event, actorId);
       return deleteEvent(id);
     },
   },
@@ -353,12 +354,13 @@ export async function getReportedContentPreview(
  */
 export async function moderateReportedContent(
   contentType: ReportableContentType,
-  contentId: string
+  contentId: string,
+  actorId?: string
 ): Promise<boolean> {
   const handler = HANDLERS[contentType];
   if (!handler) {
     return false;
   }
 
-  return handler.moderate(contentId);
+  return handler.moderate(contentId, actorId);
 }
