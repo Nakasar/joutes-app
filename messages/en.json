@@ -5468,7 +5468,8 @@
           "Access to a dedicated section on the Discord server",
           "Your full trade history, with filters and search",
           "Advanced collection management",
-          "Advanced features for your play groups"
+          "Advanced features for your play groups",
+          "Your posters for the week as a Discord direct message, every Monday"
         ]
       },
       "pro": {
@@ -5819,6 +5820,22 @@
         "switchHint": "The bot sends you a first message to check it can reach you. You can also use /notifications on in Discord.",
         "notLinked": "Link your Discord account to enable this channel.",
         "linkAction": "Link my Discord account"
+      },
+      "posterDigest": {
+        "title": "This week's posters on Discord",
+        "description": "Every Monday morning, the Joutes bot sends you the posters of your choice as a direct message, up to date for the week ahead.",
+        "expertOnly": "Joutes Expert only: pick up to five posters — yours or those of venues you follow — and get them every Monday on Discord.",
+        "discoverExpert": "Discover Joutes Expert",
+        "notLinked": "Link your Discord account to receive your posters.",
+        "pick": "Pick up to {max} posters among yours and the venues you follow.",
+        "empty": "You have no saved poster or followed venue yet. Build a poster from the Posters page, or follow a venue.",
+        "kindPoster": "Poster",
+        "kindLair": "Venue",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "{count, plural, one {# poster will be sent} other {# posters will be sent}} to you every Monday.",
+        "disabled": "Weekly posters turned off.",
+        "error": "Setting not saved."
       }
     },
     "showcase": {

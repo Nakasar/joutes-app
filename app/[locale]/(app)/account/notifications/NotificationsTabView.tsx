@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { BellIcon, Calendar1Icon, MailIcon, MessageCircleIcon, SmartphoneIcon } from "lucide-react";
+import { BellIcon, Calendar1Icon, ImageIcon, MailIcon, MessageCircleIcon, SmartphoneIcon } from "lucide-react";
 import { ObjectId } from "mongodb";
 
 import {
@@ -18,6 +18,13 @@ import { PushDevicesSection } from "./PushDevicesSection.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
 import { findDiscordAccountId } from "@/lib/db/discord-notifications.ts";
+import { getPosterDigest } from "@/lib/db/poster-digest.ts";
+import { listAccountPosters } from "@/lib/posters/library.ts";
+import { formatPosterRef } from "@/lib/posters/references.ts";
+import { MAX_DIGEST_POSTERS } from "@/lib/posters/digest.ts";
+import { plansForUserId } from "@/lib/subscriptions/access.ts";
+import { grantsEntitlement } from "@/lib/subscriptions/entitlements.ts";
+import { PosterDigestPicker } from "./PosterDigestPicker.tsx";
 
 /**
  * L'onglet « Notifications ».
@@ -28,17 +35,30 @@ import { findDiscordAccountId } from "@/lib/db/discord-notifications.ts";
  * seul champ utile, telle qu'elle était déjà écrite.
  */
 export default async function NotificationsTabView({ user }: { user: User }) {
-  const [document, devices, discordAccountId, t] = await Promise.all([
+  const [document, devices, discordAccountId, plans, posterDigest, t] = await Promise.all([
     db.collection<Pick<User, "notifications">>("user").findOne(
       { _id: new ObjectId(user.id) },
       { projection: { _id: 1, notifications: 1 } },
     ),
     listMyPushDevicesAction(),
     findDiscordAccountId(user.id),
+    plansForUserId(user.id),
+    getPosterDigest(user.id),
     getTranslations("Account.notifications"),
   ]);
 
   const notifications = document?.notifications;
+
+  // Les affiches de la semaine en MP : Joutes Expert seulement. La liste des
+  // affiches ne se lit que pour qui peut s'en servir.
+  const canUsePosterDigest = grantsEntitlement(plans, "sub:poster-digest");
+  const posterChoices = canUsePosterDigest
+    ? (await listAccountPosters(user.id)).map((choice) => ({
+        ref: formatPosterRef(choice),
+        name: choice.name,
+        kind: choice.kind,
+      }))
+    : [];
 
   return (
     <div className="space-y-8">
@@ -127,6 +147,42 @@ export default async function NotificationsTabView({ user }: { user: User }) {
             <Button asChild variant="outline" size="sm">
               <Link href="/account/security">{t("discord.linkAction")}</Link>
             </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" aria-hidden />
+            {t("posterDigest.title")}
+          </CardTitle>
+          <CardDescription>{t("posterDigest.description")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!canUsePosterDigest ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">{t("posterDigest.expertOnly")}</p>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/pricing">{t("posterDigest.discoverExpert")}</Link>
+              </Button>
+            </div>
+          ) : (
+            <>
+              {!discordAccountId && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-sm text-muted-foreground">{t("posterDigest.notLinked")}</p>
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/account/security">{t("discord.linkAction")}</Link>
+                  </Button>
+                </div>
+              )}
+              <PosterDigestPicker
+                choices={posterChoices}
+                initialRefs={posterDigest.refs.filter((ref) => posterChoices.some((choice) => choice.ref === ref))}
+                max={MAX_DIGEST_POSTERS}
+              />
+            </>
           )}
         </CardContent>
       </Card>

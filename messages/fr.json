@@ -5468,7 +5468,8 @@
           "L'accès à une section dédiée sur le serveur Discord",
           "L'historique complet de vos échanges, avec filtres et recherche",
           "Gestion avancée de collection",
-          "Des fonctionnalités avancées pour vos groupes de jeu"
+          "Des fonctionnalités avancées pour vos groupes de jeu",
+          "Vos affiches de la semaine en message privé Discord, chaque lundi"
         ]
       },
       "pro": {
@@ -5819,6 +5820,22 @@
         "switchHint": "Le bot vous envoie un premier message pour vérifier qu'il peut vous écrire. Vous pouvez aussi utiliser /notifications activer sur Discord.",
         "notLinked": "Liez votre compte Discord pour activer ce canal.",
         "linkAction": "Lier mon compte Discord"
+      },
+      "posterDigest": {
+        "title": "Affiches de la semaine sur Discord",
+        "description": "Chaque lundi matin, le bot Joutes vous envoie en message privé les affiches de votre choix, à jour pour la semaine qui commence.",
+        "expertOnly": "Réservé à Joutes Expert : choisissez jusqu'à cinq affiches — les vôtres ou celles des lieux que vous suivez — et recevez-les chaque lundi sur Discord.",
+        "discoverExpert": "Découvrir Joutes Expert",
+        "notLinked": "Liez votre compte Discord pour recevoir vos affiches.",
+        "pick": "Choisissez jusqu'à {max} affiches parmi les vôtres et les lieux que vous suivez.",
+        "empty": "Vous n'avez encore aucune affiche gardée ni aucun lieu suivi. Composez une affiche depuis la page Affiches, ou suivez un lieu.",
+        "kindPoster": "Affiche",
+        "kindLair": "Lieu",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "saved": "{count, plural, one {# affiche vous sera envoyée} other {# affiches vous seront envoyées}} chaque lundi.",
+        "disabled": "Envoi hebdomadaire désactivé.",
+        "error": "Réglage non enregistré."
       }
     },
     "showcase": {

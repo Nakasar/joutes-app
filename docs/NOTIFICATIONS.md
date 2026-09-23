@@ -175,6 +175,21 @@ En plus de la page des notifications et du push, un joueur peut recevoir ses not
 
 La commande `/notifications` est déclarée dans `app/[locale]/(app)/admin/discord/actions.ts` : relancer la mise à jour des commandes depuis l'administration pour qu'elle apparaisse sur Discord.
 
+### Affiches de la semaine (Joutes Expert)
+
+Un abonné **Joutes Expert** (droit `sub:poster-digest`) choisit jusqu'à cinq affiches dans l'onglet Notifications de son compte : ses affiches gardées ou les lieux qu'il suit, comme dans l'autocomplétion de `/affiche`. Chaque lundi, le bot les dessine pour la semaine qui commence et les envoie **dans un seul message privé**, en pièces jointes.
+
+- Réglage : `notifications.discord.posterDigest.refs` (références `poster:<id>` / `lair:<id>`), vide = désactivé ; `lastSentWeek` retient la semaine ISO du dernier passage.
+- Cron `/api/cron/discord-poster-digest`, chaque heure du lundi (6 h – 23 h UTC), par tranches de 20 abonnés : un abonné traité est marqué pour la semaine, un passage de plus n'envoie rien deux fois. Un échec se retente la semaine suivante.
+- Le droit et la visibilité des lieux se revérifient à chaque envoi (`resolveAccountPoster`) : un abonnement arrêté suspend l'envoi sans effacer le choix.
+- Indépendant de l'interrupteur des notifications en MP : il suffit d'un compte Discord lié.
+
+| Fichier | Rôle |
+|---|---|
+| `lib/posters/digest.ts` | Semaine d'envoi, sélection retenue et plafond — pur, testé |
+| `lib/posters/digest-service.ts` | Rendu des affiches et envoi du MP |
+| `lib/db/poster-digest.ts` | Réglage et tranches du cron |
+
 ## Structure de données
 
 ### Base de données (MongoDB)

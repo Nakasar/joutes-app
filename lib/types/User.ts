@@ -150,6 +150,15 @@ export type User = {
       dm?: {
         enabled: boolean;
       },
+      /**
+       * Les affiches envoyées chaque lundi en message privé (Joutes Expert).
+       * `refs` : références `poster:<id>` ou `lair:<id>`, vide = désactivé ;
+       * `lastSentWeek` : semaine ISO du dernier envoi (« 2026-W39 »).
+       */
+      posterDigest?: {
+        refs: string[];
+        lastSentWeek?: string;
+      },
     },
   }
 };

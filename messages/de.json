@@ -5468,7 +5468,8 @@
           "Zugang zu einem eigenen Bereich auf dem Discord-Server",
           "Deine vollständige Tauschhistorie, mit Filtern und Suche",
           "Erweiterte Sammlungsverwaltung",
-          "Erweiterte Funktionen für deine Spielgruppen"
+          "Erweiterte Funktionen für deine Spielgruppen",
+          "Deine Plakate der Woche als Discord-Direktnachricht, jeden Montag"
         ]
       },
       "pro": {
@@ -5819,6 +5820,22 @@
         "switchHint": "Der Bot schickt dir eine erste Nachricht, um zu prüfen, dass er dich erreicht. Du kannst auch /notifications on auf Discord verwenden.",
         "notLinked": "Verknüpfe dein Discord-Konto, um diesen Kanal zu aktivieren.",
         "linkAction": "Discord-Konto verknüpfen"
+      },
+      "posterDigest": {
+        "title": "Plakate der Woche auf Discord",
+        "description": "Jeden Montagmorgen schickt dir der Joutes-Bot die Plakate deiner Wahl als Direktnachricht, aktuell für die kommende Woche.",
+        "expertOnly": "Nur mit Joutes Expert: Wähle bis zu fünf Plakate — deine eigenen oder die der Orte, denen du folgst — und erhalte sie jeden Montag auf Discord.",
+        "discoverExpert": "Joutes Expert entdecken",
+        "notLinked": "Verknüpfe dein Discord-Konto, um deine Plakate zu erhalten.",
+        "pick": "Wähle bis zu {max} Plakate aus deinen eigenen und den Orten, denen du folgst.",
+        "empty": "Du hast noch kein gespeichertes Plakat und folgst keinem Ort. Erstelle ein Plakat auf der Plakate-Seite oder folge einem Ort.",
+        "kindPoster": "Plakat",
+        "kindLair": "Ort",
+        "save": "Speichern",
+        "saving": "Speichern…",
+        "saved": "{count, plural, one {# Plakat wird dir} other {# Plakate werden dir}} jeden Montag geschickt.",
+        "disabled": "Wöchentliche Plakate deaktiviert.",
+        "error": "Einstellung nicht gespeichert."
       }
     },
     "showcase": {
