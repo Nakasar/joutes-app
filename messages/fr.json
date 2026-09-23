@@ -5254,6 +5254,7 @@
           "Inscription en un clic depuis Discord, pour les comptes liés",
           "Application mobile et ordinateur : calendrier, portail joueur, notifications",
           "Notifications dans l'application et notifications push sur téléphone",
+          "Notifications Joutes en message privé Discord, pour les joueurs qui l'activent (/notifications activer)",
           "Résumé hebdomadaire par e-mail et par notification",
           "Serveur MCP et outils WebMCP : vos événements répondent aux assistants IA compatibles"
         ]

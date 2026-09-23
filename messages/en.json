@@ -5254,6 +5254,7 @@
           "One-click registration from Discord for linked accounts",
           "Mobile and desktop app: calendar, player portal, notifications",
           "In-app notifications and push notifications on phones",
+          "Joutes notifications as Discord direct messages, for players who turn them on (/notifications on)",
           "Weekly digest by email and notification",
           "MCP server and WebMCP tools: your events answer compatible AI assistants"
         ]

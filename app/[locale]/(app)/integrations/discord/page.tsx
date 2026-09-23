@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
+  Bell,
   Gamepad2,
   LinkIcon,
   Search,
@@ -21,11 +22,11 @@ import type {Metadata} from "next";
 
 export const metadata: Metadata = {
   title: "Documentation Discord",
-  description: "Intégrer Joutes avec Discord : gestion de réservation, publications, informations des jeux et règles...",
-  keywords: ["discord", "bot discord", "intégration discord", "évènements", "jeux de cartes à collectionner"],
+  description: "Intégrer Joutes avec Discord : gestion de réservation, publications, notifications en message privé, informations des jeux et règles...",
+  keywords: ["discord", "bot discord", "intégration discord", "évènements", "notifications discord", "jeux de cartes à collectionner"],
   openGraph: {
     title: "Documentation Discord - Joutes",
-    description: "Intégrer Joutes avec Discord : gestion de réservation, publications, informations des jeux et règles...",
+    description: "Intégrer Joutes avec Discord : gestion de réservation, publications, notifications en message privé, informations des jeux et règles...",
   },
 };
 
@@ -54,7 +55,7 @@ export default async function IntegrationsDiscordPage({
             <div className="flex-1 space-y-2">
               <h1 className="text-4xl font-bold tracking-tight">Joutes Discord Bot</h1>
               <p className="text-muted-foreground">
-                Le bot Discord de Joutes vous aide à consulter les informations clés des évènements, publier un tableau mis à jour automatiquement et rechercher des cartes directement depuis votre serveur.
+                Le bot Discord de Joutes vous aide à consulter les informations clés des évènements, publier un tableau mis à jour automatiquement, rechercher des cartes directement depuis votre serveur et recevoir vos notifications Joutes en message privé.
               </p>
             </div>
           </div>
@@ -65,6 +66,7 @@ export default async function IntegrationsDiscordPage({
                 <Badge variant="secondary">Discord</Badge>
                 <Badge variant="outline">Évènements</Badge>
                 <Badge variant="outline">Jeux</Badge>
+                <Badge variant="outline">Notifications</Badge>
               </div>
               <div className="space-y-2">
                 <CardTitle className="text-2xl">Les commandes utiles du bot en un coup d&apos;œil</CardTitle>
@@ -163,11 +165,67 @@ export default async function IntegrationsDiscordPage({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Notifications en message privé
+              </CardTitle>
+              <CardDescription>
+                Recevez toutes vos notifications Joutes en message privé du bot, en plus du site, de l&apos;application et des notifications push.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-xl border bg-background p-5 space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Bell className="h-4 w-4" />
+                    Activer
+                  </div>
+                  <code className="block rounded-md bg-muted px-3 py-2 text-sm font-mono break-words">
+                    /notifications activer
+                  </code>
+                  <p className="text-sm text-muted-foreground">
+                    Le bot vous envoie un premier message pour vérifier qu&apos;il peut vous écrire, puis chaque notification Joutes vous arrive aussi en message privé : résultat à confirmer, table attribuée, place libérée sur une liste d&apos;attente, annonces…
+                  </p>
+                </div>
+
+                <div className="rounded-xl border bg-background p-5 space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Bell className="h-4 w-4" />
+                    Couper
+                  </div>
+                  <code className="block rounded-md bg-muted px-3 py-2 text-sm font-mono break-words">
+                    /notifications désactiver
+                  </code>
+                  <p className="text-sm text-muted-foreground">
+                    Vous ne recevez plus rien en message privé ; vos notifications restent sur le site et dans l&apos;application. Le même réglage existe dans l&apos;onglet Notifications de votre compte.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-3">
+                <div className="flex items-center gap-2 font-medium">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  Pour que le bot puisse vous écrire
+                </div>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                  <li>Votre compte Discord est lié à votre compte Joutes.</li>
+                  <li>Vous partagez au moins un serveur avec le bot Joutes.</li>
+                  <li>Les messages privés des membres de ce serveur sont autorisés dans vos paramètres Discord.</li>
+                </ul>
+                <p className="text-sm text-muted-foreground">
+                  Si le bot ne peut plus vous écrire, le réglage se coupe de lui-même : réactivez-le une fois la situation réglée.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
                 <LinkIcon className="h-5 w-5" />
                 Lier votre compte Discord
               </CardTitle>
               <CardDescription>
-                La liaison de compte est nécessaire pour utiliser l&apos;inscription depuis Discord.
+                La liaison de compte est nécessaire pour utiliser l&apos;inscription depuis Discord et recevoir vos notifications en message privé.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
