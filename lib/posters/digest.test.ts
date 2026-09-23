@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { DateTime } from "luxon";
-import { digestWeekKey, isDigestDue, MAX_DIGEST_POSTERS, sanitizeDigestRefs, toggleDigestRef } from "./digest";
+import { digestWeekKey, escapeDiscordMarkdown, isDigestDue, MAX_DIGEST_POSTERS, sanitizeDigestRefs, toggleDigestRef } from "./digest";
 
 const A = "a".repeat(24);
 const B = "b".repeat(24);
@@ -61,5 +61,18 @@ describe("bascule depuis une affiche", () => {
   it("refuse au-delà du plafond plutôt que d'en retirer une autre", () => {
     const full = Array.from({ length: MAX_DIGEST_POSTERS }, (_, i) => `poster:${String(i).repeat(24)}`);
     assert.equal(toggleDigestRef(full, ref, true), "full");
+  });
+});
+
+describe("nom dans un lien Discord", () => {
+  it("neutralise ce qui fermerait le lien ou le mettrait en forme", () => {
+    assert.equal(
+      escapeDiscordMarkdown("Ma semaine](https://evil.example) *gras*"),
+      "Ma semaine\\]\\(https://evil.example\\) \\*gras\\*"
+    );
+  });
+
+  it("laisse un nom ordinaire lisible", () => {
+    assert.equal(escapeDiscordMarkdown("Le Donjon du Coin"), "Le Donjon du Coin");
   });
 });

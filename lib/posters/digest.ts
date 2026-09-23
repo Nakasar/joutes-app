@@ -59,3 +59,13 @@ export function toggleDigestRef(refs: readonly string[], ref: string, enabled: b
   if (without.length >= MAX_DIGEST_POSTERS) return "full";
   return [...without, ref];
 }
+
+/**
+ * Un nom d'affiche ou de lieu, sûr dans le texte d'un lien Markdown de
+ * Discord. Il est saisi par l'utilisateur : sans échappement, `](…)` y
+ * fermerait le lien et en ouvrirait un autre, ou `*`/`_` y mettraient la mise
+ * en forme de travers.
+ */
+export function escapeDiscordMarkdown(text: string): string {
+  return text.replace(/[\\[\]()*_~`|>#-]/g, (char) => `\\${char}`);
+}

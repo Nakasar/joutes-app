@@ -7,7 +7,7 @@ import { isDiscordDmConfigured, sendDiscordDm } from "@/lib/discord/dm";
 import { renderPosterImage } from "@/lib/posters/image";
 import { resolveAccountPoster } from "@/lib/posters/library";
 import { POSTER_BOT_LOCALE, posterStrings, posterVenueStrings } from "@/lib/posters/strings";
-import { digestWeekKey, MAX_DIGEST_POSTERS } from "@/lib/posters/digest";
+import { digestWeekKey, escapeDiscordMarkdown, MAX_DIGEST_POSTERS } from "@/lib/posters/digest";
 import { plansForUserId } from "@/lib/subscriptions/access";
 import { grantsEntitlement } from "@/lib/subscriptions/entitlements";
 import { JOUTES_EMBED_COLOR, joutesBaseUrl } from "@/lib/notifications/discord-message";
@@ -23,8 +23,9 @@ import { JOUTES_EMBED_COLOR, joutesBaseUrl } from "@/lib/notifications/discord-m
 
 /**
  * Abonnés traités par passage du cron : un rendu d'affiche n'est pas gratuit.
- * Le cron passe chaque heure du lundi, de 8 h à minuit (heure de Paris) :
- * dix-huit tranches, soit 360 abonnés servis le lundi.
+ * Le cron passe chaque heure du lundi de 6 h à 23 h **UTC** (`0 6-23 * * 1`,
+ * soit 7 h – 0 h à Paris en hiver, 8 h – 1 h en été) : dix-huit tranches,
+ * soit 360 abonnés servis le lundi.
  */
 export const DIGEST_BATCH_SIZE = 20;
 
@@ -69,7 +70,9 @@ export async function sendPosterDigest(userId: string, refs: string[], now: Date
         t,
       });
       files.push({ name: fileName(resolved.name), data: Buffer.from(image), contentType: "image/png" });
-      lines.push(`• [${resolved.name}](${resolved.url})`);
+      // Le nom est saisi par l'utilisateur : échappé, il ne peut ni casser le
+      // lien ni en glisser un autre dans le message.
+      lines.push(`• [${escapeDiscordMarkdown(resolved.name)}](<${resolved.url}>)`);
     } catch (error) {
       console.error(`[affiches] rendu de ${ref} pour ${userId} échoué`, error);
     }
