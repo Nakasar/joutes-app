@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Bell,
   Gamepad2,
+  ImageIcon,
   LinkIcon,
   Search,
   Ticket,
@@ -215,6 +216,32 @@ export default async function IntegrationsDiscordPage({
                   Si le bot ne peut plus vous écrire, le réglage se coupe de lui-même : réactivez-le une fois la situation réglée.
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex flex-wrap items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Vos affiches chaque lundi
+                <Badge variant="secondary">Joutes Expert</Badge>
+              </CardTitle>
+              <CardDescription>
+                Avec Joutes Expert, recevez chaque lundi jusqu&apos;à 5 affiches de votre choix en message privé du bot : vos affiches enregistrées ou celles des lieux que vous suivez.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                <li>Sur la page Affiches, le bouton « Discord » d&apos;une affiche enregistrée l&apos;ajoute à votre envoi du lundi, ou l&apos;en retire.</li>
+                <li>La carte « Affiches de la semaine sur Discord », dans l&apos;onglet Notifications de votre compte, règle toute la sélection.</li>
+                <li>Les affiches arrivent dans un seul message, images jointes, avec un lien vers chacune.</li>
+                <li>Cet envoi est indépendant des notifications en message privé ; les mêmes conditions s&apos;appliquent pour que le bot puisse vous écrire.</li>
+              </ul>
+              <Button asChild variant="outline">
+                <Link href="/affiches">
+                  Choisir mes affiches
+                </Link>
+              </Button>
             </CardContent>
           </Card>
 
