@@ -47,6 +47,7 @@ import {RegistrationStatus} from "@/lib/types/Event";
 import {canJoinDirectly} from "@/lib/events/waitlist";
 import {findUserIdByDiscordId} from "@/lib/db/discord-notifications";
 import {disableDiscordDm, discordOptInErrorMessage, enableDiscordDm} from "@/lib/notifications/discord-optin";
+import {joutesBaseUrl} from "@/lib/notifications/discord-message";
 import {advanceEventWaitlist} from "@/lib/events/waitlist-service";
 import {
   makeEventDiscordInfoMessage,
@@ -2220,7 +2221,7 @@ async function handleNotificationsCommand(interaction: APIChatInputApplicationCo
   if (!joutesUserId) {
     await reply(
       "Votre compte Discord ne semble pas connecté à un compte Joutes.",
-      { label: "Lier mon compte Joutes", url: "https://joutes.app/account/security" },
+      { label: "Lier mon compte Joutes", url: `${joutesBaseUrl().replace(/\/+$/, "")}/account/security` },
     );
     return NextResponse.json({success: true}, {status: 200});
   }
@@ -2239,7 +2240,7 @@ async function handleNotificationsCommand(interaction: APIChatInputApplicationCo
         : discordOptInErrorMessage(result.reason),
       result.ok || result.reason !== "not-linked"
         ? undefined
-        : { label: "Lier mon compte Joutes", url: "https://joutes.app/account/security" },
+        : { label: "Lier mon compte Joutes", url: `${joutesBaseUrl().replace(/\/+$/, "")}/account/security` },
     );
     return NextResponse.json({success: true}, {status: 200});
   }

@@ -63,6 +63,8 @@ export async function listDiscordRecipients(userIds: string[]): Promise<DiscordR
 
 /** Pose le réglage des messages privés Discord d'un compte. */
 export async function setDiscordDmEnabled(userId: string, enabled: boolean): Promise<void> {
+  if (!ObjectId.isValid(userId)) return;
+
   await db
     .collection("user")
     .updateOne({ _id: new ObjectId(userId) }, { $set: { "notifications.discord.dm.enabled": enabled } });
