@@ -6005,6 +6005,20 @@
       "pro": "Expert"
     },
     "library": {
+      "digest": {
+        "on": "Discord · Monday",
+        "off": "Discord",
+        "enable": "Get “{name}” every Monday as a Discord direct message",
+        "disable": "Stop getting “{name}” on Discord",
+        "added": "“{name}” will be sent to you every Monday on Discord.",
+        "addedNotLinked": "“{name}” is saved, but link your Discord account to receive it.",
+        "removed": "“{name}” will no longer be sent to you on Discord.",
+        "errors": {
+          "full": "You already get five posters every Monday: remove one first.",
+          "notEntitled": "Weekly posters on Discord are a Joutes Expert feature.",
+          "failed": "Setting not saved."
+        }
+      },
       "title": "Your posters",
       "description": "Pick up a saved poster: its venues and style come back, the period starts from today.",
       "summary": "{lairs, plural, one {# venue} other {# venues}} · {period} · {style}",

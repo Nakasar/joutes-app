@@ -46,3 +46,16 @@ export function sanitizeDigestRefs(refs: readonly string[], available: readonly 
 
   return kept;
 }
+
+/**
+ * Ajoute ou retire une affiche de l'envoi hebdomadaire, depuis l'affiche
+ * elle-même. `"full"` quand le plafond est atteint : l'appelant le dit plutôt
+ * que d'en retirer une autre à la place de l'abonné.
+ */
+export function toggleDigestRef(refs: readonly string[], ref: string, enabled: boolean): string[] | "full" {
+  const without = refs.filter((value) => value !== ref);
+  if (!enabled) return without;
+  if (refs.includes(ref)) return [...refs];
+  if (without.length >= MAX_DIGEST_POSTERS) return "full";
+  return [...without, ref];
+}

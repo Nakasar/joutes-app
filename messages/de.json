@@ -6005,6 +6005,20 @@
       "pro": "Expert"
     },
     "library": {
+      "digest": {
+        "on": "Discord · Montag",
+        "off": "Discord",
+        "enable": "„{name}“ jeden Montag als Discord-Direktnachricht erhalten",
+        "disable": "„{name}“ nicht mehr auf Discord erhalten",
+        "added": "„{name}“ wird dir jeden Montag auf Discord geschickt.",
+        "addedNotLinked": "„{name}“ ist vorgemerkt, aber verknüpfe dein Discord-Konto, um es zu erhalten.",
+        "removed": "„{name}“ wird dir nicht mehr auf Discord geschickt.",
+        "errors": {
+          "full": "Du erhältst bereits fünf Plakate jeden Montag: entferne zuerst eines.",
+          "notEntitled": "Wöchentliche Plakate auf Discord gibt es nur mit Joutes Expert.",
+          "failed": "Einstellung nicht gespeichert."
+        }
+      },
       "title": "Eure Plakate",
       "description": "Ein gespeichertes Plakat wieder aufnehmen: Orte und Stil kommen zurück, der Zeitraum beginnt heute.",
       "summary": "{lairs, plural, one {# Ort} other {# Orte}} · {period} · {style}",

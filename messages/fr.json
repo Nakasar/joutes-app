@@ -6005,6 +6005,20 @@
       "pro": "Expert"
     },
     "library": {
+      "digest": {
+        "on": "Discord · lundi",
+        "off": "Discord",
+        "enable": "Recevoir « {name} » chaque lundi en message privé Discord",
+        "disable": "Ne plus recevoir « {name} » sur Discord",
+        "added": "« {name} » vous sera envoyée chaque lundi sur Discord.",
+        "addedNotLinked": "« {name} » est retenue, mais liez votre compte Discord pour la recevoir.",
+        "removed": "« {name} » ne vous sera plus envoyée sur Discord.",
+        "errors": {
+          "full": "Vous recevez déjà cinq affiches chaque lundi : retirez-en une d'abord.",
+          "notEntitled": "L'envoi hebdomadaire sur Discord est réservé à Joutes Expert.",
+          "failed": "Réglage non enregistré."
+        }
+      },
       "title": "Vos affiches",
       "description": "Reprenez une affiche gardée : ses lieux et son style reviennent, la période repart d'aujourd'hui.",
       "summary": "{lairs, plural, one {# lieu} other {# lieux}} · {period} · {style}",

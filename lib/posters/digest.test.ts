@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { DateTime } from "luxon";
-import { digestWeekKey, isDigestDue, MAX_DIGEST_POSTERS, sanitizeDigestRefs } from "./digest";
+import { digestWeekKey, isDigestDue, MAX_DIGEST_POSTERS, sanitizeDigestRefs, toggleDigestRef } from "./digest";
 
 const A = "a".repeat(24);
 const B = "b".repeat(24);
@@ -43,5 +43,23 @@ describe("affiches retenues", () => {
     }));
     const refs = many.map((choice) => `poster:${choice.id}`);
     assert.equal(sanitizeDigestRefs(refs, many).length, MAX_DIGEST_POSTERS);
+  });
+});
+
+describe("bascule depuis une affiche", () => {
+  const ref = `poster:${A}`;
+
+  it("ajoute et retire l'affiche", () => {
+    assert.deepEqual(toggleDigestRef([], ref, true), [ref]);
+    assert.deepEqual(toggleDigestRef([ref, `lair:${B}`], ref, false), [`lair:${B}`]);
+  });
+
+  it("ne double pas une affiche déjà retenue", () => {
+    assert.deepEqual(toggleDigestRef([ref], ref, true), [ref]);
+  });
+
+  it("refuse au-delà du plafond plutôt que d'en retirer une autre", () => {
+    const full = Array.from({ length: MAX_DIGEST_POSTERS }, (_, i) => `poster:${String(i).repeat(24)}`);
+    assert.equal(toggleDigestRef(full, ref, true), "full");
   });
 });
