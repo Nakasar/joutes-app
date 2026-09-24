@@ -218,6 +218,17 @@ describe("matchCardnexusProducts", () => {
     assert.equal(skipped.unknownCard, 1);
   });
 
+  it("traduit un code d'extension quelle que soit sa casse", async () => {
+    const { matches } = await matchCardnexusProducts(
+      [product(1, 42, "027")],
+      [expansion(42, "ms-01")],
+      [card("WNC-027", "WNC", "027")],
+      { setCodes: { MS01: "WNC" } }
+    );
+
+    assert.equal(matches.get("WNC-027")?.[0].id, 1);
+  });
+
   it("compte, extension par extension, ce qui a été rapproché", async () => {
     const { expansions } = await matchCardnexusProducts(
       [product(1, 42, "027"), product(2, 42, "999")],

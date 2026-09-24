@@ -154,7 +154,8 @@ Les tirages **Beta** n'y figurent pas, et c'est voulu. Ce ne sont chez nous que
 des variantes des cartes Retail, sans relevé propre ; les rattacher à `WNC`
 donnerait à la carte Retail le prix de son premier tirage, bien plus cher. Ils
 ne se rapprocheraient d'ailleurs pas en l'état : CardNexus les numérote `B141`,
-nous `β141`, et la normalisation efface le bêta.
+nous `β141` : la normalisation efface le `β`, qui n'est pas une lettre latine,
+mais garde le `B` de CardNexus — `141` d'un côté, `b141` de l'autre.
 
 **Cardmarket n'est pas branché**, bien que son identifiant soit connu (23) :
 
@@ -349,8 +350,9 @@ Sur Riftbound, ces 45 cartes signées et leurs 45 cartes de base étaient toutes
 
 Quand un code d'extension s'écrit franchement autrement des deux côtés, ou que
 CardNexus n'en publie pas, le même profil le dit (`setCodes`, `setCodesBySlug`) :
-c'est une table, pas une heuristique. Seul Cyberpunk en a besoin aujourd'hui
-(ci-dessous) — les autres jeux tiennent leur code de l'éditeur des deux côtés —
+c'est une table, pas une heuristique, lue sans casse ni ponctuation comme les
+codes eux-mêmes. Seul Cyberpunk en a besoin aujourd'hui
+(ci-dessus) — les autres jeux tiennent leur code de l'éditeur des deux côtés —
 et le bilan de l'import (`--sets`) montre extension par extension ce qui a été
 rapproché, de quoi la remplir si besoin.
 
