@@ -68,6 +68,30 @@ export const CARDNEXUS_GAME_PROFILES: Record<string, CardnexusGameProfile> = {
    * deux étaient écartés comme indépartageables.
    */
   riftbound: { printNumberSuffixes: { "*": "s" } },
+
+  /**
+   * Cyberpunk : nos codes d'extension sont ceux que l'import du catalogue a
+   * figés (`scripts/games/cyberpunk/import-cards.ts`), CardNexus porte ceux de
+   * l'éditeur (`MS01` pour « Welcome to Night City »). Les numéros, eux, sont
+   * les mêmes des deux côtés, jusqu'à la lettre de variante (`005a`).
+   *
+   * Les tirages Beta n'y sont pas : CardNexus les numérote `B141`, nous
+   * `β141` : la normalisation efface le `β`, qui n'est pas une lettre latine,
+   * mais garde le `B` de CardNexus (`141` contre `b141`). Ce ne sont aujourd'hui que des
+   * variantes de nos cartes, sans relevé propre — et surtout, les faire
+   * pointer vers `WNC` donnerait à la carte Retail le prix de son tirage Beta.
+   */
+  cp: {
+    setCodes: {
+      MS01: "WNC",
+      SD01: "THS",
+      SD02: "EPS",
+      PRM: "BXT",
+      DD1: "MDD",
+      DD2: "ADD",
+      PRR01: "PRB",
+    },
+  },
 };
 
 /** Les codes d'extension se comparent sans casse ni ponctuation. */
@@ -163,8 +187,14 @@ export async function matchCardnexusProducts(
     expansionById.set(expansion.id, expansion);
   }
 
+  // Les codes se comparent sans casse ni ponctuation : la table du profil aussi,
+  // faute de quoi `ms01` échapperait à la traduction prévue pour `MS01`.
+  const aliases = new Map(
+    Object.entries(profile.setCodes ?? {}).map(([code, setCode]) => [normalizeSetCode(code), setCode])
+  );
+
   const setCodeOf = (expansion: CardnexusExpansion): string | undefined => {
-    const aliased = expansion.code ? profile.setCodes?.[expansion.code] : undefined;
+    const aliased = expansion.code ? aliases.get(normalizeSetCode(expansion.code)) : undefined;
     return aliased ?? profile.setCodesBySlug?.[expansion.slug] ?? expansion.code ?? undefined;
   };
 

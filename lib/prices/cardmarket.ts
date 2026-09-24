@@ -28,6 +28,8 @@ export const CARDMARKET_GAME_IDS: Record<string, number> = {
   lorcana: 19,
   swu: 21,
   riftbound: 22,
+  // Connu, mais sans profil de rapprochement : cf. docs/CARD_PRICES.md.
+  cp: 23,
 };
 
 /**

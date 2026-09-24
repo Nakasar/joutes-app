@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { CardnexusExpansion, CardnexusProduct } from "./cardnexus";
-import { matchCardnexusProducts, normalizePrintNumber, normalizeSetCode } from "./cardnexus-matching";
+import { CARDNEXUS_GAME_PROFILES, matchCardnexusProducts, normalizePrintNumber, normalizeSetCode } from "./cardnexus-matching";
 import type { PriceableCard } from "@/lib/types/card-price";
 
 /**
@@ -201,6 +201,32 @@ describe("matchCardnexusProducts", () => {
     );
 
     assert.equal(matches.get("OGN027")?.[0].id, 1);
+  });
+
+  it("retrouve les extensions Cyberpunk sous leurs codes d'éditeur, sans confondre Retail et Beta", async () => {
+    // CardNexus écrit `MS01` / `MS01B` là où nos cartes portent `WNC` / `WNCB`.
+    const { matches, skipped } = await matchCardnexusProducts(
+      [product(1, 42, "005a"), product(2, 43, "B005a"), product(3, 44, "001")],
+      [expansion(42, "MS01"), expansion(43, "MS01B"), expansion(44, "SD02")],
+      [card("WNC-005a", "WNC", "005a"), card("EPS-001", "EPS", "001")],
+      CARDNEXUS_GAME_PROFILES.cp
+    );
+
+    assert.deepEqual(matches.get("WNC-005a")?.map((match) => match.id), [1]);
+    assert.equal(matches.get("EPS-001")?.[0].id, 3);
+    // Le tirage Beta ne retombe pas sur la carte Retail : il reste sans carte.
+    assert.equal(skipped.unknownCard, 1);
+  });
+
+  it("traduit un code d'extension quelle que soit sa casse", async () => {
+    const { matches } = await matchCardnexusProducts(
+      [product(1, 42, "027")],
+      [expansion(42, "ms-01")],
+      [card("WNC-027", "WNC", "027")],
+      { setCodes: { MS01: "WNC" } }
+    );
+
+    assert.equal(matches.get("WNC-027")?.[0].id, 1);
   });
 
   it("compte, extension par extension, ce qui a été rapproché", async () => {
