@@ -1,5 +1,6 @@
 import { createNotification } from "@/lib/db/notifications";
 import { Notification } from "@/lib/types/Notification";
+import type { LairNotificationCategory } from "@/lib/lairs/notification-prefs";
 
 /**
  * Crée une notification pour un utilisateur spécifique.
@@ -77,13 +78,23 @@ export async function notifyLairOwnersWithTemplate(
 }
 
 /**
- * Crée une notification pour les followers d'un lair
+ * Crée une notification pour les followers d'un lair.
+ *
+ * `category` est obligatoire : c'est ce que chaque abonné coche ou non dans
+ * son réglage « Personnalisé » du lieu. Une notification sans type n'atteindrait
+ * que les abonnés restés en « Tout ».
  */
-export async function notifyLairFollowers(lairId: string, title: string, description: string): Promise<Notification> {
+export async function notifyLairFollowers(
+  lairId: string,
+  title: string,
+  description: string,
+  category: LairNotificationCategory
+): Promise<Notification> {
   return createNotification({
     type: 'lair',
     lairId,
     target: 'followers',
+    category,
     title,
     description,
   });
@@ -92,11 +103,17 @@ export async function notifyLairFollowers(lairId: string, title: string, descrip
 /**
  * Crée une notification pour tous (owners + followers) d'un lair
  */
-export async function notifyLairAll(lairId: string, title: string, description: string): Promise<Notification> {
+export async function notifyLairAll(
+  lairId: string,
+  title: string,
+  description: string,
+  category: LairNotificationCategory
+): Promise<Notification> {
   return createNotification({
     type: 'lair',
     lairId,
     target: 'all',
+    category,
     title,
     description,
   });

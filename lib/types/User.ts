@@ -2,6 +2,7 @@ import {Lair} from "@/lib/types/Lair";
 import {Game} from "@/lib/types/Game";
 import {CardPricePreference} from "@/lib/types/card-price";
 import type {UserShowcaseSectionState} from "@/lib/users/showcase";
+import type { StoredLairNotificationPref } from "@/lib/lairs/notification-prefs";
 
 /**
  * Un lien de la vitrine.
@@ -68,6 +69,12 @@ export type User = {
   createdAt?: string;
 
   lairs: Lair['id'][];
+  /**
+   * Ce que le compte reçoit de chaque lieu suivi, pour ceux qui ne sont pas en
+   * « Tout » (le niveau par défaut ne s'enregistre pas).
+   * Voir `lib/lairs/notification-prefs.ts`.
+   */
+  lairNotificationPrefs?: StoredLairNotificationPref[];
   games: Game['id'][];
   /**
    * Jeux mis en avant **parmi ceux que l'utilisateur suit** : ce sont eux que

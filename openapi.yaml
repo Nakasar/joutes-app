@@ -2971,6 +2971,53 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /lairs/{lairId}/notifications:
+    parameters:
+      - { name: lairId, in: path, required: true, description: "Mongo ObjectId of the lair.", schema: { type: string } }
+    get:
+      tags: [Lairs]
+      summary: Read what the caller receives from a followed lair
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      description: >
+        `all` (the level of a freshly followed lair), `custom` with the ticked
+        categories, or `none`. Only notifications addressed to the lair's
+        followers are filtered: an owner still receives the ones addressed to
+        owners. A lair the caller does not follow answers 409.
+      responses:
+        "200":
+          description: The preference.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LairNotificationPreference" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: The caller does not follow this lair. }
+        "500": { $ref: "#/components/responses/ServerError" }
+    put:
+      tags: [Lairs]
+      summary: Choose what the caller receives from a followed lair
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      description: >
+        Unknown categories are dropped rather than rejected, so an older or
+        newer client does not lose its whole setting over one type. Following a
+        lair again after unfollowing it starts over at `all`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LairNotificationPreference" }
+      responses:
+        "200":
+          description: The preference as saved.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LairNotificationPreference" }
+        "400": { description: Unknown level, or `custom` without a `categories` array. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: The caller does not follow this lair. }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   # ---------------------------------------------------------------- Leagues
   /leagues/{leagueId}/ranking:
     parameters:
@@ -6531,12 +6578,26 @@ components:
             isPro: { type: boolean, description: "Whether the lair has Joutes Pro. A boolean and nothing more - never the reason it was granted." }
             followersCount: { type: integer }
             isFollowing: { type: boolean, description: "False without a session." }
+            notificationPreference:
+              description: "What the caller receives from this lair. Null when the caller does not follow it."
+              nullable: true
+              allOf: [{ $ref: "#/components/schemas/LairNotificationPreference" }]
 
     LairFollowState:
       type: object
       properties:
         following: { type: boolean }
         followersCount: { type: integer }
+
+    LairNotificationPreference:
+      type: object
+      required: [level]
+      properties:
+        level: { type: string, enum: [all, custom, none] }
+        categories:
+          type: array
+          description: "Only with `custom`: the ticked types. `announcements` is a pinned announcement, `live` a live stream starting."
+          items: { type: string, enum: [announcements, live] }
 
     LeagueRankingParticipant:
       type: object

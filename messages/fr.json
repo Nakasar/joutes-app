@@ -1515,6 +1515,37 @@
       "followGamesDescription": "Sélectionnez les jeux qui vous intéressent pour voir leurs événements",
       "manageGames": "Gérer mes jeux"
     },
+    "notificationLevel": {
+      "trigger": "Notifications du lieu : {level}",
+      "title": "Notifications de ce lieu",
+      "description": "Choisissez ce que vous recevez de ce lieu, sur le site, l'application et Discord.",
+      "levels": {
+        "all": {
+          "label": "Tout",
+          "description": "Toutes les notifications que le lieu envoie à ceux qui le suivent."
+        },
+        "custom": {
+          "label": "Personnalisé",
+          "description": "Seulement les types que vous cochez."
+        },
+        "none": {
+          "label": "Aucune",
+          "description": "Vous suivez toujours le lieu, sans recevoir ses notifications."
+        }
+      },
+      "categories": {
+        "announcements": {
+          "label": "Annonces épinglées",
+          "description": "Quand le lieu épingle une annonce en tête de sa page."
+        },
+        "live": {
+          "label": "Directs",
+          "description": "Quand le lieu commence un direct."
+        }
+      },
+      "emptyCustom": "Aucun type coché : vous ne recevrez rien de ce lieu.",
+      "error": "Le réglage n'a pas pu être enregistré."
+    },
     "follow": {
       "follow": "Suivre",
       "following": "Suivi",

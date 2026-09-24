@@ -32,6 +32,13 @@ describe("describeAudience", () => {
     });
   });
 
+  it("un lair transmet le type de la notification, que filtrent les réglages des abonnés", () => {
+    assert.deepEqual(
+      describeAudience({ type: "lair", lairId: "l1", target: "followers", category: "live" }),
+      { kind: "lair", lairId: "l1", owners: false, followers: true, category: "live" }
+    );
+  });
+
   it("« all » demande les deux listes, pas l'une ou l'autre", () => {
     // Le `$match` fait figurer 'all' dans les deux branches de son `$or` :
     // l'écrire autrement priverait de push la moitié des destinataires d'une

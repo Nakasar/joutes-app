@@ -150,11 +150,30 @@ await markAllNotificationsAsReadAction();
 | Événement **décalé** (début ou fin), à la main ou par la relecture d'un agenda connecté | Inscrits | `notifyEventRescheduledIfNeeded` |
 | **Annonce** d'un événement | Inscrits et créateur | `createAnnouncement` (portail) |
 | **Annonce** d'un tournoi | Joueurs du tournoi, sauf l'auteur | `notifyAnnouncement` |
-| Annonce **épinglée** par un lieu (nouvel épinglage seulement) | Abonnés du lieu | `lib/lairs/lair-notifications.ts` |
-| Lieu **en direct** (nouveau direct, manuel ou détecté sur une plateforme) | Abonnés du lieu | `notifyLairLive` |
+| Annonce **épinglée** par un lieu (nouvel épinglage seulement) | Abonnés du lieu, selon leur réglage (`announcements`) | `lib/lairs/lair-notifications.ts` |
+| Lieu **en direct** (nouveau direct, manuel ou détecté sur une plateforme) | Abonnés du lieu, selon leur réglage (`live`) | `notifyLairLive` |
 | Place libérée sur une **liste d'attente** | Le premier de la file | `lib/events/waitlist-service.ts` |
 
 Un report se juge sur des **instants** (`lib/events/schedule-change.ts`) : une date réécrite dans un autre format mais au même horaire ne notifie personne.
+
+## Ce qu'on reçoit d'un lieu suivi
+
+Chaque abonné règle, **lieu par lieu**, les notifications que le lieu adresse à ses abonnés :
+
+| Niveau | Effet |
+|---|---|
+| **Tout** (`all`) | Tout ce que le lieu envoie à ses abonnés. Niveau d'un lieu qu'on vient de suivre ; **jamais enregistré** — l'absence de réglage vaut `all`. |
+| **Personnalisé** (`custom`) | Seulement les types cochés : `announcements` (annonce épinglée), `live` (direct). Passer en personnalisé part de tous les types cochés. |
+| **Aucune** (`none`) | Rien, sans cesser de suivre le lieu. |
+
+- Réglage : `user.lairNotificationPrefs`, une entrée `{ lairId, level, categories? }` par lieu qui n'est pas en `all`. Cesser de suivre un lieu efface son entrée, et un lieu qu'on se met à suivre repart en `all`.
+- Chaque notification d'abonnés porte son type dans `category` : `notifyLairFollowers` (et `notifyLairAll`) l'exigent. Une notification **sans type** n'atteint que les abonnés en `all`.
+- Le filtre s'applique **aux deux sens** : la lecture (`notificationAccessStages`, via `followerNotificationBranches`) et l'envoi push/Discord (`loadLairFollowers`, via `followerAudienceFilter`). Les deux s'écrivent côte à côte dans `lib/lairs/notification-prefs.ts`, et un test vérifie qu'ils disent la même chose.
+- Seules les notifications **d'abonnés** sont filtrées : un gérant reçoit toujours celles adressées aux gérants.
+- Filtrage à la lecture : passer un lieu en « Aucune » masque aussi ses notifications passées, comme le fait déjà le désabonnement.
+- Où le régler : la cloche à côté du bouton « Suivi » sur la page du lieu, la même cloche sur chaque lieu de l'onglet Jeux du compte, et `GET`/`PUT /api/lairs/{lairId}/notifications` (application mobile). `GET /api/lairs/{lairId}` rend aussi `notificationPreference` (`null` si l'on ne suit pas le lieu).
+
+Pour ajouter un type : l'ajouter à `LAIR_NOTIFICATION_CATEGORIES`, le passer à l'émission, et traduire `Lairs.notificationLevel.categories.<type>` (site) et son équivalent mobile. Les abonnés en « Personnalisé » ne le recevront qu'après l'avoir coché.
 
 ## Messages privés Discord
 

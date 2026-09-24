@@ -8,12 +8,19 @@ import { Card, CardContent } from "@/components/ui/card.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Alert, AlertDescription } from "@/components/ui/alert.tsx";
 import { MapPin, Trash2, Loader2, AlertCircle, ExternalLink } from "lucide-react";
+import LairNotificationLevel from "@/app/[locale]/(app)/lairs/[lairId]/LairNotificationLevel.tsx";
+import {
+  lairNotificationPreference,
+  type StoredLairNotificationPref,
+} from "@/lib/lairs/notification-prefs.ts";
 
 interface LairsManagerProps {
   userLairs: Lair[];
+  /** Ce que le compte reçoit de chaque lieu suivi — la cloche de chaque ligne. */
+  notificationPrefs: StoredLairNotificationPref[];
 }
 
-export default function LairsManager({ userLairs }: LairsManagerProps) {
+export default function LairsManager({ userLairs, notificationPrefs }: LairsManagerProps) {
   const [followedLairs, setFollowedLairs] = useState<Lair[]>(userLairs);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +65,7 @@ export default function LairsManager({ userLairs }: LairsManagerProps) {
               key={lair.id}
               className="hover:shadow-md transition-shadow"
             >
-              <CardContent className="flex items-center justify-between p-4">
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
                 <div className="flex-1 min-w-0">
                   <Link
                     href={`/lairs/${lair.id}`}
@@ -71,21 +78,28 @@ export default function LairsManager({ userLairs }: LairsManagerProps) {
                     {lair.games.length} jeu(x) disponible(s)
                   </p>
                 </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleRemoveLair(lair.id)}
-                  disabled={isPending}
-                >
-                  {isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Ne plus suivre
-                    </>
-                  )}
-                </Button>
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <LairNotificationLevel
+                    lairId={lair.id}
+                    initialPreference={lairNotificationPreference(notificationPrefs, lair.id)}
+                    className="px-2.5"
+                  />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleRemoveLair(lair.id)}
+                    disabled={isPending}
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Ne plus suivre
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

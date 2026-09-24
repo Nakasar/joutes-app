@@ -1515,6 +1515,37 @@
       "followGamesDescription": "Wähle die Spiele aus, die dich interessieren, um ihre Veranstaltungen zu sehen",
       "manageGames": "Meine Spiele verwalten"
     },
+    "notificationLevel": {
+      "trigger": "Benachrichtigungen des Spielorts: {level}",
+      "title": "Benachrichtigungen dieses Spielorts",
+      "description": "Wähle, was du von diesem Spielort erhältst – auf der Website, in der App und auf Discord.",
+      "levels": {
+        "all": {
+          "label": "Alle",
+          "description": "Alle Benachrichtigungen, die der Spielort an seine Follower sendet."
+        },
+        "custom": {
+          "label": "Benutzerdefiniert",
+          "description": "Nur die Arten, die du ankreuzt."
+        },
+        "none": {
+          "label": "Keine",
+          "description": "Du folgst dem Spielort weiterhin, ohne seine Benachrichtigungen zu erhalten."
+        }
+      },
+      "categories": {
+        "announcements": {
+          "label": "Angeheftete Ankündigungen",
+          "description": "Wenn der Spielort eine Ankündigung oben auf seiner Seite anheftet."
+        },
+        "live": {
+          "label": "Livestreams",
+          "description": "Wenn der Spielort live geht."
+        }
+      },
+      "emptyCustom": "Nichts angekreuzt: Du erhältst nichts von diesem Spielort.",
+      "error": "Die Einstellung konnte nicht gespeichert werden."
+    },
     "follow": {
       "follow": "Folgen",
       "following": "Folgst du",

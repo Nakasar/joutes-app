@@ -207,7 +207,7 @@ export async function GamesTabView({ user }: { user: User }) {
       </SectionCard>
 
       <SectionCard icon={MapPin} title={t("lairs.title")} description={t("lairs.description")}>
-        <LairsManager userLairs={userLairs} />
+        <LairsManager userLairs={userLairs} notificationPrefs={user.lairNotificationPrefs ?? []} />
       </SectionCard>
     </div>
   );

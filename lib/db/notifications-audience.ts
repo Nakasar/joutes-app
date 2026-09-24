@@ -4,6 +4,7 @@ import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import type { AudienceSource, LoadedAudience } from "@/lib/notifications/audience";
 import { resolveAudience } from "@/lib/notifications/audience";
+import { followerAudienceFilter, type LairNotificationCategory } from "@/lib/lairs/notification-prefs";
 
 /**
  * Les lectures dont `lib/notifications/audience.ts` a besoin.
@@ -19,11 +20,14 @@ import { resolveAudience } from "@/lib/notifications/audience";
  * retrouver demande donc une requête sur la collection des comptes, et
  * **un index sur `user.lairs`** : sans lui, chaque annonce de lair la balaie
  * entière.
+ *
+ * Le filtre écarte ceux dont le réglage refuse la notification : le même que
+ * celui de la lecture, écrit à côté dans `lib/lairs/notification-prefs.ts`.
  */
-async function loadLairFollowers(lairId: string): Promise<string[]> {
+async function loadLairFollowers(lairId: string, category: LairNotificationCategory | undefined): Promise<string[]> {
   const docs = await db
     .collection("user")
-    .find({ lairs: lairId }, { projection: { _id: 1 } })
+    .find(followerAudienceFilter(lairId, category), { projection: { _id: 1 } })
     .toArray();
 
   return docs.map((doc) => doc._id.toString());
@@ -63,7 +67,7 @@ async function loadAudience(source: AudienceSource): Promise<LoadedAudience> {
     case "lair": {
       const [owners, followers] = await Promise.all([
         source.owners ? loadLairOwners(source.lairId) : Promise.resolve([]),
-        source.followers ? loadLairFollowers(source.lairId) : Promise.resolve([]),
+        source.followers ? loadLairFollowers(source.lairId, source.category) : Promise.resolve([]),
       ]);
       return { owners, followers };
     }

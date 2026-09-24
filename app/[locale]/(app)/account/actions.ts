@@ -28,6 +28,11 @@ import { hasEntitlement } from "@/lib/subscriptions/access.ts";
 import { listAccountPosters } from "@/lib/posters/library.ts";
 import { sanitizeDigestRefs } from "@/lib/posters/digest.ts";
 import { setPosterDigestRefs } from "@/lib/db/poster-digest.ts";
+import { setLairNotificationPreference } from "@/lib/db/lair-notification-prefs.ts";
+import {
+  parseLairNotificationPreference,
+  type LairNotificationPreference,
+} from "@/lib/lairs/notification-prefs.ts";
 import { listPushDevicesForUser, revokePushDevice } from "@/lib/db/push-devices.ts";
 import { toPushDeviceSummary, type PushDeviceSummary } from "@/lib/types/PushDevice.ts";
 
@@ -162,6 +167,40 @@ export async function removeLairFromUserList(lairId: string): Promise<{ success:
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la suppression du lieu:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+/**
+ * Ce que le compte reçoit d'un lieu qu'il suit : tout, une sélection, ou rien.
+ * La même règle que `PUT /api/lairs/{lairId}/notifications`.
+ */
+export async function updateLairNotificationPreferenceAction(
+  lairId: string,
+  preference: LairNotificationPreference
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const parsed = parseLairNotificationPreference(preference);
+    if (!parsed) {
+      return { success: false, error: "Réglage invalide" };
+    }
+
+    const saved = await setLairNotificationPreference(session.user.id, lairId, parsed);
+    if (!saved) {
+      return { success: false, error: "Suivez ce lieu pour régler ses notifications" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors du réglage des notifications du lieu:", error);
     return { success: false, error: "Erreur serveur" };
   }
 }

@@ -1,5 +1,6 @@
 import type { Event } from "./Event";
 import type { Lair } from "./Lair";
+import type { LairNotificationCategory } from "@/lib/lairs/notification-prefs";
 
 export type UserNotificationTarget = {
   type: 'user';
@@ -41,6 +42,12 @@ export type Notification = {
    */
   link?: string;
   template?: NotificationTemplate;
+  /**
+   * Le type d'une notification de lieu adressée à ses abonnés : c'est lui que
+   * filtre le réglage « Personnalisé » de chaque abonné
+   * (`lib/lairs/notification-prefs.ts`).
+   */
+  category?: LairNotificationCategory;
   leagueId?: string;
   matchId?: string;
   readBy?: string[];

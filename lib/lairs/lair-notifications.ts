@@ -23,7 +23,8 @@ export async function notifyLairPinnedNews(lair: Pick<Lair, "id" | "name">, item
     await notifyLairFollowers(
       lair.id,
       `📌 ${lair.name}`,
-      summary ? `${item.title} — ${truncate(summary, 200)}` : item.title
+      summary ? `${item.title} — ${truncate(summary, 200)}` : item.title,
+      "announcements"
     );
   } catch (error) {
     console.error(`Notification d'annonce épinglée du lieu ${lair.id} échouée`, error);
@@ -35,7 +36,8 @@ export async function notifyLairLive(lair: Pick<Lair, "id" | "name">, title?: st
     await notifyLairFollowers(
       lair.id,
       `🔴 ${lair.name} est en direct`,
-      title?.trim() ? truncate(title.trim(), 200) : "Le direct vient de commencer : retrouvez-le en tête de la page du lieu."
+      title?.trim() ? truncate(title.trim(), 200) : "Le direct vient de commencer : retrouvez-le en tête de la page du lieu.",
+      "live"
     );
   } catch (error) {
     console.error(`Notification de direct du lieu ${lair.id} échouée`, error);

@@ -349,21 +349,29 @@ export async function updateUserLairs(userId: string, lairs: string[]): Promise<
   return result.modifiedCount > 0 || result.matchedCount > 0;
 }
 
+/**
+ * Suivre un lieu. Un lieu qu'on se met à suivre part en « Tout » : un réglage
+ * de notification resté d'un ancien suivi est effacé. Suivre un lieu déjà
+ * suivi ne touche à rien, réglage compris.
+ */
 export async function addLairToUser(userId: string, lairId: string): Promise<boolean> {
-  
-  const result = await db.collection(COLLECTION_NAME).updateOne(
-    { _id: ObjectId.createFromHexString(userId) },
-    { $addToSet: { lairs: lairId } }
+  const _id = ObjectId.createFromHexString(userId);
+  const result = await db.collection<User>(COLLECTION_NAME).updateOne(
+    { _id, lairs: { $ne: lairId } },
+    { $addToSet: { lairs: lairId }, $pull: { lairNotificationPrefs: { lairId } } }
   );
-  
-  return result.modifiedCount > 0 || result.matchedCount > 0;
+  if (result.matchedCount > 0) return true;
+
+  // Déjà suivi, ou compte introuvable.
+  return (await db.collection<User>(COLLECTION_NAME).countDocuments({ _id }, { limit: 1 })) > 0;
 }
 
 export async function removeLairFromUser(userId: string, lairId: string): Promise<boolean> {
   
   const result = await db.collection<User>(COLLECTION_NAME).updateOne(
     { _id: ObjectId.createFromHexString(userId) },
-    { $pull: { lairs: lairId } }
+    // Le réglage de notification part avec le suivi.
+    { $pull: { lairs: lairId, lairNotificationPrefs: { lairId } } }
   );
   
   return result.modifiedCount > 0;
