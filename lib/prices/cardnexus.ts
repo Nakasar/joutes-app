@@ -34,6 +34,7 @@ export const CARDNEXUS_GAME_IDS: Record<string, string> = {
   lorcana: "lorcana",
   swu: "swu",
   riftbound: "riftbound",
+  cp: "cyberpunk",
 };
 
 /**

@@ -127,6 +127,48 @@ Y remédier demande de changer le schéma d'identifiant des cartes SWU, ce qui
 touche tout ce qui les référence (collections, listes de souhaits, de vente) —
 c'est un chantier à part.
 
+### Cyberpunk : CardNexus seul, et des prix encore rares
+
+Cyberpunk (`cp`) n'est coté que par **CardNexus**. Son rapprochement est
+complet — les 151 cartes du catalogue trouvent leur produit —, mais le jeu est
+sorti le 10 septembre 2026 et le marché européen ne fait que s'ouvrir : au
+premier relevé, **5 cartes** portent un prix en euros. Les autres ne sont
+cotées que par TCGplayer, en dollars, que l'import laisse de côté (voir plus
+bas). La couverture suivra les annonces, sans rien changer ici.
+
+Nos codes d'extension sont ceux que l'import du catalogue a figés
+(`scripts/games/cyberpunk/import-cards.ts`), CardNexus porte ceux de l'éditeur :
+le profil du jeu les traduit (`setCodes`).
+
+| CardNexus | Chez nous | Extension |
+| --- | --- | --- |
+| `MS01` | `WNC` | Welcome to Night City — Retail |
+| `SD01` | `THS` | The Heist — Retail Starter Deck |
+| `SD02` | `EPS` | Embracing Power — Retail Starter Deck |
+| `PRM` | `BXT` | Box Toppers — Retail |
+| `DD1` / `DD2` | `MDD` / `ADD` | Merc / Arasaka Demo Deck |
+| `PRR01` | `PRB` | Pre-Release Beta |
+| `PRM01` | `PRM01` | Set 1 Promos |
+
+Les tirages **Beta** n'y figurent pas, et c'est voulu. Ce ne sont chez nous que
+des variantes des cartes Retail, sans relevé propre ; les rattacher à `WNC`
+donnerait à la carte Retail le prix de son premier tirage, bien plus cher. Ils
+ne se rapprocheraient d'ailleurs pas en l'état : CardNexus les numérote `B141`,
+nous `β141`, et la normalisation efface le bêta.
+
+**Cardmarket n'est pas branché**, bien que son identifiant soit connu (23) :
+
+- son catalogue ne vend encore que les tirages **Beta** (l'extension de
+  173 produits) et les decks, pas « Welcome to Night City » en Retail — un
+  rapprochement par nom y attacherait donc les prix Beta aux cartes Retail ;
+- nos cartes ne portent que le nom du personnage (`Adam Smasher`), quand
+  Cardmarket écrit son sous-titre (`Adam Smasher - Ender of Legends`), et deux
+  cartes distinctes partagent parfois ce nom (`Judy Álvarez`, 108 et 116) : il
+  faudrait un profil propre au jeu, et un nom complet sur nos cartes.
+
+C'est pourquoi `cp` a son identifiant dans `CARDMARKET_GAME_IDS` mais pas de
+profil dans `CARDMARKET_GAME_PROFILES` : le cron Cardmarket ne le prend pas.
+
 ### Magic n'est pas branché
 
 Deux raisons, et la première suffit : les cartes Magic ne sont pas dans
@@ -307,10 +349,10 @@ Sur Riftbound, ces 45 cartes signées et leurs 45 cartes de base étaient toutes
 
 Quand un code d'extension s'écrit franchement autrement des deux côtés, ou que
 CardNexus n'en publie pas, le même profil le dit (`setCodes`, `setCodesBySlug`) :
-c'est une table, pas une heuristique. Aucun jeu n'en a besoin aujourd'hui — les
-deux catalogues tiennent leur code de l'éditeur — et le bilan de l'import
-(`--sets`) montre extension par extension ce qui a été rapproché, de quoi la
-remplir si besoin.
+c'est une table, pas une heuristique. Seul Cyberpunk en a besoin aujourd'hui
+(ci-dessous) — les autres jeux tiennent leur code de l'éditeur des deux côtés —
+et le bilan de l'import (`--sets`) montre extension par extension ce qui a été
+rapproché, de quoi la remplir si besoin.
 
 CardNexus range les promotions dans une extension à part (`OGNX`, `SFDX`…) que
 nous n'avons pas : ses produits ne trouvent aucune carte, et c'est bien ainsi —
@@ -635,7 +677,7 @@ lisent le catalogue. Magic fait exception (voir plus haut).
 
 `CARDNEXUS_GAME_IDS` (`lib/prices/cardnexus.ts`) : l'identifiant du jeu chez
 CardNexus, un slug. La liste à jour se lit sur `GET /v1/games` ; les connus sont
-`mtg`, `pokemon`, `fab`, `onepiece`, `lorcana`, `swu`, `riftbound`, et une
+`mtg`, `pokemon`, `fab`, `onepiece`, `lorcana`, `swu`, `riftbound`, `cyberpunk`, et une
 douzaine d'autres jeux que la plateforme n'a pas encore. Yu-Gi-Oh n'y est pas.
 
 Souvent, rien d'autre n'est nécessaire : le rapprochement se fait par extension
@@ -658,7 +700,7 @@ chiffres disent ce qu'il manque, et `CARDNEXUS_GAME_PROFILES`
    `https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_<id>.json`,
    dont les premières lignes nomment le jeu (`categoryName`). Les identifiants
    connus : Magic 1, Yu-Gi-Oh 3, Pokémon 6, Flesh and Blood 16, One Piece 18,
-   Lorcana 19, Star Wars Unlimited 21, Riftbound 22.
+   Lorcana 19, Star Wars Unlimited 21, Riftbound 22, Cyberpunk 23.
 2. `CARDMARKET_GAME_PROFILES` (`lib/prices/cardmarket-matching.ts`) : ce qui
    distingue deux cartes de même nom dans ce jeu. `NAME_ONLY_PROFILE` suffit
    quand le nom complet identifie la carte dans son extension — c'est le cas de

@@ -68,6 +68,29 @@ export const CARDNEXUS_GAME_PROFILES: Record<string, CardnexusGameProfile> = {
    * deux étaient écartés comme indépartageables.
    */
   riftbound: { printNumberSuffixes: { "*": "s" } },
+
+  /**
+   * Cyberpunk : nos codes d'extension sont ceux que l'import du catalogue a
+   * figés (`scripts/games/cyberpunk/import-cards.ts`), CardNexus porte ceux de
+   * l'éditeur (`MS01` pour « Welcome to Night City »). Les numéros, eux, sont
+   * les mêmes des deux côtés, jusqu'à la lettre de variante (`005a`).
+   *
+   * Les tirages Beta n'y sont pas : CardNexus les numérote `B141`, nous
+   * `β141`, et la normalisation efface le bêta. Ce ne sont aujourd'hui que des
+   * variantes de nos cartes, sans relevé propre — et surtout, les faire
+   * pointer vers `WNC` donnerait à la carte Retail le prix de son tirage Beta.
+   */
+  cp: {
+    setCodes: {
+      MS01: "WNC",
+      SD01: "THS",
+      SD02: "EPS",
+      PRM: "BXT",
+      DD1: "MDD",
+      DD2: "ADD",
+      PRR01: "PRB",
+    },
+  },
 };
 
 /** Les codes d'extension se comparent sans casse ni ponctuation. */
