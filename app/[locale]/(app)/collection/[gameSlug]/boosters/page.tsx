@@ -17,7 +17,12 @@ import {
   toBoosterCardFilters,
   type BoosterSort,
 } from "@/lib/db/boosters.ts";
-import { isBoosterType, normalizeBoosterType } from "@/lib/constants/booster-types.ts";
+import {
+  getBoosterTypeLabels,
+  getBoosterTypes,
+  isBoosterType,
+  normalizeBoosterType,
+} from "@/lib/constants/booster-types.ts";
 import { parseBoosterCardIds } from "@/lib/constants/boosters.ts";
 import BoostersList from "./BoostersList.tsx";
 
@@ -64,7 +69,7 @@ async function BoostersPageContent({
   // Un type inconnu du jeu (URL bricolée, type retiré depuis) est ignoré plutôt
   // que d'afficher une liste vide sans raison visible.
   const normalizedType = typeParam ? normalizeBoosterType(typeParam) : undefined;
-  const type = normalizedType && isBoosterType(game.slug, normalizedType) ? normalizedType : undefined;
+  const type = normalizedType && isBoosterType(game, normalizedType) ? normalizedType : undefined;
   const requestedPage = Math.max(1, Number.parseInt(pageParam ?? "1", 10) || 1);
 
   // Les cartes filtrées sont résolues avant la requête : la liste sert à la fois
@@ -97,6 +102,8 @@ async function BoostersPageContent({
         initialBoosters={boosters}
         setCodes={setCodes}
         langs={langs}
+        boosterTypes={getBoosterTypes(game)}
+        boosterTypeLabels={getBoosterTypeLabels(game)}
         typesInUse={typesInUse}
         typeFilter={type}
         cardFilter={filterCards}

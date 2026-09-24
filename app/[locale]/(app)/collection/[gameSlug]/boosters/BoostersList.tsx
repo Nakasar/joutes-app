@@ -38,7 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import type { Booster, BoosterCard } from "@/lib/types/booster.ts";
-import { getBoosterTypes, OTHER_BOOSTER_TYPE } from "@/lib/constants/booster-types.ts";
+import { OTHER_BOOSTER_TYPE } from "@/lib/constants/booster-types.ts";
 import { BOOSTER_CARD_FILTER_MAX } from "@/lib/constants/boosters.ts";
 import CardsPicker from "@/components/CardsPicker.tsx";
 import SetCombobox from "./SetCombobox.tsx";
@@ -60,6 +60,10 @@ type Props = {
   initialBoosters: Booster[];
   setCodes: string[];
   langs: string[];
+  /** Types proposés pour le jeu, `other` compris et en dernier. */
+  boosterTypes: string[];
+  /** Libellés saisis dans l'administration, par clé. */
+  boosterTypeLabels: Record<string, string>;
   /** Types réellement présents dans les boosters de l'utilisateur pour ce jeu. */
   typesInUse: string[];
   typeFilter?: string;
@@ -77,6 +81,8 @@ export default function BoostersList({
   initialBoosters,
   setCodes,
   langs,
+  boosterTypes,
+  boosterTypeLabels,
   typesInUse,
   typeFilter,
   cardFilter,
@@ -90,8 +96,7 @@ export default function BoostersList({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const boosterTypeLabel = useBoosterTypeLabel();
-  const boosterTypes = getBoosterTypes(gameSlug);
+  const boosterTypeLabel = useBoosterTypeLabel(boosterTypeLabels);
 
   const [boosters, setBoosters] = useState<Booster[]>(initialBoosters);
 

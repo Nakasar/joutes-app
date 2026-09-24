@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const typeParam = searchParams.get("type");
   const normalizedType = typeParam ? normalizeBoosterType(typeParam) : undefined;
-  if (normalizedType && !isBoosterType(game.slug, normalizedType)) {
+  if (normalizedType && !isBoosterType(game, normalizedType)) {
     return NextResponse.json({ error: "Invalid booster type" }, { status: 400 });
   }
   const sort = searchParams.get("sort") === "oldest" ? "oldest" : "newest";
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
   // Les types disponibles dépendent du jeu : on refuse un type d'un autre jeu
   // plutôt que de le stocker et de l'afficher dans une liste où il n'existe pas.
-  if (!isBoosterType(game.slug, type)) {
+  if (!isBoosterType(game, type)) {
     return NextResponse.json({ error: "Invalid booster type" }, { status: 400 });
   }
 

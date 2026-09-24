@@ -4,6 +4,10 @@ import { GAME_LINK_KEYS } from "@/lib/constants/game-links";
 import { externalUrl } from "@/lib/lairs/urls";
 import { DECK_ZONE_KEYS } from "@/lib/decks/zones";
 import {
+  BOOSTER_TYPE_KEY_PATTERN,
+  RESERVED_BOOSTER_TYPE_KEYS,
+} from "@/lib/constants/booster-types";
+import {
   tournamentResultModeSchema,
   tournamentScenarioSchema,
   tournamentSwissPairingSchema,
@@ -167,6 +171,53 @@ export const gameDeckBuilderSchema = z
   });
 
 export type GameDeckBuilderInput = z.infer<typeof gameDeckBuilderSchema>;
+
+/**
+ * Types de boosters d'un jeu, dans l'ordre d'affichage.
+ *
+ * La clé est la valeur stockée sur les boosters : elle suit la forme des clés
+ * connues (`play-booster`), et ne peut pas reprendre `other` ni l'ancien
+ * `custom`, qui désignent déjà « Autre », toujours proposé en dernier. Un
+ * libellé vide vaut « pas de libellé » : le type retombe alors sur sa
+ * traduction, ou sur sa clé.
+ */
+export const gameBoosterTypesSchema = z
+  .array(
+    z.object({
+      key: z
+        .string()
+        .trim()
+        .min(1, "Chaque type doit avoir une clé")
+        .max(40, "Une clé de type est trop longue")
+        .regex(
+          BOOSTER_TYPE_KEY_PATTERN,
+          "Une clé de type ne contient que des minuscules, des chiffres et des tirets"
+        )
+        .refine((key) => !RESERVED_BOOSTER_TYPE_KEYS.includes(key), {
+          message: "« other » est réservé : le type « Autre » est toujours proposé",
+        }),
+      label: z
+        .string()
+        .trim()
+        .max(60, "Un libellé de type est trop long")
+        .transform((value) => (value.length > 0 ? value : undefined))
+        .optional(),
+    })
+  )
+  .max(30, "Un jeu ne peut pas déclarer plus de 30 types de boosters")
+  .superRefine((types, ctx) => {
+    // Deux entrées de même clé se confondraient sur les boosters enregistrés.
+    const seen = new Set<string>();
+    for (const type of types) {
+      if (seen.has(type.key)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Le type « ${type.key} » est déclaré deux fois`,
+        });
+      }
+      seen.add(type.key);
+    }
+  });
 
 /**
  * Édition du jeu en cours — la valeur que porte l'attribut `edition` des
