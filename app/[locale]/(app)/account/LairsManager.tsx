@@ -78,7 +78,7 @@ export default function LairsManager({ userLairs, notificationPrefs }: LairsMana
                     {lair.games.length} jeu(x) disponible(s)
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <LairNotificationLevel
                     lairId={lair.id}
                     initialPreference={lairNotificationPreference(notificationPrefs, lair.id)}
