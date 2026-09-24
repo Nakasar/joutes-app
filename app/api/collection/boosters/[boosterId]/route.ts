@@ -48,6 +48,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     type = normalizeBoosterType(body.type);
     // Les types se lisent sur la fiche du jeu, que l'administration peut régler.
     const game = await getGameById(booster.gameId);
+    if (!game) {
+      return NextResponse.json({ error: "Game not found" }, { status: 404 });
+    }
     if (!isBoosterType(game, type)) {
       return NextResponse.json({ error: "Invalid booster type" }, { status: 400 });
     }
