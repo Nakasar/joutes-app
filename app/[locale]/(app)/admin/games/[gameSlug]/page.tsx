@@ -5,6 +5,12 @@ import { getGameBySlugOrId } from "@/lib/db/games.ts";
 import { GAME_TYPES } from "@/lib/constants/game-types.ts";
 import { GAME_FEATURE_KEYS } from "@/lib/constants/game-features.ts";
 import { getDeckZones } from "@/lib/decks/zones.ts";
+import {
+  getDefaultBoosterTypes,
+  getGameBoosterTypes,
+  KNOWN_BOOSTER_TYPES,
+} from "@/lib/constants/booster-types.ts";
+import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import GameTabsBar, { readGameTab } from "./GameTabsBar.tsx";
@@ -12,6 +18,7 @@ import { GameIdentityForm } from "./GameIdentityForm.tsx";
 import { GameLinksForm } from "./GameLinksForm.tsx";
 import { GameFeaturesForm } from "./GameFeaturesForm.tsx";
 import { DeckBuilderForm } from "./DeckBuilderForm.tsx";
+import { BoosterTypesForm } from "./BoosterTypesForm.tsx";
 import { FeaturedLairsManager } from "../FeaturedLairsManager.tsx";
 
 /**
@@ -54,6 +61,10 @@ export default async function AdminGamePage({
   const enabledFeatures = GAME_FEATURE_KEYS.filter((key) => game.features?.[key] === true).length;
   const zones = getDeckZones(game);
   const configured = (game.deckBuilder?.zones?.length ?? 0) > 0;
+  const tCollection = await getTranslations("Collection");
+  const boosterTypeDefaultLabels = Object.fromEntries(
+    KNOWN_BOOSTER_TYPES.map((key) => [key, tCollection(`boosters.types.${key}`)]),
+  );
 
   return (
     <div className="bg-muted/50 p-4 sm:p-8">
@@ -124,6 +135,25 @@ export default async function AdminGamePage({
               initialZones={zones}
               initial={game.deckBuilder}
               configured={configured}
+            />
+          </div>
+        )}
+
+        {active === "boosters" && (
+          <div className="space-y-6">
+            {game.features?.collection !== true && (
+              <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-foreground">
+                La collection n&apos;est pas activée pour ce jeu : ces types sont enregistrés, mais
+                la fiche du jeu ne mène pas aux boosters tant qu&apos;elle ne l&apos;est pas depuis
+                l&apos;onglet « Fonctionnalités ».
+              </p>
+            )}
+            <BoosterTypesForm
+              gameId={game.id}
+              initial={getGameBoosterTypes(game)}
+              configured={game.boosterTypes !== undefined}
+              defaults={getDefaultBoosterTypes(game.slug)}
+              defaultLabels={boosterTypeDefaultLabels}
             />
           </div>
         )}

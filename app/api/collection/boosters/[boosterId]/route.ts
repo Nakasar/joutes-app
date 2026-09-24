@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { deleteBooster, getBooster, updateBooster, userOwnsBooster } from "@/lib/db/boosters";
+import { getGameById } from "@/lib/db/games";
 import { isBoosterType, normalizeBoosterType } from "@/lib/constants/booster-types";
 import { BOOSTER_NOTE_MAX_LENGTH } from "@/lib/constants/boosters";
 
@@ -45,7 +46,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Invalid booster type" }, { status: 400 });
     }
     type = normalizeBoosterType(body.type);
-    if (!isBoosterType(booster.game?.slug, type)) {
+    // Les types se lisent sur la fiche du jeu, que l'administration peut régler.
+    const game = await getGameById(booster.gameId);
+    if (!isBoosterType(game, type)) {
       return NextResponse.json({ error: "Invalid booster type" }, { status: 400 });
     }
   }

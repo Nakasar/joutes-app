@@ -10,6 +10,8 @@ import { useBoosterTypeLabel } from "../useBoosterTypeLabel.ts";
 type Props = {
   gameSlug: string;
   gameName: string;
+  /** Libellés des types saisis dans l'administration, par clé. */
+  boosterTypeLabels: Record<string, string>;
   stats: BoosterStats;
 };
 
@@ -31,10 +33,10 @@ function rarityColor(rarities: string[], rarity: string): string {
   return index >= 0 ? RARITY_COLORS[index % RARITY_COLORS.length] : UNKNOWN_RARITY_COLOR;
 }
 
-export default function BoosterStatsView({ gameSlug, gameName, stats }: Props) {
+export default function BoosterStatsView({ gameSlug, gameName, boosterTypeLabels, stats }: Props) {
   const t = useTranslations("Collection");
   const locale = useLocale();
-  const boosterTypeLabel = useBoosterTypeLabel();
+  const boosterTypeLabel = useBoosterTypeLabel(boosterTypeLabels);
 
   const decimal = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
   const integer = new Intl.NumberFormat(locale);

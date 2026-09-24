@@ -108,16 +108,26 @@ function compareCards(a: BoosterCard, b: BoosterCard, key: SortKey): number {
 type Props = {
   gameSlug: string;
   gameName: string;
+  /** Types proposés pour le jeu, `other` compris et en dernier. */
+  boosterTypes: string[];
+  /** Libellés saisis dans l'administration, par clé. */
+  boosterTypeLabels: Record<string, string>;
   initialBooster: Booster;
 };
 
-export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Props) {
+export default function BoosterEditor({
+  gameSlug,
+  gameName,
+  boosterTypes,
+  boosterTypeLabels,
+  initialBooster,
+}: Props) {
   const t = useTranslations("Collection");
   const locale = useLocale();
   const tPrintings = useTranslations("Printings");
   const router = useRouter();
   const booster = initialBooster;
-  const boosterTypeLabel = useBoosterTypeLabel();
+  const boosterTypeLabel = useBoosterTypeLabel(boosterTypeLabels);
 
   const [boosterCards, setBoosterCards] = useState<BoosterCard[]>(initialBooster.cards ?? []);
   const [rawQuery, setRawQuery] = useState("");
@@ -555,8 +565,8 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   );
 
   const boosterTypeOptions = useMemo(
-    () => getBoosterTypeOptions(gameSlug, boosterType),
-    [gameSlug, boosterType]
+    () => getBoosterTypeOptions(boosterTypes, boosterType),
+    [boosterTypes, boosterType]
   );
 
   const domainOptions = useMemo(

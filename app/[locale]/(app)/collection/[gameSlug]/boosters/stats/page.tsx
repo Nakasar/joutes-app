@@ -8,6 +8,7 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getBoosterStats } from "@/lib/db/booster-stats.ts";
+import { getBoosterTypeLabels } from "@/lib/constants/booster-types.ts";
 import BoosterStatsView from "./BoosterStatsView.tsx";
 
 export async function generateMetadata({
@@ -50,7 +51,12 @@ async function BoosterStatsPageContent({
 
   return (
     <div className="container mx-auto p-4 sm:p-6">
-      <BoosterStatsView gameSlug={game.slug ?? game.id} gameName={game.name} stats={stats} />
+      <BoosterStatsView
+        gameSlug={game.slug ?? game.id}
+        gameName={game.name}
+        boosterTypeLabels={getBoosterTypeLabels(game)}
+        stats={stats}
+      />
     </div>
   );
 }

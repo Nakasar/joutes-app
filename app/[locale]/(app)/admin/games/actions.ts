@@ -9,6 +9,7 @@ import {
   gameFeaturesSchema,
   gameDeckBuilderSchema,
   gameLinksSchema,
+  gameBoosterTypesSchema,
 } from "@/lib/schemas/game.schema.ts";
 import { z } from "zod";
 import * as gamesDb from "@/lib/db/games.ts";
@@ -349,5 +350,46 @@ export async function updateGameLinks(id: string, links: unknown) {
     }
     console.error("Erreur lors de la mise à jour des liens du jeu:", error);
     return { success: false, error: "Erreur lors de la mise à jour des liens" };
+  }
+}
+
+/**
+ * Types de boosters proposés à la saisie d'un booster.
+ *
+ * `null` rend le jeu à la liste livrée avec la plateforme ; une liste, même
+ * vide, la remplace (vide = seulement « Autre »). Les boosters déjà enregistrés
+ * ne sont pas touchés : un type retiré reste affiché sur ceux qui le portent.
+ */
+export async function setGameBoosterTypes(id: string, boosterTypes: unknown) {
+  try {
+    await requireAdmin();
+
+    const validatedId = gameIdSchema.parse(id);
+    const validated = boosterTypes === null ? null : gameBoosterTypesSchema.parse(boosterTypes);
+
+    const game = await gamesDb.getGameById(validatedId);
+
+    if (!game) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    const updated = await gamesDb.setGameBoosterTypes(validatedId, validated);
+
+    if (!updated) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    // Les écrans de boosters lisent le jeu depuis le catalogue en cache.
+    updateTag(GAMES_CACHE_TAG);
+    revalidatePath("/admin/games");
+    revalidatePath(`/admin/games/${game.slug ?? game.id}`);
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message || "Types de boosters invalides" };
+    }
+    console.error("Erreur lors de la mise à jour des types de boosters:", error);
+    return { success: false, error: "Erreur lors de la mise à jour des types de boosters" };
   }
 }

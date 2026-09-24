@@ -34,6 +34,7 @@ function toGame(doc: WithId<Document>): Game {
     tournamentDefaults: doc.tournamentDefaults,
     deckBuilder: doc.deckBuilder,
     currentProductEdition: doc.currentProductEdition,
+    boosterTypes: doc.boosterTypes,
   };
 }
 
@@ -60,6 +61,7 @@ function toDocument(game: Omit<Game, "id">): Omit<GameDocument, "_id"> {
     tournamentDefaults: game.tournamentDefaults,
     deckBuilder: game.deckBuilder,
     currentProductEdition: game.currentProductEdition,
+    boosterTypes: game.boosterTypes,
   };
 }
 
@@ -211,6 +213,27 @@ export async function setGameDeckBuilder(
     deckBuilder === null
       ? { $unset: { deckBuilder: "" } }
       : { $set: { deckBuilder } }
+  );
+
+  return result.matchedCount > 0;
+}
+
+/**
+ * Types de boosters d'un jeu.
+ *
+ * `null` retire le champ : le jeu revient alors à la liste livrée avec la
+ * plateforme. Une liste vide, elle, est gardée — elle veut dire « seulement
+ * Autre », ce qui n'est pas la même chose.
+ */
+export async function setGameBoosterTypes(
+  id: string,
+  boosterTypes: Game["boosterTypes"] | null
+): Promise<boolean> {
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(id) },
+    boosterTypes === null
+      ? { $unset: { boosterTypes: "" } }
+      : { $set: { boosterTypes } }
   );
 
   return result.matchedCount > 0;

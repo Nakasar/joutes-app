@@ -92,6 +92,23 @@ export type Game = {
    * `lib/constants/product-editions.ts`.
    */
   currentProductEdition?: string;
+  /**
+   * Types de boosters proposés à la saisie d'un booster, dans l'ordre
+   * d'affichage, réglés depuis `/admin/games`. `other` n'y figure pas : il est
+   * toujours proposé en dernier. Absent = le jeu suit la liste livrée avec la
+   * plateforme, décrite dans `lib/constants/booster-types.ts`.
+   */
+  boosterTypes?: GameBoosterType[];
+};
+
+/**
+ * Un type de booster d'un jeu. `key` est la valeur stockée sur les boosters ;
+ * `label`, facultatif, remplace le libellé traduit des types connus et nomme
+ * ceux que l'application ne connaît pas.
+ */
+export type GameBoosterType = {
+  key: string;
+  label?: string;
 };
 
 export type GameType = GameTypeKey;

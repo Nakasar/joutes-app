@@ -1,7 +1,7 @@
 import { Link } from "@/i18n/navigation.ts";
 import { cn } from "@/lib/utils.ts";
 
-export const GAME_TABS = ["identite", "liens", "fonctionnalites", "deck", "lieux", "tournois"] as const;
+export const GAME_TABS = ["identite", "liens", "fonctionnalites", "deck", "boosters", "lieux", "tournois"] as const;
 
 export type GameTab = (typeof GAME_TABS)[number];
 
@@ -10,6 +10,7 @@ const LABELS: Record<GameTab, string> = {
   liens: "Liens et réseaux",
   fonctionnalites: "Fonctionnalités",
   deck: "Deck builder",
+  boosters: "Boosters",
   lieux: "Lieux mis en avant",
   tournois: "Tournois",
 };
