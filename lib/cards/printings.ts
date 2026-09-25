@@ -74,3 +74,60 @@ export function changePrinting(card: PrintableCard, copy: PrintedCopy, printingI
 
   return { ...next, foil: next.foil || keptFoil };
 }
+
+/** Ce qu'il faut d'une variante pour la ranger dans son édition. */
+type EditionPrinting = {
+  id: string;
+  name: string;
+  setCode?: string;
+  collectorNumber?: string;
+};
+
+/** Numéro de collection écrit en fin de nom : `Welcome to Night City — Beta (β008)`. */
+const TRAILING_NUMBER = /\s*\(([^()]*\d[^()]*)\)\s*$/;
+
+/**
+ * Édition d'une variante : ce que plusieurs cartes ont en commun quand elles
+ * ont été tirées ensemble, là où l'identifiant de la variante est propre à sa
+ * carte. Chez Cyberpunk, la variante Beta de Chrome Fang et celle de Reboot
+ * Optics ont chacune leur identifiant et leur numéro (`β008`, `β136`), mais la
+ * même édition, « Welcome to Night City — Beta ».
+ *
+ * L'extension propre à la variante la désigne quand elle est connue ; à défaut,
+ * son nom privé du numéro qui le termine. Le libellé est ce nom-là.
+ */
+export function printingEdition(printing: { name: string; setCode?: string }): { key: string; name: string } {
+  const name = printing.name.replace(TRAILING_NUMBER, "").trim() || printing.name;
+  const key = printing.setCode ? `set:${printing.setCode.toLowerCase()}` : `name:${name.toLowerCase()}`;
+
+  return { key, name };
+}
+
+/** Un numéro réduit à ses lettres latines et chiffres : `β008` et `008` se rejoignent. */
+const bareNumber = (number?: string) => (number ?? "").toLowerCase().replace(/[^0-9a-z]/g, "");
+
+/**
+ * La variante d'une carte dans une édition, ou `undefined` si la carte n'y a
+ * pas été tirée.
+ *
+ * Une carte a parfois deux tirages dans une même édition — deux illustrations
+ * d'une même carte Beta. Celui qui porte le numéro de la carte l'emporte
+ * (`β005a` pour la carte `005a`, plutôt que `β005b`) ; à défaut, le premier.
+ */
+export function editionPrinting<T extends EditionPrinting>(
+  card: { collectorNumber?: string; printings?: T[] },
+  editionKey: string
+): T | undefined {
+  const candidates = (card.printings ?? []).filter((printing) => printingEdition(printing).key === editionKey);
+
+  if (candidates.length <= 1) {
+    return candidates[0];
+  }
+
+  const number = bareNumber(card.collectorNumber);
+  const sameNumber = candidates.find(
+    (printing) => bareNumber(printing.collectorNumber ?? TRAILING_NUMBER.exec(printing.name)?.[1]) === number
+  );
+
+  return sameNumber ?? candidates[0];
+}

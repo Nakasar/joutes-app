@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { changePrinting, isFoilForced, resolvePrinting } from "./printings";
+import { changePrinting, editionPrinting, isFoilForced, printingEdition, resolvePrinting } from "./printings";
 
 /**
  * Résolution de la variante d'impression choisie par l'utilisateur : c'est
@@ -83,5 +83,70 @@ describe("changePrinting", () => {
 
   it("impose le foil d'une variante foil", () => {
     assert.equal(changePrinting(card, {}, "foil")?.foil, true);
+  });
+});
+
+describe("printingEdition", () => {
+  it("rassemble les variantes d'une même édition, chacune avec son numéro", () => {
+    const chromeFang = printingEdition({ name: "Welcome to Night City — Beta (β008)" });
+    const rebootOptics = printingEdition({ name: "Welcome to Night City — Beta (β136)" });
+
+    assert.equal(chromeFang.key, rebootOptics.key);
+    assert.equal(chromeFang.name, "Welcome to Night City — Beta");
+    assert.notEqual(chromeFang.key, printingEdition({ name: "Welcome to Night City — Retail (136)" }).key);
+  });
+
+  it("préfère l'extension propre à la variante quand elle est connue", () => {
+    assert.equal(
+      printingEdition({ name: "Welcome to Night City — Beta (β008)", setCode: "WNCB" }).key,
+      printingEdition({ name: "Autre libellé (β136)", setCode: "wncb" }).key
+    );
+  });
+
+  it("garde entier un nom sans numéro", () => {
+    assert.equal(printingEdition({ name: "Promo Judge" }).name, "Promo Judge");
+    assert.equal(printingEdition({ name: "Foil (Showcase)" }).name, "Foil (Showcase)");
+  });
+});
+
+describe("editionPrinting", () => {
+  const beta = printingEdition({ name: "Welcome to Night City — Beta (β005a)" }).key;
+
+  it("trouve la variante de la carte dans l'édition", () => {
+    const card = {
+      collectorNumber: "008",
+      printings: [
+        { id: "retail-fr", name: "Welcome to Night City — Retail — FR (008)" },
+        { id: "beta-uuid", name: "Welcome to Night City — Beta (β008)" },
+      ],
+    };
+
+    assert.equal(editionPrinting(card, beta)?.id, "beta-uuid");
+    assert.equal(editionPrinting({ collectorNumber: "001", printings: [] }, beta), undefined);
+  });
+
+  it("choisit, entre deux tirages d'une même édition, celui qui porte le numéro de la carte", () => {
+    const card = {
+      collectorNumber: "005a",
+      printings: [
+        { id: "b", name: "Welcome to Night City — Beta (β005b)" },
+        { id: "a", name: "Welcome to Night City — Beta (β005a)" },
+        { id: "c", name: "Welcome to Night City — Beta (β144)" },
+      ],
+    };
+
+    assert.equal(editionPrinting(card, beta)?.id, "a");
+  });
+
+  it("retombe sur le premier tirage quand aucun ne porte le numéro de la carte", () => {
+    const card = {
+      collectorNumber: "144",
+      printings: [
+        { id: "b", name: "Welcome to Night City — Beta (β005b)" },
+        { id: "a", name: "Welcome to Night City — Beta (β005a)" },
+      ],
+    };
+
+    assert.equal(editionPrinting(card, beta)?.id, "b");
   });
 });
