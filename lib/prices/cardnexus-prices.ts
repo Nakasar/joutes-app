@@ -1,6 +1,6 @@
 import { CARDNEXUS_CURRENCY, type CardnexusFinishPrices, type CardnexusProduct } from "@/lib/prices/cardnexus";
 import { referenceOffer } from "@/lib/prices/offers";
-import type { CardPrice, CardPriceOffer, CardPriceValues } from "@/lib/types/card-price";
+import type { CardPrice, CardPriceOffer, CardPrintingPrice, CardPriceValues } from "@/lib/types/card-price";
 
 /**
  * Construction d'un relevé de prix à partir des produits CardNexus rapprochés
@@ -69,18 +69,12 @@ export function cardnexusProductName(product: CardnexusProduct): string {
   return product.variant ? `${product.name} (${product.variant})` : product.name;
 }
 
-/**
- * Relevé d'une carte, ou `undefined` si aucun de ses tirages n'est coté en
- * euros — une carte que personne ne vend n'a pas de prix, et lui en écrire un
- * vide n'apprendrait rien.
- */
-export function buildCardnexusPrice(
-  cardId: string,
+/** Les offres cotées en euros d'un lot de produits, un par tirage. */
+function productOffers(
   products: CardnexusProduct[],
-  pricesByProduct: Map<number, Record<string, CardnexusFinishPrices>>,
-  { sourceUpdatedAt, updatedAt }: { sourceUpdatedAt: Date; updatedAt: Date }
-): CardPrice | undefined {
-  const offers = products.flatMap<CardPriceOffer>((product) => {
+  pricesByProduct: Map<number, Record<string, CardnexusFinishPrices>>
+): CardPriceOffer[] {
+  return products.flatMap<CardPriceOffer>((product) => {
     const byFinish = pricesByProduct.get(product.id);
 
     if (!byFinish) {
@@ -103,10 +97,44 @@ export function buildCardnexusPrice(
         : [];
     });
   });
+}
 
+const sortOffers = (offers: CardPriceOffer[]) =>
+  [...offers].sort((a, b) => a.productId - b.productId || (a.finish ?? "").localeCompare(b.finish ?? ""));
+
+/**
+ * Relevé d'une carte, ou `undefined` si ni elle ni aucune de ses variantes
+ * n'est cotée en euros — une carte que personne ne vend n'a pas de prix, et
+ * lui en écrire un vide n'apprendrait rien.
+ *
+ * Les produits d'une variante (`printingProducts`, par identifiant de variante)
+ * donnent son propre prix de référence, choisi comme celui de la carte. Une
+ * carte dont seules les variantes sont cotées garde un `prices` vide : elle
+ * n'a pas de prix à elle, et celui de sa variante Beta ne doit pas passer
+ * pour le sien.
+ */
+export function buildCardnexusPrice(
+  cardId: string,
+  products: CardnexusProduct[],
+  pricesByProduct: Map<number, Record<string, CardnexusFinishPrices>>,
+  { sourceUpdatedAt, updatedAt }: { sourceUpdatedAt: Date; updatedAt: Date },
+  printingProducts: Map<string, CardnexusProduct[]> = new Map()
+): CardPrice | undefined {
+  const offers = productOffers(products, pricesByProduct);
   const reference = referenceOffer(offers);
 
-  if (!reference) {
+  const printings: Record<string, CardPrintingPrice> = {};
+  for (const [printingId, variantProducts] of [...printingProducts].sort(([a], [b]) => a.localeCompare(b))) {
+    const variantOffers = productOffers(variantProducts, pricesByProduct);
+    const variantReference = referenceOffer(variantOffers);
+    if (variantReference) {
+      printings[printingId] = { prices: variantReference.prices, offers: sortOffers(variantOffers) };
+    }
+  }
+
+  const hasPrintings = Object.keys(printings).length > 0;
+
+  if (!reference && !hasPrintings) {
     return undefined;
   }
 
@@ -114,8 +142,9 @@ export function buildCardnexusPrice(
     cardId,
     source: "cardnexus",
     currency: CARDNEXUS_CURRENCY,
-    prices: reference.prices,
-    offers: [...offers].sort((a, b) => a.productId - b.productId || (a.finish ?? "").localeCompare(b.finish ?? "")),
+    prices: reference?.prices ?? {},
+    offers: sortOffers(offers),
+    ...(hasPrintings ? { printings } : {}),
     sourceUpdatedAt: sourceUpdatedAt.toISOString(),
     updatedAt: updatedAt.toISOString(),
   };

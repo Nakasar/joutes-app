@@ -131,13 +131,15 @@ c'est un chantier à part.
 
 Cyberpunk (`cp`) est coté par les deux fournisseurs, et chez tous deux les 151
 cartes du catalogue trouvent leur produit. Ce qui manque est le marché : le jeu
-est sorti le 10 septembre 2026.
+est sorti le 10 septembre 2026, et le marché européen ne s'est ouvert que sur
+les tirages **Beta**.
 
 #### Chez CardNexus
 
-Au premier relevé, **5 cartes** portent un prix en euros. Les autres ne sont
-cotées que par TCGplayer, en dollars, que l'import laisse de côté (voir plus
-bas). La couverture suivra les annonces, sans rien changer ici.
+Au relevé du 25 septembre, 5 cartes Retail seulement portent un prix en euros,
+quand 150 cartes en ont un pour leur variante Beta (261 variantes cotées). Les
+tirages Retail ne sont cotés que par TCGplayer, en dollars, que l'import laisse
+de côté (voir plus bas).
 
 Nos codes d'extension sont ceux que l'import du catalogue a figés
 (`scripts/games/cyberpunk/import-cards.ts`), CardNexus porte ceux de l'éditeur :
@@ -145,31 +147,33 @@ le profil du jeu les traduit (`setCodes`).
 
 | CardNexus | Chez nous | Extension |
 | --- | --- | --- |
-| `MS01` | `WNC` | Welcome to Night City — Retail |
-| `SD01` | `THS` | The Heist — Retail Starter Deck |
-| `SD02` | `EPS` | Embracing Power — Retail Starter Deck |
-| `PRM` | `BXT` | Box Toppers — Retail |
+| `MS01` / `MS01B` | `WNC` / `WNCB` | Welcome to Night City — Retail / Beta |
+| `SD01` / `SD01B` | `THS` / `THSB` | The Heist — Retail / Beta Starter Deck |
+| `SD02` / `SD02B` | `EPS` / `EPSB` | Embracing Power — Retail / Beta Starter Deck |
+| `PRM` / `PRMB` | `BXT` / `BXTB` | Box Toppers — Retail / Beta |
 | `DD1` / `DD2` | `MDD` / `ADD` | Merc / Arasaka Demo Deck |
 | `PRR01` | `PRB` | Pre-Release Beta |
 | `PRM01` | `PRM01` | Set 1 Promos |
 
-Les tirages **Beta** n'y figurent pas, et c'est voulu. Ce ne sont chez nous que
-des variantes des cartes Retail, sans relevé propre ; les rattacher à `WNC`
-donnerait à la carte Retail le prix de son premier tirage, bien plus cher. Ils
-ne se rapprocheraient d'ailleurs pas en l'état : CardNexus les numérote `B141`,
-nous `β141` : la normalisation efface le `β`, qui n'est pas une lettre latine,
-mais garde le `B` de CardNexus — `141` d'un côté, `b141` de l'autre.
+Les tirages **Beta** sont chez nous des **variantes** des cartes Retail : leurs
+prix vont à la variante, jamais à la carte (voir « Prix des variantes » plus
+bas). CardNexus les numérote `B141`, nous `β141` : le profil traduit ce début de
+numéro (`printNumberPrefixes`), sans quoi la normalisation effacerait le `β`,
+qui n'est pas une lettre latine, et `β141` se lirait `141`, le numéro de la
+carte Retail.
 
 #### Chez Cardmarket
 
 Toutes les cartes sont cotées, mais **pas toutes sur leur tirage Retail** :
 Cardmarket ne vend encore « Welcome to Night City » qu'en **Beta** (son
 extension de 173 produits recoupe à 99 % le Beta de CardNexus, à 81 % le
-Retail). Ce tirage est rattaché à nos cartes Retail comme n'importe quel autre
-tirage de la carte, et c'est un choix assumé : un prix Beta vaut mieux qu'aucun
-prix, et il s'effacera tout seul — le moins cher des tirages représente la
-carte, et le Retail le sera dès que Cardmarket le vendra. D'ici là, certaines
-cartes sont surcotées. CardNexus, lui, passe devant là où il a un prix.
+Retail). Le rapprochement Cardmarket se fait par nom et ne connaît pas les
+variantes : ce tirage est donc rattaché à nos cartes Retail comme un tirage de
+la carte, **à l'inverse de CardNexus**, qui range les prix Beta sur la variante.
+C'est un choix assumé : un prix Beta vaut mieux qu'aucun prix, et il s'effacera
+tout seul — le moins cher des tirages représente la carte, et le Retail le sera
+dès que Cardmarket le vendra. D'ici là, certaines cartes sont surcotées.
+CardNexus, lui, passe devant là où il a un prix pour la carte.
 
 Deux réglages du profil (`CARDMARKET_GAME_PROFILES.cp`) :
 
@@ -272,6 +276,7 @@ type CardPrice = {
   currency: string;          // « EUR »
   prices: CardPriceValues;   // le prix de référence de la carte
   offers: CardPriceOffer[];  // chaque tirage retenu, avec ses prix
+  printings?: Record<string, { prices; offers }>; // les variantes cotées à part
   sourceUpdatedAt: string;   // date du fichier de la place de marché
   updatedAt: string;         // date de l'import
 };
@@ -313,9 +318,53 @@ Ce qu'une offre représente, en revanche, diffère :
   même carte peuvent partager leur `productId`.
 
 `offers` garde `productId` et `expansionId` : de quoi retrouver le produit chez
-la place de marché, et de quoi rattacher un jour les prix aux variantes
-d'impression (cf. docs/CARD_PRINTINGS.md). Chez CardNexus le `finish` dit déjà
-de quel tirage il s'agit — c'est ce qui rendrait ce rattachement possible.
+la place de marché.
+
+### Prix des variantes
+
+Une variante d'impression (cf. docs/CARD_PRINTINGS.md) qui porte sa propre
+extension et son propre numéro (`setCode` / `collectorNumber` sur la variante)
+est, pour l'import CardNexus, une identité à part entière : les produits qui
+tombent sur elle lui sont rattachés, **à elle et non à sa carte**. Le relevé de
+la carte les range sous `printings`, par identifiant de variante, avec leur
+propre prix de référence — choisi comme celui de la carte, le moins cher de ses
+tirages.
+
+```ts
+printings?: Record<string, { prices: CardPriceValues; offers: CardPriceOffer[] }>;
+```
+
+- Une carte dont seule une variante est cotée a quand même son relevé, avec un
+  `prices` vide : le prix de sa variante Beta ne doit pas passer pour le sien.
+- Une variante et une carte peuvent partager leur extension et leur numéro —
+  c'est alors le même tirage, rangé des deux façons : il reçoit le même
+  produit, sans rendre la carte ambiguë. Deux variantes qui se disputent un
+  numéro sont écartées, comme deux cartes.
+- Cardmarket ne donne ni extension ni numéro : ses relevés n'ont pas de
+  `printings`.
+
+Aujourd'hui, seul l'import du catalogue Cyberpunk renseigne l'extension et le
+numéro des variantes (il faut donc l'avoir relancé une fois) ; ailleurs, ils se
+saisissent dans l'administration des cartes.
+
+**Un exemplaire vaut le prix de sa variante** quand elle est cotée à part,
+sinon celui de sa carte (`pickMarketPrice`, `lib/prices/copies.ts`) : c'est le
+cas de la plupart des variantes, et le seul prix qu'on leur connaisse. La
+variante passe d'abord, quel que soit le fournisseur qui la cote. Suivent ce
+choix les écrans et les totaux qui comptent des exemplaires :
+
+| Écran | Lecture |
+| --- | --- |
+| contenu et valeur d'un booster | `getCopyMarketPrices`, par carte et variante |
+| valeur d'une collection | idem, exemplaires regroupés par carte et variante |
+| fiche d'une carte | le prix propre de chaque variante sous sa vignette (`printingMarketPrice`), sans repli |
+
+La galerie et la grille de collection montrent des cartes, pas des
+exemplaires : elles gardent le prix de la carte. Les échanges aussi, leurs
+cartes ne portant pas de variante.
+
+Le foil, lui, ne change toujours rien : aucun relevé ne distingue le foil d'un
+exemplaire de sa version normale.
 
 ## Comment les cartes sont reconnues
 
@@ -519,8 +568,9 @@ toute seule à chaque carte ajoutée ou retirée — le recalcul est fait par
 `addCardToBooster` et `removeCardFromBooster`, donc la valeur suit le contenu
 quel que soit l'appelant — et le bouton **Recalculer le prix**
 (`POST /api/collection/boosters/<id>/value`) sert à rattraper un import de prix
-survenu depuis. Le foil, lui, ne la change pas : les prix sont relevés par carte
-du catalogue, sans distinguer les tirages.
+survenu depuis. Changer la variante de toutes les cartes la recalcule aussi :
+chaque carte vaut le prix de sa variante quand elle est cotée à part (voir
+« Prix des variantes »). Le foil, lui, ne la change pas.
 
 Le résultat est écrit sur le booster (`estimatedValue`) plutôt que recalculé à
 chaque affichage : c'est un relevé daté, comparable d'un booster à l'autre, et
@@ -534,10 +584,10 @@ comme le prix du booster.
 
 La collection porte elle aussi une valeur estimée, par jeu et pour l'ensemble :
 la somme des prix de chaque **exemplaire** possédé — une carte possédée en
-triple compte trois fois. Un exemplaire vaut le prix de sa carte au catalogue,
-quels que soient son état, sa langue et son tirage : les relevés ne distinguent
-pas les impressions, et inventer une décote au foil ou à l'abîmé serait une
-invention.
+triple compte trois fois. Un exemplaire vaut le prix de sa variante quand elle
+est cotée à part, sinon celui de sa carte au catalogue, quels que soient son
+état, sa langue et son foil : les relevés ne les distinguent pas, et inventer
+une décote au foil ou à l'abîmé serait une invention.
 
 Comme pour un booster, le résultat est **écrit** (`collection-values`, un
 document par jeu et par propriétaire) plutôt que recalculé à chaque affichage :
@@ -754,6 +804,9 @@ chiffres disent ce qu'il manque, et `CARDNEXUS_GAME_PROFILES`
   `getMarketPrices` et `withMarketPrices`, qui rattachent leur prix à un lot
   de cartes sans une requête par carte — et qui choisissent, carte par carte, le
   fournisseur qui la représente.
+- `lib/prices/copies.ts` : le prix d'un exemplaire, celui de sa variante ou de
+  sa carte, couvert par `copies.test.ts` ; `getCopyMarketPrices`
+  (`lib/db/card-prices.ts`) le lit pour un lot d'exemplaires.
 - `lib/prices/display.ts` : le montant qui représente une carte, la somme d'un
   lot et leur mise en forme, couverts par `display.test.ts`.
 - `components/cards/CardPriceTag.tsx` et `CardPriceDetails.tsx` : l'affichage,

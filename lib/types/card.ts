@@ -11,6 +11,14 @@ export type CardPrinting = {
   /** La variante est imprimée en foil. */
   foil?: boolean;
   image?: string;
+  /**
+   * Extension et numéro de collection de ce tirage chez l'éditeur, quand il en
+   * a en propre (`WNCB` / `β141` pour le tirage Beta d'une carte Cyberpunk).
+   * C'est ce qui permet de lui rattacher ses propres prix (cf.
+   * docs/CARD_PRICES.md) ; une variante sans eux prend le prix de sa carte.
+   */
+  setCode?: string;
+  collectorNumber?: string;
 };
 
 /**

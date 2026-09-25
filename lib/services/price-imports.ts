@@ -330,7 +330,11 @@ export async function importCardnexusPrices(
   const gameId = await resolveGameId(slug);
 
   log(`Cartes du jeu « ${slug} » (${gameId})...`);
-  const { cards, dropped } = withUniqueIds(await loadCards(gameId));
+  // Les variantes ne sont lues que pour leur identité : ce sont elles qui
+  // reçoivent les prix des tirages cotés à part (le Beta de Cyberpunk).
+  const { cards, dropped } = withUniqueIds(
+    await loadCards(gameId, ["printings.id", "printings.setCode", "printings.collectorNumber"])
+  );
   log(
     `${cards.length} cartes en base` +
       (dropped > 0 ? `, ${dropped} écartées : leur identifiant en désigne plusieurs.` : ".")
@@ -355,7 +359,7 @@ export async function importCardnexusPrices(
   // d'un bloc — il en faut la table entière avant le premier produit.
   const expansions = await collect(streamCardnexusFeed<CardnexusExpansion>(feeds.expansions));
 
-  const { matches, expansions: setReports, skipped } = await matchCardnexusProducts(
+  const { matches, printingMatches, expansions: setReports, skipped } = await matchCardnexusProducts(
     streamCardnexusFeed<CardnexusProduct>(feeds.catalog),
     expansions,
     cards,
@@ -364,7 +368,11 @@ export async function importCardnexusPrices(
 
   // Les prix ne sont gardés que pour les produits rapprochés : le feed en
   // couvre tout le jeu, produits scellés compris, et le reste ne sera jamais lu.
-  const matchedProductIds = new Set([...matches.values()].flat().map((product) => product.id));
+  const matchedProductIds = new Set(
+    [...matches.values(), ...[...printingMatches.values()].flatMap((byPrinting) => [...byPrinting.values()])]
+      .flat()
+      .map((product) => product.id)
+  );
   const pricesByProduct = new Map<number, Record<string, CardnexusFinishPrices>>();
 
   for await (const record of streamCardnexusFeed<CardnexusPriceRecord>(feeds.prices)) {
@@ -382,10 +390,20 @@ export async function importCardnexusPrices(
     throw new Error(`Date CardNexus illisible : « ${feeds.prices.generatedAt} ».`);
   }
 
-  const prices = [...matches].flatMap<CardPrice>(([cardId, cardProducts]) => {
-    const price = buildCardnexusPrice(cardId, cardProducts, pricesByProduct, { sourceUpdatedAt, updatedAt });
+  // Une carte dont seules les variantes ont trouvé un produit a son relevé
+  // aussi : il ne porte que les prix de ses variantes.
+  const matchedCardIds = [...new Set([...matches.keys(), ...printingMatches.keys()])];
+  const prices = matchedCardIds.flatMap<CardPrice>((cardId) => {
+    const price = buildCardnexusPrice(
+      cardId,
+      matches.get(cardId) ?? [],
+      pricesByProduct,
+      { sourceUpdatedAt, updatedAt },
+      printingMatches.get(cardId)
+    );
     return price ? [price] : [];
   });
+  const printingCount = [...printingMatches.values()].reduce((total, byPrinting) => total + byPrinting.size, 0);
 
   // --- Bilan ------------------------------------------------------------
 
@@ -410,13 +428,14 @@ export async function importCardnexusPrices(
 
   log(
     `Cartes rapprochées : ${matches.size}/${cards.length} (${percent(matches.size, cards.length)}), ` +
-      `dont ${prices.length} avec au moins un prix en euros.`
+      `variantes rapprochées : ${printingCount}, ` +
+      `${prices.length} relevés avec au moins un prix en euros.`
   );
   logWorstSets(cards, matches, log);
 
   // --- Écriture ---------------------------------------------------------
 
-  const coverage = { cards: cards.length, matched: matches.size, priced: prices.length };
+  const coverage = { cards: cards.length, matched: matchedCardIds.length, priced: prices.length };
   return writePrices("cardnexus", slug, gameId, prices, coverage, sourceUpdatedAt, options);
 }
 

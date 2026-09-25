@@ -23,7 +23,7 @@ import { parseCardIdList } from "@/lib/cards/bulk-printings.ts";
 // chemins écrivent dans le même index.
 import { searchDocumentId } from "@/lib/cards/import-search.ts";
 import { getGameById } from "@/lib/db/games.ts";
-import { cardPrintingSchema, cardSchema } from "@/lib/schemas/card.schema.ts";
+import { cardPrintingFieldsSchema, cardSchema, refinePrintingIdentity } from "@/lib/schemas/card.schema.ts";
 import { gameIdSchema } from "@/lib/schemas/game.schema.ts";
 import { withUniquePrintingIds } from "@/lib/constants/card-ids.ts";
 import meilisearch, {
@@ -50,7 +50,7 @@ type CardPayload = {
   image?: string;
   text?: string;
   foil?: boolean;
-  printings?: { id?: string; name: string; foil?: boolean; image?: string }[];
+  printings?: { id?: string; name: string; foil?: boolean; image?: string; setCode?: string; collectorNumber?: string }[];
   attributes?: Record<string, CardAttributeValue>;
 };
 
@@ -65,6 +65,8 @@ function toCoreCardFields(card: z.infer<typeof cardSchema>) {
     name: printing.name,
     ...(printing.foil ? { foil: true } : {}),
     ...(printing.image ? { image: printing.image } : {}),
+    ...(printing.setCode ? { setCode: printing.setCode } : {}),
+    ...(printing.collectorNumber ? { collectorNumber: printing.collectorNumber } : {}),
   }));
 
   return {
@@ -94,7 +96,7 @@ type SearchableCard = {
   image?: string;
   text?: string;
   foil?: boolean;
-  printings?: { id?: string; name: string; foil?: boolean; image?: string }[];
+  printings?: { id?: string; name: string; foil?: boolean; image?: string; setCode?: string; collectorNumber?: string }[];
   attributes?: Record<string, CardAttributeValue>;
 };
 
@@ -375,7 +377,7 @@ const MAX_BULK_CARD_IDS = 1000;
 
 const bulkPrintingSchema = z.object({
   cardIds: z.string().max(50_000, "La liste d'identifiants est trop longue"),
-  printing: cardPrintingSchema.omit({ id: true }),
+  printing: cardPrintingFieldsSchema.omit({ id: true }).superRefine(refinePrintingIdentity),
   replaceExisting: z.boolean(),
 });
 

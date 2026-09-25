@@ -10,9 +10,11 @@ import type { MarketPrice } from "@/lib/prices/display";
  * `pricedCopies` : une valeur portée par deux cents exemplaires sur mille ne se
  * lit pas comme le prix de la collection.
  *
- * Un exemplaire vaut le prix de sa carte au catalogue, quel que soit son état,
- * sa langue ou son tirage : les relevés ne distinguent pas les impressions, et
- * inventer une décote au foil ou à l'abîmé serait une invention.
+ * Un exemplaire vaut le prix de sa variante d'impression quand une place de
+ * marché la cote à part (le tirage Beta d'une carte Cyberpunk), sinon celui de
+ * sa carte au catalogue — quels que soient son état, sa langue ou son foil :
+ * les relevés ne les distinguent pas, et inventer une décote au foil ou à
+ * l'abîmé serait une invention.
  *
  * Module pur : ni base ni prix à lire, juste l'addition et ce qu'elle emporte.
  */

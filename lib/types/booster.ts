@@ -1,6 +1,6 @@
 import {Game} from "@/lib/types/Game";
 import {User} from "@/lib/types/User";
-import {CardAttributes} from "@/lib/types/card";
+import {CardAttributes, CardPrinting} from "@/lib/types/card";
 import {MarketPrice} from "@/lib/prices/display";
 import {ObjectId} from "bson";
 
@@ -17,6 +17,8 @@ export type BoosterCard = CardAttributes & {
   /** Variante d'impression de cet exemplaire ; absente = version de base. */
   printingId?: string;
   printingName?: string;
+  /** Variantes d'impression de la carte du catalogue, relues à l'affichage. */
+  printings?: CardPrinting[];
   image: string;
   price?: string;
   /** Prix de marché relevé pour la carte du catalogue (cf. docs/CARD_PRICES.md). */

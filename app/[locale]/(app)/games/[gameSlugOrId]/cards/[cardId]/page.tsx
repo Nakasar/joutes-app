@@ -43,6 +43,8 @@ import ErrataList, {type ErrataEntry} from "@/app/[locale]/(app)/games/[gameSlug
 import CardPriceDetails from "@/components/cards/CardPriceDetails.tsx";
 import CardImage from "@/components/cards/CardImage.tsx";
 import {getCardPrices} from "@/lib/db/card-prices.ts";
+import {printingMarketPrice} from "@/lib/prices/copies.ts";
+import {CardPriceTag} from "@/components/cards/CardPriceTag.tsx";
 import {chosenPriceSource, referenceCardPrice} from "@/lib/prices/preference.ts";
 import {viewerPricePreference, viewerPriceSources} from "@/lib/prices/viewer.ts";
 import { UserLabel } from "@/components/UserLabel.tsx";
@@ -173,6 +175,14 @@ async function CardDetail({
   const priceSources = await viewerPriceSources();
   const cardPrices = await getCardPrices(new ObjectId(game.id), card.id, priceSources);
   const referencePrice = referenceCardPrice(cardPrices, priceSources);
+  // Les variantes cotées à part (le tirage Beta d'une carte Cyberpunk) ont
+  // leur prix sous leur vignette ; les autres prennent celui de la carte.
+  const printingPrices = new Map(
+    printings.flatMap((printing) => {
+      const price = printingMarketPrice(cardPrices, priceSources, printing.id);
+      return price ? [[printing.id, price] as const] : [];
+    })
+  );
   const pricePreference = await viewerPricePreference();
 
   const erratas = [...await getErratasByCardId(cardId, userId)].sort(
@@ -453,6 +463,11 @@ async function CardDetail({
                   />
                 </div>
                 <span className="text-xs font-medium leading-tight">{printing.name}</span>
+                <CardPriceTag
+                  price={printingPrices.get(printing.id)}
+                  gameSlug={game.slug ?? gameSlugOrId}
+                  className="text-[10px] leading-tight"
+                />
                 <span className="text-[10px] text-muted-foreground">
                   {printing.foil ? t("cards.detail.foil") : null}
                   {printing.foil && !printing.image ? " · " : null}

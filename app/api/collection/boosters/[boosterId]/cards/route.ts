@@ -65,7 +65,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   try {
     // Le foil ne change pas la valeur du booster : les prix sont relevés par
-    // carte du catalogue, sans distinguer les tirages (cf. docs/CARD_PRICES.md).
+    // carte et par variante, sans distinguer le foil (cf. docs/CARD_PRICES.md).
     await setBoosterCardFoil(boosterId, body.entryId, body.foil);
     return NextResponse.json({ success: true });
   } catch (error) {

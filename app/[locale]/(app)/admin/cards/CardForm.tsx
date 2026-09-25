@@ -242,6 +242,8 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
           name: printing.name.trim(),
           foil: printing.foil || undefined,
           image: printing.image || undefined,
+          setCode: printing.setCode?.trim() || undefined,
+          collectorNumber: printing.collectorNumber?.trim() || undefined,
         })),
       attributes: payloadAttributes,
     };
@@ -483,6 +485,26 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
                   className={`${inputClass} w-64`}
                 />
               </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={printing.setCode ?? ""}
+                  placeholder="Extension du tirage (facultative)"
+                  onChange={(e) => updatePrinting(index, { setCode: e.target.value })}
+                  className={`${inputClass} w-56`}
+                />
+                <input
+                  type="text"
+                  value={printing.collectorNumber ?? ""}
+                  placeholder="Numéro du tirage (facultatif)"
+                  onChange={(e) => updatePrinting(index, { collectorNumber: e.target.value })}
+                  className={`${inputClass} w-56`}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Extension et numéro propres au tirage, quand il en a : ils lui rattachent ses propres prix. Sans eux, la
+                variante prend le prix de la carte.
+              </p>
               {printing.image && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
