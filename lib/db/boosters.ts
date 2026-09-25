@@ -514,7 +514,7 @@ export async function removeBoosterFromCollection(userId: string, boosterId: str
 
 /** Bilan d'un changement de variante en masse. */
 export type BoosterPrintingChange = {
-  /** Exemplaires passés dans la variante demandée. */
+  /** Exemplaires modifiés (ceux déjà dans la variante demandée ne comptent pas). */
   updated: number;
   /** Exemplaires dont la carte n'existe pas dans cette variante, laissés tels quels. */
   unavailable: number;
@@ -561,6 +561,15 @@ export async function setBoosterCardsPrinting(boosterId: string, printingId?: st
     );
     if (!change) {
       unavailable += 1;
+      continue;
+    }
+    // Une carte déjà dans l'état visé n'est ni réécrite ni comptée comme modifiée.
+    if (
+      (card.printingId ?? undefined) === change.printingId
+      && (card.printingName ?? undefined) === change.printingName
+      && (card.foil === true) === change.foil
+      && (!change.image || card.image === change.image)
+    ) {
       continue;
     }
 
