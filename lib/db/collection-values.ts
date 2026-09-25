@@ -2,7 +2,8 @@ import 'server-only';
 
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { getMarketPrices } from "@/lib/db/card-prices";
+import { getCopyMarketPrices } from "@/lib/db/card-prices";
+import { copyPriceKey } from "@/lib/prices/copies";
 import { sumOwnedCardPrices, type CollectionValue } from "@/lib/collection/value";
 import { ownerField, ownerMatch, type CollectionOwner } from "@/lib/db/collection-owner";
 import { priceSourcesForUser } from "@/lib/prices/viewer";
@@ -131,14 +132,18 @@ export async function gameIdsToRevalue(
   return [...byKey.values()];
 }
 
-/** Exemplaires possédés d'un jeu, regroupés par carte du catalogue. */
+/**
+ * Exemplaires possédés d'un jeu, regroupés par carte du catalogue et par
+ * variante d'impression : une variante cotée à part n'a pas le prix de sa
+ * carte.
+ */
 async function getOwnedCopiesByCard(
   owner: CollectionOwner,
   gameId: ObjectId
-): Promise<{ cardId: string; copies: number }[]> {
+): Promise<{ cardId: string; printingId?: string; copies: number }[]> {
   const rows = await db
     .collection("collection-cards")
-    .aggregate<{ _id: string; copies: number }>([
+    .aggregate<{ _id: { cardId: string; printingId?: string | null }; copies: number }>([
       { $match: ownerMatch(owner) },
       { $lookup: { from: "cards", localField: "cardId", foreignField: "id", as: "c" } },
       // `cards.id` n'est pas strictement unique (quelques jetons et promos le
@@ -147,11 +152,15 @@ async function getOwnedCopiesByCard(
       // fois.
       { $addFields: { c: { $arrayElemAt: ["$c", 0] } } },
       { $match: { "c.gameId": gameId } },
-      { $group: { _id: "$c.id", copies: { $sum: 1 } } },
+      { $group: { _id: { cardId: "$c.id", printingId: "$printingId" }, copies: { $sum: 1 } } },
     ])
     .toArray();
 
-  return rows.map((row) => ({ cardId: row._id, copies: row.copies }));
+  return rows.map((row) => ({
+    cardId: row._id.cardId,
+    ...(row._id.printingId ? { printingId: row._id.printingId } : {}),
+    copies: row.copies,
+  }));
 }
 
 /**
@@ -178,10 +187,10 @@ export async function computeGameCollectionValue(
   const owned = await getOwnedCopiesByCard(owner, gameObjId);
   const sources =
     owner.type === "user" ? await priceSourcesForUser(owner.id) : CARD_PRICE_SOURCES;
-  const prices = await getMarketPrices(gameObjId, owned.map((entry) => entry.cardId), sources);
+  const prices = await getCopyMarketPrices(gameObjId, owned, sources);
 
   const value = sumOwnedCardPrices(
-    owned.map((entry) => ({ copies: entry.copies, price: prices.get(entry.cardId) })),
+    owned.map((entry) => ({ copies: entry.copies, price: prices.get(copyPriceKey(entry.cardId, entry.printingId)) })),
     new Date()
   );
 

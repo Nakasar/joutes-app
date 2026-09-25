@@ -1,4 +1,5 @@
 import type { CardnexusExpansion, CardnexusProduct } from "@/lib/prices/cardnexus";
+import type { CardPrinting } from "@/lib/types/card";
 import type { PriceableCard } from "@/lib/types/card-price";
 
 /**
@@ -39,6 +40,20 @@ export type CardnexusGameProfile = {
    * chez Riftbound `*` et `s` sont deux façons d'écrire le seul tirage signé.
    */
   printNumberSuffixes?: Record<string, string>;
+  /**
+   * Débuts de numéro qui s'écrivent autrement des deux côtés, préfixe canonique
+   * en valeur — appliqués eux aussi aux deux catalogues. Le `β` des tirages
+   * Beta de Cyberpunk est un `B` chez CardNexus : sans cette table, la
+   * normalisation l'efface (ce n'est pas une lettre latine) et `β141` se lit
+   * `141`, le numéro de la carte Retail.
+   */
+  printNumberPrefixes?: Record<string, string>;
+};
+
+/** Réécritures de numéro d'un jeu, appliquées aux deux catalogues. */
+export type PrintNumberRewrites = {
+  suffixes?: Record<string, string>;
+  prefixes?: Record<string, string>;
 };
 
 /**
@@ -75,22 +90,27 @@ export const CARDNEXUS_GAME_PROFILES: Record<string, CardnexusGameProfile> = {
    * l'éditeur (`MS01` pour « Welcome to Night City »). Les numéros, eux, sont
    * les mêmes des deux côtés, jusqu'à la lettre de variante (`005a`).
    *
-   * Les tirages Beta n'y sont pas : CardNexus les numérote `B141`, nous
-   * `β141` : la normalisation efface le `β`, qui n'est pas une lettre latine,
-   * mais garde le `B` de CardNexus (`141` contre `b141`). Ce ne sont aujourd'hui que des
-   * variantes de nos cartes, sans relevé propre — et surtout, les faire
-   * pointer vers `WNC` donnerait à la carte Retail le prix de son tirage Beta.
+   * Les tirages Beta sont chez nous des **variantes** des cartes Retail, qui
+   * portent leur propre extension (`WNCB`) et leur propre numéro (`β141`) :
+   * c'est à elles que leurs prix se rattachent, pas à la carte Retail.
+   * CardNexus écrit `B141` ce que nous écrivons `β141` — le préfixe est
+   * traduit, faute de quoi la normalisation effacerait le `β`.
    */
   cp: {
     setCodes: {
       MS01: "WNC",
+      MS01B: "WNCB",
       SD01: "THS",
+      SD01B: "THSB",
       SD02: "EPS",
+      SD02B: "EPSB",
       PRM: "BXT",
+      PRMB: "BXTB",
       DD1: "MDD",
       DD2: "ADD",
       PRR01: "PRB",
     },
+    printNumberPrefixes: { "β": "B" },
   },
 };
 
@@ -109,13 +129,20 @@ export function normalizeSetCode(code: string): string {
  * écriture — c'est la seule ponctuation qui survive à la normalisation, et
  * seulement pour les jeux qui la déclarent (cf. `CardnexusGameProfile`).
  */
-export function normalizePrintNumber(printNumber: string, suffixes: Record<string, string> = {}): string {
+export function normalizePrintNumber(
+  printNumber: string,
+  suffixes: Record<string, string> = {},
+  prefixes: Record<string, string> = {}
+): string {
   const trimmed = printNumber.trim();
 
-  // Une seule réécriture, jamais en chaîne : le suffixe canonique de l'une ne
-  // doit pas se faire relire comme le suffixe écrit d'une autre.
-  const written = Object.keys(suffixes).find((suffix) => suffix.length > 0 && trimmed.endsWith(suffix));
-  const canonical = written ? `${trimmed.slice(0, -written.length)}${suffixes[written]}` : trimmed;
+  // Une seule réécriture de chaque côté, jamais en chaîne : le suffixe
+  // canonique de l'une ne doit pas se faire relire comme le suffixe écrit
+  // d'une autre.
+  const writtenPrefix = Object.keys(prefixes).find((prefix) => prefix.length > 0 && trimmed.startsWith(prefix));
+  const prefixed = writtenPrefix ? `${prefixes[writtenPrefix]}${trimmed.slice(writtenPrefix.length)}` : trimmed;
+  const written = Object.keys(suffixes).find((suffix) => suffix.length > 0 && prefixed.endsWith(suffix));
+  const canonical = written ? `${prefixed.slice(0, -written.length)}${suffixes[written]}` : prefixed;
 
   return canonical
     .toLowerCase()
@@ -123,9 +150,9 @@ export function normalizePrintNumber(printNumber: string, suffixes: Record<strin
     .replace(/0*(\d+)/g, "$1");
 }
 
-/** Clé d'identité d'une carte : son extension et son numéro. */
-function identityKey(setCode: string, printNumber: string, suffixes: Record<string, string>): string {
-  return `${normalizeSetCode(setCode)}|${normalizePrintNumber(printNumber, suffixes)}`;
+/** Clé d'identité d'une carte ou d'une variante : son extension et son numéro. */
+function identityKey(setCode: string, printNumber: string, rewrites: PrintNumberRewrites): string {
+  return `${normalizeSetCode(setCode)}|${normalizePrintNumber(printNumber, rewrites.suffixes, rewrites.prefixes)}`;
 }
 
 /** Ce qu'une extension CardNexus a donné, pour que l'import reste vérifiable. */
@@ -143,6 +170,12 @@ export type CardnexusExpansionReport = {
 export type CardnexusMatchReport = {
   /** Produits CardNexus retenus, par identifiant de carte. */
   matches: Map<string, CardnexusProduct[]>;
+  /**
+   * Produits retenus pour une variante d'impression, par identifiant de carte
+   * puis de variante. Une variante n'y figure que si elle porte sa propre
+   * extension et son propre numéro (cf. `CardPrinting`).
+   */
+  printingMatches: Map<string, Map<string, CardnexusProduct[]>>;
   expansions: CardnexusExpansionReport[];
   skipped: {
     /** Produit scellé : un booster n'est pas une carte du catalogue. */
@@ -153,7 +186,7 @@ export type CardnexusMatchReport = {
     noPrintNumber: number;
     /** Aucune carte de l'extension ne porte ce numéro. */
     unknownCard: number;
-    /** Deux cartes de la plateforme portent ce numéro : aucune n'est choisie. */
+    /** Deux cartes (ou deux variantes) portent ce numéro : aucune n'est choisie. */
     ambiguous: number;
   };
 };
@@ -180,7 +213,7 @@ export async function matchCardnexusProducts(
   cards: PriceableCard[],
   profile: CardnexusGameProfile = {}
 ): Promise<CardnexusMatchReport> {
-  const suffixes = profile.printNumberSuffixes ?? {};
+  const rewrites: PrintNumberRewrites = { suffixes: profile.printNumberSuffixes, prefixes: profile.printNumberPrefixes };
 
   const expansionById = new Map<number, CardnexusExpansion>();
   for (const expansion of expansions) {
@@ -205,11 +238,28 @@ export async function matchCardnexusProducts(
     if (!card.setCode || !card.collectorNumber) {
       continue;
     }
-    const key = identityKey(card.setCode, card.collectorNumber, suffixes);
+    const key = identityKey(card.setCode, card.collectorNumber, rewrites);
     cardsByIdentity.set(key, [...(cardsByIdentity.get(key) ?? []), card]);
   }
 
+  // Les variantes qui portent leur propre extension et leur propre numéro sont
+  // des identités à part entière. Elles sont tenues à l'écart des cartes : une
+  // variante qui partage son numéro avec une carte (le même tirage, rangé des
+  // deux façons) reçoit le même produit sans rendre la carte ambiguë.
+  const printingsByIdentity = new Map<string, { cardId: string; printingId: string }[]>();
+  for (const card of cards) {
+    const printings = Array.isArray(card.printings) ? (card.printings as CardPrinting[]) : [];
+    for (const printing of printings) {
+      if (!printing.id || !printing.setCode || !printing.collectorNumber) {
+        continue;
+      }
+      const key = identityKey(printing.setCode, printing.collectorNumber, rewrites);
+      printingsByIdentity.set(key, [...(printingsByIdentity.get(key) ?? []), { cardId: card.id, printingId: printing.id }]);
+    }
+  }
+
   const matches = new Map<string, CardnexusProduct[]>();
+  const printingMatches = new Map<string, Map<string, CardnexusProduct[]>>();
   const skipped = { sealed: 0, unknownExpansion: 0, noPrintNumber: 0, unknownCard: 0, ambiguous: 0 };
   const reports = new Map<number, CardnexusExpansionReport>();
 
@@ -244,19 +294,29 @@ export async function matchCardnexusProducts(
       continue;
     }
 
-    const candidates = cardsByIdentity.get(identityKey(setCode, product.printNumber, suffixes)) ?? [];
+    const key = identityKey(setCode, product.printNumber, rewrites);
+    const candidates = cardsByIdentity.get(key) ?? [];
+    const printingCandidates = printingsByIdentity.get(key) ?? [];
 
-    if (candidates.length === 0) {
-      skipped.unknownCard++;
-      continue;
+    if (candidates.length === 1) {
+      matches.set(candidates[0].id, [...(matches.get(candidates[0].id) ?? []), product]);
     }
 
-    if (candidates.length > 1) {
-      skipped.ambiguous++;
-      continue;
+    if (printingCandidates.length === 1) {
+      const [{ cardId, printingId }] = printingCandidates;
+      const byPrinting = printingMatches.get(cardId) ?? new Map<string, CardnexusProduct[]>();
+      byPrinting.set(printingId, [...(byPrinting.get(printingId) ?? []), product]);
+      printingMatches.set(cardId, byPrinting);
     }
 
-    matches.set(candidates[0].id, [...(matches.get(candidates[0].id) ?? []), product]);
+    if (candidates.length !== 1 && printingCandidates.length !== 1) {
+      if (candidates.length > 1 || printingCandidates.length > 1) {
+        skipped.ambiguous++;
+      } else {
+        skipped.unknownCard++;
+      }
+      continue;
+    }
 
     if (expansion) {
       reports.get(expansion.id)!.matched++;
@@ -265,6 +325,7 @@ export async function matchCardnexusProducts(
 
   return {
     matches,
+    printingMatches,
     expansions: [...reports.values()].sort((a, b) => b.products - a.products || a.id - b.id),
     skipped,
   };

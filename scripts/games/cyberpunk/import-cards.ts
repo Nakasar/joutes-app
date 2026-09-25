@@ -382,6 +382,23 @@ function printingName(printing: ApiPrinting): string {
   return [setName, number ? `(${number})` : undefined].filter(Boolean).join(" ") || printing.id;
 }
 
+/**
+ * Extension et numéro d'une variante, qui lui rattachent ses propres prix (cf.
+ * docs/CARD_PRICES.md) : le tirage Beta d'une carte Retail est `WNCB` /
+ * `β141`, et CardNexus le cote à part.
+ *
+ * Seules les extensions de `SET_CODES` sont retenues : une variante n'est pas
+ * une carte, elle ne mérite pas qu'on lui dérive un code — et une extension
+ * inconnue (les tirages français, notamment) n'a de toute façon pas de prix à
+ * elle. La variante prend alors le prix de sa carte.
+ */
+function printingIdentity(printing: ApiPrinting): { setCode?: string; collectorNumber?: string } {
+  const setCode = printing.set ? SET_CODES[printing.set.code] : undefined;
+  const collectorNumber = text(printing.collector_number);
+
+  return setCode && collectorNumber ? { setCode, collectorNumber } : {};
+}
+
 /** Chemin d'une illustration sur le Blob : il ne dépend que de l'impression. */
 function imagePath(printingId: string): string {
   return `${BLOB_PREFIX}/${printingId}.webp`;
@@ -428,7 +445,12 @@ function toCard(card: ApiCard): CardWithSources | undefined {
         (a.collector_number ?? "").localeCompare(b.collector_number ?? "") ||
         a.id.localeCompare(b.id)
       )
-      .map((printing) => ({ id: printing.id, name: printingName(printing), image: printing.image_url ?? undefined }))
+      .map((printing) => ({
+        id: printing.id,
+        name: printingName(printing),
+        image: printing.image_url ?? undefined,
+        ...printingIdentity(printing),
+      }))
   );
 
   const images = [

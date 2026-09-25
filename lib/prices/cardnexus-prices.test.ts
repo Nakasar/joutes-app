@@ -164,4 +164,48 @@ describe("buildCardnexusPrice", () => {
   it("n'écrit pas de relevé pour une carte absente du feed des prix", () => {
     assert.equal(buildCardnexusPrice("OGN027", [product(1)], new Map(), dates), undefined);
   });
+
+  it("donne à une variante son propre prix de référence", () => {
+    const price = buildCardnexusPrice(
+      "WNC-141",
+      [product(1)],
+      new Map([
+        [1, finishes({ Standard: { cardmarket: { currency: "EUR", marketValue: 0.5 } } })],
+        [2, finishes({ Foil: { cardmarket: { currency: "EUR", low: 30, marketValue: 42 } } })],
+      ]),
+      dates,
+      new Map([["beta", [product(2, { printNumber: "B141" })]]])
+    );
+
+    assert.deepEqual(price?.prices, { trend: 0.5 });
+    assert.deepEqual(price?.offers.map((offer) => offer.productId), [1]);
+    assert.deepEqual(price?.printings?.beta.prices, { low: 30, trend: 42 });
+    assert.deepEqual(price?.printings?.beta.offers.map((offer) => offer.finish), ["Foil"]);
+  });
+
+  it("écrit le relevé d'une carte dont seule la variante est cotée, sans lui prêter ce prix", () => {
+    const price = buildCardnexusPrice(
+      "WNC-141",
+      [],
+      new Map([[2, finishes({ Foil: { cardmarket: { currency: "EUR", marketValue: 42 } } })] as const]),
+      dates,
+      new Map([["beta", [product(2)]]])
+    );
+
+    assert.deepEqual(price?.prices, {});
+    assert.deepEqual(price?.offers, []);
+    assert.deepEqual(price?.printings?.beta.prices, { trend: 42 });
+  });
+
+  it("n'écrit rien pour une variante qu'aucun tirage ne cote", () => {
+    const price = buildCardnexusPrice(
+      "WNC-141",
+      [product(1)],
+      new Map([[1, finishes({ Standard: { cardmarket: { currency: "EUR", marketValue: 0.5 } } })] as const]),
+      dates,
+      new Map([["beta", [product(2)]]])
+    );
+
+    assert.equal(price?.printings, undefined);
+  });
 });

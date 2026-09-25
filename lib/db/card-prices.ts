@@ -5,7 +5,7 @@ import type { ObjectId } from "mongodb";
 import type { CardPrice, CardPriceSource } from "@/lib/types/card-price";
 import { CARD_PRICE_SOURCES } from "@/lib/types/card-price";
 import { cardPriceAmount, type MarketPrice } from "@/lib/prices/display";
-import { referenceOffer } from "@/lib/prices/offers";
+import { copyPriceKey, pickMarketPrice, type PricedCopy, type PriceRecord } from "@/lib/prices/copies";
 import { attachInBatches } from "@/lib/prices/stream";
 import { viewerPriceSources } from "@/lib/prices/viewer";
 
@@ -45,6 +45,7 @@ function toCardPrice(doc: CardPriceDoc): CardPrice {
     currency: doc.currency,
     prices: doc.prices,
     offers: doc.offers,
+    ...(doc.printings ? { printings: doc.printings } : {}),
     sourceUpdatedAt: doc.sourceUpdatedAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
   };
@@ -148,7 +149,25 @@ export async function getMarketPrices(
   cardIds: string[],
   sources?: readonly CardPriceSource[]
 ): Promise<Map<string, MarketPrice>> {
-  if (cardIds.length === 0) {
+  return getCopyMarketPrices(gameId, cardIds.map((cardId) => ({ cardId })), sources);
+}
+
+/**
+ * Prix d'affichage d'un lot d'exemplaires, par `copyPriceKey` : celui de la
+ * variante d'impression de l'exemplaire quand une place de marché la cote à
+ * part (le tirage Beta d'une carte Cyberpunk), sinon celui de sa carte (cf.
+ * `pickMarketPrice`).
+ *
+ * C'est ce que lisent les écrans et les totaux qui comptent des exemplaires —
+ * contenu et valeur d'un booster, valeur d'une collection, échanges — là où
+ * une grille de catalogue, qui montre des cartes, lit `getMarketPrices`.
+ */
+export async function getCopyMarketPrices(
+  gameId: ObjectId,
+  copies: PricedCopy[],
+  sources?: readonly CardPriceSource[]
+): Promise<Map<string, MarketPrice>> {
+  if (copies.length === 0) {
     return new Map();
   }
 
@@ -156,36 +175,40 @@ export async function getMarketPrices(
 
   const docs = await collection()
     .find(
-      { gameId, source: { $in: [...order] }, cardId: { $in: [...new Set(cardIds)] } },
-      { projection: { _id: 0, cardId: 1, source: 1, prices: 1, offers: 1, currency: 1, sourceUpdatedAt: 1 } }
+      { gameId, source: { $in: [...order] }, cardId: { $in: [...new Set(copies.map((copy) => copy.cardId))] } },
+      {
+        projection: {
+          _id: 0,
+          cardId: 1,
+          source: 1,
+          prices: 1,
+          offers: 1,
+          printings: 1,
+          currency: 1,
+          sourceUpdatedAt: 1,
+        },
+      }
     )
     .toArray();
 
-  // Un relevé sans montant ne représente pas la carte : il laisse la place au
-  // fournisseur suivant, au lieu de la faire passer pour sans prix.
-  const priced = docs.flatMap((doc) => {
-    const amount = cardPriceAmount(doc.prices);
-    return amount === undefined ? [] : [{ ...doc, amount }];
-  });
+  const recordsByCard = new Map<string, PriceRecord[]>();
+  for (const doc of docs) {
+    recordsByCard.set(doc.cardId, [...(recordsByCard.get(doc.cardId) ?? []), doc]);
+  }
 
-  return new Map(
-    preferredBySource(priced, order).map((doc) => {
-      // Le montant vient du tirage le moins cher : c'est vers ce produit-là que
-      // le lien renvoie, pas vers un autre tirage de la même carte.
-      const productId = referenceOffer(doc.offers ?? [])?.productId;
+  const prices = new Map<string, MarketPrice>();
+  for (const copy of copies) {
+    const key = copyPriceKey(copy.cardId, copy.printingId);
+    if (prices.has(key)) {
+      continue;
+    }
+    const price = pickMarketPrice(recordsByCard.get(copy.cardId) ?? [], order, copy.printingId);
+    if (price) {
+      prices.set(key, price);
+    }
+  }
 
-      return [
-        doc.cardId,
-        {
-          amount: doc.amount,
-          currency: doc.currency,
-          source: doc.source,
-          updatedAt: doc.sourceUpdatedAt.toISOString(),
-          ...(productId === undefined ? {} : { productId }),
-        },
-      ] as const;
-    })
-  );
+  return prices;
 }
 
 /**

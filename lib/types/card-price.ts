@@ -107,6 +107,15 @@ export type PriceableCard = {
   [key: string]: unknown;
 };
 
+/**
+ * Prix d'une variante d'impression de la carte (cf. docs/CARD_PRINTINGS.md) :
+ * les produits rattachés à ce tirage-là, et leur prix de référence.
+ */
+export type CardPrintingPrice = {
+  prices: CardPriceValues;
+  offers: CardPriceOffer[];
+};
+
 export type CardPrice = {
   /** Identifiant de la carte au sein du jeu (`WTR020`). */
   cardId: string;
@@ -120,6 +129,14 @@ export type CardPrice = {
    */
   prices: CardPriceValues;
   offers: CardPriceOffer[];
+  /**
+   * Prix propres aux variantes d'impression, par identifiant de variante.
+   * Seules y figurent celles que la place de marché cote à part — le tirage
+   * Beta d'une carte Cyberpunk, par exemple ; les autres prennent le prix de
+   * la carte. Une carte dont seules les variantes sont cotées a un `prices`
+   * vide.
+   */
+  printings?: Record<string, CardPrintingPrice>;
   /** Date du fichier de la place de marché, pas celle de l'import. */
   sourceUpdatedAt: string;
   updatedAt: string;
