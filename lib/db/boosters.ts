@@ -1,7 +1,8 @@
 import 'server-only';
 import db from "@/lib/mongodb";
 import {Booster, BoosterCard, BoosterCardDb, BoosterDb, BoosterValue} from "@/lib/types/booster";
-import {CARD_ATTRIBUTE_KEYS, CardAttributes} from "@/lib/types/card";
+import {CARD_ATTRIBUTE_KEYS, CardAttributes, CardPrinting} from "@/lib/types/card";
+import {changePrinting} from "@/lib/cards/printings";
 import {boosterTypeStoredValues, normalizeBoosterType, OTHER_BOOSTER_TYPE} from "@/lib/constants/booster-types";
 import {ObjectId} from "bson";
 import {removeSellListItemsByCollectionEntryIds} from "@/lib/db/sell-lists";
@@ -9,19 +10,23 @@ import {getCardsByIds} from "@/lib/db/cards";
 import {getMarketPrices} from "@/lib/db/card-prices";
 import {DEFAULT_MARKET_CURRENCY, sumCardPrices} from "@/lib/prices/display";
 
-type CardAttributesDoc = CardAttributes & { id?: string; setCode?: string; collectorNumber?: string };
+type CardAttributesDoc = CardAttributes & { id?: string; setCode?: string; collectorNumber?: string; printings?: CardPrinting[] };
+
+/** Propriétés relues du catalogue : les attributs de jeu et les variantes d'impression. */
+type CatalogDetails = CardAttributes & { printings?: CardPrinting[] };
 
 const CARD_ATTRIBUTES_PROJECTION: Record<string, 0 | 1> = {
   _id: 0,
   id: 1,
   setCode: 1,
   collectorNumber: 1,
+  printings: 1,
   ...Object.fromEntries(CARD_ATTRIBUTE_KEYS.map((key) => [key, 1])),
 };
 
 const printKey = (setCode?: string, collectorNumber?: string) => `${setCode ?? ''}#${collectorNumber ?? ''}`;
 
-function pickCardAttributes(doc: CardAttributesDoc): CardAttributes {
+function pickCardAttributes(doc: CardAttributesDoc): CatalogDetails {
   const attributes: Record<string, unknown> = {};
   for (const key of CARD_ATTRIBUTE_KEYS) {
     const value = doc[key];
@@ -29,7 +34,12 @@ function pickCardAttributes(doc: CardAttributesDoc): CardAttributes {
       attributes[key] = value;
     }
   }
-  return attributes as CardAttributes;
+  // Les variantes servent au changement de variante en masse : l'écran ne
+  // propose que celles qui existent pour au moins une carte du booster.
+  if (Array.isArray(doc.printings) && doc.printings.length > 0) {
+    attributes.printings = doc.printings;
+  }
+  return attributes as CatalogDetails;
 }
 
 /**
@@ -67,8 +77,8 @@ async function withCardAttributes(gameId: ObjectId, cards: BoosterCard[]): Promi
     .find({gameId, $or: or}, {projection: CARD_ATTRIBUTES_PROJECTION})
     .toArray();
 
-  const byId = new Map<string, CardAttributes>();
-  const byPrint = new Map<string, CardAttributes>();
+  const byId = new Map<string, CatalogDetails>();
+  const byPrint = new Map<string, CatalogDetails>();
   // Une entrée saisie avant que les cartes ne portent leur identifiant n'a que
   // son extension et son numéro : c'est le catalogue qui lui rend l'identifiant
   // sous lequel son prix est relevé.
@@ -500,6 +510,107 @@ export async function removeBoosterFromCollection(userId: string, boosterId: str
   await db.collection<BoosterCardDb>('collection-cards').deleteMany(filter);
   await removeSellListItemsByCollectionEntryIds(removedEntries.map((entry) => entry._id));
   await db.collection<BoosterDb>('boosters').updateOne({_id}, {$set: {addedToCollection: false}});
+}
+
+/** Bilan d'un changement de variante en masse. */
+export type BoosterPrintingChange = {
+  /** Exemplaires modifiés (ceux déjà dans la variante demandée ne comptent pas). */
+  updated: number;
+  /** Exemplaires dont la carte n'existe pas dans cette variante, laissés tels quels. */
+  unavailable: number;
+};
+
+/**
+ * Passe toutes les cartes du booster dans une variante d'impression
+ * (`printingId` absent = version de base). Une carte qui n'existe pas dans
+ * cette variante reste telle quelle. L'illustration et le foil suivent la
+ * variante (cf. `changePrinting`).
+ *
+ * La valeur du booster n'est pas recalculée : les prix sont relevés par carte
+ * du catalogue, sans distinguer les tirages (cf. docs/CARD_PRICES.md).
+ */
+export async function setBoosterCardsPrinting(boosterId: string, printingId?: string): Promise<BoosterPrintingChange> {
+  const booster = await getBooster(boosterId);
+  if (!booster) {
+    throw new Error('Booster not found');
+  }
+
+  // `getBooster` a déjà relu les variantes du catalogue sur chaque carte ; il ne
+  // manque que son illustration et son foil de base, relus ici.
+  const gameId = new ObjectId(booster.gameId);
+  const cardIds = [...new Set(booster.cards.map((card) => card.cardId).filter((id): id is string => Boolean(id)))];
+  const prints = booster.cards
+    .filter((card) => !card.cardId)
+    .map((card) => ({setCode: card.setCode, collectorNumber: card.collectorNumber}));
+  const or: Record<string, unknown>[] = [...(cardIds.length > 0 ? [{id: {$in: cardIds}}] : []), ...prints];
+  const docs = or.length === 0 ? [] : await db
+    .collection<{ id?: string; setCode?: string; collectorNumber?: string; image?: string; foil?: boolean; gameId: ObjectId }>('cards')
+    .find({gameId, $or: or}, {projection: {_id: 0, id: 1, setCode: 1, collectorNumber: 1, image: 1, foil: 1}})
+    .toArray();
+  const byId = new Map(docs.filter((doc) => doc.id).map((doc) => [doc.id as string, doc]));
+  const byPrint = new Map(docs.map((doc) => [printKey(doc.setCode, doc.collectorNumber), doc]));
+
+  const operations = [];
+  let unavailable = 0;
+  for (const card of booster.cards) {
+    const catalog = (card.cardId ? byId.get(card.cardId) : undefined) ?? byPrint.get(printKey(card.setCode, card.collectorNumber));
+    const change = changePrinting(
+      {printings: card.printings, foil: catalog?.foil, image: catalog?.image ?? card.image},
+      {printingId: card.printingId, foil: card.foil},
+      printingId,
+    );
+    if (!change) {
+      unavailable += 1;
+      continue;
+    }
+    // Une carte déjà dans l'état visé n'est ni réécrite ni comptée comme modifiée.
+    if (
+      (card.printingId ?? undefined) === change.printingId
+      && (card.printingName ?? undefined) === change.printingName
+      && (card.foil === true) === change.foil
+      && (!change.image || card.image === change.image)
+    ) {
+      continue;
+    }
+
+    const set: Record<string, unknown> = {};
+    const unset: Record<string, ''> = {};
+    if (change.printingId) {
+      set.printingId = change.printingId;
+      if (change.printingName) {
+        set.printingName = change.printingName;
+      } else {
+        unset.printingName = '';
+      }
+    } else {
+      unset.printingId = '';
+      unset.printingName = '';
+    }
+    if (change.foil) {
+      set.foil = true;
+    } else {
+      unset.foil = '';
+    }
+    if (change.image) {
+      set.image = change.image;
+    }
+
+    operations.push({
+      updateOne: {
+        filter: {_id: new ObjectId(card.id), boosterId: new ObjectId(boosterId)},
+        update: {
+          ...(Object.keys(set).length > 0 ? {$set: set} : {}),
+          ...(Object.keys(unset).length > 0 ? {$unset: unset} : {}),
+        },
+      },
+    });
+  }
+
+  if (operations.length > 0) {
+    await db.collection<BoosterCardDb>('booster-cards').bulkWrite(operations);
+  }
+
+  return {updated: operations.length, unavailable};
 }
 
 export async function setBoosterCardFoil(boosterId: string, entryId: string, foil: boolean): Promise<void> {

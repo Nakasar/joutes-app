@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { isFoilForced, resolvePrinting } from "./printings";
+import { changePrinting, isFoilForced, resolvePrinting } from "./printings";
 
 /**
  * Résolution de la variante d'impression choisie par l'utilisateur : c'est
@@ -54,5 +54,34 @@ describe("isFoilForced", () => {
 
   it("laisse le choix sur une carte et une variante ordinaires", () => {
     assert.equal(isFoilForced(card, "promo-judge"), false);
+  });
+});
+
+describe("changePrinting", () => {
+  it("passe un exemplaire de base dans une variante existante", () => {
+    assert.deepEqual(changePrinting(card, {}, "promo-judge"), {
+      printingId: "promo-judge",
+      printingName: "Promo Judge",
+      foil: false,
+      image: "judge.png",
+    });
+  });
+
+  it("renvoie null quand la carte n'existe pas dans la variante", () => {
+    assert.equal(changePrinting(card, {}, "beta"), null);
+    assert.equal(changePrinting({ image: "x.png" }, {}, "beta"), null);
+  });
+
+  it("conserve le foil choisi à la main", () => {
+    assert.equal(changePrinting(card, { foil: true }, "promo-judge")?.foil, true);
+    assert.equal(changePrinting(card, { foil: true, printingId: "promo-judge" })?.foil, true);
+  });
+
+  it("retire le foil qui ne tenait qu'à l'ancienne variante", () => {
+    assert.deepEqual(changePrinting(card, { foil: true, printingId: "foil" }), { foil: false, image: "base.png" });
+  });
+
+  it("impose le foil d'une variante foil", () => {
+    assert.equal(changePrinting(card, {}, "foil")?.foil, true);
   });
 });

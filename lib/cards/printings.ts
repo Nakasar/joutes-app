@@ -47,3 +47,30 @@ export function resolvePrinting(card: PrintableCard, printingId?: string): Print
 export function isFoilForced(card: PrintableCard, printingId?: string): boolean {
   return resolvePrinting(card, printingId).foil;
 }
+
+/** Exemplaire dont on change la variante : ce qu'il porte aujourd'hui. */
+export type PrintedCopy = {
+  printingId?: string;
+  foil?: boolean;
+};
+
+/**
+ * Nouvelle variante d'un exemplaire déjà saisi (changement en masse sur un
+ * booster). Renvoie `null` quand la carte n'existe pas dans la variante
+ * demandée : l'exemplaire reste alors tel quel.
+ *
+ * Le foil choisi à la main est conservé, sauf s'il ne tenait qu'à l'ancienne
+ * variante (une variante foil quittée pour la version de base redevient non
+ * foil) ; une variante imprimée en foil l'impose toujours.
+ */
+export function changePrinting(card: PrintableCard, copy: PrintedCopy, printingId?: string): PrintingChoice | null {
+  const next = resolvePrinting(card, printingId);
+  if (printingId && next.printingId !== printingId) {
+    return null;
+  }
+
+  const previousForced = resolvePrinting(card, copy.printingId).foil;
+  const keptFoil = copy.foil === true && !previousForced;
+
+  return { ...next, foil: next.foil || keptFoil };
+}

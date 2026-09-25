@@ -21,6 +21,7 @@ import {
   NotebookPen,
   RefreshCw,
   Coins,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -69,6 +70,9 @@ const langLabel = (code: string) => LANG_LABELS[code.toLowerCase()] ?? code.toUp
 type SearchCard = BoosterCard & { printings?: CardPrintVariant[] };
 
 const ALL = "all";
+
+/** Valeur du sélecteur de variante en masse pour la version de base. */
+const BASE_PRINTING = "__base__";
 
 type SortKey = "default" | "name" | "collectorNumber" | "type";
 type SortDirection = "asc" | "desc";
@@ -159,6 +163,12 @@ export default function BoosterEditor({
   const [printingByCardId, setPrintingByCardId] = useState<Record<string, string>>({});
   const [busyRemoveId, setBusyRemoveId] = useState<string | null>(null);
   const [busyFoilId, setBusyFoilId] = useState<string | null>(null);
+  // Variante à appliquer à tout le booster, et bilan du dernier changement.
+  const [bulkPrinting, setBulkPrinting] = useState("");
+  const [applyingPrinting, setApplyingPrinting] = useState(false);
+  const [printingResult, setPrintingResult] = useState<
+    { updated: number; unavailable: number } | "error" | null
+  >(null);
   const [creatingSibling, setCreatingSibling] = useState(false);
   const [addedToCollection, setAddedToCollection] = useState(initialBooster.addedToCollection ?? false);
   const [busyCollection, setBusyCollection] = useState(false);
@@ -469,6 +479,35 @@ export default function BoosterEditor({
     }
   };
 
+  /**
+   * Passe toutes les cartes du booster dans la variante choisie ; celles qui
+   * n'y existent pas restent telles quelles. Le contenu est relu ensuite, pour
+   * reprendre les illustrations et le foil décidés par le serveur.
+   */
+  const applyBulkPrinting = async () => {
+    if (!bulkPrinting) return;
+    setApplyingPrinting(true);
+    setPrintingResult(null);
+    try {
+      const res = await fetch(`/api/collection/boosters/${booster.id}/printing`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ printingId: bulkPrinting === BASE_PRINTING ? null : bulkPrinting }),
+      });
+      if (!res.ok) {
+        setPrintingResult("error");
+        return;
+      }
+      const data = await res.json();
+      setPrintingResult({ updated: data.updated ?? 0, unavailable: data.unavailable ?? 0 });
+      await refetchBooster();
+    } catch {
+      setPrintingResult("error");
+    } finally {
+      setApplyingPrinting(false);
+    }
+  };
+
   const addToCollection = async () => {
     setBusyCollection(true);
     try {
@@ -563,6 +602,22 @@ export default function BoosterEditor({
     ),
     [boosterCards]
   );
+
+  // Variantes proposées au changement en masse : celles d'au moins une carte du
+  // booster, avec le nombre de cartes qui existent dans chacune.
+  const printingOptions = useMemo(() => {
+    const options = new Map<string, { name: string; foil: boolean; available: number }>();
+    for (const card of boosterCards) {
+      for (const printing of card.printings ?? []) {
+        const option = options.get(printing.id);
+        if (option) option.available += 1;
+        else options.set(printing.id, { name: printing.name, foil: printing.foil === true, available: 1 });
+      }
+    }
+    return [...options.entries()]
+      .map(([id, option]) => ({ id, ...option }))
+      .sort((a, b) => collator.compare(a.name, b.name));
+  }, [boosterCards]);
 
   const boosterTypeOptions = useMemo(
     () => getBoosterTypeOptions(boosterTypes, boosterType),
@@ -846,6 +901,57 @@ export default function BoosterEditor({
               </Badge>
             ) : null}
           </div>
+
+          {printingOptions.length > 0 ? (
+            <div className="space-y-1.5 rounded-lg border bg-card p-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Layers className="size-4 shrink-0 text-muted-foreground" />
+                <span className="text-xs font-semibold">{t("boosters.bulkPrinting")}</span>
+                <Select
+                  value={bulkPrinting}
+                  onValueChange={(value) => {
+                    setBulkPrinting(value);
+                    setPrintingResult(null);
+                  }}
+                  disabled={applyingPrinting}
+                >
+                  <SelectTrigger size="sm" className="w-auto min-w-[160px]" aria-label={t("boosters.bulkPrinting")}>
+                    <SelectValue placeholder={t("boosters.bulkPrintingPlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={BASE_PRINTING}>{tPrintings("base")}</SelectItem>
+                    {printingOptions.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {t("boosters.bulkPrintingOption", {
+                          name: option.foil ? tPrintings("foilOption", { name: option.name }) : option.name,
+                          available: option.available,
+                          count: boosterCards.length,
+                        })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="gap-2"
+                  onClick={applyBulkPrinting}
+                  disabled={!bulkPrinting || applyingPrinting || boosterCards.some((card) => card.id.startsWith("tmp-"))}
+                >
+                  {applyingPrinting ? <Loader2 className="size-4 animate-spin" /> : null}
+                  {t("boosters.bulkPrintingApply")}
+                </Button>
+              </div>
+              {printingResult === "error" ? (
+                <p className="text-xs text-destructive">{t("boosters.bulkPrintingError")}</p>
+              ) : printingResult ? (
+                <p className="text-xs text-muted-foreground">{t("boosters.bulkPrintingResult", printingResult)}</p>
+              ) : null}
+              {addedToCollection ? (
+                <p className="text-xs text-muted-foreground">{t("boosters.bulkPrintingCollectionHint")}</p>
+              ) : null}
+            </div>
+          ) : null}
 
           {boosterCards.length > 0 ? (
             <div className="flex flex-wrap items-center gap-2">
