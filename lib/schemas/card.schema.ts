@@ -35,7 +35,7 @@ export const cardAttributeKeySchema = z
  * il est dérivé du nom puis rendu unique par `withUniquePrintingIds` avant
  * l'écriture.
  */
-export const cardPrintingSchema = z.object({
+export const cardPrintingFieldsSchema = z.object({
   id: z
     .string()
     .trim()
@@ -52,6 +52,29 @@ export const cardPrintingSchema = z.object({
   setCode: z.string().trim().max(20, "Le code d'extension de la variante est trop long").optional(),
   collectorNumber: z.string().trim().max(20, "Le numéro de la variante est trop long").optional(),
 });
+
+/**
+ * L'extension et le numéro d'une variante ne servent qu'ensemble : ils lui
+ * rattachent ses propres prix, et l'un sans l'autre ne désigne aucun tirage —
+ * la variante resterait sans prix propre sans que rien ne le dise.
+ */
+export function refinePrintingIdentity(
+  printing: { setCode?: string; collectorNumber?: string },
+  ctx: z.RefinementCtx
+): void {
+  const hasSetCode = Boolean(printing.setCode);
+  const hasCollectorNumber = Boolean(printing.collectorNumber);
+
+  if (hasSetCode !== hasCollectorNumber) {
+    ctx.addIssue({
+      code: "custom",
+      path: [hasSetCode ? "collectorNumber" : "setCode"],
+      message: "L'extension et le numéro d'une variante se renseignent ensemble",
+    });
+  }
+}
+
+export const cardPrintingSchema = cardPrintingFieldsSchema.superRefine(refinePrintingIdentity);
 
 /** Plafond de variantes par carte, partagé par le formulaire et l'édition en masse. */
 export const MAX_CARD_PRINTINGS = 30;
