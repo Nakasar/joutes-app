@@ -37,7 +37,7 @@ import {
 import type { Booster, BoosterCard, BoosterValue } from "@/lib/types/booster.ts";
 import { CardPriceTag } from "@/components/cards/CardPriceTag.tsx";
 import { formatCardPrice } from "@/lib/prices/display.ts";
-import { resolvePrinting } from "@/lib/cards/printings.ts";
+import { printingEdition, resolvePrinting } from "@/lib/cards/printings.ts";
 import type { CardPrinting as CardPrintVariant } from "@/lib/types/card.ts";
 import {
   addCards,
@@ -495,7 +495,7 @@ export default function BoosterEditor({
       const res = await fetch(`/api/collection/boosters/${booster.id}/printing`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ printingId: bulkPrinting === BASE_PRINTING ? null : bulkPrinting }),
+        body: JSON.stringify({ edition: bulkPrinting === BASE_PRINTING ? null : bulkPrinting }),
       });
       if (!res.ok) {
         setPrintingResult("error");
@@ -607,15 +607,22 @@ export default function BoosterEditor({
     [boosterCards]
   );
 
-  // Variantes proposées au changement en masse : celles d'au moins une carte du
-  // booster, avec le nombre de cartes qui existent dans chacune.
+  // Éditions proposées au changement en masse : celles d'au moins une carte du
+  // booster, avec le nombre de cartes qui y ont été tirées. Une édition
+  // rassemble les variantes de plusieurs cartes, chacune avec son numéro : la
+  // variante elle-même est propre à sa carte, et la proposer seule ne
+  // changerait jamais qu'une carte à la fois.
   const printingOptions = useMemo(() => {
     const options = new Map<string, { name: string; foil: boolean; available: number }>();
     for (const card of boosterCards) {
-      for (const printing of card.printings ?? []) {
-        const option = options.get(printing.id);
+      const editions = new Map((card.printings ?? []).map((printing) => {
+        const edition = printingEdition(printing);
+        return [edition.key, { name: edition.name, foil: printing.foil === true }] as const;
+      }));
+      for (const [key, edition] of editions) {
+        const option = options.get(key);
         if (option) option.available += 1;
-        else options.set(printing.id, { name: printing.name, foil: printing.foil === true, available: 1 });
+        else options.set(key, { ...edition, available: 1 });
       }
     }
     return [...options.entries()]

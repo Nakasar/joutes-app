@@ -75,6 +75,24 @@ réindexe la carte, elles sont aussi présentes dans les résultats de recherche
 Meilisearch — c'est ce qui permet de les proposer dans les écrans qui ajoutent
 une carte depuis une recherche.
 
+## Changer l'édition de tout un booster
+
+L'éditeur de booster propose de passer toutes ses cartes dans une même
+**édition** — « Welcome to Night City — Beta », par exemple. Une variante est
+propre à sa carte (chez Cyberpunk, son identifiant est celui du tirage chez la
+source) ; ce que plusieurs cartes ont en commun, c'est l'édition dont leurs
+variantes sont tirées :
+
+- `printingEdition` (`lib/cards/printings.ts`) range une variante dans son
+  édition : son extension propre quand elle en a une, sinon son nom privé du
+  numéro qui le termine (`Welcome to Night City — Beta (β008)` →
+  `Welcome to Night City — Beta`) ;
+- `editionPrinting` retrouve, pour chaque carte, **sa** variante dans
+  l'édition choisie. Une carte tirée deux fois dans la même édition (deux
+  illustrations) prend celle qui porte son numéro (`β005a` pour `005a`) ;
+- une carte qui n'a pas été tirée dans l'édition reste telle quelle, et le
+  bilan le dit.
+
 ## Implémentation
 
 - `lib/types/card.ts` : type `CardPrinting`.

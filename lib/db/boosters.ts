@@ -2,7 +2,7 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import {Booster, BoosterCard, BoosterCardDb, BoosterDb, BoosterValue} from "@/lib/types/booster";
 import {CARD_ATTRIBUTE_KEYS, CardAttributes, CardPrinting} from "@/lib/types/card";
-import {changePrinting} from "@/lib/cards/printings";
+import {changePrinting, editionPrinting} from "@/lib/cards/printings";
 import {boosterTypeStoredValues, normalizeBoosterType, OTHER_BOOSTER_TYPE} from "@/lib/constants/booster-types";
 import {ObjectId} from "bson";
 import {removeSellListItemsByCollectionEntryIds} from "@/lib/db/sell-lists";
@@ -522,23 +522,25 @@ export async function removeBoosterFromCollection(userId: string, boosterId: str
 export type BoosterPrintingChange = {
   /** Exemplaires modifiés (ceux déjà dans la variante demandée ne comptent pas). */
   updated: number;
-  /** Exemplaires dont la carte n'existe pas dans cette variante, laissés tels quels. */
+  /** Exemplaires dont la carte n'a pas été tirée dans cette édition, laissés tels quels. */
   unavailable: number;
   /** Valeur du booster après le changement, recalculée s'il a modifié une carte. */
   value: BoosterValue | null;
 };
 
 /**
- * Passe toutes les cartes du booster dans une variante d'impression
- * (`printingId` absent = version de base). Une carte qui n'existe pas dans
- * cette variante reste telle quelle. L'illustration et le foil suivent la
- * variante (cf. `changePrinting`).
+ * Passe toutes les cartes du booster dans une édition (`edition` absent =
+ * version de base) : chacune prend **sa propre** variante dans cette édition,
+ * avec son numéro (cf. `printingEdition`, `editionPrinting`) — le tirage Beta
+ * de Chrome Fang pour Chrome Fang, celui de Reboot Optics pour Reboot Optics.
+ * Une carte qui n'y a pas été tirée reste telle quelle. L'illustration et le
+ * foil suivent la variante (cf. `changePrinting`).
  *
  * La valeur du booster est recalculée : une variante cotée à part (le tirage
  * Beta d'une carte Cyberpunk) n'a pas le prix de sa carte (cf.
  * docs/CARD_PRICES.md).
  */
-export async function setBoosterCardsPrinting(boosterId: string, printingId?: string): Promise<BoosterPrintingChange> {
+export async function setBoosterCardsPrinting(boosterId: string, edition?: string): Promise<BoosterPrintingChange> {
   const booster = await getBooster(boosterId);
   if (!booster) {
     throw new Error('Booster not found');
@@ -562,6 +564,12 @@ export async function setBoosterCardsPrinting(boosterId: string, printingId?: st
   const operations = [];
   let unavailable = 0;
   for (const card of booster.cards) {
+    const printingId = edition ? editionPrinting(card, edition)?.id : undefined;
+    if (edition && !printingId) {
+      unavailable += 1;
+      continue;
+    }
+
     const catalog = (card.cardId ? byId.get(card.cardId) : undefined) ?? byPrint.get(printKey(card.setCode, card.collectorNumber));
     const change = changePrinting(
       {printings: card.printings, foil: catalog?.foil, image: catalog?.image ?? card.image},

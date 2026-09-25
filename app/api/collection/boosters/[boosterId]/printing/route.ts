@@ -4,8 +4,9 @@ import { headers } from "next/headers";
 import { setBoosterCardsPrinting, userOwnsBooster } from "@/lib/db/boosters";
 
 /**
- * Passe toutes les cartes du booster dans une variante d'impression.
- * `printingId` à `null` (ou vide) ramène les cartes à leur version de base.
+ * Passe toutes les cartes du booster dans une édition (`printingEdition`),
+ * chacune avec sa propre variante. `edition` à `null` (ou vide) ramène les
+ * cartes à leur version de base.
  */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ boosterId: string }> }) {
   const { boosterId } = await params;
@@ -19,12 +20,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   const body = await request.json().catch(() => null);
-  if (!body || (body.printingId !== null && typeof body.printingId !== "string")) {
+  if (!body || (body.edition !== null && typeof body.edition !== "string")) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
   try {
-    const result = await setBoosterCardsPrinting(boosterId, body.printingId || undefined);
+    const result = await setBoosterCardsPrinting(boosterId, body.edition || undefined);
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
     console.error("Error updating booster printings:", error);
