@@ -615,14 +615,22 @@ export default function BoosterEditor({
   const printingOptions = useMemo(() => {
     const options = new Map<string, { name: string; foil: boolean; available: number }>();
     for (const card of boosterCards) {
-      const editions = new Map((card.printings ?? []).map((printing) => {
-        const edition = printingEdition(printing);
-        return [edition.key, { name: edition.name, foil: printing.foil === true }] as const;
-      }));
+      // Une édition n'est dite foil que si toutes ses variantes le sont : une
+      // seule variante non foil suffit à ce que l'édition ne l'impose pas.
+      const editions = new Map<string, { name: string; foil: boolean }>();
+      for (const printing of card.printings ?? []) {
+        const { key, name } = printingEdition(printing);
+        const foil = printing.foil === true && (editions.get(key)?.foil ?? true);
+        editions.set(key, { name: editions.get(key)?.name ?? name, foil });
+      }
       for (const [key, edition] of editions) {
         const option = options.get(key);
-        if (option) option.available += 1;
-        else options.set(key, { ...edition, available: 1 });
+        if (option) {
+          option.available += 1;
+          option.foil = option.foil && edition.foil;
+        } else {
+          options.set(key, { ...edition, available: 1 });
+        }
       }
     }
     return [...options.entries()]
