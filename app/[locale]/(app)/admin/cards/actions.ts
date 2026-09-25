@@ -50,7 +50,7 @@ type CardPayload = {
   image?: string;
   text?: string;
   foil?: boolean;
-  printings?: { id?: string; name: string; foil?: boolean; image?: string }[];
+  printings?: { id?: string; name: string; foil?: boolean; image?: string; setCode?: string; collectorNumber?: string }[];
   attributes?: Record<string, CardAttributeValue>;
 };
 
@@ -65,6 +65,8 @@ function toCoreCardFields(card: z.infer<typeof cardSchema>) {
     name: printing.name,
     ...(printing.foil ? { foil: true } : {}),
     ...(printing.image ? { image: printing.image } : {}),
+    ...(printing.setCode ? { setCode: printing.setCode } : {}),
+    ...(printing.collectorNumber ? { collectorNumber: printing.collectorNumber } : {}),
   }));
 
   return {
@@ -94,7 +96,7 @@ type SearchableCard = {
   image?: string;
   text?: string;
   foil?: boolean;
-  printings?: { id?: string; name: string; foil?: boolean; image?: string }[];
+  printings?: { id?: string; name: string; foil?: boolean; image?: string; setCode?: string; collectorNumber?: string }[];
   attributes?: Record<string, CardAttributeValue>;
 };
 

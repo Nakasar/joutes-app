@@ -81,6 +81,25 @@ describe("normalizePrintNumber", () => {
   it("ne réécrit un suffixe qu'en fin de numéro", () => {
     assert.equal(normalizePrintNumber("1*2", { "*": "s" }), normalizePrintNumber("12"));
   });
+
+  it("traduit un début de numéro que le jeu déclare", () => {
+    const { printNumberSuffixes, printNumberPrefixes } = CARDNEXUS_GAME_PROFILES.cp;
+    // Le `β` de nos tirages Beta est le `B` de CardNexus.
+    assert.equal(
+      normalizePrintNumber("β141", printNumberSuffixes, printNumberPrefixes),
+      normalizePrintNumber("B141", printNumberSuffixes, printNumberPrefixes)
+    );
+    assert.equal(
+      normalizePrintNumber("β005a", printNumberSuffixes, printNumberPrefixes),
+      normalizePrintNumber("B005A", printNumberSuffixes, printNumberPrefixes)
+    );
+    // Sans la table, le `β` tombe et le tirage Beta se lirait comme la carte Retail.
+    assert.equal(normalizePrintNumber("β141"), normalizePrintNumber("141"));
+    assert.notEqual(
+      normalizePrintNumber("β141", printNumberSuffixes, printNumberPrefixes),
+      normalizePrintNumber("141", printNumberSuffixes, printNumberPrefixes)
+    );
+  });
 });
 
 describe("matchCardnexusProducts", () => {
@@ -216,6 +235,62 @@ describe("matchCardnexusProducts", () => {
     assert.equal(matches.get("EPS-001")?.[0].id, 3);
     // Le tirage Beta ne retombe pas sur la carte Retail : il reste sans carte.
     assert.equal(skipped.unknownCard, 1);
+  });
+
+  it("rattache le tirage Beta à la variante de la carte Retail, pas à la carte", async () => {
+    const retail: PriceableCard = {
+      ...card("WNC-005a", "WNC", "005a"),
+      printings: [
+        { id: "beta", name: "Welcome to Night City — Beta (β005a)", setCode: "WNCB", collectorNumber: "β005a" },
+        { id: "fr", name: "Welcome to Night City — Retail — FR (005a)" },
+      ],
+    };
+
+    const { matches, printingMatches, skipped } = await matchCardnexusProducts(
+      [product(1, 42, "005A"), product(2, 43, "B005A")],
+      [expansion(42, "MS01"), expansion(43, "MS01B")],
+      [retail],
+      CARDNEXUS_GAME_PROFILES.cp
+    );
+
+    assert.deepEqual(matches.get("WNC-005a")?.map((match) => match.id), [1]);
+    assert.deepEqual(printingMatches.get("WNC-005a")?.get("beta")?.map((match) => match.id), [2]);
+    // Une variante sans extension ni numéro propres n'a pas de produit à elle.
+    assert.equal(printingMatches.get("WNC-005a")?.has("fr"), false);
+    assert.equal(skipped.unknownCard, 0);
+  });
+
+  it("donne son produit à une variante qui partage son numéro avec une carte, sans rendre la carte ambiguë", async () => {
+    const { matches, printingMatches, skipped } = await matchCardnexusProducts(
+      [product(1, 42, "144")],
+      [expansion(42, "MS01")],
+      [
+        card("WNC-144", "WNC", "144"),
+        { ...card("WNC-005a", "WNC", "005a"), printings: [{ id: "alt", name: "Alt", setCode: "WNC", collectorNumber: "144" }] },
+      ],
+      CARDNEXUS_GAME_PROFILES.cp
+    );
+
+    assert.equal(matches.get("WNC-144")?.[0].id, 1);
+    assert.equal(printingMatches.get("WNC-005a")?.get("alt")?.[0].id, 1);
+    assert.equal(skipped.ambiguous, 0);
+  });
+
+  it("écarte un produit que deux variantes se disputent", async () => {
+    const withPrinting = (id: string): PriceableCard => ({
+      ...card(id, "WNC", id),
+      printings: [{ id: "beta", name: "Beta", setCode: "WNCB", collectorNumber: "β141" }],
+    });
+
+    const { printingMatches, skipped } = await matchCardnexusProducts(
+      [product(1, 43, "B141")],
+      [expansion(43, "MS01B")],
+      [withPrinting("001"), withPrinting("002")],
+      CARDNEXUS_GAME_PROFILES.cp
+    );
+
+    assert.equal(printingMatches.size, 0);
+    assert.equal(skipped.ambiguous, 1);
   });
 
   it("traduit un code d'extension quelle que soit sa casse", async () => {

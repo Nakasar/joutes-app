@@ -355,7 +355,7 @@ export default function BoosterEditor({
   }, [booster.id]);
 
   /** Un calcul est en route : l'ajout ou le retrait en cours en déclenche un. */
-  const valuePending = computingValue || busyAddId !== null || busyRemoveId !== null;
+  const valuePending = computingValue || applyingPrinting || busyAddId !== null || busyRemoveId !== null;
 
   const applyValue = useCallback((ticket: number, value: BoosterValue | undefined) => {
     if (value && ticket === valueTicketRef.current) {
@@ -488,6 +488,9 @@ export default function BoosterEditor({
     if (!bulkPrinting) return;
     setApplyingPrinting(true);
     setPrintingResult(null);
+    // Le changement recalcule la valeur : une variante n'a pas forcément le
+    // prix de sa carte.
+    const ticket = ++valueTicketRef.current;
     try {
       const res = await fetch(`/api/collection/boosters/${booster.id}/printing`, {
         method: "PATCH",
@@ -500,6 +503,7 @@ export default function BoosterEditor({
       }
       const data = await res.json();
       setPrintingResult({ updated: data.updated ?? 0, unavailable: data.unavailable ?? 0 });
+      applyValue(ticket, data.value ?? undefined);
       await refetchBooster();
     } catch {
       setPrintingResult("error");

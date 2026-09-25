@@ -7,7 +7,8 @@ import {boosterTypeStoredValues, normalizeBoosterType, OTHER_BOOSTER_TYPE} from 
 import {ObjectId} from "bson";
 import {removeSellListItemsByCollectionEntryIds} from "@/lib/db/sell-lists";
 import {getCardsByIds} from "@/lib/db/cards";
-import {getMarketPrices} from "@/lib/db/card-prices";
+import {getCopyMarketPrices} from "@/lib/db/card-prices";
+import {copyPriceKey} from "@/lib/prices/copies";
 import {DEFAULT_MARKET_CURRENCY, sumCardPrices} from "@/lib/prices/display";
 
 type CardAttributesDoc = CardAttributes & { id?: string; setCode?: string; collectorNumber?: string; printings?: CardPrinting[] };
@@ -98,12 +99,17 @@ async function withCardAttributes(gameId: ObjectId, cards: BoosterCard[]): Promi
   }
 
   const catalogId = (card: BoosterCard) => card.cardId ?? catalogIdByPrint.get(printKey(card.setCode, card.collectorNumber));
-  const prices = await getMarketPrices(gameId, cards.flatMap((card) => catalogId(card) ?? []));
+  // Chaque exemplaire vaut le prix de sa variante quand elle est cotée à part
+  // (le tirage Beta d'une carte Cyberpunk), sinon celui de sa carte.
+  const prices = await getCopyMarketPrices(gameId, cards.flatMap((card) => {
+    const id = catalogId(card);
+    return id ? [{cardId: id, printingId: card.printingId}] : [];
+  }));
 
   return cards.map((card) => {
     const attributes = (card.cardId ? byId.get(card.cardId) : undefined) ?? byPrint.get(printKey(card.setCode, card.collectorNumber));
     const id = catalogId(card);
-    const marketPrice = id ? prices.get(id) : undefined;
+    const marketPrice = id ? prices.get(copyPriceKey(id, card.printingId)) : undefined;
     // `cards` fait foi : les propriétés relues écrasent celles éventuellement
     // stockées sur l'entrée `booster-cards` (boosters saisis avant migration).
     return {...card, ...attributes, ...(marketPrice ? {marketPrice} : {})};
@@ -518,6 +524,8 @@ export type BoosterPrintingChange = {
   updated: number;
   /** Exemplaires dont la carte n'existe pas dans cette variante, laissés tels quels. */
   unavailable: number;
+  /** Valeur du booster après le changement, recalculée s'il a modifié une carte. */
+  value: BoosterValue | null;
 };
 
 /**
@@ -526,8 +534,9 @@ export type BoosterPrintingChange = {
  * cette variante reste telle quelle. L'illustration et le foil suivent la
  * variante (cf. `changePrinting`).
  *
- * La valeur du booster n'est pas recalculée : les prix sont relevés par carte
- * du catalogue, sans distinguer les tirages (cf. docs/CARD_PRICES.md).
+ * La valeur du booster est recalculée : une variante cotée à part (le tirage
+ * Beta d'une carte Cyberpunk) n'a pas le prix de sa carte (cf.
+ * docs/CARD_PRICES.md).
  */
 export async function setBoosterCardsPrinting(boosterId: string, printingId?: string): Promise<BoosterPrintingChange> {
   const booster = await getBooster(boosterId);
@@ -606,11 +615,13 @@ export async function setBoosterCardsPrinting(boosterId: string, printingId?: st
     });
   }
 
-  if (operations.length > 0) {
-    await db.collection<BoosterCardDb>('booster-cards').bulkWrite(operations);
+  if (operations.length === 0) {
+    return {updated: 0, unavailable, value: booster.estimatedValue ?? null};
   }
 
-  return {updated: operations.length, unavailable};
+  await db.collection<BoosterCardDb>('booster-cards').bulkWrite(operations);
+
+  return {updated: operations.length, unavailable, value: await computeBoosterValue(boosterId)};
 }
 
 export async function setBoosterCardFoil(boosterId: string, entryId: string, foil: boolean): Promise<void> {

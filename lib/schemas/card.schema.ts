@@ -49,6 +49,8 @@ export const cardPrintingSchema = z.object({
     .max(100, "Le nom de la variante est trop long"),
   foil: z.boolean().optional(),
   image: z.union([z.url("L'URL de l'image d'une variante doit être valide"), z.literal("")]).optional(),
+  setCode: z.string().trim().max(20, "Le code d'extension de la variante est trop long").optional(),
+  collectorNumber: z.string().trim().max(20, "Le numéro de la variante est trop long").optional(),
 });
 
 /** Plafond de variantes par carte, partagé par le formulaire et l'édition en masse. */

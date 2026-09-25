@@ -42,9 +42,13 @@ export async function upsertCardPrices(gameId: ObjectId, prices: CardPrice[]): P
             currency: price.currency,
             prices: price.prices,
             offers: price.offers,
+            ...(price.printings ? { printings: price.printings } : {}),
             sourceUpdatedAt: new Date(price.sourceUpdatedAt),
             updatedAt: new Date(price.updatedAt),
           },
+          // Les variantes suivent le reste du relevé, réécrit entier à chaque
+          // import : une variante qui n'y figure plus n'y garde pas de prix.
+          ...(price.printings ? {} : { $unset: { printings: "" as const } }),
         },
         upsert: true,
       },

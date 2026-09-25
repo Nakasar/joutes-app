@@ -26,6 +26,8 @@ type CardPrinting = {
   name: string;    // « Promo Pack Nexus »
   foil?: boolean;  // variante imprimée en foil
   image?: string;  // illustration propre à la variante (facultative)
+  setCode?: string;         // extension propre au tirage (`WNCB`)
+  collectorNumber?: string; // numéro propre au tirage (`β141`)
 };
 ```
 
@@ -38,6 +40,10 @@ type CardPrinting = {
   le voile irisé sur celles qui sont foil.
 - Une carte accepte au plus 30 variantes ; une ligne sans nom n'est pas
   enregistrée.
+- L'extension et le numéro sont facultatifs : renseignés, ils rattachent au
+  tirage ses propres prix, que les exemplaires de cette variante prennent à la
+  place de celui de la carte (cf. docs/CARD_PRICES.md, « Prix des variantes »).
+  L'import Cyberpunk les écrit pour les tirages Beta et de starter deck.
 
 ## Choisir une variante à l'ajout
 
