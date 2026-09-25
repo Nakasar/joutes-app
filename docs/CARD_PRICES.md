@@ -127,12 +127,15 @@ Y remédier demande de changer le schéma d'identifiant des cartes SWU, ce qui
 touche tout ce qui les référence (collections, listes de souhaits, de vente) —
 c'est un chantier à part.
 
-### Cyberpunk : CardNexus seul, et des prix encore rares
+### Cyberpunk : des prix Beta, faute de Retail
 
-Cyberpunk (`cp`) n'est coté que par **CardNexus**. Son rapprochement est
-complet — les 151 cartes du catalogue trouvent leur produit —, mais le jeu est
-sorti le 10 septembre 2026 et le marché européen ne fait que s'ouvrir : au
-premier relevé, **5 cartes** portent un prix en euros. Les autres ne sont
+Cyberpunk (`cp`) est coté par les deux fournisseurs, et chez tous deux les 151
+cartes du catalogue trouvent leur produit. Ce qui manque est le marché : le jeu
+est sorti le 10 septembre 2026.
+
+#### Chez CardNexus
+
+Au premier relevé, **5 cartes** portent un prix en euros. Les autres ne sont
 cotées que par TCGplayer, en dollars, que l'import laisse de côté (voir plus
 bas). La couverture suivra les annonces, sans rien changer ici.
 
@@ -157,18 +160,30 @@ ne se rapprocheraient d'ailleurs pas en l'état : CardNexus les numérote `B141`
 nous `β141` : la normalisation efface le `β`, qui n'est pas une lettre latine,
 mais garde le `B` de CardNexus — `141` d'un côté, `b141` de l'autre.
 
-**Cardmarket n'est pas branché**, bien que son identifiant soit connu (23) :
+#### Chez Cardmarket
 
-- son catalogue ne vend encore que les tirages **Beta** (l'extension de
-  173 produits) et les decks, pas « Welcome to Night City » en Retail — un
-  rapprochement par nom y attacherait donc les prix Beta aux cartes Retail ;
-- nos cartes ne portent que le nom du personnage (`Adam Smasher`), quand
-  Cardmarket écrit son sous-titre (`Adam Smasher - Ender of Legends`), et deux
-  cartes distinctes partagent parfois ce nom (`Judy Álvarez`, 108 et 116) : il
-  faudrait un profil propre au jeu, et un nom complet sur nos cartes.
+Toutes les cartes sont cotées, mais **pas toutes sur leur tirage Retail** :
+Cardmarket ne vend encore « Welcome to Night City » qu'en **Beta** (son
+extension de 173 produits recoupe à 99 % le Beta de CardNexus, à 81 % le
+Retail). Ce tirage est rattaché à nos cartes Retail comme n'importe quel autre
+tirage de la carte, et c'est un choix assumé : un prix Beta vaut mieux qu'aucun
+prix, et il s'effacera tout seul — le moins cher des tirages représente la
+carte, et le Retail le sera dès que Cardmarket le vendra. D'ici là, certaines
+cartes sont surcotées. CardNexus, lui, passe devant là où il a un prix.
 
-C'est pourquoi `cp` a son identifiant dans `CARDMARKET_GAME_IDS` mais pas de
-profil dans `CARDMARKET_GAME_PROFILES` : le cron Cardmarket ne le prend pas.
+Deux réglages du profil (`CARDMARKET_GAME_PROFILES.cp`) :
+
+- **le nom et le sous-titre.** Nos cartes portent le personnage (`name`,
+  « V ») et à part son sous-titre (`subname`, « Corporate Exile »), là où
+  Cardmarket écrit les deux (`V - Corporate Exile`). Sans le sous-titre, 64
+  cartes sur 151 ne ressortaient pas : trois cartes s'appellent « V ».
+  **Il faut réimporter le catalogue Cyberpunk** pour que les cartes le portent
+  — celles importées avant retombent sur leur seul nom ;
+- **le kit Alpha est écarté** (`ignoredExpansions`, extension Cardmarket
+  6722). Tiré avant la sortie du jeu, il se vend quelques centaines d'euros la
+  carte, et les légendes des decks ne sont cotées chez Cardmarket qu'en foil
+  (`trend` à 0) : son tirage était souvent le seul prix non foil de la carte,
+  et le devenait — 850 € pour Saburo Arasaka.
 
 ### Magic n'est pas branché
 
@@ -709,7 +724,9 @@ chiffres disent ce qu'il manque, et `CARDNEXUS_GAME_PROFILES`
    Riftbound, dont les cartes portent déjà leur sous-titre
    (`Ahri, Alluring`) comme Cardmarket. Le profil Flesh and Blood sert de modèle
    pour un jeu qui, comme lui, écrit une variante entre parenthèses ; celui de
-   Star Wars Unlimited, pour un jeu dont le catalogue n'est pas en anglais.
+   Star Wars Unlimited, pour un jeu dont le catalogue n'est pas en anglais ;
+   celui de Cyberpunk, pour un sous-titre rangé à part et une extension
+   Cardmarket à écarter (`ignoredExpansions`).
 
 ## Implémentation
 
