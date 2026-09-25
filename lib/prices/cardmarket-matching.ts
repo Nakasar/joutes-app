@@ -33,6 +33,14 @@ export type CardmarketGameProfile = {
   attributeKeys: readonly string[];
   productKey(productName: string): string;
   cardKey(card: PriceableCard): string;
+  /**
+   * Extensions Cardmarket (`idExpansion`) à ne jamais rapprocher : des
+   * tirages qui ne sont pas une impression du jeu vendue au public — un kit
+   * de préproduction, par exemple — et dont les rares ventes donneraient leur
+   * prix aux cartes ordinaires. Leurs produits ne comptent pas non plus dans
+   * la reconnaissance des extensions.
+   */
+  ignoredExpansions?: readonly number[];
 };
 
 /** Les noms se comparent sans casse, sans accent ni ponctuation. */
@@ -107,11 +115,32 @@ const SWU_PROFILE: CardmarketGameProfile = {
     normalizeCardName(typeof card.englishName === "string" && card.englishName ? card.englishName : card.name),
 };
 
+/**
+ * Cyberpunk : nos cartes portent le nom du personnage (`V`) et, à part, son
+ * sous-titre (`subname`, `Corporate Exile`), là où Cardmarket écrit les deux
+ * (`V - Corporate Exile`). Sans le sous-titre, les trois « V » du jeu ne se
+ * distingueraient que par l'ordre de leurs numéros.
+ *
+ * Les cartes importées avant le sous-titre retombent sur leur nom seul : elles
+ * ne ressortiront que si elles n'en ont pas — il faut réimporter le catalogue.
+ */
+const CYBERPUNK_PROFILE: CardmarketGameProfile = {
+  attributeKeys: ["subname"],
+  // Le kit Alpha, tiré avant la sortie du jeu : ses cartes se vendent à
+  // l'unité, quelques centaines d'euros, et seraient souvent le seul tirage
+  // non foil coté d'une carte de deck (`trend` à 0 sur les autres).
+  ignoredExpansions: [6722],
+  productKey: normalizeCardName,
+  cardKey: (card) =>
+    normalizeCardName(typeof card.subname === "string" && card.subname ? `${card.name} ${card.subname}` : card.name),
+};
+
 /** Jeu dont on sait rapprocher les cartes des produits Cardmarket. */
 export const CARDMARKET_GAME_PROFILES: Record<string, CardmarketGameProfile> = {
   fab: FAB_PROFILE,
   riftbound: NAME_ONLY_PROFILE,
   swu: SWU_PROFILE,
+  cp: CYBERPUNK_PROFILE,
 };
 
 /**
@@ -247,6 +276,8 @@ export type CardmarketMatchReport = {
     unmappedExpansion: number;
     /** Plusieurs cartes également plausibles : aucune n'est choisie. */
     ambiguous: number;
+    /** L'extension Cardmarket est écartée par le profil du jeu. */
+    ignoredExpansion: number;
   };
 };
 
@@ -305,6 +336,10 @@ export function matchCardmarketProducts(
   cards: PriceableCard[],
   profile: CardmarketGameProfile
 ): CardmarketMatchReport {
+  const ignored = new Set(profile.ignoredExpansions ?? []);
+  const ignoredExpansion = products.filter((product) => ignored.has(product.idExpansion)).length;
+  products = products.filter((product) => !ignored.has(product.idExpansion));
+
   const expansions = inferExpansionMappings(products, cards, profile);
 
   const cardsBySetAndKey = new Map<string, Map<string, PriceableCard[]>>();
@@ -324,7 +359,7 @@ export function matchCardmarketProducts(
   const productsByExpansion = groupBy(products, (product) => product.idExpansion);
 
   const matches = new Map<string, CardmarketProduct[]>();
-  const skipped = { unknownCard: 0, unmappedExpansion: 0, ambiguous: 0 };
+  const skipped = { unknownCard: 0, unmappedExpansion: 0, ambiguous: 0, ignoredExpansion };
   let paired = 0;
 
   const attach = (card: PriceableCard, product: CardmarketProduct) => {

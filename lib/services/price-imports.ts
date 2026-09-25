@@ -272,7 +272,8 @@ export async function importCardmarketPrices(options: PriceImportOptions): Promi
   log(
     `\nExtensions Cardmarket reconnues : ${mappedExpansions.length}/${expansions.length}. ` +
       `Produits écartés : ${skipped.unknownCard} sans carte de ce nom, ` +
-      `${skipped.unmappedExpansion} sans extension reconnue, ${skipped.ambiguous} ambigus. ` +
+      `${skipped.unmappedExpansion} sans extension reconnue, ${skipped.ambiguous} ambigus, ` +
+      `${skipped.ignoredExpansion} d'extensions écartées par le profil du jeu. ` +
       `${paired} produits attribués par l'ordre des numéros de collection.`
   );
 

@@ -316,3 +316,39 @@ describe("matchCardmarketProducts", () => {
     assert.deepEqual([...matches.keys()], ["PEN003"]);
   });
 });
+
+describe("profil Cyberpunk", () => {
+  const cp = CARDMARKET_GAME_PROFILES.cp;
+
+  it("retrouve une carte par son nom et son sous-titre, que Cardmarket écrit ensemble", () => {
+    const cards: PriceableCard[] = [
+      { id: "WNC-020", name: "V", subname: "Roamer of the Badlands", setCode: "WNC", collectorNumber: "020" },
+      { id: "WNC-104", name: "V", subname: "Corporate Exile", setCode: "WNC", collectorNumber: "104" },
+    ];
+    const exile = product("V - Corporate Exile", 6714);
+    const roamer = product("V - Roamer of the Badlands", 6714);
+
+    const { matches, paired } = matchCardmarketProducts([exile, roamer], cards, cp);
+
+    assert.deepEqual(matches.get("WNC-104"), [exile]);
+    assert.deepEqual(matches.get("WNC-020"), [roamer]);
+    assert.equal(paired, 0);
+  });
+
+  it("écarte le kit Alpha, qui donnerait son prix aux cartes de deck", () => {
+    const cards: PriceableCard[] = [
+      { id: "EPS-013", name: "Saburo Arasaka", subname: "Stubborn Patriarch", setCode: "EPS", collectorNumber: "013" },
+    ];
+    const deck = product("Saburo Arasaka - Stubborn Patriarch", 6716);
+
+    const { matches, skipped } = matchCardmarketProducts(
+      [deck, product("Saburo Arasaka - Stubborn Patriarch", 6722)],
+      cards,
+      cp
+    );
+
+    assert.deepEqual(matches.get("EPS-013"), [deck]);
+    assert.equal(skipped.ignoredExpansion, 1);
+  });
+});
+

@@ -94,8 +94,8 @@
  * - `finish` : renseigné sur aucune impression. Rien ne dit donc qu'un tirage
  *   soit foil, et `foil` n'est écrit sur aucune carte ni variante ;
  * - `flavor_text` : `null` partout ;
- * - `subname` / `display_name` : `subname` est `null` partout, et
- *   `display_name` répète `name` ;
+ * - `display_name` / `canonical_name` : `name` et `subname` réunis, que
+ *   la carte porte déjà séparément ;
  * - `external_id` : l'identifiant de la carte chez la source, que rien ici ne
  *   sait rapprocher de quoi que ce soit.
  */
@@ -178,6 +178,8 @@ type ApiPrinting = {
 type ApiCard = {
   id: string;
   name: string;
+  /** Sous-titre de la carte (`Corporate Exile` pour `V`), `null` sur les cartes qui n'en ont pas. */
+  subname: string | null;
   slug: string;
   rules_text: string | null;
   /** Impression mise en avant, celle dont la carte reprend extension et numéro. */
@@ -217,6 +219,12 @@ export type CyberpunkCard = {
   // près : ses « classifications » sont ses `tags` — c'est le libellé qu'elle
   // leur donne, et la clé que la fiche de carte d'ici sait afficher.
   setName: string;
+  /**
+   * Sous-titre de la carte : `name` ne porte que le personnage, et trois
+   * cartes s'appellent « V ». Cardmarket écrit les deux (`V - Corporate
+   * Exile`) — c'est ce qui y retrouve la carte (cf. docs/CARD_PRICES.md).
+   */
+  subname?: string;
   type?: string;
   rarity?: string;
   color?: string;
@@ -472,6 +480,7 @@ function toCard(card: ApiCard): CardWithSources | undefined {
       // qui seule connaît aussi celles saisies à la main.
       printings: variants.length > 0 ? variants : undefined,
       setName: set.name,
+      subname: text(card.subname),
       type: text(card.card_type),
       // Rareté et illustrateur varient d'un tirage à l'autre : ceux de la carte
       // sont ceux de son impression de référence.
