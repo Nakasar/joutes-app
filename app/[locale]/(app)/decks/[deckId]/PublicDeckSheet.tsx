@@ -9,8 +9,10 @@ import { CostCurve, LegalityList } from "@/components/decks/DeckAnalysis.tsx";
 import { DeckVisibilityBadge, DeckSizeLabel } from "@/components/decks/DeckBadges.tsx";
 import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
 import { DeckZoneCards } from "@/components/decks/DeckZoneCards.tsx";
+import { BuyDeckOnCardnexusButton, BuyDeckOnCardnexusHint } from "@/components/decks/BuyDeckOnCardnexusButton.tsx";
 import { SheetCard } from "./DeckSheetSections.tsx";
 import type { DeckCardInfo } from "@/lib/decks/contents.ts";
+import type { DeckCardnexusOrder } from "@/lib/decks/cardnexus-order.ts";
 import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import type { DeckZone } from "@/lib/decks/zones.ts";
 import type { Deck } from "@/lib/types/Deck.ts";
@@ -30,6 +32,7 @@ export function PublicDeckSheet({
   isFavorited,
   isAuthenticated,
   ownedByCardId,
+  cardnexusOrder,
 }: {
   deck: Deck;
   gameName?: string;
@@ -38,6 +41,7 @@ export function PublicDeckSheet({
   isFavorited: boolean;
   isAuthenticated: boolean;
   ownedByCardId?: Record<string, number>;
+  cardnexusOrder: DeckCardnexusOrder;
 }) {
   const cardsById = new Map(catalog.map((card) => [card.id, card]));
   const cover = resolveDeckCover(deck, cardsById);
@@ -95,11 +99,13 @@ export function PublicDeckSheet({
               />
             )}
             {isAuthenticated && <CopyDeckButton deckId={deck.id} />}
+            <BuyDeckOnCardnexusButton order={cardnexusOrder} />
             {/* Un drapeau seul se prend pour un signet : le libellé dit ce que
                 le geste fait, et c'est ce qu'on veut d'une action de
                 modération. */}
             <ReportButton contentType="deck" contentId={deck.id} variant="outline" withLabel />
           </div>
+          <BuyDeckOnCardnexusHint order={cardnexusOrder} />
         </header>
 
         {deck.description && (

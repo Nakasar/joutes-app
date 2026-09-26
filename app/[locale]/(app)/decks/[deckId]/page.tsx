@@ -8,7 +8,7 @@ import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { getDeckById, incrementDeckViews } from "@/lib/db/decks.ts";
 import { getGameById } from "@/lib/db/games.ts";
-import { getDeckCardInfos } from "@/lib/db/deck-cards.ts";
+import { getDeckCardInfos, getDeckCardnexusOrder } from "@/lib/db/deck-cards.ts";
 import { deckCardIds } from "@/lib/decks/contents.ts";
 import { getDeckCollectionCounts } from "@/lib/decks/collection.ts";
 import { riftboundDeckCode } from "@/lib/decks/export-code.ts";
@@ -74,7 +74,11 @@ async function DeckPageContent({ params }: { params: Params }) {
 
   const game = await getGameById(deck.gameId);
   const zones = getDeckZones(game);
-  const catalog = await getDeckCardInfos(deck.gameId, deckCardIds(deck.cards));
+  const [catalog, cardnexusOrder] = await Promise.all([
+    getDeckCardInfos(deck.gameId, deckCardIds(deck.cards)),
+    // Le lien « Acheter le deck sur CardNexus » : le deck entier.
+    getDeckCardnexusOrder(deck, zones),
+  ]);
   const isFavorited = Boolean(session?.user && deck.favoritedBy?.includes(session.user.id));
 
   if (!isOwner) {
@@ -101,6 +105,7 @@ async function DeckPageContent({ params }: { params: Params }) {
           isFavorited={isFavorited}
           isAuthenticated={Boolean(session?.user?.id)}
           ownedByCardId={ownedByCardId ? Object.fromEntries(ownedByCardId) : undefined}
+          cardnexusOrder={cardnexusOrder}
         />
       </div>
     );
@@ -115,6 +120,7 @@ async function DeckPageContent({ params }: { params: Params }) {
         catalog={catalog}
         isFavorited={isFavorited}
         exportCode={game?.slug === "riftbound" ? riftboundDeckCode(deck.cards) : undefined}
+        cardnexusOrder={cardnexusOrder}
       />
     </div>
   );
