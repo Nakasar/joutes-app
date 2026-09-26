@@ -13,9 +13,11 @@ import { DeckCardThumb } from "@/components/decks/DeckCardThumb.tsx";
 import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
 import { DeckZoneCards, DeckZonesSummary } from "@/components/decks/DeckZoneCards.tsx";
 import { ShareDeckDialog } from "@/components/decks/ShareDeckDialog.tsx";
+import { BuyDeckOnCardnexusButton, BuyDeckOnCardnexusHint } from "@/components/decks/BuyDeckOnCardnexusButton.tsx";
 import { cn } from "@/lib/utils.ts";
 import { zoneEntries, type DeckCardInfo } from "@/lib/decks/contents.ts";
 import { resolveDeckCover } from "@/lib/decks/cover.ts";
+import type { DeckCardnexusOrder } from "@/lib/decks/cardnexus-order.ts";
 import type { DeckZone } from "@/lib/decks/zones.ts";
 import type { Deck, DeckGuideSection, DeckMatchup, DeckVisibility } from "@/lib/types/Deck.ts";
 import {
@@ -50,6 +52,7 @@ export function DeckSheet({
   catalog,
   isFavorited,
   exportCode,
+  cardnexusOrder,
 }: {
   deck: Deck;
   gameName?: string;
@@ -57,6 +60,7 @@ export function DeckSheet({
   catalog: DeckCardInfo[];
   isFavorited: boolean;
   exportCode?: string;
+  cardnexusOrder: DeckCardnexusOrder;
 }) {
   const router = useRouter();
   const [description, setDescription] = useState(deck.description ?? "");
@@ -301,6 +305,8 @@ export function DeckSheet({
             <p className="text-xs text-muted-foreground">
               Ouvre l&apos;éditeur avec le catalogue et les zones.
             </p>
+            <BuyDeckOnCardnexusButton order={cardnexusOrder} className="w-full" />
+            <BuyDeckOnCardnexusHint order={cardnexusOrder} />
           </SheetCard>
 
           {keyCards.length > 0 && (
@@ -357,6 +363,8 @@ export function DeckSheet({
               meta={<DeckSizeLabel cards={cards} zones={zones} />}
             >
               <DeckZonesSummary cards={cards} zones={zones} />
+              <BuyDeckOnCardnexusButton order={cardnexusOrder} className="w-full" />
+              <BuyDeckOnCardnexusHint order={cardnexusOrder} />
             </SheetCard>
             {matchupsCard}
           </div>

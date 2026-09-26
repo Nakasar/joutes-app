@@ -5,6 +5,10 @@ import type { DeckCardInfo, DeckCards } from "@/lib/decks/contents";
 import { deckCardIds } from "@/lib/decks/contents";
 import { CARD_COST_KEYS, toDeckCardInfo, type RawCard } from "@/lib/decks/card-info";
 import { normalizeCardName } from "@/lib/decks/text";
+import { getCardnexusProductIds } from "@/lib/db/card-prices";
+import { copyPriceKey } from "@/lib/prices/copies";
+import { deckCardnexusOrder, deckOrderLines, type DeckCardnexusOrder } from "@/lib/decks/cardnexus-order";
+import type { DeckZone } from "@/lib/decks/zones";
 
 type CardDoc = RawCard & { id: string; name: string };
 
@@ -105,4 +109,22 @@ export async function deriveDeckDomains(gameId: string, cards: DeckCards | undef
   }
 
   return [...domains].sort((a, b) => a.localeCompare(b, "fr"));
+}
+
+/**
+ * Le lien pour commander le deck entier sur CardNexus, et ce qu'il couvre
+ * (cf. `lib/decks/cardnexus-order.ts`). Les produits se lisent sur les relevés
+ * de prix du jeu du deck.
+ */
+export async function getDeckCardnexusOrder(
+  deck: { gameId: string; cards?: DeckCards },
+  zones: DeckZone[]
+): Promise<DeckCardnexusOrder> {
+  const lines = deckOrderLines(deck.cards, zones);
+  if (lines.length === 0 || !ObjectId.isValid(deck.gameId)) {
+    return { matched: 0, total: lines.length };
+  }
+
+  const productIds = await getCardnexusProductIds(new ObjectId(deck.gameId), lines);
+  return deckCardnexusOrder(lines, (line) => productIds.get(copyPriceKey(line.cardId)));
 }
