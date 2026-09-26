@@ -2907,6 +2907,10 @@
         "retry": "Try again",
         "copy": "Copy",
         "copied": "Copied to clipboard"
+      },
+      "cardnexus": {
+        "buy": "Buy on CardNexus",
+        "hint": "{matched, plural, one {# card} other {# cards}} out of {total} in the list available on CardNexus. Affiliate link: Joutes earns a commission on your purchases, at no extra cost to you."
       }
     },
     "SellLists": {

@@ -18,6 +18,7 @@ import {
   Pencil,
   Plus,
   Search,
+  ShoppingCart,
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { formatWishlistLine } from "@/lib/wishlists/export.ts";
+import type { WishlistCardnexusOrder } from "@/lib/wishlists/cardnexus-order.ts";
 import {
   Select,
   SelectContent,
@@ -84,6 +86,7 @@ export default function WishlistDetailClient({
   games,
   isLoggedIn,
   ownerInfo,
+  cardnexusOrder: initialCardnexusOrder,
 }: {
   wishlist: Wishlist;
   initialItems: PaginatedWishlistItems;
@@ -97,11 +100,14 @@ export default function WishlistDetailClient({
   games: Game[];
   isLoggedIn: boolean;
   ownerInfo: WishlistOwnerInfo | null;
+  /** Le lien pour commander la liste sur CardNexus, calculé au rendu ; l'écran le suit ensuite. */
+  cardnexusOrder: WishlistCardnexusOrder;
 }) {
   const t = useTranslations("Wishlists");
   const router = useRouter();
 
   const [wishlist, setWishlist] = useState(initialWishlist);
+  const [cardnexusOrder, setCardnexusOrder] = useState(initialCardnexusOrder);
   const [items, setItems] = useState(initialItems.items);
   const [total, setTotal] = useState(initialItems.total);
   const [page, setPage] = useState(initialItems.page);
@@ -118,6 +124,22 @@ export default function WishlistDetailClient({
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
 
   const initializedRef = useRef(false);
+
+  /**
+   * Le lien de commande porte la liste entière, et la liste vient de changer :
+   * il est redemandé plutôt que recomposé ici, les produits CardNexus ne se
+   * lisant qu'en base. Un échec laisse le lien précédent — un panier d'un
+   * souhait en retard vaut mieux que pas de bouton.
+   */
+  const refreshCardnexusOrder = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/wishlists/${wishlist.id}/cardnexus-order`);
+      if (!res.ok) return;
+      setCardnexusOrder(await res.json());
+    } catch (error) {
+      console.error("Failed to refresh the CardNexus order:", error);
+    }
+  }, [wishlist.id]);
 
   const fetchItems = useCallback(
     async (opts: {
@@ -180,6 +202,7 @@ export default function WishlistDetailClient({
       }
       setItems((prev) => prev.filter((i) => i.id !== item.id));
       setTotal((prev) => prev - 1);
+      void refreshCardnexusOrder();
     } finally {
       setBusyItemId(null);
     }
@@ -199,6 +222,7 @@ export default function WishlistDetailClient({
         return;
       }
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, quantity } : i)));
+      void refreshCardnexusOrder();
     } finally {
       setBusyItemId(null);
     }
@@ -210,6 +234,7 @@ export default function WishlistDetailClient({
     setGamesFacet((prev) =>
       prev.some((g) => g.gameId === item.gameId) ? prev : [...prev, { gameId: item.gameId, gameName: item.gameName, gameSlug: item.gameSlug }]
     );
+    void refreshCardnexusOrder();
   }
 
   return (
@@ -251,23 +276,33 @@ export default function WishlistDetailClient({
           )}
         </div>
 
-        {/* Quatre contrôles, dont trois au libellé long : sans repli, la barre
-            pousse la page hors de l'écran sur un téléphone. */}
-        <div className="flex flex-wrap items-center gap-2">
-          <ExportWishlistDialog wishlistId={wishlist.id} />
-          {canEdit && (
-            <>
-              <EditWishlistDialog wishlist={wishlist} onSaved={setWishlist} />
-              <AddItemDialog wishlistId={wishlist.id} games={games} onAdded={handleItemAdded} />
-            </>
+        <div className="flex flex-col gap-1.5 sm:items-end">
+          {/* Cinq contrôles, dont quatre au libellé long : sans repli, la barre
+              pousse la page hors de l'écran sur un téléphone. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <BuyOnCardnexusButton order={cardnexusOrder} />
+            <ExportWishlistDialog wishlistId={wishlist.id} />
+            {canEdit && (
+              <>
+                <EditWishlistDialog wishlist={wishlist} onSaved={setWishlist} />
+                <AddItemDialog wishlistId={wishlist.id} games={games} onAdded={handleItemAdded} />
+              </>
+            )}
+            {/* La suppression reste offerte sur une liste verrouillée : c'est la
+                seule façon de repasser sous la limite, et garder une liste dont on
+                ne peut plus rien faire ni se défaire serait une impasse. */}
+            {(canEdit || readOnly) && (
+              <DeleteWishlistButton wishlist={wishlist} onDeleted={() => router.push(wishlist.ownerType === "playGroup" ? `/play-groups/${wishlist.ownerId}/wishlists` : "/wishlists")} />
+            )}
+            <ReportButton contentType="wishlist" contentId={wishlist.id} />
+          </div>
+          {/* Ce que le panier couvre, et que le lien est affilié : une mention
+              qu'on lit sans survoler, un téléphone n'ayant pas de survol. */}
+          {cardnexusOrder.url && (
+            <p className="text-xs text-muted-foreground sm:text-right">
+              {t("cardnexus.hint", { matched: cardnexusOrder.matched, total: cardnexusOrder.total })}
+            </p>
           )}
-          {/* La suppression reste offerte sur une liste verrouillée : c'est la
-              seule façon de repasser sous la limite, et garder une liste dont on
-              ne peut plus rien faire ni se défaire serait une impasse. */}
-          {(canEdit || readOnly) && (
-            <DeleteWishlistButton wishlist={wishlist} onDeleted={() => router.push(wishlist.ownerType === "playGroup" ? `/play-groups/${wishlist.ownerId}/wishlists` : "/wishlists")} />
-          )}
-          <ReportButton contentType="wishlist" contentId={wishlist.id} />
         </div>
       </div>
 
@@ -460,6 +495,29 @@ export default function WishlistDetailClient({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * « Acheter sur CardNexus » : un lien, pas une action — le panier s'ouvre chez
+ * CardNexus, dans un autre onglet, par le lien affilié de Joutes (cf.
+ * `lib/wishlists/cardnexus-order.ts`). Rien n'est affiché quand aucun souhait
+ * n'a de produit là-bas : un bouton vers un panier vide n'aide personne.
+ */
+function BuyOnCardnexusButton({ order }: { order: WishlistCardnexusOrder }) {
+  const t = useTranslations("Wishlists");
+
+  if (!order.url) {
+    return null;
+  }
+
+  return (
+    <Button asChild variant="outline" size="sm" className="gap-1.5">
+      <a href={order.url} target="_blank" rel="noopener noreferrer sponsored">
+        <ShoppingCart className="size-3.5" />
+        {t("cardnexus.buy")}
+      </a>
+    </Button>
   );
 }
 

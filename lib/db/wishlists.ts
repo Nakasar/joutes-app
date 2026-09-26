@@ -9,6 +9,9 @@ import { getBadgesForUser, type UserBadges } from "@/lib/db/user-badges";
 import { ownerHasAdvancedCollection } from "@/lib/db/collection-access";
 import { FREE_WISHLIST_LIMIT, canCreateWishlist, isWishlistReadOnly } from "@/lib/wishlists/limits";
 import { withCardOrientation } from "@/lib/db/card-orientations";
+import { getCardnexusProductIds } from "@/lib/db/card-prices";
+import { copyPriceKey } from "@/lib/prices/copies";
+import { wishlistCardnexusOrder, type OrderableWish, type WishlistCardnexusOrder } from "@/lib/wishlists/cardnexus-order";
 
 const WISHLISTS_COLLECTION = "wishlists";
 const WISHLIST_ITEMS_COLLECTION = "wishlist-items";
@@ -582,6 +585,58 @@ export async function getWishlistItems(
     games: gameRows.map((g) => ({ gameId: g._id.toString(), gameName: g.gameName, gameSlug: g.gameSlug })),
     types: types.filter((t): t is string => typeof t === "string" && t.length > 0).sort(),
   };
+}
+
+/**
+ * Le lien pour commander la liste entière sur CardNexus, et ce qu'il couvre
+ * (cf. `lib/wishlists/cardnexus-order.ts`).
+ *
+ * La liste entière, et non la page affichée : c'est la liste qu'on achète, pas
+ * l'écran. Les produits se lisent sur les relevés de prix, un jeu à la fois —
+ * une liste mêle des jeux, et un relevé appartient à un jeu.
+ */
+export async function getWishlistCardnexusOrder(wishlistId: string): Promise<WishlistCardnexusOrder> {
+  if (!ObjectId.isValid(wishlistId)) {
+    return { matched: 0, total: 0 };
+  }
+
+  const docs = await db
+    .collection(WISHLIST_ITEMS_COLLECTION)
+    .find(
+      { wishlistId: new ObjectId(wishlistId) },
+      { projection: { _id: 0, cardId: 1, gameId: 1, printingId: 1, foil: 1, quantity: 1 }, sort: { createdAt: -1 } }
+    )
+    .toArray();
+
+  const wishes = docs.map((doc) => ({
+    cardId: doc.cardId as string,
+    gameId: doc.gameId as ObjectId,
+    ...(doc.printingId ? { printingId: doc.printingId as string } : {}),
+    ...(doc.foil ? { foil: true } : {}),
+    quantity: typeof doc.quantity === "number" && doc.quantity > 0 ? doc.quantity : 1,
+  }));
+
+  // Une carte n'est identifiée que dans son jeu : les produits se lisent jeu par
+  // jeu, et se retrouvent par le jeu, faute de quoi deux jeux qui numérotent
+  // pareil se voleraient leurs produits.
+  const byGame = new Map<string, { gameId: ObjectId; wishes: OrderableWish[] }>();
+  for (const wish of wishes) {
+    const key = wish.gameId.toString();
+    const group = byGame.get(key) ?? { gameId: wish.gameId, wishes: [] };
+    group.wishes.push(wish);
+    byGame.set(key, group);
+  }
+
+  const productIdsByGame = new Map<string, Map<string, number>>();
+  await Promise.all(
+    [...byGame.entries()].map(async ([key, { gameId, wishes: group }]) => {
+      productIdsByGame.set(key, await getCardnexusProductIds(gameId, group));
+    })
+  );
+
+  return wishlistCardnexusOrder(wishes, (wish) =>
+    productIdsByGame.get(wish.gameId.toString())?.get(copyPriceKey(wish.cardId, wish.printingId))
+  );
 }
 
 export async function addWishlistItem(

@@ -110,3 +110,31 @@ export function pickMarketPrice(
 
   return undefined;
 }
+
+/**
+ * Produit CardNexus d'un exemplaire, pour le commander : celui de sa variante
+ * d'impression quand CardNexus la cote à part (le tirage Beta d'une carte
+ * Cyberpunk), sinon celui de sa carte — la même règle que son prix.
+ *
+ * Parmi les produits d'une carte, c'est celui du tirage de référence qui est
+ * commandé : le moins cher, celui dont le prix affiché est tiré. Le foil, lui,
+ * ne change pas de produit — CardNexus cote les tirages d'un même produit — et
+ * se dit sur la ligne de commande (cf. `lib/wishlists/cardnexus-order.ts`).
+ *
+ * Seul un relevé CardNexus a un sens ici : un identifiant Cardmarket ne désigne
+ * rien chez CardNexus. Le relevé est passé sans `source` quand l'appelant l'a
+ * déjà filtré ; s'il la porte, elle est vérifiée.
+ */
+export function cardnexusProductId(
+  record: Pick<PriceRecord, "offers" | "printings"> & { source?: CardPriceSource },
+  printingId?: string
+): number | undefined {
+  if (record.source !== undefined && record.source !== "cardnexus") {
+    return undefined;
+  }
+
+  const own = printingId ? record.printings?.[printingId]?.offers : undefined;
+  const offers = own && own.length > 0 ? own : (record.offers ?? []);
+
+  return referenceOffer(offers)?.productId;
+}

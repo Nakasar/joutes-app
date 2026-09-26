@@ -5205,6 +5205,32 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /wishlists/{wishlistId}/cardnexus-order:
+    parameters:
+      - { name: wishlistId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Wishlists]
+      summary: Link to order the whole wishlist on CardNexus
+      security: []
+      description: |
+        Session optional, same visibility rule as the items. Opens the CardNexus Cart Wizard with every
+        wishlist item that CardNexus sells, through Joutes' affiliate link. Items without a CardNexus
+        product are left out; `matched` tells how many of the `total` items the link carries. `url` is
+        absent when no item has a CardNexus product.
+      responses:
+        "200":
+          description: The order link and what it covers.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [matched, total]
+                properties:
+                  url: { type: string, format: uri, description: "Affiliate Cart Wizard link; absent when nothing can be ordered." }
+                  matched: { type: integer, description: "Items the link carries (at most 400)." }
+                  total: { type: integer, description: "Items in the wishlist." }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /wishlists/{wishlistId}/items:
     parameters:
       - { name: wishlistId, in: path, required: true, schema: { type: string } }

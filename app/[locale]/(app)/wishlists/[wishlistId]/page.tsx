@@ -10,6 +10,7 @@ import {
   getDefaultWishlistId,
   getWishlistAccess,
   getWishlistById,
+  getWishlistCardnexusOrder,
   getWishlistItems,
   getWishlistOwnerInfo,
 } from "@/lib/db/wishlists.ts";
@@ -70,7 +71,7 @@ async function WishlistDetailPageContent({
   }
 
   const owner = { type: wishlist.ownerType, id: wishlist.ownerId } as const;
-  const [initialItems, allGames, ownerInfo, advanced, defaultId] = await Promise.all([
+  const [initialItems, allGames, ownerInfo, advanced, defaultId, cardnexusOrder] = await Promise.all([
     getWishlistItems(wishlistId, { page: 1, limit: 48, viewerId: session?.user?.id }),
     getAllGames(),
     getWishlistOwnerInfo(wishlist),
@@ -80,6 +81,8 @@ async function WishlistDetailPageContent({
     // sans passer par la liste de gestion, donc sans rattrapage préalable. S'y
     // fier afficherait en lecture seule l'unique liste d'un compte ancien.
     getDefaultWishlistId(owner),
+    // Le lien « Acheter sur CardNexus » : la liste entière, pas la page.
+    getWishlistCardnexusOrder(wishlistId),
   ]);
 
   // Sans gestion avancée, seule la liste par défaut reste modifiable. On éteint
@@ -110,6 +113,7 @@ async function WishlistDetailPageContent({
         games={games}
         isLoggedIn={!!session?.user?.id}
         ownerInfo={ownerInfo}
+        cardnexusOrder={cardnexusOrder}
       />
     </div>
   );

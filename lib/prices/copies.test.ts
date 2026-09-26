@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { copyPriceKey, pickMarketPrice, printingMarketPrice, type PriceRecord } from "./copies";
+import { cardnexusProductId, copyPriceKey, pickMarketPrice, printingMarketPrice, type PriceRecord } from "./copies";
 
 /**
  * Prix d'un exemplaire : sa variante d'impression quand elle est cotée à part,
@@ -84,5 +84,40 @@ describe("printingMarketPrice", () => {
   it("accepte une date déjà sérialisée", () => {
     const serialized = { ...cardnexus, sourceUpdatedAt: sourceUpdatedAt.toISOString() };
     assert.equal(printingMarketPrice([serialized], ["cardnexus"], "beta")?.updatedAt, "2026-09-20T03:00:00.000Z");
+  });
+});
+
+describe("cardnexusProductId", () => {
+  const record: PriceRecord = {
+    source: "cardnexus",
+    currency: "EUR",
+    prices: { trend: 0.5 },
+    offers: [
+      { productId: 12, productName: "Foil print", finish: "Foil", prices: { trend: 4 } },
+      { productId: 11, productName: "Retail", finish: "Standard", prices: { trend: 0.5 } },
+    ],
+    printings: {
+      beta: { prices: { trend: 42 }, offers: [{ productId: 20, productName: "Beta", finish: "Standard", prices: { trend: 42 } }] },
+      showcase: { prices: {}, offers: [] },
+    },
+    sourceUpdatedAt,
+  };
+
+  it("commande le produit du tirage de référence, celui dont le prix affiché est tiré", () => {
+    assert.equal(cardnexusProductId(record), 11);
+  });
+
+  it("commande le produit propre à la variante quand CardNexus la cote à part", () => {
+    assert.equal(cardnexusProductId(record, "beta"), 20);
+  });
+
+  it("retombe sur le produit de la carte pour une variante que personne ne cote à part", () => {
+    assert.equal(cardnexusProductId(record, "showcase"), 11);
+    assert.equal(cardnexusProductId(record, "unknown"), 11);
+  });
+
+  it("ne commande rien d'un relevé sans produit, ni d'un relevé Cardmarket", () => {
+    assert.equal(cardnexusProductId({ offers: [] }), undefined);
+    assert.equal(cardnexusProductId(cardmarket), undefined);
   });
 });
