@@ -121,6 +121,13 @@ export default function RootLayout({
     // `lang` est posé par `HtmlLang`, plus bas : c'est un attribut, il ne peut
     // pas attendre une frontière, et le calculer ici viderait la coquille.
     <html suppressHydrationWarning>
+      <head>
+        {/* Vérification du site par Impact (affiliation). La balise est recopiée
+            telle qu'Impact la donne, avec `value` et non `content` : c'est
+            celle que son vérificateur lit. `value` n'étant pas un attribut
+            typé de `<meta>`, il passe par une décomposition. */}
+        <meta name="impact-site-verification" {...{ value: "8d3423f5-8f0a-4f83-8952-3496a9f547c6" }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen${isWinterTheme ? ' winter-theme' : ''}${isHalloweenTheme ? ' halloween-theme' : ''}`}
       >
