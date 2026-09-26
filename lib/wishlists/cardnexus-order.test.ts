@@ -59,6 +59,24 @@ describe("wishlistCardnexusOrder", () => {
     assert.equal(order.url?.split("/cn/")[1], "101.2..f");
   });
 
+  it("ne compte pas comme porté un souhait dont l'identifiant de produit n'en est pas un", () => {
+    const broken = new Map([
+      ["OGN-001", Number.NaN],
+      ["OGN-002", -7],
+      ["OGN-003", 3.5],
+    ]);
+    const order = wishlistCardnexusOrder(
+      [
+        { cardId: "OGN-001", quantity: 1 },
+        { cardId: "OGN-002", quantity: 1 },
+        { cardId: "OGN-003", quantity: 1 },
+      ],
+      (wish) => broken.get(wish.cardId)
+    );
+    assert.equal(order.url, undefined);
+    assert.deepEqual([order.matched, order.total], [0, 3]);
+  });
+
   it("ne rend pas de lien quand aucun souhait n'a de produit", () => {
     const order = wishlistCardnexusOrder([{ cardId: "PROMO-9", quantity: 1 }], productIdOf);
     assert.equal(order.url, undefined);

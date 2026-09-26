@@ -5207,11 +5207,11 @@ paths:
 
   /wishlists/{wishlistId}/cardnexus-order:
     parameters:
-      - { name: wishlistId, in: path, required: true, schema: { type: string } }
+      - { name: wishlistId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-fA-F]{24}$" } }
     get:
       tags: [Wishlists]
       summary: Link to order the whole wishlist on CardNexus
-      security: []
+      security: [{ sessionAuth: [] }, {}]
       description: |
         Session optional, same visibility rule as the items. Opens the CardNexus Cart Wizard with every
         wishlist item that CardNexus sells, through Joutes' affiliate link. Items without a CardNexus

@@ -62,7 +62,9 @@ export function wishlistCardnexusOrder<T extends OrderableWish>(
 
   for (const wish of wishes) {
     const productId = productIdOf(wish);
-    if (productId === undefined) {
+    // Un identifiant qui n'en est pas un — un relevé corrompu — ne compte pas
+    // comme porté : `matched` doit dire ce que le lien envoie, ni plus ni moins.
+    if (productId === undefined || !Number.isInteger(productId) || productId <= 0) {
       continue;
     }
     lines.push({ productId, quantity: wish.quantity, ...(wish.foil ? { finish: "f" } : {}) });
