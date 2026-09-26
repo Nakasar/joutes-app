@@ -18,6 +18,7 @@ import {
     createWishlist,
     getWishlistAccess,
     getWishlistById,
+    getWishlistCardnexusOrder,
     getWishlistItems,
     getWishlistsForOwner,
     removeWishlistItem,
@@ -361,19 +362,28 @@ async function handleGetWishlist(
     if (!wishlist || !access?.canView) return errorResult("Wishlist non trouvée.");
 
     const page = Math.max(1, args.page ?? 1);
-    const items = await getWishlistItems(args.wishlistId, {
-        search: args.search,
-        page,
-        limit: 30,
-        viewerId: userId,
-    });
+    const [items, order] = await Promise.all([
+        getWishlistItems(args.wishlistId, {
+            search: args.search,
+            page,
+            limit: 30,
+            viewerId: userId,
+        }),
+        // Le lien « Acheter sur CardNexus » de la page : la liste entière, pas
+        // la page ni la recherche (cf. lib/wishlists/cardnexus-order.ts).
+        getWishlistCardnexusOrder(args.wishlistId),
+    ]);
+
+    const orderText = order.url
+        ? `\n\nAcheter sur CardNexus (${order.matched}/${order.total} carte(s) de la liste, lien affilié Joutes) : ${order.url}`
+        : "";
 
     const itemsText = items.items.map(item =>
         `- ${item.name} (${item.setCode} #${item.collectorNumber}) ×${item.quantity}${item.gameName ? ` — ${item.gameName}` : ""}${typeof item.ownedQuantity === "number" && item.ownedQuantity > 0 ? ` (possédée ×${item.ownedQuantity})` : ""}${item.note ? ` — note : ${item.note}` : ""} [ID: ${item.id}]`
     ).join("\n");
 
     return textResult(
-        `Wishlist **${wishlist.name}** (${wishlist.itemsCount} carte(s), visibilité ${wishlist.visibility})${wishlist.description ? ` — ${wishlist.description}` : ""}\nPage ${items.page}/${items.totalPages} :\n\n${itemsText || "Aucune carte."}`
+        `Wishlist **${wishlist.name}** (${wishlist.itemsCount} carte(s), visibilité ${wishlist.visibility})${wishlist.description ? ` — ${wishlist.description}` : ""}\nPage ${items.page}/${items.totalPages} :\n\n${itemsText || "Aucune carte."}${orderText}`
     );
 }
 
@@ -856,7 +866,7 @@ export function registerJoutesDataTools(server: McpServer) {
     }, withToolLogging("list_wishlists", handleListWishlists));
     server.registerTool("get_wishlist", {
         title: "Get wishlist",
-        description: "Consulter le contenu d'une wishlist (paginé, avec recherche).",
+        description: "Consulter le contenu d'une wishlist (paginé, avec recherche), avec le lien pour la commander sur CardNexus.",
         inputSchema: {
             wishlistId: z.string(),
             search: z.string().optional(),

@@ -594,7 +594,9 @@ CardNexus.
 Le lien couvre **la liste entière**, pas la page affichée ni le filtre en cours,
 et il suit la liste : l'écran le redemande (`GET
 /api/wishlists/<id>/cardnexus-order`) à chaque souhait ajouté, retiré ou
-changé de quantité. Il n'est lu que par qui peut voir la liste.
+changé de quantité. Il n'est lu que par qui peut voir la liste. L'outil MCP
+`get_wishlist` le donne aussi, à la suite des cartes : un agent peut proposer
+de commander la liste.
 
 ### Valeur d'un booster
 
