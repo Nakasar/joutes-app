@@ -2349,6 +2349,10 @@
         "retry": "Erneut versuchen",
         "copy": "Kopieren",
         "copied": "In die Zwischenablage kopiert"
+      },
+      "cardnexus": {
+        "buy": "Auf CardNexus kaufen",
+        "hint": "{matched, plural, one {# Karte} other {# Karten}} von {total} der Liste auf CardNexus verfügbar. Affiliate-Link: Joutes erhält eine Provision auf Ihre Einkäufe, ohne Mehrkosten für Sie."
       }
     },
     "SellLists": {

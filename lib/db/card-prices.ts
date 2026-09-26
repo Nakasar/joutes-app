@@ -5,7 +5,7 @@ import type { ObjectId } from "mongodb";
 import type { CardPrice, CardPriceSource } from "@/lib/types/card-price";
 import { CARD_PRICE_SOURCES } from "@/lib/types/card-price";
 import { cardPriceAmount, type MarketPrice } from "@/lib/prices/display";
-import { copyPriceKey, pickMarketPrice, type PricedCopy, type PriceRecord } from "@/lib/prices/copies";
+import { cardnexusProductId, copyPriceKey, pickMarketPrice, type PricedCopy, type PriceRecord } from "@/lib/prices/copies";
 import { attachInBatches } from "@/lib/prices/stream";
 import { viewerPriceSources } from "@/lib/prices/viewer";
 
@@ -257,6 +257,44 @@ export function withMarketPricesStream<T extends { id: string; cardId?: string }
   batchSize = 500
 ): AsyncGenerator<T & { marketPrice?: MarketPrice }> {
   return attachInBatches(cards, (batch) => withMarketPrices(gameId, batch, sources), batchSize);
+}
+
+/**
+ * Produits CardNexus d'un lot d'exemplaires, par `copyPriceKey` : de quoi les
+ * commander (cf. `lib/wishlists/cardnexus-order.ts`).
+ *
+ * Seul le relevé CardNexus est lu, quel que soit l'ordre des fournisseurs : un
+ * lien de commande CardNexus ne porte que des identifiants CardNexus, et la
+ * préférence d'un joueur dit quel prix il veut voir, pas où il veut acheter.
+ * Un exemplaire que CardNexus ne cote pas est absent du résultat.
+ */
+export async function getCardnexusProductIds(gameId: ObjectId, copies: PricedCopy[]): Promise<Map<string, number>> {
+  if (copies.length === 0) {
+    return new Map();
+  }
+
+  const docs = await collection()
+    .find(
+      { gameId, source: "cardnexus", cardId: { $in: [...new Set(copies.map((copy) => copy.cardId))] } },
+      { projection: { _id: 0, cardId: 1, offers: 1, printings: 1 } }
+    )
+    .toArray();
+  const recordByCard = new Map(docs.map((doc) => [doc.cardId, doc]));
+
+  const productIds = new Map<string, number>();
+  for (const copy of copies) {
+    const key = copyPriceKey(copy.cardId, copy.printingId);
+    if (productIds.has(key)) {
+      continue;
+    }
+    const record = recordByCard.get(copy.cardId);
+    const productId = record && cardnexusProductId(record, copy.printingId);
+    if (productId !== undefined) {
+      productIds.set(key, productId);
+    }
+  }
+
+  return productIds;
 }
 
 /** Nombre de cartes du jeu qui portent un relevé de ce fournisseur. */

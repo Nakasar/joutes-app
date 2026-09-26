@@ -2907,6 +2907,10 @@
         "retry": "Riprova",
         "copy": "Copia",
         "copied": "Copiato negli appunti"
+      },
+      "cardnexus": {
+        "buy": "Acquista su CardNexus",
+        "hint": "{matched, plural, one {# carta} other {# carte}} su {total} della lista disponibili su CardNexus. Link di affiliazione: Joutes riceve una commissione sui tuoi acquisti, senza costi aggiuntivi per te."
       }
     },
     "SellLists": {

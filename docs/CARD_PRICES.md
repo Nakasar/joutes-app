@@ -561,6 +561,43 @@ galerie et dans la collection, la tuile entière est cliquable et une ancre
 imbriquée dans une autre n'est pas du HTML valide — la fiche de la carte, à un
 clic, porte le lien.
 
+### Commander une liste de souhaits sur CardNexus
+
+Une liste de souhaits porte un bouton **Acheter sur CardNexus** : il ouvre le
+« Cart Wizard » de CardNexus avec les cartes de la liste déjà dedans, et
+CardNexus compose le panier le moins cher parmi ses vendeurs. Le lien est
+celui du programme d'affiliation ([documentation](https://docs.cardnexus.com/affiliates)) :
+
+```
+https://af.cardnexus.link/<mpId>/products/cn/<produit>.<quantité>.<langue>.<tirage>~<produit>…
+```
+
+`<mpId>` est l'identifiant de partenaire de Joutes (`CARDNEXUS_AFFILIATE_ID`,
+`lib/prices/cardnexus.ts`). Les achats qui suivent le clic sont commissionnés,
+sans surcoût pour l'acheteur, et l'écran le dit sous le bouton.
+
+**Ce sont les relevés de prix qui disent quoi commander.** Le lien ne prend
+que des identifiants de produit CardNexus, que les cartes n'ont pas ; leurs
+relevés, si (`offers[].productId`, ci-dessus). Un souhait est donc commandé
+par le produit de sa carte — celui du tirage de référence, le moins cher — ou
+celui de sa variante quand CardNexus la cote à part, la règle même de son prix
+(`cardnexusProductId`, `lib/prices/copies.ts`). Un souhait foil demande un
+tirage « autre que standard » (`f`) : nous ne savons pas lequel des foils.
+Aucune langue n'est écrite, la liste ne disant pas laquelle son auteur veut.
+
+Ce que CardNexus ne cote pas n'est pas commandé : un souhait sans relevé
+CardNexus reste hors du lien, plutôt que remplacé par une autre impression, et
+la mention sous le bouton compte les cartes portées sur celles de la liste. Sans
+aucune, il n'y a pas de bouton. Le lien s'arrête à 400 lignes, la limite de
+CardNexus.
+
+Le lien couvre **la liste entière**, pas la page affichée ni le filtre en cours,
+et il suit la liste : l'écran le redemande (`GET
+/api/wishlists/<id>/cardnexus-order`) à chaque souhait ajouté, retiré ou
+changé de quantité. Il n'est lu que par qui peut voir la liste. L'outil MCP
+`get_wishlist` le donne aussi, à la suite des cartes : un agent peut proposer
+de commander la liste.
+
 ### Valeur d'un booster
 
 L'éditeur de booster affiche la somme des prix de ses cartes. Elle se recalcule
@@ -786,8 +823,9 @@ chiffres disent ce qu'il manque, et `CARDNEXUS_GAME_PROFILES`
   produit, couverts par `sources.test.ts`.
 - `lib/prices/offers.ts` : le choix du tirage de référence, commun aux deux
   fournisseurs.
-- `lib/prices/cardnexus.ts` : les identifiants de jeu, les types des feeds et le
-  lien vers un produit.
+- `lib/prices/cardnexus.ts` : les identifiants de jeu, les types des feeds, le
+  lien vers un produit et le lien de commande affilié (`cardnexusOrderUrl`),
+  couverts par `cardnexus.test.ts`.
 - `lib/prices/cardnexus-feed.ts` : les métadonnées d'un feed et sa lecture ligne
   à ligne, couvertes par `cardnexus-feed.test.ts`.
 - `lib/prices/cardnexus-matching.ts` : le rapprochement par extension et numéro,
@@ -805,8 +843,13 @@ chiffres disent ce qu'il manque, et `CARDNEXUS_GAME_PROFILES`
   de cartes sans une requête par carte — et qui choisissent, carte par carte, le
   fournisseur qui la représente.
 - `lib/prices/copies.ts` : le prix d'un exemplaire, celui de sa variante ou de
-  sa carte, couvert par `copies.test.ts` ; `getCopyMarketPrices`
-  (`lib/db/card-prices.ts`) le lit pour un lot d'exemplaires.
+  sa carte, et le produit CardNexus à commander pour lui, couverts par
+  `copies.test.ts` ; `getCopyMarketPrices` et `getCardnexusProductIds`
+  (`lib/db/card-prices.ts`) les lisent pour un lot d'exemplaires.
+- `lib/wishlists/cardnexus-order.ts` : le lien de commande d'une liste de
+  souhaits et ce qu'il couvre, couvert par `cardnexus-order.test.ts` ;
+  `getWishlistCardnexusOrder` (`lib/db/wishlists.ts`) le construit pour une
+  liste, derrière `app/api/wishlists/[wishlistId]/cardnexus-order`.
 - `lib/prices/display.ts` : le montant qui représente une carte, la somme d'un
   lot et leur mise en forme, couverts par `display.test.ts`.
 - `components/cards/CardPriceTag.tsx` et `CardPriceDetails.tsx` : l'affichage,

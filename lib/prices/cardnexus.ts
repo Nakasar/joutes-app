@@ -159,3 +159,82 @@ export type CardnexusFeeds = {
   expansions: CardnexusFeedMetadata;
   prices: CardnexusFeedMetadata;
 };
+
+/**
+ * Identifiant de partenaire média (`mpId`) de Joutes dans le programme
+ * d'affiliation CardNexus (https://docs.cardnexus.com/affiliates). Tout lien
+ * suivi commence par lui ; ce n'est pas un secret, il est dans l'adresse que
+ * clique le visiteur.
+ */
+export const CARDNEXUS_AFFILIATE_ID = "7851059";
+
+/** Un lien de commande ne prend que ses 400 premières lignes : le reste est ignoré. */
+export const CARDNEXUS_ORDER_MAX_LINES = 400;
+
+/**
+ * Une ligne d'un lien de commande : un produit, et ce qu'on en veut.
+ *
+ * `finish` s'écrit comme CardNexus l'attend : `s` pour le tirage standard
+ * seul, `f` pour n'importe quel tirage autre que standard, ou un tirage précis
+ * en minuscules avec des tirets (`rainbow-foil`). `language` est un code de
+ * langue (`en`, `fr`, `zh-Hans`). Laissés vides, CardNexus accepte n'importe
+ * laquelle.
+ */
+export type CardnexusOrderLine = {
+  productId: number;
+  /** Nombre d'exemplaires, `1` si absent. */
+  quantity?: number;
+  language?: string;
+  finish?: string;
+};
+
+/** Ce qu'un champ de ligne peut contenir : le lien ne s'encode pas. */
+const ORDER_FIELD = /^[A-Za-z0-9-]+$/;
+
+/**
+ * Une ligne au format `{productId}.{quantity}.{language}.{finish}`. Les champs
+ * de fin absents ne s'écrivent pas ; un champ vide au milieu reste vide
+ * (`50212.4..f`). La quantité est écrite dès qu'un champ la suit, même à `1` :
+ * une ligne qui commence par deux points de suite n'est pas documentée.
+ *
+ * Un champ qui ne s'écrit pas avec les seuls caractères que le lien accepte est
+ * laissé vide plutôt que de casser la ligne — CardNexus lit alors « n'importe
+ * lequel », ce qu'il aurait lu d'une valeur qu'il ne connaît pas.
+ */
+function formatOrderLine(line: CardnexusOrderLine): string {
+  const field = (value: string | undefined): string => (value && ORDER_FIELD.test(value) ? value : "");
+  const quantity = Math.max(1, Math.floor(line.quantity ?? 1));
+  const fields = [String(quantity), field(line.language), field(line.finish)];
+
+  while (fields.length > 0 && fields[fields.length - 1] === "") {
+    fields.pop();
+  }
+
+  if (fields.length === 1 && quantity === 1) {
+    return String(line.productId);
+  }
+
+  return [String(line.productId), ...fields].join(".");
+}
+
+/**
+ * Lien de commande d'une liste de produits sur CardNexus, suivi par le
+ * programme d'affiliation : il ouvre le « Cart Wizard » avec la liste déjà
+ * remplie, qui compare les vendeurs et compose le panier le moins cher.
+ *
+ * Une ligne par produit, séparées par `~`. Le lien ne contient que des
+ * lettres, des chiffres, `.`, `~` et `-` : il ne s'encode pas. Au-delà de
+ * `CARDNEXUS_ORDER_MAX_LINES`, CardNexus ignore la suite : les lignes en trop
+ * ne sont pas envoyées, à l'appelant de dire qu'il en manque.
+ *
+ * `undefined` sans aucune ligne : un lien vers un panier vide n'aide personne.
+ */
+export function cardnexusOrderUrl(lines: CardnexusOrderLine[]): string | undefined {
+  const kept = lines.filter((line) => Number.isInteger(line.productId) && line.productId > 0).slice(0, CARDNEXUS_ORDER_MAX_LINES);
+
+  if (kept.length === 0) {
+    return undefined;
+  }
+
+  return `https://af.cardnexus.link/${CARDNEXUS_AFFILIATE_ID}/products/cn/${kept.map(formatOrderLine).join("~")}`;
+}
