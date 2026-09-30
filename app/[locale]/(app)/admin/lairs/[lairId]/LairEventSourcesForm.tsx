@@ -7,9 +7,11 @@ import { EventHtmlConfig, EventSource, Lair, LairEventsRefreshReport } from "@/l
 import { HTML_PRESETS } from "@/lib/events/html-presets.ts";
 import { normalizeEventName } from "@/lib/events/source-events.ts";
 import { isWebUrl } from "@/lib/schemas/lair.schema.ts";
+import { hobbynextSourceUrl, isHobbynextId } from "@/lib/events/hobbynext-source.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   EventSourcePreview,
+  lookupHobbynextOwner,
   markEventSourceRequestDone,
   previewLairEventSource,
   refreshEvents,
@@ -332,8 +334,8 @@ export function LairEventSourcesForm({
             <p className="text-sm text-muted-foreground">
               D&apos;où viennent les événements du lieu. Une source par sélecteurs lit une page
               sans modèle ; une source en correspondance décrit un JSON champ par champ ; une
-              source lue par l&apos;IA n&apos;a besoin que d&apos;une URL, mais coûte un appel et se
-              trompe parfois. Testez une source pour voir ce qu&apos;elle rend avant de
+              source Hobbynext lit l&apos;agenda du lieu chez Asmodee ; une source lue par
+              l&apos;IA n&apos;a besoin que d&apos;une URL, mais coûte un appel et se trompe parfois. Testez une source pour voir ce qu&apos;elle rend avant de
               l&apos;enregistrer.
             </p>
           </div>
@@ -428,6 +430,21 @@ export function LairEventSourcesForm({
                       >
                         Correspondance
                       </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={source.type === "HOBBYNEXT" ? "default" : "outline"}
+                        onClick={() => {
+                          const ownerId = source.hobbynextConfig?.ownerId ?? "";
+                          patch(key, {
+                            url: isHobbynextId(ownerId) ? hobbynextSourceUrl(ownerId) : "",
+                            type: "HOBBYNEXT",
+                            hobbynextConfig: { ownerId },
+                          });
+                        }}
+                      >
+                        Hobbynext
+                      </Button>
                     </div>
                     <button
                       type="button"
@@ -440,6 +457,19 @@ export function LairEventSourcesForm({
                   </div>
                 </div>
 
+                {source.type === "HOBBYNEXT" ? (
+                  <HobbynextField
+                    sourceKey={key}
+                    ownerId={source.hobbynextConfig?.ownerId ?? ""}
+                    onChange={(ownerId) =>
+                      patch(key, {
+                        ...source,
+                        url: isHobbynextId(ownerId) ? hobbynextSourceUrl(ownerId) : "",
+                        hobbynextConfig: { ownerId },
+                      })
+                    }
+                  />
+                ) : (
                 <div>
                   <label
                     htmlFor={`source-url-${key}`}
@@ -456,6 +486,7 @@ export function LairEventSourcesForm({
                     className={`${FIELD_CLASS} font-mono`}
                   />
                 </div>
+                )}
 
                 {source.type === "IA" && (
                   <div>
@@ -809,6 +840,7 @@ export function LairEventSourcesForm({
                   </div>
                 )}
 
+                {source.type !== "HOBBYNEXT" && (
                 <div>
                   <label
                     htmlFor={`source-form-${key}`}
@@ -830,6 +862,7 @@ export function LairEventSourcesForm({
                     là où le site attend la ville : la page est demandée une fois par ville cochée.
                   </p>
                 </div>
+                )}
 
                 <div>
                   <label
@@ -883,6 +916,97 @@ export function LairEventSourcesForm({
         <span className="text-xs text-muted-foreground">
           Une source sans URL est abandonnée à l&apos;enregistrement.
         </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Le lieu d'une source Hobbynext : son identifiant d'organisateur. Hobbynext
+ * ne le montre nulle part ; on le retrouve depuis le lien d'un événement du
+ * lieu, que l'on colle ici.
+ */
+function HobbynextField({
+  sourceKey,
+  ownerId,
+  onChange,
+}: {
+  sourceKey: string;
+  ownerId: string;
+  onChange: (ownerId: string) => void;
+}) {
+  const [eventRef, setEventRef] = useState("");
+  const [looking, startLooking] = useTransition();
+  const [found, setFound] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const lookup = () =>
+    startLooking(async () => {
+      setFound(null);
+      const result = await lookupHobbynextOwner(eventRef);
+      if (!result.success) {
+        setFound({ ok: false, text: result.error });
+        return;
+      }
+      onChange(result.ownerId);
+      const where = [result.eventName, result.city].filter(Boolean).join(" — ");
+      setFound({ ok: true, text: `Lieu ${result.ownerId}${where ? `, organisateur de « ${where} »` : ""}.` });
+    });
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <label
+          htmlFor={`hobbynext-owner-${sourceKey}`}
+          className="block text-xs font-medium text-muted-foreground mb-1"
+        >
+          Identifiant Hobbynext du lieu
+        </label>
+        <input
+          id={`hobbynext-owner-${sourceKey}`}
+          type="text"
+          inputMode="numeric"
+          value={ownerId}
+          onChange={(e) => onChange(e.target.value.trim())}
+          placeholder="1699"
+          className={`${FIELD_CLASS} font-mono`}
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Le champ <span className="font-mono">owner</span> des événements du lieu dans l&apos;API
+          d&apos;Asmodee. Le nom des jeux se règle par les alias ci-dessous : Hobbynext les nomme en
+          anglais (« Forest Shuffle »).
+        </p>
+      </div>
+      <div>
+        <label
+          htmlFor={`hobbynext-event-${sourceKey}`}
+          className="block text-xs font-medium text-muted-foreground mb-1"
+        >
+          Le retrouver depuis un événement du lieu
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <input
+            id={`hobbynext-event-${sourceKey}`}
+            type="text"
+            value={eventRef}
+            onChange={(e) => setEventRef(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                lookup();
+              }
+            }}
+            placeholder="https://event.hobbynext.com/fr/events/38425"
+            className={`${FIELD_CLASS} font-mono flex-1 min-w-[12rem]`}
+          />
+          <Button type="button" size="sm" variant="outline" onClick={lookup} disabled={looking || eventRef.trim() === ""}>
+            {looking ? "Recherche…" : "Trouver"}
+          </Button>
+        </div>
+        {found && (
+          <p className={`text-xs mt-1 ${found.ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+            {found.text}
+          </p>
+        )}
       </div>
     </div>
   );

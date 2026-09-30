@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hobbynextSourceUrl, isHobbynextId } from "@/lib/events/hobbynext-source";
 
 // Pour la validation d'ID MongoDB (ObjectId est un string hexadecimal de 24 caractères)
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID doit être un ObjectId MongoDB valide");
@@ -71,13 +72,19 @@ const eventHtmlConfigSchema = z.object({
   venueOptionsSelector: z.string().trim().max(300, "Le sélecteur est trop long").optional(),
 });
 
+// Schéma pour un lieu sur Hobbynext
+const eventHobbynextConfigSchema = z.object({
+  ownerId: z.string().trim().refine(isHobbynextId, "L'identifiant Hobbynext du lieu est un nombre"),
+});
+
 // Schéma pour une source d'événements
 export const eventSourceSchema = z.object({
   url: z.string().url("L'URL doit être valide"),
-  type: z.enum(['IA', 'MAPPING', 'HTML']),
+  type: z.enum(['IA', 'MAPPING', 'HTML', 'HOBBYNEXT']),
   instructions: z.string().max(2000, "Les consignes sont trop longues").optional(),
   mappingConfig: eventMappingConfigSchema.optional(),
   htmlConfig: eventHtmlConfigSchema.optional(),
+  hobbynextConfig: eventHobbynextConfigSchema.optional(),
   formFields: z
     .record(z.string().trim().min(1).max(100), z.string().max(500))
     .optional(),
@@ -99,6 +106,22 @@ export const eventSourceSchema = z.object({
       code: z.ZodIssueCode.custom,
       message: "La configuration des sélecteurs est requise pour le type HTML",
       path: ["htmlConfig"],
+    });
+  }
+  if (data.type === 'HOBBYNEXT' && !data.hobbynextConfig) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "L'identifiant Hobbynext du lieu est requis",
+      path: ["hobbynextConfig", "ownerId"],
+    });
+  }
+  // L'URL d'une source Hobbynext est la clé de ses événements : elle suit
+  // l'identifiant, sans quoi deux lieux pourraient partager une clé qui ment.
+  if (data.type === 'HOBBYNEXT' && data.hobbynextConfig && data.url !== hobbynextSourceUrl(data.hobbynextConfig.ownerId)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "L'URL d'une source Hobbynext doit correspondre à son identifiant",
+      path: ["url"],
     });
   }
   // Un titre composé ou un nom : sans l'un des deux, aucun événement n'a de nom.

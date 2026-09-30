@@ -96,13 +96,23 @@ export type EventHtmlConfig = {
   venueOptionsSelector?: string;
 };
 
+/**
+ * Un lieu sur Hobbynext (l'agenda des boutiques d'Asmodee) : son identifiant
+ * d'organisateur, le `owner` des événements de son API.
+ */
+export type EventHobbynextConfig = {
+  ownerId: string;
+};
+
 // Type pour une source d'événements
 export type EventSource = {
+  /** Pour une source Hobbynext, déduite de `hobbynextConfig.ownerId` (voir `hobbynextSourceUrl`). */
   url: string;
-  type: 'IA' | 'MAPPING' | 'HTML';
+  type: 'IA' | 'MAPPING' | 'HTML' | 'HOBBYNEXT';
   instructions?: string;
   mappingConfig?: EventMappingConfig;
   htmlConfig?: EventHtmlConfig;
+  hobbynextConfig?: EventHobbynextConfig;
   /**
    * Les champs d'un formulaire à envoyer pour obtenir la page — la ville à
    * afficher, un filtre. Quand ils sont là, la page est demandée en POST

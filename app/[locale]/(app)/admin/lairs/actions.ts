@@ -14,11 +14,13 @@ import {
 import { z } from "zod";
 import * as lairsDb from "@/lib/db/lairs.ts";
 import {
+  findHobbynextOwner,
   previewEventSource,
   refreshEvents as refreshEventsService,
   RefreshEventsResult,
 } from "@/lib/services/refresh-events.ts";
 import type { SourceEvent } from "@/lib/events/source-events.ts";
+import { parseHobbynextEventRef } from "@/lib/events/hobbynext-source.ts";
 import { getUserById } from "@/lib/db/users.ts";
 import { notifyManagerSourceReady } from "@/lib/services/event-source-requests.ts";
 
@@ -422,5 +424,32 @@ export async function updateCalendarMode(lairId: string, mode: 'CALENDAR' | 'AGE
     }
     console.error("Erreur lors de la mise à jour du mode du calendrier:", error);
     return { success: false, error: "Erreur lors de la mise à jour du mode du calendrier" };
+  }
+}
+
+/**
+ * L'identifiant Hobbynext d'un lieu, depuis le lien — ou le numéro — d'un de
+ * ses événements : Hobbynext ne montre nulle part celui du lieu.
+ */
+export async function lookupHobbynextOwner(
+  eventRef: string,
+): Promise<{ success: true; ownerId: string; eventName?: string; city?: string } | { success: false; error: string }> {
+  try {
+    await requireAdmin();
+
+    const eventId = parseHobbynextEventRef(String(eventRef ?? ""));
+    if (!eventId) {
+      return { success: false, error: "Collez le lien d'un événement Hobbynext, ou son numéro" };
+    }
+
+    return { success: true, ...(await findHobbynextOwner(eventId)) };
+  } catch (error) {
+    console.error("Erreur lors de la recherche d'un lieu Hobbynext:", error);
+    return {
+      success: false,
+      error: error instanceof Error && error.message === "HTTP 404"
+        ? "Hobbynext ne connaît pas cet événement"
+        : "Hobbynext n'a pas pu être interrogé",
+    };
   }
 }
