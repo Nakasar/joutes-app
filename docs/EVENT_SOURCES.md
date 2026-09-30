@@ -2,7 +2,8 @@
 
 Un lieu public peut déclarer des **sources** d'où ses événements sont
 moissonnés automatiquement : une page lue par sélecteurs CSS, un JSON décrit
-champ par champ, ou — en dernier recours — une page lue par un modèle. Le
+champ par champ, l'agenda du lieu sur Hobbynext, ou — en dernier recours — une
+page lue par un modèle. Le
 cron `/api/cron/refresh-events` passe chaque matin à 8 h et relit les lieux
 dont c'est le jour : **le mercredi** pour tous, **chaque jour** pour un lieu
 Joutes Pro qui l'a demandé. Le bouton **Rafraîchir** de la fiche
@@ -21,6 +22,7 @@ depuis son écran de gestion, connecte la page de son site en quelques
 | `lib/events/source-events.ts` | Tout ce qui se décide sans la base : dates, statuts, jeux, **rapprochement** avec l'existant |
 | `lib/events/html-source.ts` | La lecture d'une page par sélecteurs : titre composé, champs, jeu |
 | `lib/events/html-presets.ts` | Les configurations toutes faites (boutique Oasis, Animations du Gobelin), avec leurs domaines |
+| `lib/events/hobbynext-source.ts` | La lecture de l'agenda Hobbynext d'Asmodee : dates, jeux, liens, pagination |
 | `lib/events/connect.ts` | La connexion par le gérant : reconnaître une page à son domaine, bâtir sa source, résumer les jeux, dire quel lieu relire aujourd'hui |
 | `lib/db/events.ts` — `upsertEventsForLair` | Exécute le verdict du rapprochement en une écriture groupée |
 | `lib/db/lairs.ts` — `*EventsRefreshReport`, `*EventsSourceRequest` | Le compte rendu du dernier tour et la demande d'aide du gérant, hors du lieu |
@@ -192,6 +194,39 @@ réserver aux pages sans structure exploitable : chaque lecture coûte un appel
 au modèle, et deux lectures de la même page ne rendent pas toujours la même
 chose.
 
+### Source Hobbynext
+
+[Hobbynext](https://event.hobbynext.com) est l'agenda qu'Asmodee tient pour
+les boutiques. Son API publique (`https://optool-api.asmodee.net`) se lit sans
+clé :
+
+- `GET /api/events/?owner=<id>&page=1&page_size=50` — les événements à venir
+  d'un lieu, paginés (`next`) ;
+- `GET /api/events/<id>/` — un événement, dont `owner` ;
+- `GET /api/games/` — la table identifiant → nom des jeux.
+
+La source ne demande que l'**identifiant du lieu** (`owner`), qu'Hobbynext ne
+montre nulle part : le formulaire le retrouve à partir du lien d'un événement
+du lieu (« Trouver »). L'URL de la source en est déduite
+(`hobbynextSourceUrl`) — c'est la clé de ses événements, et le schéma refuse
+une URL qui ne correspond pas à l'identifiant.
+
+- **Dates** : un événement saisi sur Hobbynext (`Full`, `Light`) porte l'heure
+  **locale** suivie d'un `Z` trompeur — « 19:30:00Z » pour une soirée à 19 h 30,
+  comme le confirme `daily_schedules`. Le `Z` est ôté et l'heure lue à Paris.
+  Un événement importé d'une autre plateforme (`External`, Star Wars:
+  Unlimited par exemple) est, lui, en vrai UTC. Un `Light` n'a qu'un jour : il
+  commence à minuit.
+- **Jeux** : donnés par identifiant, nommés en anglais par la table des jeux
+  (« Forest Shuffle ») ; les alias de la source les ramènent aux noms de la
+  plateforme. À défaut, le jeu est cherché dans le titre — c'est le seul
+  recours pour « Other ». Rien trouvé : « Jeu non spécifié », signalé.
+- **Le reste** : le lien est la page publique
+  (`https://event.hobbynext.com/fr/events/<id>`), l'identifiant sert au
+  rapprochement, le prix vient d'`event_price`, et un événement importé dont
+  `remaining_seats` vaut 0 est complet. Les événements non publics sont
+  ignorés. Les événements portent `addedBy: "HOBBYNEXT"`.
+
 ### Source en correspondance
 
 - **Chemin vers les événements** : `data.events`, `results[0].items`… ; `$`
@@ -285,7 +320,7 @@ La réponse détaille chaque lieu et chaque source ; `summary.failingSources`
 compte les sources en panne dans des lieux par ailleurs réussis.
 
 ```bash
-node --import ./scripts/ts-paths-hook.mjs --test lib/events/source-events.test.ts lib/events/html-source.test.ts lib/events/connect.test.ts
+node --import ./scripts/ts-paths-hook.mjs --test lib/events/source-events.test.ts lib/events/html-source.test.ts lib/events/hobbynext-source.test.ts lib/events/connect.test.ts
 ```
 
 Les tests couvrent les dates, les champs, et surtout le rapprochement : le

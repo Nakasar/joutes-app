@@ -38,7 +38,7 @@ export type Event = {
   url?: string;
   price?: number;
   status: 'available' | 'sold-out' | 'cancelled';
-  addedBy: string; // "AI-SCRAPPING", "JSON-MAPPING", "HTML-SCRAPPING" or "USER"
+  addedBy: string; // "AI-SCRAPPING", "JSON-MAPPING", "HTML-SCRAPPING", "HOBBYNEXT" or "USER"
   /**
    * D'où un événement moissonné vient, pour le retrouver au tour suivant.
    *

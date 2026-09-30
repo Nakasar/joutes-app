@@ -26,13 +26,23 @@ import {
   hasVenuePlaceholder,
   readVenueOptions,
 } from "@/lib/events/html-source";
+import {
+  extractHobbynextEvents,
+  HOBBYNEXT_GAMES_URL,
+  hobbynextEventApiUrl,
+  hobbynextListUrl,
+  hobbynextResults,
+  nextHobbynextPage,
+  readHobbynextGames,
+} from "@/lib/events/hobbynext-source";
 
 /**
  * La moisson des événements d'un lieu.
  *
- * Trois sortes de sources : une page lue par un modèle (`IA`), un JSON décrit
+ * Quatre sortes de sources : une page lue par un modèle (`IA`), un JSON décrit
  * champ par champ (`MAPPING`), une page lue par sélecteurs CSS (`HTML`, sans
- * modèle — voir `lib/events/html-source.ts`). Chacune est lue **séparément** et rend son
+ * modèle — voir `lib/events/html-source.ts`), et l'agenda d'un lieu sur
+ * Hobbynext (`HOBBYNEXT` — voir `lib/events/hobbynext-source.ts`). Chacune est lue **séparément** et rend son
  * propre résultat — succès ou échec, événements, avertissements —, pour trois
  * raisons :
  *
@@ -201,6 +211,9 @@ async function readEventSource(
     }
     if (source.type === "HTML") {
       return await readHtmlSource(source, games, now, { probeVenues });
+    }
+    if (source.type === "HOBBYNEXT") {
+      return await readHobbynextSource(source, games, now);
     }
     return await readAISource(source, lair, games, now);
   } catch (error) {
@@ -662,4 +675,92 @@ async function readHtmlSource(
   }
 
   return { source, ok: true, warnings: warnings.list(), events, venues };
+}
+
+// ---------------------------------------------------------------------------
+// Source Hobbynext
+// ---------------------------------------------------------------------------
+
+/** Au-delà, la liste est tronquée : un lieu n'annonce pas cinq cents événements. */
+const MAX_HOBBYNEXT_PAGES = 10;
+
+const JSON_ACCEPT = "application/json,text/json;q=0.9,*/*;q=0.8";
+
+async function fetchJson(url: string): Promise<unknown> {
+  const text = await readResponseText(await fetchPage(url, undefined, JSON_ACCEPT));
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error("La réponse n'est pas un JSON valide");
+  }
+}
+
+/**
+ * Lit l'agenda d'un lieu sur Hobbynext : toutes les pages de sa liste, et la
+ * table des jeux pour nommer ce que l'API ne donne que par identifiant.
+ *
+ * La table des jeux est facultative : si elle ne répond pas, le jeu se
+ * cherche dans le titre, et la lecture n'échoue pas pour autant.
+ */
+async function readHobbynextSource(
+  source: EventSource,
+  games: Pick<Game, "name">[],
+  now: DateTime,
+): Promise<SourceReadResult> {
+  const ownerId = source.hobbynextConfig?.ownerId;
+  if (!ownerId) {
+    return { source, ok: false, error: "Source Hobbynext sans identifiant de lieu", warnings: [], events: [] };
+  }
+
+  const warnings = new Warnings();
+
+  const hobbynextGames = await fetchJson(HOBBYNEXT_GAMES_URL)
+    .then(readHobbynextGames)
+    .catch((error) => {
+      warnings.add(`liste des jeux Hobbynext illisible (${describeError(error)}) : jeux cherchés dans les titres`);
+      return new Map<number, string>();
+    });
+
+  const items: unknown[] = [];
+  let url: string | null = hobbynextListUrl(ownerId);
+  for (let page = 0; url && page < MAX_HOBBYNEXT_PAGES; page += 1) {
+    const data = await fetchJson(url);
+    const results = hobbynextResults(data);
+    if (!results) {
+      return { source, ok: false, error: "La réponse d'Hobbynext n'a pas de liste d'événements", warnings: [], events: [] };
+    }
+    items.push(...results);
+    url = nextHobbynextPage(data);
+  }
+  if (url) {
+    warnings.add(`plus de ${MAX_HOBBYNEXT_PAGES} pages d'événements : la suite est ignorée`);
+  }
+
+  const extraction = extractHobbynextEvents({ items, source, games, hobbynextGames, now });
+  for (const warning of extraction.warnings) warnings.add(warning);
+
+  return { source, ok: true, warnings: warnings.list(), events: extraction.events };
+}
+
+/**
+ * L'organisateur d'un événement Hobbynext : ce qui permet à l'administration
+ * de retrouver l'identifiant d'un lieu à partir du lien d'un de ses
+ * événements, le seul qu'Hobbynext montre.
+ */
+export async function findHobbynextOwner(eventId: string): Promise<{ ownerId: string; eventName?: string; city?: string }> {
+  const data = (await fetchJson(hobbynextEventApiUrl(eventId))) as {
+    owner?: unknown;
+    name?: unknown;
+    address?: { city?: unknown } | null;
+  } | null;
+
+  if (typeof data?.owner !== "number" && typeof data?.owner !== "string") {
+    throw new Error("L'événement ne dit pas qui l'organise");
+  }
+
+  return {
+    ownerId: String(data.owner),
+    ...(typeof data.name === "string" ? { eventName: data.name } : {}),
+    ...(typeof data.address?.city === "string" ? { city: data.address.city } : {}),
+  };
 }

@@ -1,0 +1,221 @@
+{
+  "count": 4,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "address": {
+        "id": 38070,
+        "latitude": 49.355677002741,
+        "longitude": 6.161726036184,
+        "street": "5 rue de Strasbourg",
+        "street_2": "",
+        "city": "Thionville",
+        "postcode": "57100",
+        "region": "",
+        "country": "FR",
+        "address_location_other": "",
+        "coordinates": "SRID=4326;POINT (6.161726036184 49.355677002741)"
+      },
+      "additional_info": {
+        "id": 1437,
+        "daily_schedules": [
+          {
+            "day": 0,
+            "start_time": "19:30:00",
+            "end_time": "23:30:00"
+          }
+        ],
+        "stages": [
+          {
+            "format": "SW",
+            "players_min": 6,
+            "players_max": 24,
+            "order_index": 1
+          }
+        ],
+        "distance": 0,
+        "event_end_date": "2026-10-08T23:30:00Z",
+        "registration_date": "",
+        "parking_available": false,
+        "wifi_available": false,
+        "transportation_options": "",
+        "language": "fr",
+        "accessible_location": false,
+        "min_players": 6,
+        "max_players": 24,
+        "deck_registration_deadline": "",
+        "deck_day_of_registration": false,
+        "event_type": "SW",
+        "event_description": "Tournoi et avant première sur la gamme Forêt Mixte ! \nVenez vous affronter sur le jeu de base au cours de la soirée, et le grand vainqueur repartira avec une exemplaire offert du tout nouveau Forêt Mixte Smoky Mountains ! Chaque participant se verra remettre des cartes promos exclusives pour le jeu de base. \n\nEt cerise sur le gâteau, vous pourrez acheter en avant première un exemplaire du tout nouveau Forêt Mixte. \n\nAlors, pas de raison de ne pas venir s'amuser à notre soirée jeu !",
+        "event_price": "5.00",
+        "event_currency": "EUR",
+        "prize_description": "1 boîte de Smoky Mountains pour le vainqueur / 24 cartes promos exclusives pour le jeu de base pour tous les participants",
+        "materials_required": "Quelques boites de Forêt Mixte en plus pour l'organisation",
+        "send_notifications": false,
+        "official_event": false,
+        "event_start_timestamp": "2026-10-08T19:30:00Z"
+      },
+      "game": 25,
+      "event_start_date": "2026-10-08T19:30:00Z",
+      "name": "Tournoi Forêt Mixte & Avant-Première Smoky Mountains - AntrE Temps",
+      "event_type": "Full",
+      "event_subtype": "tournament",
+      "owner": 1699,
+      "event_visibility": "PUBLIC",
+      "id": 38069,
+      "owner_asmo_id": 7731910,
+      "favorited_store": {
+        "favorited": false,
+        "send_notifications": false
+      },
+      "awarded_xp": false,
+      "auto_cancel": false
+    },
+    {
+      "address": {
+        "id": 38426,
+        "latitude": 49.355677002741,
+        "longitude": 6.161726036184,
+        "street": "5 rue de Strasbourg",
+        "street_2": "",
+        "city": "Thionville",
+        "postcode": "57100",
+        "region": "",
+        "country": "FR",
+        "address_location_other": "",
+        "coordinates": "SRID=4326;POINT (6.161726036184 49.355677002741)"
+      },
+      "additional_info": {
+        "id": 1487,
+        "daily_schedules": [
+          {
+            "day": 0,
+            "start_time": "19:30:00",
+            "end_time": "00:00:00"
+          }
+        ],
+        "stages": [
+          {
+            "format": "SW",
+            "players_min": 2,
+            "players_max": 16,
+            "order_index": 1
+          }
+        ],
+        "distance": 0,
+        "event_end_date": "2026-10-16T00:00:00Z",
+        "registration_date": "H-1",
+        "parking_available": false,
+        "wifi_available": false,
+        "transportation_options": "",
+        "language": "fr",
+        "accessible_location": false,
+        "min_players": 2,
+        "max_players": 16,
+        "deck_registration_deadline": "H-1",
+        "deck_day_of_registration": false,
+        "event_type": "SW",
+        "event_description": "Venez découvrir en avant première la nouvelle bombe coopérative et musicale \"Mélodies\". Lors de notre soirée jeux hebdomadaire, jouez une semaine avant la sortie à ce nouveau jeu signé Next Move dans lequel les joueurs forment un groupe de musique et doivent réussir des chansons en jouant les cartes de leur main.",
+        "event_price": "5.00",
+        "event_currency": "EUR",
+        "prize_description": "",
+        "materials_required": "",
+        "send_notifications": false,
+        "official_event": false,
+        "event_start_timestamp": "2026-10-15T19:30:00Z"
+      },
+      "game": 11,
+      "event_start_date": "2026-10-15T19:30:00Z",
+      "name": "Découverte Mélodies - Antre Temps - Soirée jeux",
+      "event_type": "Full",
+      "event_subtype": "demo",
+      "owner": 1699,
+      "event_visibility": "PUBLIC",
+      "id": 38425,
+      "owner_asmo_id": 7731910,
+      "favorited_store": {
+        "favorited": false,
+        "send_notifications": false
+      },
+      "awarded_xp": false,
+      "auto_cancel": false
+    },
+    {
+      "address": {
+        "id": 37194,
+        "latitude": 45.191674993928,
+        "longitude": 5.729586037681,
+        "street": "5 rue Lafayette",
+        "street_2": "",
+        "city": "Grenoble",
+        "postcode": "38000",
+        "region": "Auvergne Rhône-Alpes",
+        "country": "FR",
+        "address_location_other": "",
+        "coordinates": "SRID=4326;POINT (5.729586037681 45.191674993928)"
+      },
+      "additional_info": {
+        "url": "https://starwarsunlimited.com/search?type=events&event=69397",
+        "source": "SWU",
+        "owner_asmo_id": "3192674",
+        "owner_retailer_id": "NO3836",
+        "origin_event_id": "69397",
+        "event_end_date": null,
+        "event_description": "",
+        "event_price": "",
+        "remaining_seats": null
+      },
+      "game": 7,
+      "event_start_date": "2026-10-01T17:30:00Z",
+      "name": "Weekly Play at Les 7 Royaumes",
+      "event_type": "External",
+      "event_subtype": "tournament",
+      "owner": null,
+      "event_visibility": "PUBLIC",
+      "id": 37193,
+      "owner_asmo_id": "",
+      "favorited_store": {
+        "favorited": false,
+        "send_notifications": false
+      },
+      "awarded_xp": false,
+      "auto_cancel": true
+    },
+    {
+      "address": {
+        "id": 37692,
+        "latitude": 48.869365015472,
+        "longitude": 2.356953035275,
+        "street": "84 rue René Boulanger",
+        "street_2": "",
+        "city": "PARIS",
+        "postcode": "75010",
+        "region": "",
+        "country": "FR",
+        "address_location_other": "",
+        "coordinates": "SRID=4326;POINT (2.356953035275 48.869365015472)"
+      },
+      "additional_info": {
+        "url": "https://shop.cafemeisia.com/events/jeu-de-societe-soiree-speciale-initiation-tournoi-de-decouverte-les-aventuriers-du-rail-europe/",
+        "is_bga": false,
+        "language": "fr"
+      },
+      "game": 6,
+      "event_start_date": "2026-10-06T00:00:00Z",
+      "name": "Soirée Spéciale ~ Initiation ~ Tournoi de découverte - Les Aventuriers du rail : Europe",
+      "event_type": "Light",
+      "event_subtype": "tournament",
+      "owner": 912,
+      "event_visibility": "PUBLIC",
+      "id": 37691,
+      "owner_asmo_id": 3862037,
+      "favorited_store": {
+        "favorited": false,
+        "send_notifications": false
+      },
+      "awarded_xp": false,
+      "auto_cancel": false
+    }
+  ]
+}
