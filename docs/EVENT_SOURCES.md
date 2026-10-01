@@ -182,8 +182,11 @@ se comparent à la casse et aux accents près. Sans alias, un jeu est reconnu
 s'il porte le nom de la plateforme à la ponctuation près (« Star Wars
 Unlimited » → « Star Wars: Unlimited »), ou si ce nom apparaît **dans** le
 titre (« Avant Premiere MTG Réalité Fracturée » avec l'alias `MTG`). Un jeu
-inconnu est écrit tel quel et signalé : un alias, ou un nouveau jeu sur la
-plateforme, le réglera au tour suivant.
+inconnu — ou absent — est signalé et l'événement est enregistré sous le jeu
+« Autres Jeux » (slug `mystere`, `withFallbackGame`), pour rester visible sur
+la plateforme : un alias, ou un nouveau jeu sur la plateforme, le rangera au
+bon jeu au tour suivant. Le repli n'a lieu qu'à l'écriture : la lecture et
+l'aperçu gardent le nom brut, celui sur lequel on pose l'alias.
 
 ### Source IA
 

@@ -334,6 +334,28 @@ export function canonicalGameName(
   return games.find((game) => normalizeEventName(game.name) === lookup)?.name ?? null;
 }
 
+/** Le jeu « Autres Jeux », qui recueille les événements d'un jeu inconnu. */
+export const FALLBACK_GAME_SLUG = "mystere";
+
+/**
+ * Range sous « Autres Jeux » les événements dont le jeu n'est pas un jeu de
+ * la plateforme. Les listes font une jointure exacte sur `gameName` : un
+ * « Yu-Gi-Oh » inconnu, ou un « Jeu non spécifié », n'apparaîtrait nulle
+ * part. Les lectures, elles, gardent le nom brut — c'est sur lui que le gérant
+ * pose un alias —, le repli n'a lieu qu'à l'écriture. Sans jeu « mystere »
+ * en base, rien ne change.
+ */
+export function withFallbackGame<T extends Pick<SourceEvent, "gameName">>(
+  events: T[],
+  games: { name: string; slug?: string | null }[],
+): T[] {
+  const fallback = games.find((game) => game.slug === FALLBACK_GAME_SLUG);
+  if (!fallback) return events;
+
+  const known = new Set(games.map((game) => game.name));
+  return events.map((event) => (known.has(event.gameName) ? event : { ...event, gameName: fallback.name }));
+}
+
 /**
  * Le jeu que mentionne un texte libre — un titre d'événement où le jeu n'est
  * pas un segment à part : « Avant Premiere MTG Réalité Fracturée ». On cherche

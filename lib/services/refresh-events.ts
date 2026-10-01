@@ -18,6 +18,7 @@ import {
   readEventsCollection,
   resolveEventDates,
   resolveEventUrl,
+  withFallbackGame,
   type SourceEvent,
 } from "@/lib/events/source-events";
 import {
@@ -146,7 +147,7 @@ export async function refreshEvents(lairId: string): Promise<RefreshEventsResult
   }
 
   try {
-    const counts = await eventsDb.upsertEventsForLair(lair.id, events, {
+    const counts = await eventsDb.upsertEventsForLair(lair.id, withFallbackGame(events, games), {
       failedSourceUrls: failed.map((read) => read.source.url),
       now,
     });
