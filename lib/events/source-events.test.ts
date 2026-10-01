@@ -12,6 +12,7 @@ import {
   resolveEventDates,
   resolveEventUrl,
   resolveEventYear,
+  withFallbackGame,
 } from "./source-events";
 import type { SourceEvent, StoredEvent } from "./source-events";
 
@@ -404,5 +405,29 @@ describe("rapprochement — ce que le rafraîchissement retire", () => {
 
     assert.equal(verdict.toUpdate.length, 1);
     assert.deepEqual(verdict.toUpdate[0].patch.source, { url: SOURCE, externalId: undefined });
+  });
+});
+
+describe("jeu de repli", () => {
+  const GAMES = [
+    { name: "Riftbound", slug: "riftbound" },
+    { name: "Autres Jeux", slug: "mystere" },
+  ];
+
+  it("range sous « Autres Jeux » un jeu inconnu ou non spécifié", () => {
+    const events = withFallbackGame(
+      [incoming({ gameName: "Yu-Gi-Oh" }), incoming({ gameName: "Jeu non spécifié" })],
+      GAMES,
+    );
+    assert.deepEqual(events.map((event) => event.gameName), ["Autres Jeux", "Autres Jeux"]);
+  });
+
+  it("garde un jeu de la plateforme", () => {
+    assert.equal(withFallbackGame([incoming()], GAMES)[0].gameName, "Riftbound");
+  });
+
+  it("ne change rien sans jeu « mystere » en base", () => {
+    const events = withFallbackGame([incoming({ gameName: "Yu-Gi-Oh" })], [{ name: "Riftbound", slug: "riftbound" }]);
+    assert.equal(events[0].gameName, "Yu-Gi-Oh");
   });
 });
