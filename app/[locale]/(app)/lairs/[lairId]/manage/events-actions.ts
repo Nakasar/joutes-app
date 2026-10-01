@@ -167,6 +167,10 @@ async function resolveManagerSource(
  * Rien n'est lu ici : la réponse tient au domaine. C'est ce qui fait que le
  * gérant a une réponse aussitôt collée l'adresse, et qu'un site inconnu ne
  * l'engage dans aucune étape.
+ *
+ * Sauf pour Hobbynext : le lien collé est celui d'un événement, et l'API
+ * d'Asmodee est interrogée une fois pour en tirer l'organisateur — c'est ce
+ * qui dit, dès cette étape, si le lien désigne bien une boutique.
  */
 export async function recognizeEventPage(
   lairId: string,
