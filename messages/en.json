@@ -1847,7 +1847,10 @@
           "knownVenues": "Joutes can read its events. This page covers several cities: we will ask you which ones to show at the next step.",
           "knownSimple": "Joutes can read its events. At the next step, we show you what we found there.",
           "nothingSaved": "Nothing is saved before the last step.",
-          "unknownNote": "Continuing is only possible with a website Joutes can read."
+          "unknownNote": "Continuing is only possible with a website Joutes can read.",
+          "hobbynextHint": "Are your events on Hobbynext (Asmodee)? Paste the link of one of them, for example https://event.hobbynext.com/en/events/38425.",
+          "organizer": "Venue found through “{event}”.",
+          "organizerIn": "Venue found through “{event}”, in {city}."
         },
         "unknown": {
           "title": "We cannot read this website yet",
@@ -1936,6 +1939,7 @@
           "facets": {
             "venues": "Cities shown",
             "allVenues": "All",
+            "hobbynextPage": "Hobbynext — venue #{id}",
             "games": "Games",
             "gamesAuto": "Recognised automatically",
             "page": "Page read",
@@ -1967,6 +1971,9 @@
           "PRO_REQUIRED": "Daily reading requires Joutes Pro.",
           "READ_FAILED": "Your website could not be read.",
           "NOTHING_CONNECTED": "No website is connected.",
+          "HOBBYNEXT_EVENT_REQUIRED": "On Hobbynext, paste the link of one of your events: that is what identifies your shop.",
+          "HOBBYNEXT_NOT_FOUND": "Hobbynext does not return this event. If it comes from another platform (Star Wars: Unlimited…), paste the link of an event you created on Hobbynext instead.",
+          "HOBBYNEXT_NO_ORGANIZER": "This event was imported from another platform and names no shop. Paste the link of an event you created on Hobbynext.",
           "FAILED": "Something went wrong. Try again in a moment."
         }
       },

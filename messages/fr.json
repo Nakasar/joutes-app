@@ -1847,7 +1847,10 @@
           "knownVenues": "Joutes sait lire ses événements. Cette page couvre plusieurs villes : nous vous demanderons lesquelles afficher à l'étape suivante.",
           "knownSimple": "Joutes sait lire ses événements. À l'étape suivante, nous vous montrons ce que nous y avons trouvé.",
           "nothingSaved": "Rien n'est enregistré avant la dernière étape.",
-          "unknownNote": "Continuer n'est possible qu'avec un site que Joutes sait lire."
+          "unknownNote": "Continuer n'est possible qu'avec un site que Joutes sait lire.",
+          "hobbynextHint": "Vos événements sont sur Hobbynext (Asmodee) ? Collez le lien de l'un d'eux, par exemple https://event.hobbynext.com/fr/events/38425.",
+          "organizer": "Lieu trouvé grâce à « {event} ».",
+          "organizerIn": "Lieu trouvé grâce à « {event} », à {city}."
         },
         "unknown": {
           "title": "Nous ne savons pas encore lire ce site",
@@ -1936,6 +1939,7 @@
           "facets": {
             "venues": "Villes affichées",
             "allVenues": "Toutes",
+            "hobbynextPage": "Hobbynext — lieu n° {id}",
             "games": "Jeux",
             "gamesAuto": "Reconnus automatiquement",
             "page": "Page lue",
@@ -1967,6 +1971,9 @@
           "PRO_REQUIRED": "La lecture quotidienne demande Joutes Pro.",
           "READ_FAILED": "Votre site n'a pas pu être lu.",
           "NOTHING_CONNECTED": "Aucun site n'est connecté.",
+          "HOBBYNEXT_EVENT_REQUIRED": "Sur Hobbynext, collez le lien de l'un de vos événements : c'est lui qui désigne votre boutique.",
+          "HOBBYNEXT_NOT_FOUND": "Hobbynext ne donne pas cet événement. S'il vient d'une autre plateforme (Star Wars: Unlimited…), collez plutôt le lien d'un événement que vous avez créé sur Hobbynext.",
+          "HOBBYNEXT_NO_ORGANIZER": "Cet événement a été importé d'une autre plateforme et n'indique pas de boutique. Collez le lien d'un événement que vous avez créé sur Hobbynext.",
           "FAILED": "Une erreur est survenue. Réessayez dans un instant."
         }
       },

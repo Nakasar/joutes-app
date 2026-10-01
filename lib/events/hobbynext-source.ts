@@ -85,6 +85,64 @@ export function parseHobbynextEventRef(value: string): string | null {
   }
 }
 
+/** Les domaines des pages publiques d'Hobbynext : ce qu'un gérant colle. */
+const HOBBYNEXT_HOSTS = ["hobbynext.com"];
+
+/** Une page publique d'Hobbynext — `https://event.hobbynext.com/fr/events/38425`. */
+export function isHobbynextPageUrl(value: string): boolean {
+  try {
+    const hostname = new URL(value.trim()).hostname.toLowerCase();
+    return HOBBYNEXT_HOSTS.some((host) => hostname === host || hostname.endsWith(`.${host}`));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * L'identifiant d'organisateur que porte l'URL enregistrée d'une source
+ * (`hobbynextSourceUrl`), ou `null`. C'est ainsi qu'une source déjà connectée
+ * se relit sans repasser par le lien d'un événement.
+ */
+export function hobbynextOwnerFromSourceUrl(value: string): string | null {
+  try {
+    const url = new URL(value.trim());
+    if (url.origin !== HOBBYNEXT_API_ORIGIN || url.pathname !== "/api/events/") return null;
+    const owner = url.searchParams.get("owner");
+    return owner && isHobbynextId(owner) ? owner : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Ce que la recherche de l'organisateur d'un événement a donné.
+ *
+ * - `NOT_FOUND` : Hobbynext ne connaît pas l'événement — ou c'est un
+ *   événement importé d'une autre plateforme (Star Wars: Unlimited…), que
+ *   l'API ne sert pas à l'unité ;
+ * - `NO_ORGANIZER` : l'événement existe, mais n'a pas d'organisateur
+ *   Hobbynext — encore un événement importé ;
+ * - `FAILED` : Hobbynext n'a pas répondu comme attendu.
+ */
+export type HobbynextOwnerLookup =
+  | { ok: true; ownerId: string; eventName?: string; city?: string }
+  | { ok: false; reason: "NOT_FOUND" | "NO_ORGANIZER" | "FAILED"; message?: string };
+
+/** Lit l'organisateur dans la fiche d'un événement (`GET /api/events/:id/`). */
+export function readHobbynextOwner(data: unknown): HobbynextOwnerLookup {
+  const event = (data ?? {}) as { owner?: unknown; name?: unknown; address?: { city?: unknown } | null };
+  const owner = typeof event.owner === "number" || typeof event.owner === "string" ? String(event.owner) : "";
+
+  if (!owner || !isHobbynextId(owner)) return { ok: false, reason: "NO_ORGANIZER" };
+
+  return {
+    ok: true,
+    ownerId: owner,
+    ...(typeof event.name === "string" && event.name.trim() ? { eventName: event.name.trim() } : {}),
+    ...(typeof event.address?.city === "string" && event.address.city.trim() ? { city: event.address.city.trim() } : {}),
+  };
+}
+
 /**
  * La page suivante d'une liste, si elle reste sur l'API d'Asmodee. Une
  * réponse qui renverrait ailleurs ne fait pas partir le serveur à sa suite.

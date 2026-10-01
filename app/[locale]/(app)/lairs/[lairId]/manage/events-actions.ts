@@ -15,14 +15,18 @@ import {
 import * as lairsDb from "@/lib/db/lairs.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
 import { lairHasPro } from "@/lib/subscriptions/access.ts";
-import { previewEventSource, refreshEvents } from "@/lib/services/refresh-events.ts";
+import { findHobbynextOwner, previewEventSource, refreshEvents } from "@/lib/services/refresh-events.ts";
 import { notifyTeamOfSourceRequest } from "@/lib/services/event-source-requests.ts";
 import {
+  buildHobbynextManagerSource,
   buildManagerSource,
   describePreset,
   findManagerSource,
   findPresetByKey,
   findPresetForUrl,
+  HOBBYNEXT_SITE,
+  HOBBYNEXT_SITE_KEY,
+  managerSiteKey,
   presetAsksVenues,
   summarizeGames,
   type GameSummary,
@@ -31,6 +35,11 @@ import {
   type RefreshFrequency,
 } from "@/lib/events/connect.ts";
 import { EVENTS_TIMEZONE } from "@/lib/events/source-events.ts";
+import {
+  hobbynextOwnerFromSourceUrl,
+  isHobbynextPageUrl,
+  parseHobbynextEventRef,
+} from "@/lib/events/hobbynext-source.ts";
 import type { EventSource, LairEventsRefreshReport } from "@/lib/types/Lair.ts";
 
 /**
@@ -53,6 +62,9 @@ export type EventsConnectError =
   | "PRO_REQUIRED"
   | "READ_FAILED"
   | "NOTHING_CONNECTED"
+  | "HOBBYNEXT_EVENT_REQUIRED"
+  | "HOBBYNEXT_NOT_FOUND"
+  | "HOBBYNEXT_NO_ORGANIZER"
   | "FAILED";
 
 type Failure = { success: false; error: EventsConnectError; message?: string };
@@ -102,11 +114,63 @@ async function guard(lairId: string) {
 }
 
 /**
+ * L'identifiant Hobbynext d'un lieu, depuis ce que le gérant a collé — le
+ * lien d'un de ses événements — ou depuis l'URL d'une source déjà connectée.
+ */
+async function resolveHobbynextOwner(
+  url: string,
+): Promise<{ ok: true; ownerId: string; eventName?: string; city?: string } | Failure> {
+  const fromSource = hobbynextOwnerFromSourceUrl(url);
+  if (fromSource) return { ok: true, ownerId: fromSource };
+
+  if (!isHobbynextPageUrl(url)) return { success: false, error: "UNKNOWN_SITE" };
+
+  const eventId = parseHobbynextEventRef(url);
+  if (!eventId) return { success: false, error: "HOBBYNEXT_EVENT_REQUIRED" };
+
+  const lookup = await findHobbynextOwner(eventId);
+  if (lookup.ok) return lookup;
+  if (lookup.reason === "NOT_FOUND") return { success: false, error: "HOBBYNEXT_NOT_FOUND" };
+  if (lookup.reason === "NO_ORGANIZER") return { success: false, error: "HOBBYNEXT_NO_ORGANIZER" };
+  return { success: false, error: "READ_FAILED", ...(lookup.message ? { message: lookup.message } : {}) };
+}
+
+/**
+ * La source que décrit ce que le gérant a choisi : un préréglage reconnu à
+ * son domaine, ou Hobbynext. Tout est revérifié ici — la clé envoyée par le
+ * navigateur doit être celle que l'adresse désigne.
+ */
+async function resolveManagerSource(
+  input: ManagerSourceInput,
+): Promise<{ ok: true; source: EventSource; asksVenues: boolean } | Failure> {
+  if (input.presetKey === HOBBYNEXT_SITE_KEY) {
+    const owner = await resolveHobbynextOwner(input.url);
+    if (!("ok" in owner)) return owner;
+    return {
+      ok: true,
+      source: buildHobbynextManagerSource({ ownerId: owner.ownerId, gameAliases: input.gameAliases }),
+      asksVenues: false,
+    };
+  }
+
+  const preset = findPresetByKey(input.presetKey);
+  if (!preset || findPresetForUrl(input.url)?.key !== preset.key) {
+    return { success: false, error: "UNKNOWN_SITE" };
+  }
+
+  return { ok: true, source: buildManagerSource(input, preset), asksVenues: presetAsksVenues(preset) };
+}
+
+/**
  * Joutes sait-il lire cette page ?
  *
  * Rien n'est lu ici : la réponse tient au domaine. C'est ce qui fait que le
  * gérant a une réponse aussitôt collée l'adresse, et qu'un site inconnu ne
  * l'engage dans aucune étape.
+ *
+ * Sauf pour Hobbynext : le lien collé est celui d'un événement, et l'API
+ * d'Asmodee est interrogée une fois pour en tirer l'organisateur — c'est ce
+ * qui dit, dès cette étape, si le lien désigne bien une boutique.
  */
 export async function recognizeEventPage(
   lairId: string,
@@ -118,6 +182,19 @@ export async function recognizeEventPage(
 
     const parsed = webUrlSchema.safeParse(url);
     if (!parsed.success) return { success: false, error: "INVALID" };
+
+    // Hobbynext : l'adresse de la boutique n'existe pas sur le site, c'est le
+    // lien d'un événement qui la désigne — et on vérifie dès maintenant
+    // qu'il mène bien à un organisateur.
+    if (isHobbynextPageUrl(parsed.data)) {
+      const owner = await resolveHobbynextOwner(parsed.data);
+      if (!("ok" in owner)) return owner;
+      const organizer = {
+        ...(owner.eventName ? { eventName: owner.eventName } : {}),
+        ...(owner.city ? { city: owner.city } : {}),
+      };
+      return { success: true, site: { ...HOBBYNEXT_SITE, ...(Object.keys(organizer).length > 0 ? { organizer } : {}) } };
+    }
 
     const preset = findPresetForUrl(parsed.data);
     return { success: true, site: preset ? describePreset(preset) : null };
@@ -147,12 +224,10 @@ export async function previewEventPage(
     const parsed = managerEventSourceSchema.safeParse(input);
     if (!parsed.success) return { success: false, error: "INVALID" };
 
-    const preset = findPresetByKey(parsed.data.presetKey);
-    if (!preset || findPresetForUrl(parsed.data.url)?.key !== preset.key) {
-      return { success: false, error: "UNKNOWN_SITE" };
-    }
+    const resolved = await resolveManagerSource(parsed.data);
+    if (!("ok" in resolved)) return resolved;
 
-    const source = buildManagerSource(parsed.data, preset);
+    const { source } = resolved;
     if (probeVenues && source.htmlConfig) {
       // Sonder, c'est lire sans ville : le préréglage en coche une par défaut,
       // et la garder n'aurait montré qu'elle.
@@ -214,12 +289,10 @@ export async function connectEventPage(
     const parsedFrequency = eventsRefreshFrequencySchema.safeParse(frequency);
     if (!parsed.success || !parsedFrequency.success) return { success: false, error: "INVALID" };
 
-    const preset = findPresetByKey(parsed.data.presetKey);
-    if (!preset || findPresetForUrl(parsed.data.url)?.key !== preset.key) {
-      return { success: false, error: "UNKNOWN_SITE" };
-    }
+    const resolved = await resolveManagerSource(parsed.data);
+    if (!("ok" in resolved)) return resolved;
 
-    if (presetAsksVenues(preset) && (parsed.data.venues ?? []).length === 0) {
+    if (resolved.asksVenues && (parsed.data.venues ?? []).length === 0) {
       return { success: false, error: "VENUES_REQUIRED" };
     }
 
@@ -227,7 +300,7 @@ export async function connectEventPage(
       return { success: false, error: "PRO_REQUIRED" };
     }
 
-    const source = buildManagerSource(parsed.data, preset);
+    const { source } = resolved;
     const others = (lair.eventsSourceUrls ?? []).filter((candidate) => candidate.managedBy !== "owner");
 
     await lairsDb.setLairEventSources(validatedId, [...others, source]);
@@ -264,11 +337,19 @@ export async function updateEventPageSettings(
     const current = findManagerSource(lair.eventsSourceUrls);
     if (!current) return { success: false, error: "NOTHING_CONNECTED" };
 
-    const preset = findPresetForUrl(current.url);
-    if (!preset) return { success: false, error: "UNKNOWN_SITE" };
+    const siteKey = managerSiteKey(current);
+    if (!siteKey) return { success: false, error: "UNKNOWN_SITE" };
 
     const venues = parsed.data.venues ?? current.htmlConfig?.venues ?? [];
-    if (presetAsksVenues(preset) && venues.length === 0) {
+    const resolved = await resolveManagerSource({
+      url: current.url,
+      presetKey: siteKey,
+      venues,
+      gameAliases: parsed.data.gameAliases ?? current.gameAliases,
+    });
+    if (!("ok" in resolved)) return resolved;
+
+    if (resolved.asksVenues && venues.length === 0) {
       return { success: false, error: "VENUES_REQUIRED" };
     }
 
@@ -277,15 +358,7 @@ export async function updateEventPageSettings(
       return { success: false, error: "PRO_REQUIRED" };
     }
 
-    const source = buildManagerSource(
-      {
-        url: current.url,
-        presetKey: preset.key,
-        venues,
-        gameAliases: parsed.data.gameAliases ?? current.gameAliases,
-      },
-      preset,
-    );
+    const { source } = resolved;
     const others = (lair.eventsSourceUrls ?? []).filter((candidate) => candidate.managedBy !== "owner");
 
     await lairsDb.setLairEventSources(validatedId, [...others, source]);
