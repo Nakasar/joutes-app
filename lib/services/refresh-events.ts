@@ -34,6 +34,8 @@ import {
   hobbynextResults,
   nextHobbynextPage,
   readHobbynextGames,
+  readHobbynextOwner,
+  type HobbynextOwnerLookup,
 } from "@/lib/events/hobbynext-source";
 
 /**
@@ -743,24 +745,19 @@ async function readHobbynextSource(
 }
 
 /**
- * L'organisateur d'un événement Hobbynext : ce qui permet à l'administration
- * de retrouver l'identifiant d'un lieu à partir du lien d'un de ses
- * événements, le seul qu'Hobbynext montre.
+ * L'organisateur d'un événement Hobbynext : ce qui permet de retrouver
+ * l'identifiant d'un lieu à partir du lien d'un de ses événements, le seul
+ * qu'Hobbynext montre. Ne lève pas : chaque échec a sa raison, que
+ * l'administration et l'assistant du gérant disent chacun à leur façon.
  */
-export async function findHobbynextOwner(eventId: string): Promise<{ ownerId: string; eventName?: string; city?: string }> {
-  const data = (await fetchJson(hobbynextEventApiUrl(eventId))) as {
-    owner?: unknown;
-    name?: unknown;
-    address?: { city?: unknown } | null;
-  } | null;
-
-  if (typeof data?.owner !== "number" && typeof data?.owner !== "string") {
-    throw new Error("L'événement ne dit pas qui l'organise");
+export async function findHobbynextOwner(eventId: string): Promise<HobbynextOwnerLookup> {
+  let data: unknown;
+  try {
+    data = await fetchJson(hobbynextEventApiUrl(eventId));
+  } catch (error) {
+    if (error instanceof Error && error.message === "HTTP 404") return { ok: false, reason: "NOT_FOUND" };
+    console.error(`Erreur à la lecture de l'événement Hobbynext ${eventId}:`, error);
+    return { ok: false, reason: "FAILED", message: describeError(error) };
   }
-
-  return {
-    ownerId: String(data.owner),
-    ...(typeof data.name === "string" ? { eventName: data.name } : {}),
-    ...(typeof data.address?.city === "string" ? { city: data.address.city } : {}),
-  };
+  return readHobbynextOwner(data);
 }

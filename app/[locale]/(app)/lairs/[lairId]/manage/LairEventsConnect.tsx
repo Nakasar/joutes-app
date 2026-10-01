@@ -28,6 +28,8 @@ import type { EventSource, LairEventsRefreshReport } from "@/lib/types/Lair.ts";
 import type { GameSummary, RecognizedSite, RefreshFrequency } from "@/lib/events/connect.ts";
 import {
   findPresetForUrl,
+  managerSiteKey,
+  managerSourceLabel,
   nextRefreshAt,
   presetAsksVenues,
   unknownGamesFromWarnings,
@@ -478,6 +480,7 @@ function Wizard({
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">{t("site.urlHint")}</p>
+              <p className="text-xs text-muted-foreground">{t("site.hobbynextHint")}</p>
             </div>
 
             {checkedUrl && site && (
@@ -486,6 +489,13 @@ function Wizard({
                 <div className="space-y-1 text-sm">
                   <p className="font-semibold">{t("site.known", { name: site.label })}</p>
                   <p>{site.asksVenues ? t("site.knownVenues") : t("site.knownSimple")}</p>
+                  {site.organizer && (
+                    <p className="text-muted-foreground">
+                      {site.organizer.city
+                        ? t("site.organizerIn", { event: site.organizer.eventName ?? "", city: site.organizer.city })
+                        : t("site.organizer", { event: site.organizer.eventName ?? "" })}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -1199,14 +1209,6 @@ function FrequencyChoice({
 // Connecté
 // ---------------------------------------------------------------------------
 
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
-}
-
 function ReportSummary({ report }: { report: LairEventsRefreshReport | null }) {
   const t = useTranslations("Lairs.manage.events.connected");
   const locale = useLocale();
@@ -1301,6 +1303,7 @@ function ConnectedView({
   const unknownGames = mine ? unknownGamesFromWarnings(mine.warnings) : [];
   const venues = source.htmlConfig?.venues ?? [];
   const aliases = source.gameAliases ?? {};
+  const isHobbynext = source.type === "HOBBYNEXT";
   const next = nextRefreshAt({ frequency, pro: isPro, now: DateTime.now().setZone(PARIS) }).setLocale(locale);
 
   const disconnect = () => {
@@ -1339,7 +1342,7 @@ function ConnectedView({
                   {mine && !mine.ok ? t("connected.titleFailed") : t("connected.title")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {[hostOf(source.url), venues.length > 0 ? venues.join(", ") : null].filter(Boolean).join(" · ")}
+                  {[managerSourceLabel(source), venues.length > 0 ? venues.join(", ") : null].filter(Boolean).join(" · ")}
                 </p>
                 <ReportSummary report={report} />
                 {mine && !mine.ok && mine.error && (
@@ -1371,12 +1374,15 @@ function ConnectedView({
           )}
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Facet
-              title={t("connected.facets.venues")}
-              value={venues.length > 0 ? venues.join(", ") : t("connected.facets.allVenues")}
-              action={t("connected.edit")}
-              onAction={onEdit}
-            />
+            {/* Hobbynext ne lit que les événements du lieu : pas de ville à choisir. */}
+            {!isHobbynext && (
+              <Facet
+                title={t("connected.facets.venues")}
+                value={venues.length > 0 ? venues.join(", ") : t("connected.facets.allVenues")}
+                action={t("connected.edit")}
+                onAction={onEdit}
+              />
+            )}
             <Facet
               title={t("connected.facets.games")}
               value={
@@ -1391,7 +1397,11 @@ function ConnectedView({
             />
             <Facet
               title={t("connected.facets.page")}
-              value={source.url.replace(/^https?:\/\/(www\.)?/, "")}
+              value={
+                isHobbynext
+                  ? t("connected.facets.hobbynextPage", { id: source.hobbynextConfig?.ownerId ?? "" })
+                  : source.url.replace(/^https?:\/\/(www\.)?/, "")
+              }
               action={t("connected.changePage")}
               onAction={onChangePage}
             />
@@ -1504,9 +1514,9 @@ function SettingsView({
   const [saving, startSaving] = useTransition();
 
   // Le préréglage se retrouve au domaine, comme côté serveur : la source ne
-  // porte pas sa clé.
-  const preset = findPresetForUrl(source.url);
-  const presetKey = preset?.key ?? "";
+  // porte pas sa clé. Une source Hobbynext se relit par son identifiant.
+  const preset = source.type === "HOBBYNEXT" ? null : findPresetForUrl(source.url);
+  const presetKey = managerSiteKey(source) ?? "";
   const asksVenues = preset ? presetAsksVenues(preset) : false;
 
   const describeError = (code: EventsConnectError, message?: string) =>

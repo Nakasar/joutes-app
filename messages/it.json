@@ -1847,7 +1847,10 @@
           "knownVenues": "Joutes sa leggere i suoi eventi. Questa pagina copre più città: nel passo successivo ti chiederemo quali mostrare.",
           "knownSimple": "Joutes sa leggere i suoi eventi. Nel passo successivo ti mostriamo cosa vi abbiamo trovato.",
           "nothingSaved": "Nulla viene salvato prima dell'ultimo passo.",
-          "unknownNote": "Continuare è possibile solo con un sito che Joutes sa leggere."
+          "unknownNote": "Continuare è possibile solo con un sito che Joutes sa leggere.",
+          "hobbynextHint": "I tuoi eventi sono su Hobbynext (Asmodee)? Incolla il link di uno di essi, per esempio https://event.hobbynext.com/it/events/38425.",
+          "organizer": "Luogo trovato tramite «{event}».",
+          "organizerIn": "Luogo trovato tramite «{event}», a {city}."
         },
         "unknown": {
           "title": "Non sappiamo ancora leggere questo sito",
@@ -1936,6 +1939,7 @@
           "facets": {
             "venues": "Città mostrate",
             "allVenues": "Tutte",
+            "hobbynextPage": "Hobbynext — luogo n. {id}",
             "games": "Giochi",
             "gamesAuto": "Riconosciuti automaticamente",
             "page": "Pagina letta",
@@ -1967,6 +1971,9 @@
           "PRO_REQUIRED": "La lettura quotidiana richiede Joutes Pro.",
           "READ_FAILED": "Il tuo sito non ha potuto essere letto.",
           "NOTHING_CONNECTED": "Nessun sito è collegato.",
+          "HOBBYNEXT_EVENT_REQUIRED": "Su Hobbynext, incolla il link di uno dei tuoi eventi: è quello che identifica il tuo negozio.",
+          "HOBBYNEXT_NOT_FOUND": "Hobbynext non restituisce questo evento. Se proviene da un'altra piattaforma (Star Wars: Unlimited…), incolla invece il link di un evento che hai creato su Hobbynext.",
+          "HOBBYNEXT_NO_ORGANIZER": "Questo evento è stato importato da un'altra piattaforma e non indica alcun negozio. Incolla il link di un evento che hai creato su Hobbynext.",
           "FAILED": "Si è verificato un errore. Riprova tra un istante."
         }
       },

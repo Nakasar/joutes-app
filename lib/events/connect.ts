@@ -2,6 +2,7 @@ import type { DateTime } from "luxon";
 import type { EventSource } from "@/lib/types/Lair";
 import { HTML_PRESETS, type HtmlPreset } from "./html-presets";
 import { canonicalGameName, normalizeEventName, type SourceEvent } from "./source-events";
+import { hobbynextSourceUrl } from "./hobbynext-source";
 
 /**
  * Le mot qu'un champ de formulaire porte pour être demandé ville par ville —
@@ -77,7 +78,21 @@ export type RecognizedSite = {
   key: string;
   label: string;
   asksVenues: boolean;
+  /**
+   * Pour Hobbynext : l'événement dont le lien a été collé, et sa ville — de
+   * quoi faire reconnaître au gérant que c'est bien sa boutique.
+   */
+  organizer?: { eventName?: string; city?: string };
 };
+
+/**
+ * Hobbynext, l'agenda des boutiques d'Asmodee : pas un préréglage HTML, mais
+ * une source à part (`HOBBYNEXT`), que le gérant connecte en collant le lien
+ * d'un de ses événements — l'adresse de sa boutique n'existe pas sur le site.
+ */
+export const HOBBYNEXT_SITE_KEY = "hobbynext";
+
+export const HOBBYNEXT_SITE: RecognizedSite = { key: HOBBYNEXT_SITE_KEY, label: "Hobbynext", asksVenues: false };
 
 export function describePreset(preset: HtmlPreset): RecognizedSite {
   return { key: preset.key, label: preset.label, asksVenues: presetAsksVenues(preset) };
@@ -121,11 +136,7 @@ export function venuesMatchingAddress(available: string[], address: string | und
  */
 export function buildManagerSource(input: ManagerSourceInput, preset: HtmlPreset): EventSource {
   const venues = (input.venues ?? []).map((venue) => venue.trim()).filter(Boolean);
-  const aliases = Object.fromEntries(
-    Object.entries(input.gameAliases ?? {})
-      .map(([key, value]) => [key.trim(), value.trim()])
-      .filter(([key, value]) => key && value),
-  );
+  const aliases = cleanAliases(input.gameAliases);
 
   return {
     url: input.url,
@@ -138,6 +149,53 @@ export function buildManagerSource(input: ManagerSourceInput, preset: HtmlPreset
     ...(Object.keys(aliases).length > 0 ? { gameAliases: aliases } : {}),
     managedBy: "owner",
   };
+}
+
+/** La source Hobbynext d'un gérant : son identifiant de lieu, et ses alias. */
+export function buildHobbynextManagerSource({
+  ownerId,
+  gameAliases,
+}: {
+  ownerId: string;
+  gameAliases?: Record<string, string>;
+}): EventSource {
+  const aliases = cleanAliases(gameAliases);
+
+  return {
+    url: hobbynextSourceUrl(ownerId),
+    type: "HOBBYNEXT",
+    hobbynextConfig: { ownerId: ownerId.trim() },
+    ...(Object.keys(aliases).length > 0 ? { gameAliases: aliases } : {}),
+    managedBy: "owner",
+  };
+}
+
+function cleanAliases(gameAliases: Record<string, string> | undefined): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(gameAliases ?? {})
+      .map(([key, value]) => [key.trim(), value.trim()])
+      .filter(([key, value]) => key && value),
+  );
+}
+
+/**
+ * La clé de site d'une source connectée : `hobbynext`, ou celle du
+ * préréglage que son domaine désigne. C'est ce que l'écran des réglages
+ * renvoie pour relire la source.
+ */
+export function managerSiteKey(source: EventSource): string | null {
+  if (source.type === "HOBBYNEXT") return HOBBYNEXT_SITE_KEY;
+  return findPresetForUrl(source.url)?.key ?? null;
+}
+
+/** Ce que l'écran connecté dit de la source : « Hobbynext », ou le domaine du site. */
+export function managerSourceLabel(source: EventSource): string {
+  if (source.type === "HOBBYNEXT") return HOBBYNEXT_SITE.label;
+  try {
+    return new URL(source.url).hostname.replace(/^www\./, "");
+  } catch {
+    return source.url;
+  }
 }
 
 /** La source qu'un gérant a connectée, s'il y en a une. */

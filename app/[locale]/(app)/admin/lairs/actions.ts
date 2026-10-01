@@ -442,14 +442,29 @@ export async function lookupHobbynextOwner(
       return { success: false, error: "Collez le lien d'un événement Hobbynext, ou son numéro" };
     }
 
-    return { success: true, ...(await findHobbynextOwner(eventId)) };
+    const lookup = await findHobbynextOwner(eventId);
+    if (lookup.ok) {
+      const { ownerId, eventName, city } = lookup;
+      return { success: true, ownerId, ...(eventName ? { eventName } : {}), ...(city ? { city } : {}) };
+    }
+
+    return { success: false, error: HOBBYNEXT_LOOKUP_ERRORS[lookup.reason] };
   } catch (error) {
     console.error("Erreur lors de la recherche d'un lieu Hobbynext:", error);
-    return {
-      success: false,
-      error: error instanceof Error && error.message === "HTTP 404"
-        ? "Hobbynext ne connaît pas cet événement"
-        : "Hobbynext n'a pas pu être interrogé",
-    };
+    return { success: false, error: "Hobbynext n'a pas pu être interrogé" };
   }
 }
+
+/**
+ * Pourquoi un événement ne donne pas son lieu. Les événements importés d'une
+ * autre plateforme (Star Wars: Unlimited…) n'ont pas d'organisateur
+ * Hobbynext, et l'API ne les sert pas à l'unité : il faut un événement créé
+ * sur Hobbynext même.
+ */
+const HOBBYNEXT_LOOKUP_ERRORS: Record<"NOT_FOUND" | "NO_ORGANIZER" | "FAILED", string> = {
+  NOT_FOUND:
+    "Hobbynext ne donne pas cet événement. Un événement importé d'une autre plateforme (Star Wars: Unlimited…) ne s'ouvre pas à l'unité : prenez un événement créé sur Hobbynext par le lieu.",
+  NO_ORGANIZER:
+    "Cet événement n'a pas d'organisateur Hobbynext : il a été importé d'une autre plateforme. Prenez un événement créé sur Hobbynext par le lieu.",
+  FAILED: "Hobbynext n'a pas pu être interrogé",
+};

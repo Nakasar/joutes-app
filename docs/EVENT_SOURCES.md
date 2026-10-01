@@ -207,7 +207,10 @@ clé :
 
 La source ne demande que l'**identifiant du lieu** (`owner`), qu'Hobbynext ne
 montre nulle part : le formulaire le retrouve à partir du lien d'un événement
-du lieu (« Trouver »). L'URL de la source en est déduite
+du lieu (« Trouver »). Il faut un événement **créé sur Hobbynext** : un
+événement importé d'une autre plateforme n'a pas d'organisateur (`owner:
+null`), et l'API ne le sert même pas à l'unité (404). Les deux cas ont leur
+message, qui le dit. L'URL de la source en est déduite
 (`hobbynextSourceUrl`) — c'est la clé de ses événements, et le schéma refuse
 une URL qui ne correspond pas à l'identifiant.
 
@@ -275,6 +278,15 @@ parmi les préréglages (`hosts`). Rien n'est lu à ce stade.
   (villes, jeux, rythme) sont derrière **Modifier** et relisent le site à
   l'enregistrement ; **Changer de page** repasse par l'assistant ;
   **Déconnecter** retire la source sans toucher aux événements.
+- **Hobbynext** : le gérant colle le lien d'un de ses événements
+  (`https://event.hobbynext.com/fr/events/38425`) — l'adresse de sa boutique
+  n'existe pas sur le site. La vérification lit l'événement, en tire
+  l'identifiant du lieu, et montre l'événement et sa ville pour que le gérant
+  reconnaisse sa boutique ; pas d'étape *Vos villes*. La source enregistrée
+  est une source `HOBBYNEXT` (`buildHobbynextManagerSource`), que les
+  réglages relisent par son identifiant (`hobbynextOwnerFromSourceUrl`). Un
+  lien qui n'est pas celui d'un événement, un événement inconnu ou importé
+  d'une autre plateforme ont chacun leur erreur (`HOBBYNEXT_*`).
 - **Site inconnu** : le gérant envoie l'adresse et un mot à l'équipe
   (`requestEventSourceHelp`). La demande est écrite sur le lieu
   (`eventsSourceRequest`, hors de `toLair`), l'équipe reçoit un courriel à

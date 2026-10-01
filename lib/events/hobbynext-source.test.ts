@@ -7,11 +7,15 @@ import {
   extractHobbynextEvents,
   hobbynextDate,
   hobbynextResults,
+  hobbynextOwnerFromSourceUrl,
   hobbynextSourceUrl,
+  isHobbynextPageUrl,
   nextHobbynextPage,
   parseHobbynextEventRef,
   readHobbynextGames,
+  readHobbynextOwner,
 } from "./hobbynext-source";
+import { buildHobbynextManagerSource, managerSiteKey, managerSourceLabel } from "./connect";
 import { eventSourceSchema } from "@/lib/schemas/lair.schema";
 
 const PARIS = "Europe/Paris";
@@ -143,5 +147,38 @@ describe("hobbynext", () => {
       eventSourceSchema.safeParse({ type: "HOBBYNEXT", url: hobbynextSourceUrl("abc"), hobbynextConfig: { ownerId: "abc" } }).success,
       false,
     );
+  });
+
+  it("lit l'organisateur d'une fiche, et dit quand un événement importé n'en a pas", () => {
+    assert.deepEqual(readHobbynextOwner({ owner: 1699, name: "Découverte Mélodies", address: { city: "Thionville" } }), {
+      ok: true,
+      ownerId: "1699",
+      eventName: "Découverte Mélodies",
+      city: "Thionville",
+    });
+    assert.deepEqual(readHobbynextOwner({ owner: null, name: "Weekly Play" }), { ok: false, reason: "NO_ORGANIZER" });
+    assert.deepEqual(readHobbynextOwner(null), { ok: false, reason: "NO_ORGANIZER" });
+  });
+
+  it("reconnaît une page publique d'Hobbynext, et relit l'identifiant d'une source enregistrée", () => {
+    assert.equal(isHobbynextPageUrl("https://event.hobbynext.com/fr/events/38425"), true);
+    assert.equal(isHobbynextPageUrl("https://hobbynext.com"), true);
+    assert.equal(isHobbynextPageUrl("https://nothobbynext.com/events/1"), false);
+    assert.equal(isHobbynextPageUrl("pas une adresse"), false);
+
+    assert.equal(hobbynextOwnerFromSourceUrl(hobbynextSourceUrl("1699")), "1699");
+    assert.equal(hobbynextOwnerFromSourceUrl("https://optool-api.asmodee.net/api/events/?owner=abc"), null);
+    assert.equal(hobbynextOwnerFromSourceUrl("https://ailleurs.example/api/events/?owner=1699"), null);
+  });
+
+  it("bâtit la source d'un gérant, valide, relisible par sa clé", () => {
+    const source = buildHobbynextManagerSource({ ownerId: "1699", gameAliases: { " Forest Shuffle ": " Forêt Mixte ", vide: " " } });
+    assert.equal(source.type, "HOBBYNEXT");
+    assert.equal(source.managedBy, "owner");
+    assert.deepEqual(source.gameAliases, { "Forest Shuffle": "Forêt Mixte" });
+    assert.equal(eventSourceSchema.safeParse(source).success, true);
+    assert.equal(managerSiteKey(source), "hobbynext");
+    assert.equal(managerSourceLabel(source), "Hobbynext");
+    assert.equal(managerSourceLabel({ url: "https://www.antretemps.com/evenements", type: "HTML" }), "antretemps.com");
   });
 });
