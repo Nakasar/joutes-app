@@ -14,6 +14,13 @@ podman run -d -it --rm \
   mongo
 ```
 
+- Poser les index (idempotent, rien n'est jamais supprimé ; la base visée est celle de `MONGODB_URI`) :
+```bash
+npm run indexes              # crée ce qui manque
+npm run indexes -- --dry-run # liste ce qui serait créé, sans rien écrire
+```
+Les index sont déclarés dans `lib/db/indexes/`, chacun avec la requête qu'il sert.
+
 ### Thème Hivernal 🎄❄️
 
 L'application supporte un thème hivernal festif avec décorations de Noël et d'hiver.

@@ -7,6 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint .",
+    "indexes": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import ./scripts/ts-paths-hook.mjs scripts/db/indexes.ts",
     "test": "node --import ./scripts/ts-paths-hook.mjs --test \"lib/**/*.test.ts\""
   },
   "dependencies": {

@@ -10,7 +10,7 @@ import type { WatchedVideo } from "@/lib/types/StreamLink";
  * Les chaînes d'éditeurs suivies pour leurs directs.
  *
  * Index attendus sur la collection `game_streams` (voir
- * `scripts/db/ensure-indexes.ts`) :
+ * `lib/db/indexes/users.ts`, posés par `npm run indexes`) :
  *
  *  - `{ gameId: 1, platform: 1 }` **unique** — un jeu ne suit qu'une chaîne par
  *    plateforme, parce que sa fiche ne porte qu'un lien par réseau. L'unicité

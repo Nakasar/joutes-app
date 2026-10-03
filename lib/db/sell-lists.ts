@@ -93,8 +93,7 @@ export async function getSellListForOwner(owner: SellListOwner): Promise<SellLis
  * registre ne demande qu'un booléen, et le compte exact coûte le scan.
  *
  * Les deux requêtes sont couvertes par les index que pose
- * `scripts/ensure-indexes-for-sell-lists.ts` — `{ownerType, ownerId}` et
- * `{sellListId}`.
+ * `npm run indexes` — `{ownerType, ownerId}` et `{sellListId, …}`.
  *
  * L'ordre des candidats est rendu tel quel : le registre croise ce résultat
  * avec un tri qu'il repose ensuite, mais rien ne gagne à le brouiller ici.

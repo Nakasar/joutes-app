@@ -191,12 +191,7 @@ Il rend son compte rendu : `channels`, `resolved`, `started`, `stopped`,
 
 ## Index MongoDB
 
-`scripts/db/ensure-indexes.ts` les pose, et il est idempotent :
-
-```sh
-node --conditions=react-server --import ./scripts/ts-paths-hook.mjs \
-  scripts/db/ensure-indexes.ts
-```
+`npm run indexes` les pose, et il est idempotent (voir `lib/db/indexes/users.ts`).
 
 Sur `game_streams` :
 

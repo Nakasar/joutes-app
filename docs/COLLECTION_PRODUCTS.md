@@ -260,7 +260,7 @@ l'identique — une correction sur l'un profite à l'autre.
 ## Activer un jeu
 
 1. Cocher **Produits** dans les fonctionnalités du jeu, depuis `/admin/games`.
-2. Créer les index : `npx tsx scripts/create-product-indexes.ts`. **À faire avant
+2. Créer les index : `npm run indexes`. **À faire avant
    tout import** — l'unicité de `{gameId, id}` est ce qui évite de reproduire le
    défaut de `cards.id`.
 3. Saisir le catalogue depuis `/admin/products`, figurines d'abord, boîtes

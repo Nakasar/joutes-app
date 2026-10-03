@@ -20,7 +20,7 @@
  *     scripts/db/seed-game-links.ts
  *
  * Les deux drapeaux ne sont pas décoratifs, pour les mêmes raisons que
- * `ensure-indexes.ts` : `--conditions=react-server` résout `server-only` vers
+ * `scripts/db/indexes.ts` : `--conditions=react-server` résout `server-only` vers
  * son module vide, `--import` installe l'alias `@/`.
  *
  * Le lien `youtube` fait en plus autre chose qu'ouvrir une page : c'est la

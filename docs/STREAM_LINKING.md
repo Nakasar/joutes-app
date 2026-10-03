@@ -182,19 +182,8 @@ par les deux hubs.
 
 ## Index MongoDB
 
-`scripts/db/ensure-indexes.ts` les pose. Il est idempotent — le rejouer ne coûte
-rien :
-
-```sh
-node --conditions=react-server --import ./scripts/ts-paths-hook.mjs \
-  scripts/db/ensure-indexes.ts
-```
-
-Les deux drapeaux ne sont pas décoratifs. `--conditions=react-server` fait
-résoudre `server-only` vers son module vide, sans quoi l'import de
-`lib/mongodb.ts` échoue hors du serveur Next ; `--import` installe la résolution
-de l'alias `@/`. Le typage est retiré nativement depuis Node 22.18 — pas
-d'exécuteur TypeScript à installer.
+`npm run indexes` les pose (voir `lib/db/indexes/users.ts`). Il est idempotent —
+le rejouer ne coûte rien.
 
 Ce qu'il crée, sur `stream_links` :
 

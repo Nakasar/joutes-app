@@ -14,7 +14,7 @@ import type {
 /**
  * Les publications rapatriées des réseaux des éditeurs.
  *
- * Index attendus sur `game_social_posts` (voir `scripts/db/ensure-indexes.ts`) :
+ * Index attendus sur `game_social_posts` (voir `lib/db/indexes/users.ts`) :
  *
  *  - `{ gameId: 1, platform: 1, externalId: 1 }` **unique** — une publication
  *    n'existe qu'une fois par jeu. C'est la clé de l'upsert, et l'unicité est
