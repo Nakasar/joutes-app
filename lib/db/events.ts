@@ -1,7 +1,7 @@
 import db from "@/lib/mongodb";
 import {Event, RegistrationStatus} from "@/lib/types/Event";
 import {getUserById} from "@/lib/db/users";
-import {getLairIdsNearLocation} from "./lairs";
+import {getLairIdsNearLocation, getLairsByIds} from "./lairs";
 import {AnyBulkWriteOperation, ObjectId, UpdateFilter} from "mongodb";
 import {DateTime} from "luxon";
 import {notifyEventRescheduledIfNeeded} from "@/lib/events/event-notifications";
@@ -1108,6 +1108,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
       address: event.lairDetails[0].address,
     } : undefined,
     staff: event.staff ?? [],
+    linkedEventIds: event.linkedEventIds ?? [],
   };
 }
 
@@ -1358,4 +1359,107 @@ export async function hasLegacyEventPortal(eventId: string): Promise<boolean> {
     db.collection("matches").findOne({eventId}, {projection: {_id: 1}}),
   ]);
   return Boolean(settings || match);
+}
+
+/** Un événement lié, tel que l'affiche la page d'un autre événement. */
+export type RelatedEventSummary = {
+  id: string;
+  name: string;
+  startDateTime: string;
+  endDateTime: string;
+  gameName: string;
+  status: Event['status'];
+  lairId?: string;
+  lairName?: string;
+  creatorId?: string;
+  participants?: string[];
+};
+
+/** Au-delà, les prochains événements d'un lieu ne sont plus comparés. */
+const RELATED_CANDIDATES_SCAN_LIMIT = 200;
+
+const RELATED_EVENT_PROJECTION = {
+  _id: 0, id: 1, name: 1, startDateTime: 1, endDateTime: 1, gameName: 1,
+  status: 1, lairId: 1, creatorId: 1, participants: 1,
+} as const;
+
+/**
+ * Ce qu'il faut pour choisir les événements liés d'un événement
+ * (`pickRelatedEvents`) :
+ *
+ * — `linked` : les événements qu'il lie, et ceux qui le lient ;
+ * — `candidates` : les prochains événements du même lieu, à comparer par
+ *   titre. Comme pour `countUserAttendanceBetween`, la borne de date garde une
+ *   journée de marge, les dates n'étant pas toutes écrites dans le même
+ *   fuseau ; le tri fin se fait en mémoire.
+ */
+export async function getRelatedEventCandidates(
+  event: Pick<Event, 'id' | 'lairId' | 'linkedEventIds'>,
+  now: Date = new Date()
+): Promise<{linked: RelatedEventSummary[]; candidates: RelatedEventSummary[]}> {
+  const collection = db.collection<EventDocument>(COLLECTION_NAME);
+  const [linked, candidates] = await Promise.all([
+    collection
+      .find(
+        {
+          id: {$ne: event.id},
+          $or: [{id: {$in: event.linkedEventIds ?? []}}, {linkedEventIds: event.id}],
+        },
+        {projection: RELATED_EVENT_PROJECTION}
+      )
+      .toArray(),
+    event.lairId
+      ? collection
+        .find(
+          {
+            lairId: event.lairId,
+            id: {$ne: event.id},
+            status: {$ne: 'cancelled'},
+            startDateTime: {$gte: new Date(now.getTime() - ATTENDANCE_SCAN_MARGIN_MS).toISOString()},
+          },
+          {projection: RELATED_EVENT_PROJECTION}
+        )
+        .sort({startDateTime: 1})
+        .limit(RELATED_CANDIDATES_SCAN_LIMIT)
+        .toArray()
+      : Promise.resolve([]),
+  ]);
+
+  const lairIds = [...new Set([...linked, ...candidates].map((entry) => entry.lairId).filter(Boolean))] as string[];
+  const lairNames = new Map((await getLairsByIds(lairIds)).map((lair) => [lair.id, lair.name]));
+
+  const toSummary = (entry: EventDocument): RelatedEventSummary => ({
+    id: entry.id,
+    name: entry.name,
+    startDateTime: entry.startDateTime,
+    endDateTime: entry.endDateTime,
+    gameName: entry.gameName,
+    status: entry.status,
+    lairId: entry.lairId,
+    lairName: entry.lairId ? lairNames.get(entry.lairId) : undefined,
+    creatorId: entry.creatorId,
+    participants: entry.participants,
+  });
+
+  return {linked: linked.map(toSummary), candidates: candidates.map(toSummary)};
+}
+
+/** Lie deux événements, depuis le premier. Sans effet si le lien existe déjà. */
+export async function linkEvents(eventId: string, otherEventId: string): Promise<boolean> {
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    {id: eventId},
+    {$addToSet: {linkedEventIds: otherEventId}}
+  );
+  return result.matchedCount > 0;
+}
+
+/**
+ * Défait le lien entre deux événements, quel que soit le côté qui le porte.
+ */
+export async function unlinkEvents(eventId: string, otherEventId: string): Promise<void> {
+  const collection = db.collection<EventDocument>(COLLECTION_NAME);
+  await Promise.all([
+    collection.updateOne({id: eventId}, {$pull: {linkedEventIds: otherEventId}}),
+    collection.updateOne({id: otherEventId}, {$pull: {linkedEventIds: eventId}}),
+  ]);
 }

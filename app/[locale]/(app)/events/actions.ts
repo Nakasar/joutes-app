@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
-import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent, addEventToFavorites, removeEventFromFavorites, deleteEvent, updateEvent, updateParticipantRegistrationStatus } from "@/lib/db/events.ts";
+import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent, addEventToFavorites, removeEventFromFavorites, deleteEvent, updateEvent, updateParticipantRegistrationStatus, linkEvents, unlinkEvents } from "@/lib/db/events.ts";
 import { getLairsOwnedByUser } from "@/lib/db/lairs.ts";
 import {getUserById, getUserByTagOrId, updateUserDisplayName} from "@/lib/db/users.ts";
 import { nanoid } from 'nanoid';
@@ -22,6 +22,8 @@ import {
 } from "@/lib/events/waitlist-service.ts";
 import { removeFromEventWaitlist, setWaitlistResponseHours } from "@/lib/db/event-waitlist.ts";
 import { notifyEventDeleted, notifyEventRescheduledIfNeeded } from "@/lib/events/event-notifications.ts";
+import { canManageEvent } from "@/lib/events/tournament-link.ts";
+import { parseEventReference } from "@/lib/events/related-events.ts";
 
 type CreateEventInput = {
   name: string;
@@ -999,5 +1001,78 @@ export async function updateWaitlistResponseHoursAction(eventId: string, hours: 
   } catch (error) {
     console.error("Erreur lors de la modification du délai de réponse:", error);
     return { success: false, error: "Une erreur est survenue" };
+  }
+}
+
+/**
+ * Erreurs des liens entre événements, traduites par la page
+ * (`EventDetail.related.errors.*`).
+ */
+type EventLinkError = "unauthenticated" | "forbidden" | "invalidReference" | "notFound" | "self" | "unknown";
+
+type EventLinkResult = { success: true } | { success: false; error: EventLinkError };
+
+/**
+ * Lie un autre événement à celui-ci. Réservé à l'organisation de l'événement ;
+ * l'autre événement peut être celui d'un autre organisateur, pourvu qu'il
+ * soit visible de tous ou de l'utilisateur.
+ *
+ * @param reference - Un lien vers la page de l'autre événement, ou son identifiant
+ */
+export async function linkEventAction(eventId: string, reference: string): Promise<EventLinkResult> {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) return { success: false, error: "unauthenticated" };
+
+    const otherEventId = parseEventReference(reference);
+    if (!otherEventId) return { success: false, error: "invalidReference" };
+    if (otherEventId === eventId) return { success: false, error: "self" };
+
+    const event = await getEventById(eventId);
+    if (!event) return { success: false, error: "notFound" };
+    if (!canManageEvent(event, session.user.id)) return { success: false, error: "forbidden" };
+
+    // Un événement privé n'est lié que par qui peut le voir : sinon, le lien
+    // le révélerait sur la page d'un autre.
+    const other = await getEventById(otherEventId);
+    const otherVisible =
+      other &&
+      (other.lairId ||
+        other.creatorId === session.user.id ||
+        other.participants?.includes(session.user.id));
+    if (!other || !otherVisible) return { success: false, error: "notFound" };
+
+    await linkEvents(eventId, otherEventId);
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath(`/events/${otherEventId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la liaison des événements:", error);
+    return { success: false, error: "unknown" };
+  }
+}
+
+/**
+ * Défait le lien entre deux événements, quel que soit le côté qui le porte :
+ * l'organisation d'un événement décide de ce qui s'affiche sur sa page.
+ */
+export async function unlinkEventAction(eventId: string, otherEventId: string): Promise<EventLinkResult> {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) return { success: false, error: "unauthenticated" };
+
+    const event = await getEventById(eventId);
+    if (!event) return { success: false, error: "notFound" };
+    if (!canManageEvent(event, session.user.id)) return { success: false, error: "forbidden" };
+
+    await unlinkEvents(eventId, otherEventId);
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath(`/events/${otherEventId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la suppression du lien entre événements:", error);
+    return { success: false, error: "unknown" };
   }
 }

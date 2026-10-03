@@ -384,6 +384,28 @@
     "interested": {
       "title": "Interessiert ({count})",
       "empty": "Noch niemand hat diese Veranstaltung favorisiert."
+    },
+    "related": {
+      "title": "Verwandte Veranstaltungen",
+      "add": "Veranstaltung verknüpfen",
+      "referenceLabel": "Link oder ID der Veranstaltung",
+      "referencePlaceholder": "https://…/events/…",
+      "link": "Verknüpfen",
+      "linkSuggestion": "Diese Veranstaltung verknüpfen",
+      "unlink": "Entfernen",
+      "cancel": "Abbrechen",
+      "empty": "Keine verknüpften Veranstaltungen. Füge den Link einer anderen Veranstaltung ein, um sie zu verknüpfen: Sie erscheint auf beiden Seiten.",
+      "similarHint": "Nicht verknüpfte Veranstaltungen werden vorgeschlagen, weil ihr Titel diesem ähnelt.",
+      "cancelled": "Abgesagt",
+      "past": "Vergangen",
+      "errors": {
+        "unauthenticated": "Du musst angemeldet sein.",
+        "forbidden": "Nur die Organisation der Veranstaltung kann Veranstaltungen verknüpfen.",
+        "invalidReference": "Dieser Link führt zu keiner Veranstaltung.",
+        "notFound": "Veranstaltung nicht gefunden.",
+        "self": "Eine Veranstaltung kann nicht mit sich selbst verknüpft werden.",
+        "unknown": "Ein Fehler ist aufgetreten."
+      }
     }
   },
   "EventJoin": {

@@ -87,6 +87,12 @@ export type Event = {
     address?: string;
     owners?: string[];
   };
+  /**
+   * Événements que l'organisation a liés à celui-ci (séances d'une même
+   * série, qualificatif et finale…). Un lien n'est posé que d'un côté, mais
+   * s'affiche sur les deux pages. Voir `lib/events/related-events.ts`.
+   */
+  linkedEventIds?: string[];
   discordBoards?: { channelId: string; messageId: string }[];
   boardsNeedsUpdate?: boolean;
 };

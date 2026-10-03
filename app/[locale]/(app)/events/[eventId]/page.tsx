@@ -42,6 +42,7 @@ import CancelEventButton from "./CancelEventButton.tsx";
 import DeleteEventButton from "./DeleteEventButton.tsx";
 import { EventTournamentSection } from "./EventTournamentSection.tsx";
 import EventAnnouncements from "./EventAnnouncements.tsx";
+import { EventRelatedSection } from "./EventRelatedSection.tsx";
 import ReportButton from "@/components/ReportButton.tsx";
 import { DateTime } from "luxon";
 import { getEventParticipants, getEventWaitlist } from "./portal/participant-actions.ts";
@@ -457,6 +458,8 @@ async function EventBody({ params }: Pick<EventPageProps, "params">) {
               </div>
             </section>
           )}
+
+          <EventRelatedSection event={event} viewerId={viewerId} canManage={canManage} />
         </div>
 
         <aside className="order-first space-y-4 lg:order-none lg:sticky lg:top-20">
