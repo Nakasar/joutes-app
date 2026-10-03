@@ -54,6 +54,17 @@ describe("areSimilarTitles", () => {
     assert.equal(areSimilarTitles("Star Wars Unlimited", "Star Wars Unlimited - Tournoi hebdo"), false);
   });
 
+  it("ne compte pas les mots génériques pour désigner un événement précis", () => {
+    for (const [short, long] of [
+      ["Soirée Star Wars Unlimited", "Soirée Star Wars Unlimited - Tournoi Premier"],
+      ["Tournoi de Star Wars", "Tournoi de Star Wars Unlimited - Draft Premier"],
+      ["Tournoi Magic the Gathering", "Tournoi Magic the Gathering - Commander 4 joueurs"],
+      ["One Piece Card Game", "One Piece Card Game - Store Tournament"],
+    ]) {
+      assert.equal(areSimilarTitles(short, long), false, `${short} / ${long}`);
+    }
+  });
+
   it("ne rapproche pas un titre d'un titre bien plus long qui le contient", () => {
     assert.equal(
       areSimilarTitles(

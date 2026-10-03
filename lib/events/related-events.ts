@@ -26,8 +26,24 @@ export const SIMILAR_EVENTS_LIMIT = 3;
 /** Part de mots communs à partir de laquelle deux titres se ressemblent. */
 const SIMILARITY_THRESHOLD = 0.75;
 
-/** Mots qu'un titre doit compter pour qu'un titre qui le prolonge lui ressemble. */
+/**
+ * Mots distinctifs qu'un titre doit compter pour qu'un titre qui le prolonge
+ * lui ressemble. Voir `GENERIC_WORDS`.
+ */
 const EXTENDED_TITLE_MIN_WORDS = 4;
+
+// Mots qui ne disent pas de quel événement il s'agit : articles et
+// prépositions, et mots génériques des titres d'événements de jeu. Ils ne
+// comptent pas pour savoir si un titre désigne un événement précis.
+const GENERIC_WORDS = new Set([
+  "le", "la", "les", "l", "un", "une", "des", "de", "du", "d", "a", "au", "aux", "et", "en", "sur", "pour", "avec",
+  "the", "of", "and", "an", "at", "in", "on", "for", "with",
+  "der", "die", "das", "den", "dem", "ein", "eine", "und", "im", "am", "mit", "zum", "zur",
+  "il", "lo", "gli", "di", "da", "e", "con", "per", "del", "della",
+  "tournoi", "tournois", "soiree", "soirees", "evenement", "ligue", "hebdo", "hebdomadaire", "casual", "initiation",
+  "tournament", "night", "event", "league", "weekly", "turnier", "abend", "torneo", "serata",
+  "jeu", "jeux", "game", "games", "card", "cards", "tcg", "jcc", "spiel", "gioco",
+]);
 
 // Jours de la semaine des langues de l'application : ils distinguent deux
 // séances d'une même série, pas deux événements.
@@ -67,15 +83,18 @@ export function titleSimilarity(a: string, b: string): number {
  * ajoute : « Avant-Première - Réalité Fracturée - Troll à 2 Têtes » prolonge
  * « Avant-Première - Réalité Fracturée ».
  *
- * Le titre court doit compter assez de mots pour désigner un événement précis,
- * et pas seulement un jeu : « Star Wars Unlimited » ne doit pas attirer toutes
- * les soirées du jeu. Il doit aussi faire au moins la moitié du titre long.
+ * Le titre court doit compter assez de mots distinctifs pour désigner un
+ * événement précis, et pas seulement un jeu : « Soirée Star Wars Unlimited »
+ * ne doit pas attirer toutes les soirées du jeu. Il doit aussi faire au moins
+ * la moitié du titre long.
  */
 function extendsTitle(a: string, b: string): boolean {
   const wordsA = new Set(titleWords(a));
   const wordsB = new Set(titleWords(b));
   const [shorter, longer] = wordsA.size <= wordsB.size ? [wordsA, wordsB] : [wordsB, wordsA];
-  if (shorter.size < EXTENDED_TITLE_MIN_WORDS) return false;
+  let distinctive = 0;
+  for (const word of shorter) if (!GENERIC_WORDS.has(word)) distinctive++;
+  if (distinctive < EXTENDED_TITLE_MIN_WORDS) return false;
   if (shorter.size * 2 < longer.size) return false;
   for (const word of shorter) if (!longer.has(word)) return false;
   return true;
