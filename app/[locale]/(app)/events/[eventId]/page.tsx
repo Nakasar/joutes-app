@@ -6,7 +6,7 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getEventById, hasLegacyEventPortal } from "@/lib/db/events.ts";
 import { getTournamentByEventId } from "@/lib/db/tournaments.ts";
-import { getUserById } from "@/lib/db/users.ts";
+import { getUsersByIds } from "@/lib/db/users.ts";
 import { getLairById } from "@/lib/db/lairs.ts";
 import { canManageEvent } from "@/lib/events/tournament-link.ts";
 import { Metadata } from "next";
@@ -640,9 +640,8 @@ async function EventBody({ params }: Pick<EventPageProps, "params">) {
  */
 async function InterestedUsers({ event }: { event: Event }) {
   const t = await getTranslations("EventDetail.interested");
-  const ids = (event.favoritedBy ?? []).slice(0, 50);
-  const users = (await Promise.all(ids.map((id) => getUserById(id).catch(() => null))))
-    .filter((user) => user !== null);
+  // Une seule lecture pour tous les intéressés affichés.
+  const users = await getUsersByIds((event.favoritedBy ?? []).slice(0, 50)).catch(() => []);
 
   return (
     <Card className="gap-3">
