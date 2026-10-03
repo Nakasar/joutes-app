@@ -32,7 +32,26 @@ La page se lit de haut en bas :
    joueurs du tournoi, pilotage pour son staff, écran de salle pendant qu'il
    se joue.
 5. **Annonces** — pour les inscrits et l'organisation, qui les publie.
-6. **Organisation** — inscrits, liste d'attente, intéressés (favoris).
+6. **Événements liés** — voir plus bas.
+7. **Organisation** — inscrits, liste d'attente, intéressés (favoris).
+
+## Événements liés
+
+La section « Événements liés » montre, dans cet ordre :
+
+- **les liens posés par l'organisation** (`Event.linkedEventIds`). Un lien est
+  stocké d'un seul côté, mais s'affiche sur les deux pages ; l'organisation de
+  l'un ou l'autre événement peut le retirer. On lie en collant le lien (ou
+  l'identifiant) d'un autre événement, ou d'un clic sur une suggestion ;
+- **jusqu'à 3 événements au titre proche** : à venir, du même lieu, non
+  annulés, du plus proche au plus lointain. Deux titres sont proches quand ils
+  partagent au moins 75 % de leurs mots une fois retirés accents, ponctuation,
+  ce qui est entre parenthèses ou crochets et les jours de la semaine :
+  « Avant Première - Homeworlds (Samedi) » et « Avant Première - Homeworlds
+  (Dimanche) » se retrouvent ainsi. Voir `lib/events/related-events.ts`.
+
+Un événement privé lié ne s'affiche qu'à qui peut l'ouvrir, et ne peut être lié
+que par qui le voit. Un événement privé ne reçoit pas de suggestions.
 
 ## Créer le tournoi d'un événement
 

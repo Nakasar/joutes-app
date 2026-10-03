@@ -384,6 +384,29 @@
     "interested": {
       "title": "Intéressés ({count})",
       "empty": "Personne n'a encore mis cet événement en favori."
+    },
+    "related": {
+      "title": "Événements liés",
+      "add": "Lier un événement",
+      "referenceLabel": "Lien ou identifiant de l'événement",
+      "referencePlaceholder": "https://…/events/…",
+      "link": "Lier",
+      "linkSuggestion": "Lier cet événement",
+      "unlink": "Retirer",
+      "cancel": "Annuler",
+      "empty": "Aucun événement lié. Collez le lien d'un autre événement pour le lier : il s'affichera sur les deux pages.",
+      "linkedGroup": "Liés par l'organisation",
+      "similarGroup": "Suggestions : titre proche",
+      "cancelled": "Annulé",
+      "past": "Passé",
+      "errors": {
+        "unauthenticated": "Vous devez être connecté.",
+        "forbidden": "Seule l'organisation de l'événement peut lier des événements.",
+        "invalidReference": "Ce lien ne mène pas à un événement.",
+        "notFound": "Événement introuvable.",
+        "self": "Un événement ne peut pas être lié à lui-même.",
+        "unknown": "Une erreur est survenue."
+      }
     }
   },
   "EventJoin": {

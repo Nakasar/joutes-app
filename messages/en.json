@@ -384,6 +384,29 @@
     "interested": {
       "title": "Interested ({count})",
       "empty": "Nobody has favorited this event yet."
+    },
+    "related": {
+      "title": "Related events",
+      "add": "Link an event",
+      "referenceLabel": "Event link or ID",
+      "referencePlaceholder": "https://…/events/…",
+      "link": "Link",
+      "linkSuggestion": "Link this event",
+      "unlink": "Remove",
+      "cancel": "Cancel",
+      "empty": "No related events. Paste another event's link to link it: it will show on both pages.",
+      "linkedGroup": "Linked by the organizers",
+      "similarGroup": "Suggestions: similar title",
+      "cancelled": "Cancelled",
+      "past": "Past",
+      "errors": {
+        "unauthenticated": "You must be signed in.",
+        "forbidden": "Only the event's organizers can link events.",
+        "invalidReference": "This link doesn't lead to an event.",
+        "notFound": "Event not found.",
+        "self": "An event can't be linked to itself.",
+        "unknown": "Something went wrong."
+      }
     }
   },
   "EventJoin": {

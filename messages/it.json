@@ -384,6 +384,29 @@
     "interested": {
       "title": "Interessati ({count})",
       "empty": "Nessuno ha ancora messo questo evento tra i preferiti."
+    },
+    "related": {
+      "title": "Eventi collegati",
+      "add": "Collega un evento",
+      "referenceLabel": "Link o ID dell'evento",
+      "referencePlaceholder": "https://…/events/…",
+      "link": "Collega",
+      "linkSuggestion": "Collega questo evento",
+      "unlink": "Rimuovi",
+      "cancel": "Annulla",
+      "empty": "Nessun evento collegato. Incolla il link di un altro evento per collegarlo: apparirà su entrambe le pagine.",
+      "linkedGroup": "Collegati dagli organizzatori",
+      "similarGroup": "Suggerimenti: titolo simile",
+      "cancelled": "Annullato",
+      "past": "Passato",
+      "errors": {
+        "unauthenticated": "Devi aver effettuato l'accesso.",
+        "forbidden": "Solo gli organizzatori dell'evento possono collegare eventi.",
+        "invalidReference": "Questo link non porta a un evento.",
+        "notFound": "Evento non trovato.",
+        "self": "Un evento non può essere collegato a se stesso.",
+        "unknown": "Si è verificato un errore."
+      }
     }
   },
   "EventJoin": {
