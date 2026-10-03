@@ -64,7 +64,7 @@ le proposer à qui en a déjà un serait le même bruit sous une autre forme.
 | `app/[locale]/(app)/account/showcase/` | L'onglet « Ma vitrine » |
 | `app/[locale]/(app)/account/contents/` | Les publications d'un joueur |
 | `app/api/users/me/upload/route.ts` | Le dépôt de l'avatar et de la bannière |
-| `scripts/ensure-indexes-for-user-profiles.ts` | Les index, posés par script |
+| `lib/db/indexes/users.ts` | Les index, posés par `npm run indexes` |
 
 Les modules marqués **purs** le sont pour une raison mécanique : `npm test` ne
 couvre que `lib/**`, et `lib/db/*` ouvre une connexion MongoDB au chargement,
@@ -274,7 +274,7 @@ et `LegacyAnchorRedirect` rattrape ce qui vient du dehors.
 
 ## Les index
 
-`npx ts-node scripts/ensure-indexes-for-user-profiles.ts` pose les index des
+`npm run indexes` pose les index des
 abonnés, des publications et du registre. Le registre trie par date de création
 ou par pseudonyme sur les seuls profils publics : les index portent donc le tri
 à côté du critère d'égalité, sans quoi chaque page de vingt fiches se paierait

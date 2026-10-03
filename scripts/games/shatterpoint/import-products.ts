@@ -63,7 +63,7 @@
  * survivent donc.
  *
  * Les index doivent exister avant le premier import
- * (`npx tsx scripts/create-product-indexes.ts`), l'unicité de `{gameId, id}`
+ * (`npm run indexes`), l'unicité de `{gameId, id}`
  * étant ce qui empêche l'import de créer des doublons.
  *
  * Variables d'environnement : `MONGODB_URI`, `BLOB_READ_WRITE_TOKEN`.

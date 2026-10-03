@@ -95,7 +95,7 @@
  * L'import n'écrit que les attributs qu'il connaît, chacun sous sa propre clé :
  * ce qu'un administrateur a saisi à côté lui survit, et un produit retouché à la
  * main est épargné en entier. Les index doivent exister avant la première
- * exécution (`npx tsx scripts/create-product-indexes.ts`).
+ * exécution (`npm run indexes`).
  *
  * Variables d'environnement : `MONGODB_URI`, `BLOB_READ_WRITE_TOKEN`.
  */
