@@ -31,12 +31,10 @@ export default function RelatedEventsList({
   eventId,
   items,
   canManage,
-  hint,
 }: {
   eventId: string;
   items: RelatedEventItem[];
   canManage: boolean;
-  hint: string | null;
 }) {
   const t = useTranslations("EventDetail.related");
   const router = useRouter();
@@ -60,6 +58,62 @@ export default function RelatedEventsList({
 
   const link = (ref: string, onSuccess?: () => void) => run(() => linkEventAction(eventId, ref), onSuccess);
   const unlink = (otherId: string) => run(() => unlinkEventAction(eventId, otherId));
+
+  const linkedItems = items.filter((item) => item.kind === "linked");
+  const similarItems = items.filter((item) => item.kind === "similar");
+
+  // Les titres d'une même série ne diffèrent souvent que par la fin : ils
+  // passent à la ligne plutôt que d'être tronqués, et les boutons gardent
+  // leur libellé, quitte à passer sous l'événement sur un écran étroit.
+  const renderItem = (item: RelatedEventItem) => (
+    <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2.5">
+      <div className="flex min-w-0 flex-[1_1_14rem] items-center gap-3">
+        <div className="w-11 shrink-0 overflow-hidden rounded-md border text-center" aria-hidden>
+          <div className="bg-muted py-px text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {item.month}
+          </div>
+          <div className="py-0.5 text-lg font-bold tabular-nums">{item.day}</div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <Link href={`/events/${item.id}`} className="block break-words font-medium leading-snug hover:underline">
+            {item.name}
+          </Link>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+            <span className="first-letter:uppercase">{item.when}</span>
+            {item.lairName && (
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {item.lairName}
+              </span>
+            )}
+            {item.cancelled && <Badge variant="destructive">{t("cancelled")}</Badge>}
+            {!item.cancelled && item.past && <Badge variant="secondary">{t("past")}</Badge>}
+          </div>
+        </div>
+      </div>
+      {canManage && (
+        <div className="ml-auto flex flex-wrap justify-end gap-1">
+          {item.kind === "linked" ? (
+            <Button size="sm" variant="ghost" onClick={() => unlink(item.id)} disabled={isPending}>
+              <Link2Off className="mr-2 h-4 w-4" />
+              {t("unlink")}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => link(item.id)}
+              disabled={isPending}
+              title={t("linkSuggestion")}
+            >
+              <Link2 className="mr-2 h-4 w-4" />
+              {t("link")}
+            </Button>
+          )}
+        </div>
+      )}
+    </li>
+  );
 
   return (
     <section className="space-y-3">
@@ -113,66 +167,28 @@ export default function RelatedEventsList({
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("empty")}</p>
       ) : (
-        <ul className="space-y-2">
-          {items.map((item) => (
-            <li key={item.id} className="flex items-center gap-3 rounded-lg border px-3 py-2.5">
-              <div className="w-11 shrink-0 overflow-hidden rounded-md border text-center" aria-hidden>
-                <div className="bg-muted py-px text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {item.month}
-                </div>
-                <div className="py-0.5 text-lg font-bold tabular-nums">{item.day}</div>
-              </div>
-              <div className="min-w-0 flex-1">
-                <Link href={`/events/${item.id}`} className="block truncate font-medium hover:underline">
-                  {item.name}
-                </Link>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                  <span className="first-letter:uppercase">{item.when}</span>
-                  {item.lairName && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {item.lairName}
-                    </span>
-                  )}
-                  {item.cancelled && <Badge variant="destructive">{t("cancelled")}</Badge>}
-                  {!item.cancelled && item.past && <Badge variant="secondary">{t("past")}</Badge>}
-                </div>
-              </div>
-              {canManage && (
-                <div className="flex shrink-0 flex-wrap justify-end gap-1">
-                  {item.kind === "linked" ? (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => unlink(item.id)}
-                      disabled={isPending}
-                      title={t("unlink")}
-                    >
-                      <Link2Off className="h-4 w-4 sm:mr-2" />
-                      <span className="sr-only sm:not-sr-only">{t("unlink")}</span>
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => link(item.id)}
-                      disabled={isPending}
-                      title={t("linkSuggestion")}
-                    >
-                      <Link2 className="h-4 w-4 sm:mr-2" />
-                      <span className="sr-only sm:not-sr-only">{t("link")}</span>
-                    </Button>
-                  )}
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {hint && items.some((item) => item.kind === "similar") && (
-        <p className="text-xs text-muted-foreground">{hint}</p>
+        <div className="space-y-4">
+          {/* Liens posés et suggestions en deux groupes : un visiteur doit
+              savoir ce que l'organisation a lié et ce qui n'est que proposé. */}
+          {linkedItems.length > 0 && (
+            <RelatedGroup title={similarItems.length > 0 ? t("linkedGroup") : null}>
+              {linkedItems.map(renderItem)}
+            </RelatedGroup>
+          )}
+          {similarItems.length > 0 && (
+            <RelatedGroup title={t("similarGroup")}>{similarItems.map(renderItem)}</RelatedGroup>
+          )}
+        </div>
       )}
     </section>
+  );
+}
+
+function RelatedGroup({ title, children }: { title: string | null; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      {title && <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>}
+      <ul className="space-y-2">{children}</ul>
+    </div>
   );
 }

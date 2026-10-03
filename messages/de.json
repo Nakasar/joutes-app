@@ -395,7 +395,8 @@
       "unlink": "Entfernen",
       "cancel": "Abbrechen",
       "empty": "Keine verknüpften Veranstaltungen. Füge den Link einer anderen Veranstaltung ein, um sie zu verknüpfen: Sie erscheint auf beiden Seiten.",
-      "similarHint": "Nicht verknüpfte Veranstaltungen werden vorgeschlagen, weil ihr Titel diesem ähnelt.",
+      "linkedGroup": "Von der Organisation verknüpft",
+      "similarGroup": "Vorschläge: ähnlicher Titel",
       "cancelled": "Abgesagt",
       "past": "Vergangen",
       "errors": {

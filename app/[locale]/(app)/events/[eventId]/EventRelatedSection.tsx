@@ -1,4 +1,4 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 import { DateTime } from "luxon";
 import { getRelatedEventCandidates, type RelatedEventSummary } from "@/lib/db/events.ts";
 import { pickRelatedEvents } from "@/lib/events/related-events.ts";
@@ -26,10 +26,9 @@ export async function EventRelatedSection({
   canManage: boolean;
 }) {
   const now = new Date();
-  const [{ linked, candidates }, locale, t] = await Promise.all([
+  const [{ linked, candidates }, locale] = await Promise.all([
     getRelatedEventCandidates(event, now),
     getLocale(),
-    getTranslations("EventDetail.related"),
   ]);
 
   // Un événement privé lié ne s'affiche qu'à qui peut l'ouvrir.
@@ -73,7 +72,6 @@ export async function EventRelatedSection({
         ...related.similar.map((entry) => toItem(entry, "similar")),
       ]}
       canManage={canManage}
-      hint={event.lairId ? t("similarHint") : null}
     />
   );
 }

@@ -395,7 +395,8 @@
       "unlink": "Remove",
       "cancel": "Cancel",
       "empty": "No related events. Paste another event's link to link it: it will show on both pages.",
-      "similarHint": "Unlinked events are suggested because their title looks like this one.",
+      "linkedGroup": "Linked by the organizers",
+      "similarGroup": "Suggestions: similar title",
       "cancelled": "Cancelled",
       "past": "Past",
       "errors": {

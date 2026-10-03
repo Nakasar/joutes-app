@@ -395,7 +395,8 @@
       "unlink": "Retirer",
       "cancel": "Annuler",
       "empty": "Aucun événement lié. Collez le lien d'un autre événement pour le lier : il s'affichera sur les deux pages.",
-      "similarHint": "Les événements non liés sont proposés car leur titre ressemble à celui-ci.",
+      "linkedGroup": "Liés par l'organisation",
+      "similarGroup": "Suggestions : titre proche",
       "cancelled": "Annulé",
       "past": "Passé",
       "errors": {

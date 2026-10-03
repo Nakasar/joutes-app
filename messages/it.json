@@ -395,7 +395,8 @@
       "unlink": "Rimuovi",
       "cancel": "Annulla",
       "empty": "Nessun evento collegato. Incolla il link di un altro evento per collegarlo: apparirà su entrambe le pagine.",
-      "similarHint": "Gli eventi non collegati sono suggeriti perché il loro titolo somiglia a questo.",
+      "linkedGroup": "Collegati dagli organizzatori",
+      "similarGroup": "Suggerimenti: titolo simile",
       "cancelled": "Annullato",
       "past": "Passato",
       "errors": {
