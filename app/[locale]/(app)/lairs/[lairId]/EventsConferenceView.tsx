@@ -4,11 +4,11 @@ import { Event } from '@/lib/types/Event.ts';
 import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Users, Star, Info, ExternalLink } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Users, Star, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { useState, useMemo } from 'react';
 import { useSession } from '@/lib/auth-client.ts';
-import EventDetailsModal from '@/app/[locale]/(app)/events/EventDetailsModal.tsx';
+import { Link } from '@/i18n/navigation.ts';
 import { toggleEventFavoriteAction } from '@/app/[locale]/(app)/events/actions.ts';
 
 interface EventsConferenceViewProps {
@@ -20,10 +20,6 @@ export default function EventsConferenceView({ events }: EventsConferenceViewPro
   
   // État pour gérer les favoris localement
   const [localFavorites, setLocalFavorites] = useState<Record<string, boolean>>({});
-  
-  // État pour le modal de détails
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   
   // État pour le dialog d'erreur
   const [dialogState, setDialogState] = useState<{
@@ -154,13 +150,6 @@ export default function EventsConferenceView({ events }: EventsConferenceViewPro
     }
   };
 
-  const handleOpenEventDetails = (event: Event, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSelectedEvent(event);
-    setIsDetailsModalOpen(true);
-  };
-
   if (sortedDays.length === 0) {
     return (
       <div className="text-center py-12">
@@ -261,7 +250,9 @@ export default function EventsConferenceView({ events }: EventsConferenceViewPro
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <h4 className="font-semibold text-base line-clamp-2 mb-1">
-                                {event.name}
+                                <Link href={`/events/${event.id}`} className="hover:underline">
+                                  {event.name}
+                                </Link>
                               </h4>
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Gamepad2 className="h-3 w-3 flex-shrink-0" />
@@ -344,15 +335,6 @@ export default function EventsConferenceView({ events }: EventsConferenceViewPro
                                 />
                               </Button>
                             )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => handleOpenEventDetails(event, e)}
-                              className="h-8 px-2"
-                              title="Voir les détails"
-                            >
-                              <Info className="h-4 w-4" />
-                            </Button>
                             {event.url && (
                               <Button 
                                 asChild 
@@ -383,18 +365,6 @@ export default function EventsConferenceView({ events }: EventsConferenceViewPro
         </div>
       </div>
 
-      {/* Modal de détails de l'événement */}
-      {selectedEvent && (
-        <EventDetailsModal
-          event={selectedEvent}
-          open={isDetailsModalOpen}
-          onOpenChange={(open) => {
-            setIsDetailsModalOpen(open);
-            if (!open) setSelectedEvent(null);
-          }}
-          userId={session.data?.user?.id}
-        />
-      )}
 
       {/* Dialog d'erreur/succès */}
       <Dialog open={dialogState.open} onOpenChange={(open) => setDialogState({ ...dialogState, open })}>

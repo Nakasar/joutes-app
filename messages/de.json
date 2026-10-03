@@ -304,7 +304,11 @@
       "moreInfo": "Weitere Informationen ansehen",
       "price": "Preis",
       "participants": "Teilnehmer",
-      "loginToJoin": "Zum Anmelden einloggen"
+      "loginToJoin": "Zum Anmelden einloggen",
+      "about": "Über",
+      "registration": "Anmeldung",
+      "settings": "Einstellungen",
+      "organization": "Organisation"
     },
     "priceFree": "Kostenlos",
     "participantsCount": "{count} angemeldet",
@@ -340,6 +344,46 @@
         "responseDelayHelp": "Nach Ablauf der Frist wird der Platz der nächsten Person angeboten.",
         "hours": "{count} Std."
       }
+    },
+    "externalLink": {
+      "lairSite": "Auf der Website des Ortes ansehen",
+      "eventSite": "Website der Veranstaltung ansehen"
+    },
+    "legacyPortal": {
+      "title": "Altes Veranstaltungsportal",
+      "description": "Die Runden und Wertungen dieser Veranstaltung wurden im alten Portal verwaltet. Sie bleiben hier einsehbar; für eine neue Session nutze den Bereich Turnier."
+    },
+    "tournament": {
+      "noneTitle": "Noch kein Turnier.",
+      "noneOrganizerHint": "Erstelle es, wenn du bereit bist: Es übernimmt Name, Datum, Ort und Spiel der Veranstaltung, und die Angemeldeten werden als Spieler übertragen.",
+      "noneVisitor": "Die Organisation hat dieser Veranstaltung noch kein Turnier zugeordnet.",
+      "playersCount": "{count, plural, =0 {keine Spieler} one {# Spieler} other {# Spieler}}",
+      "playerSpace": "Mein Spielerbereich",
+      "organizerSpace": "Turnier leiten",
+      "live": "Live verfolgen",
+      "notTransferredYet": "Du bist für die Veranstaltung angemeldet: Die Organisation fügt dich den Turnierspielern hinzu."
+    },
+    "announcements": {
+      "title": "Ankündigungen",
+      "new": "Neue Ankündigung",
+      "message": "Nachricht",
+      "placeholder": "Deine Ankündigung an die Angemeldeten…",
+      "notifyHint": "Die Angemeldeten werden bei der Veröffentlichung benachrichtigt.",
+      "priority": "Priorität",
+      "priorities": {
+        "normal": "Normal",
+        "important": "Wichtig",
+        "urgent": "Dringend"
+      },
+      "publish": "Veröffentlichen",
+      "cancel": "Abbrechen",
+      "empty": "Noch keine Ankündigungen.",
+      "delete": "Ankündigung löschen",
+      "error": "Ein Fehler ist aufgetreten"
+    },
+    "interested": {
+      "title": "Interessiert ({count})",
+      "empty": "Noch niemand hat diese Veranstaltung favorisiert."
     }
   },
   "EventJoin": {
@@ -3696,7 +3740,7 @@
       "noTournaments": "Sie organisieren kein verfügbares Turnier.",
       "linkButton": "Turnier verknüpfen",
       "unlink": "Turnier trennen",
-      "importButton": "Angemeldete importieren",
+      "importButton": "Angemeldete übertragen",
       "importing": "Import läuft...",
       "importConfirm": "Import bestätigen",
       "importDialogTitle": "Angemeldete der Veranstaltung importieren",
@@ -3707,7 +3751,14 @@
       "noneToUpdate": "Keine Statusänderung.",
       "unchangedCount": "{count} Spieler bereits aktuell.",
       "importSuccess": "Import abgeschlossen: {added} Spieler hinzugefügt, {updated} Status aktualisiert.",
-      "importError": "Fehler beim Importieren der Angemeldeten"
+      "importError": "Fehler beim Importieren der Angemeldeten",
+      "createButton": "Turnier erstellen",
+      "transferHint": "Die Angemeldeten der Veranstaltung werden zu Turnierspielern.",
+      "transferUpToDate": "Alle Angemeldeten sind ins Turnier übertragen.",
+      "transferPending": "{count, plural, one {# Änderung} other {# Änderungen}} aus den Anmeldungen zu übertragen.",
+      "wizardNotice": "Dies ist das Turnier der Veranstaltung „{event}“: Ihre Angemeldeten werden als Spieler übertragen.",
+      "transferredCount": "{count, plural, =0 {Keine Angemeldeten übertragen} one {# Angemeldeter übertragen} other {# Angemeldete übertragen}}",
+      "backToEvent": "Zurück zur Veranstaltung"
     },
     "common": {
       "tournamentStatus": {
@@ -3976,7 +4027,8 @@
           "game": "Spiel",
           "format": "Format",
           "bestOf": "Matches",
-          "lists": "Listen"
+          "lists": "Listen",
+          "players": "Spieler"
         },
         "listsAsked": "Bei der Anmeldung verlangt",
         "listsNotAsked": "Nicht verlangt",

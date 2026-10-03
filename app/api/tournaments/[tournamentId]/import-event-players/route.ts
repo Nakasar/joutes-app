@@ -1,70 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
-import db from "@/lib/mongodb";
 import { getEventById } from "@/lib/db/events";
 import {
   applyEventPlayersImport,
   assertCanManage,
   planEventPlayersImport,
   requireTournament,
-  type EventImportCandidate,
 } from "@/lib/db/tournaments";
-import type { Event, RegistrationStatus } from "@/lib/types/Event";
-import type { GuestParticipant } from "@/lib/schemas/event-portal.schema";
-import type { TournamentPlayerStatus } from "@/lib/types/Tournament";
+import { listEventImportCandidates } from "@/lib/events/tournament-transfer";
 import { tournamentErrorResponse, unauthorizedResponse } from "../../utils";
-
-const GUEST_PARTICIPANTS_COLLECTION = "event-guest-participants";
-const USERS_COLLECTION = "user";
-
-// Statut de joueur de tournoi correspondant à un statut d'inscription à
-// l'événement. NOT_REGISTERED n'est pas importé.
-const STATUS_MAPPING: Partial<Record<RegistrationStatus, TournamentPlayerStatus>> = {
-  REGISTERED: "registered",
-  PRE_REGISTERED: "pre-registered",
-  EXCLUDED: "dropped",
-};
-
-// Participants de l'événement (comptes + invités) convertis en candidats à
-// l'import : nom affiché + statut de joueur de tournoi.
-async function listEventImportCandidates(event: Event): Promise<EventImportCandidate[]> {
-  const candidates: EventImportCandidate[] = [];
-
-  const userIds = event.participants ?? [];
-  if (userIds.length > 0) {
-    const users = await db
-      .collection(USERS_COLLECTION)
-      .find({ _id: { $in: userIds.filter(ObjectId.isValid).map((id) => new ObjectId(id)) } })
-      .toArray();
-    const usersById = new Map(users.map((u) => [u._id.toString(), u]));
-    for (const userId of userIds) {
-      const status = STATUS_MAPPING[event.participantRegistrations?.[userId] ?? "REGISTERED"];
-      if (!status) continue;
-      const user = usersById.get(userId);
-      candidates.push({
-        userId,
-        displayName: (user?.displayName || user?.username || "Joueur") as string,
-        status,
-      });
-    }
-  }
-
-  // Invités de l'événement : toujours inscrits (pas de statut par invité).
-  const guests = await db
-    .collection<GuestParticipant>(GUEST_PARTICIPANTS_COLLECTION)
-    .find({ eventId: event.id })
-    .toArray();
-  for (const guest of guests) {
-    candidates.push({
-      userId: guest.userId,
-      displayName: guest.username,
-      status: "registered",
-    });
-  }
-
-  return candidates;
-}
 
 async function loadContext(request: NextRequest, tournamentId: string) {
   const user = await authenticateApiRequest(request);

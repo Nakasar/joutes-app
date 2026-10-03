@@ -304,7 +304,11 @@
       "moreInfo": "See more information",
       "price": "Price",
       "participants": "Participants",
-      "loginToJoin": "Log in to register"
+      "loginToJoin": "Log in to register",
+      "about": "About",
+      "registration": "Registration",
+      "settings": "Settings",
+      "organization": "Organization"
     },
     "priceFree": "Free",
     "participantsCount": "{count} participant(s)",
@@ -340,6 +344,46 @@
         "responseDelayHelp": "After this delay, the spot is offered to the next player.",
         "hours": "{count} h"
       }
+    },
+    "externalLink": {
+      "lairSite": "View on the venue's website",
+      "eventSite": "View the event's website"
+    },
+    "legacyPortal": {
+      "title": "Legacy event portal",
+      "description": "This event's rounds and standings were run in the legacy portal. They remain available here; for a new session, use the Tournament section."
+    },
+    "tournament": {
+      "noneTitle": "No tournament yet.",
+      "noneOrganizerHint": "Create it when you're ready: it takes the event's name, date, venue and game, and registrants are transferred to it as players.",
+      "noneVisitor": "The organizers haven't attached a tournament to this event yet.",
+      "playersCount": "{count, plural, =0 {no players} one {# player} other {# players}}",
+      "playerSpace": "My player space",
+      "organizerSpace": "Run the tournament",
+      "live": "Follow live",
+      "notTransferredYet": "You're registered for the event: the organizers will add you to the tournament's players."
+    },
+    "announcements": {
+      "title": "Announcements",
+      "new": "New announcement",
+      "message": "Message",
+      "placeholder": "Your announcement to registrants…",
+      "notifyHint": "Registrants are notified when you publish.",
+      "priority": "Priority",
+      "priorities": {
+        "normal": "Normal",
+        "important": "Important",
+        "urgent": "Urgent"
+      },
+      "publish": "Publish",
+      "cancel": "Cancel",
+      "empty": "No announcements yet.",
+      "delete": "Delete announcement",
+      "error": "Something went wrong"
+    },
+    "interested": {
+      "title": "Interested ({count})",
+      "empty": "Nobody has favorited this event yet."
     }
   },
   "EventJoin": {
@@ -3696,7 +3740,7 @@
       "noTournaments": "You don't organize any available tournament.",
       "linkButton": "Link the tournament",
       "unlink": "Unlink the tournament",
-      "importButton": "Import registrants",
+      "importButton": "Transfer registrants",
       "importing": "Importing...",
       "importConfirm": "Confirm import",
       "importDialogTitle": "Import the event registrants",
@@ -3707,7 +3751,14 @@
       "noneToUpdate": "No status change.",
       "unchangedCount": "{count} player(s) already up to date.",
       "importSuccess": "Import complete: {added} player(s) added, {updated} status(es) updated.",
-      "importError": "Error while importing registrants"
+      "importError": "Error while importing registrants",
+      "createButton": "Create the tournament",
+      "transferHint": "The event's registrants become the tournament's players.",
+      "transferUpToDate": "All registrants are transferred to the tournament.",
+      "transferPending": "{count, plural, one {# change} other {# changes}} to transfer from registrations.",
+      "wizardNotice": "This is the tournament for the event \"{event}\": its registrants will be transferred as players.",
+      "transferredCount": "{count, plural, =0 {No registrants transferred} one {# registrant transferred} other {# registrants transferred}}",
+      "backToEvent": "Back to the event"
     },
     "common": {
       "tournamentStatus": {
@@ -3976,7 +4027,8 @@
           "game": "Game",
           "format": "Format",
           "bestOf": "Matches",
-          "lists": "Lists"
+          "lists": "Lists",
+          "players": "Players"
         },
         "listsAsked": "Asked at registration",
         "listsNotAsked": "Not asked",

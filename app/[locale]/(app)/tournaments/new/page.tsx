@@ -7,6 +7,9 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth.ts";
 import { getAllGames } from "@/lib/db/games.ts";
 import { getLeagueById, isLeagueOrganizer } from "@/lib/db/leagues.ts";
+import { getEventById } from "@/lib/db/events.ts";
+import { getTournamentByEventId } from "@/lib/db/tournaments.ts";
+import { canManageEvent } from "@/lib/events/tournament-link.ts";
 import { resolveGameTournamentDefaults } from "@/lib/tournaments/game-defaults.ts";
 import { CreateTournamentWizard, type WizardGame } from "./CreateTournamentWizard.tsx";
 
@@ -20,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
 async function NewTournamentPageContent({
   searchParams,
 }: {
-  searchParams: Promise<{ leagueId?: string }>;
+  searchParams: Promise<{ leagueId?: string; eventId?: string }>;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
@@ -32,7 +35,7 @@ async function NewTournamentPageContent({
   // Création depuis la gestion d'une ligue. Le rattachement n'est proposé que
   // si l'utilisateur organise vraiment cette ligue : sinon on crée un tournoi
   // ordinaire plutôt que d'échouer à la dernière étape du tunnel.
-  const { leagueId } = await searchParams;
+  const { leagueId, eventId } = await searchParams;
   const league = leagueId ? await getLeagueById(leagueId).catch(() => null) : null;
   const linkedLeague =
     league &&
@@ -45,7 +48,8 @@ async function NewTournamentPageContent({
   // des types de tournoi, dont le module tire des dépendances serveur. Un jeu
   // sans preset ni réglage d'administration n'en porte aucun, et ses phases
   // gardent les défauts de l'API.
-  const games: WizardGame[] = (await getAllGames())
+  const allGames = await getAllGames();
+  const games: WizardGame[] = allGames
     .map((game) => {
       const defaults = resolveGameTournamentDefaults(game.slug, game.tournamentDefaults);
       const configured = game.tournamentDefaults !== undefined;
@@ -73,7 +77,25 @@ async function NewTournamentPageContent({
     })
     .sort((a, b) => a.name.localeCompare(b.name, locale));
 
-  return <CreateTournamentWizard games={games} league={linkedLeague} />;
+  // Création depuis la page d'un événement. Même prudence que pour la ligue :
+  // sans droit sur l'événement, ou s'il a déjà son tournoi, on crée un tournoi
+  // ordinaire plutôt que d'échouer à la dernière étape. Le jeu est repris quand
+  // l'événement en désigne un du catalogue.
+  const event = eventId ? await getEventById(eventId).catch(() => null) : null;
+  const linkedEvent =
+    event && canManageEvent(event, session.user.id) && !(await getTournamentByEventId(event.id))
+      ? {
+          id: event.id,
+          name: event.name,
+          gameId: allGames.find(
+            (game) =>
+              (event.game?.slug && game.slug === event.game.slug) ||
+              game.name.localeCompare(event.game?.name ?? event.gameName, locale, { sensitivity: "base" }) === 0
+          )?.id,
+        }
+      : null;
+
+  return <CreateTournamentWizard games={games} league={linkedLeague} event={linkedEvent} />;
 }
 
 /**
