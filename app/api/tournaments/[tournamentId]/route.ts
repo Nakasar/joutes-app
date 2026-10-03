@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { getEventById } from "@/lib/db/events";
+import { canManageEvent } from "@/lib/events/tournament-link";
 import { updateTournamentSchema } from "@/lib/schemas/tournament.schema";
 import {
   assertCanManage,
@@ -78,10 +79,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       if (!event) {
         return NextResponse.json({ error: "Événement non trouvé" }, { status: 404 });
       }
-      const canManageEvent =
-        event.creatorId === user.userId ||
-        event.staff?.some((s) => s.userId === user.userId && s.role === "organizer");
-      if (!canManageEvent) {
+      if (!canManageEvent(event, user.userId)) {
         return NextResponse.json(
           { error: "Vous ne pouvez pas lier ce tournoi à un événement que vous ne gérez pas" },
           { status: 403 }

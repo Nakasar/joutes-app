@@ -8,14 +8,13 @@ import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog.tsx";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon, AlertCircle, CheckCircle, Star, HelpCircle, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon, AlertCircle, CheckCircle, Star, Loader2 } from "lucide-react";
 import { Link } from "@/i18n/navigation.ts";
 import { Ghost } from "@/components/HalloweenSVGs.tsx";
 import { isHalloweenTheme, SEASON } from "@/lib/utils/halloween-theme.ts";
 import { DateTime } from "luxon";
 import { useSession } from "@/lib/auth-client.ts";
 import { cn } from "@/lib/utils.ts";
-import EventDetailsModal from "./EventDetailsModal.tsx";
 import { Game } from "@/lib/types/Game.ts";
 import { toggleEventFavoriteAction } from "./actions.ts";
 import { updateUserLocation } from "../account/actions.ts";
@@ -110,10 +109,6 @@ export default function EventsCalendar({
 
   // État pour gérer les favoris localement (optimistic updates)
   const [localFavorites, setLocalFavorites] = useState<Record<string, boolean>>({});
-
-  // État pour le modal de détails
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   // État pour la fenêtre listant tous les événements d'un jour (débordement du calendrier)
   const [dayDialogDay, setDayDialogDay] = useState<number | null>(null);
@@ -360,27 +355,6 @@ export default function EventsCalendar({
         message: "Une erreur est survenue"
       });
     }
-  };
-
-  const handleOpenEventDetails = (event: Event, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSelectedEvent(event);
-    setIsDetailsModalOpen(true);
-  };
-
-  const isCreatorOrOwner = (event: Event) => {
-    if (!session.data?.user) return false;
-    // Vérifier si l'utilisateur est le créateur
-    if (event.creatorId === session.data.user.id) return true;
-    // Vérifier si l'utilisateur est propriétaire du lair (si lair existe)
-    if (event.lair && 'owners' in event.lair) {
-      const lair = event.lair as { owners?: string[] };
-      if (lair.owners && Array.isArray(lair.owners) && lair.owners.includes(session.data.user.id)) {
-        return true;
-      }
-    }
-    return false;
   };
 
   const handleNearMeClick = () => {
@@ -651,18 +625,9 @@ export default function EventsCalendar({
           {event.name}
         </span>
 
-        {/* Actions révélées au survol */}
-        <span className="absolute right-0.5 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded bg-card/95 pl-1 shadow-sm group-hover/pill:flex">
-          <button
-            type="button"
-            onClick={(e) => handleOpenEventDetails(event, e)}
-            className="rounded-sm p-1 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
-            title={t('event.seeDetails')}
-            aria-label={t('event.seeDetails')}
-          >
-            <HelpCircle className="h-3.5 w-3.5" />
-          </button>
-          {session.data?.user && (
+        {/* Favori révélé au survol, pour les connectés */}
+        {session.data?.user && (
+          <span className="absolute right-0.5 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded bg-card/95 pl-1 shadow-sm group-hover/pill:flex">
             <button
               type="button"
               onClick={(e) => handleToggleFavorite(event.id, !!isFavorited, e)}
@@ -672,16 +637,14 @@ export default function EventsCalendar({
             >
               <Star className={cn("h-3.5 w-3.5", isFavorited && "fill-amber-400 text-amber-400")} />
             </button>
-          )}
-        </span>
+          </span>
+        )}
       </div>
     );
 
-    return event.url ? (
-      <Link key={event.id} href={event.url} target="_blank" rel="noopener noreferrer">
-        {inner}
-      </Link>
-    ) : (
+    // La page de l'événement est la destination de tout clic : le lien vers
+    // le site du lieu, quand il existe, y figure.
+    return (
       <Link key={event.id} href={`/events/${event.id}`}>
         {inner}
       </Link>
@@ -1102,7 +1065,6 @@ export default function EventsCalendar({
               getStatusVariant={getStatusVariant}
               localFavorites={localFavorites}
               onToggleFavorite={handleToggleFavorite}
-              onOpenEventDetails={handleOpenEventDetails}
             />
           )}
         </div>
@@ -1123,17 +1085,6 @@ export default function EventsCalendar({
         </div>
       </DialogContent>
     </Dialog>
-
-    {/* Modal de détails de l'événement */}
-    {selectedEvent && (
-      <EventDetailsModal
-        event={selectedEvent}
-        open={isDetailsModalOpen}
-        onOpenChange={setIsDetailsModalOpen}
-        isCreatorOrOwner={isCreatorOrOwner(selectedEvent)}
-        userId={session.data?.user?.id}
-      />
-    )}
 
     {/* Dialog pour les messages d'erreur et de succès */}
     <Dialog open={dialogState.open} onOpenChange={(open) => setDialogState({ ...dialogState, open })}>
@@ -1194,7 +1145,6 @@ type ListViewProps = {
   getStatusVariant: (status: Event["status"]) => "default" | "secondary" | "destructive" | "outline";
   localFavorites: Record<string, boolean>;
   onToggleFavorite: (eventId: string, currentlyFavorited: boolean, e: React.MouseEvent) => void;
-  onOpenEventDetails: (event: Event, e: React.MouseEvent) => void;
 };
 
 function ListView({
@@ -1206,7 +1156,6 @@ function ListView({
   getStatusVariant,
   localFavorites,
   onToggleFavorite,
-  onOpenEventDetails
 }: ListViewProps) {
   const t = useTranslations("EventsCalendar");
 
@@ -1303,7 +1252,7 @@ function ListView({
                       "h-full gap-0 overflow-hidden border-l-4 py-0 transition-all hover:shadow-md",
                       getStatusBorderClass(event.status),
                       isUserEvent && "ring-1 ring-amber-400/50",
-                      event.url && "cursor-pointer hover:bg-accent/40",
+                      "cursor-pointer hover:bg-accent/40",
                     )}
                   >
                     {/* Bannière du jeu */}
@@ -1415,15 +1364,9 @@ function ListView({
 
                       {/* Boutons d'action */}
                       <div className="mt-auto flex gap-2 border-t pt-3">
-                        <button
-                          type="button"
-                          onClick={(e) => onOpenEventDetails(event, e)}
-                          className="flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
-                          title={t('event.seeDetails')}
-                        >
-                          <HelpCircle className="h-4 w-4" />
+                        <span className="flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent">
                           <span>{t('event.details')}</span>
-                        </button>
+                        </span>
                         {userId && (
                           <button
                             type="button"
@@ -1445,17 +1388,7 @@ function ListView({
                   </Card>
                 );
 
-                return event.url ? (
-                  <Link
-                    key={event.id}
-                    href={event.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    {cardContent}
-                  </Link>
-                ) : (
+                return (
                   <Link
                     key={event.id}
                     href={`/events/${event.id}`}

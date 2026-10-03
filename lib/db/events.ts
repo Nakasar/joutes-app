@@ -1344,3 +1344,18 @@ export async function updateStaffRole(eventId: string, userId: string, role: 'or
 
   return result.modifiedCount > 0;
 }
+/**
+ * L'événement a-t-il servi de tournoi par l'ancien portail d'événement ?
+ *
+ * Avant les tournois, un événement portait lui-même ses phases, ses matchs et
+ * son classement. Le tournoi associé a repris ce rôle ; l'ancien portail n'est
+ * plus proposé qu'aux événements qui l'ont déjà utilisé, pour que leurs
+ * données restent consultables. Rien n'est migré ni supprimé.
+ */
+export async function hasLegacyEventPortal(eventId: string): Promise<boolean> {
+  const [settings, match] = await Promise.all([
+    db.collection("event-portal-settings").findOne({eventId}, {projection: {_id: 1}}),
+    db.collection("matches").findOne({eventId}, {projection: {_id: 1}}),
+  ]);
+  return Boolean(settings || match);
+}

@@ -4,12 +4,11 @@ import { Event } from '@/lib/types/Event.ts';
 import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Calendar, Clock, MapPin, ExternalLink, Users, Star, Info } from 'lucide-react';
+import { Calendar, Clock, MapPin, ExternalLink, Users, Star } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { Link } from "@/i18n/navigation.ts";
 import { useState } from 'react';
 import { useSession } from '@/lib/auth-client.ts';
-import EventDetailsModal from '@/app/[locale]/(app)/events/EventDetailsModal.tsx';
 import { toggleEventFavoriteAction } from '@/app/[locale]/(app)/events/actions.ts';
 import { useTranslations } from 'next-intl';
 
@@ -23,10 +22,6 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
 
   // État pour gérer les favoris localement (optimistic updates)
   const [localFavorites, setLocalFavorites] = useState<Record<string, boolean>>({});
-  
-  // État pour le modal de détails
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   
   // État pour le dialog d'erreur
   const [dialogState, setDialogState] = useState<{
@@ -77,13 +72,6 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
         message: t('agenda.favorite.genericError')
       });
     }
-  };
-
-  const handleOpenEventDetails = (event: Event, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSelectedEvent(event);
-    setIsDetailsModalOpen(true);
   };
 
   // Trier les événements par date de début
@@ -156,7 +144,11 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                         <div className="flex-1 space-y-3">
                           <div>
                             <div className="flex items-start justify-between gap-4 mb-2">
-                              <h4 className="text-xl font-semibold">{event.name}</h4>
+                              <h4 className="text-xl font-semibold">
+                                <Link href={`/events/${event.id}`} className="hover:underline">
+                                  {event.name}
+                                </Link>
+                              </h4>
                               <Badge
                                 variant={
                                   event.status === 'available'
@@ -244,15 +236,6 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                                 {isFavorited ? t('agenda.favorite.remove') : t('agenda.favorite.add')}
                               </Button>
                             )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => handleOpenEventDetails(event, e)}
-                              className="gap-2"
-                            >
-                              <Info className="h-4 w-4" />
-                              {t('agenda.details')}
-                            </Button>
                             <Button asChild variant="outline" size="sm" className="gap-2">
                               <Link href={`/events/${event.id}`}>
                                 <ExternalLink className="h-4 w-4" />
@@ -283,18 +266,6 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
         ))}
       </div>
 
-      {/* Modal de détails de l'événement */}
-      {selectedEvent && (
-        <EventDetailsModal
-          event={selectedEvent}
-          open={isDetailsModalOpen}
-          onOpenChange={(open) => {
-            setIsDetailsModalOpen(open);
-            if (!open) setSelectedEvent(null);
-          }}
-          userId={session.data?.user?.id}
-        />
-      )}
 
       {/* Dialog d'erreur/succès */}
       <Dialog open={dialogState.open} onOpenChange={(open) => setDialogState({ ...dialogState, open })}>

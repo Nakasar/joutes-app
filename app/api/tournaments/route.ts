@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { createTournamentSchema } from "@/lib/schemas/tournament.schema";
 import { getEventById } from "@/lib/db/events";
+import { canManageEvent } from "@/lib/events/tournament-link";
 import {
   createTournament,
+  getTournamentByEventId,
   listTournamentSummaries,
   listTournamentsForUser,
 } from "@/lib/db/tournaments";
@@ -48,14 +50,31 @@ export async function POST(request: NextRequest) {
     // événement reste renseignable à la main.
     const details = { ...validated };
     if (validated.eventId) {
+      // Créer le tournoi d'un événement, c'est le faire apparaître sur sa page
+      // et pouvoir y transférer ses inscrits : mêmes droits qu'au rattachement
+      // d'un tournoi existant, et toujours un seul tournoi par événement.
       const event = await getEventById(validated.eventId).catch(() => null);
-      if (event) {
-        details.location ??= event.lair?.name ?? event.lair?.address ?? undefined;
-        details.capacity ??= event.maxParticipants ?? undefined;
-        const startsAt = new Date(event.startDateTime);
-        if (details.startsAt === undefined && !Number.isNaN(startsAt.getTime())) {
-          details.startsAt = startsAt;
-        }
+      if (!event) {
+        return NextResponse.json({ error: "Événement non trouvé" }, { status: 404 });
+      }
+      if (!canManageEvent(event, user.userId)) {
+        return NextResponse.json(
+          { error: "Vous ne pouvez pas créer de tournoi pour un événement que vous ne gérez pas" },
+          { status: 403 }
+        );
+      }
+      const alreadyLinked = await getTournamentByEventId(event.id);
+      if (alreadyLinked) {
+        return NextResponse.json(
+          { error: `Un tournoi (« ${alreadyLinked.name} ») est déjà associé à cet événement` },
+          { status: 409 }
+        );
+      }
+      details.location ??= event.lair?.name ?? event.lair?.address ?? undefined;
+      details.capacity ??= event.maxParticipants ?? undefined;
+      const startsAt = new Date(event.startDateTime);
+      if (details.startsAt === undefined && !Number.isNaN(startsAt.getTime())) {
+        details.startsAt = startsAt;
       }
     }
 

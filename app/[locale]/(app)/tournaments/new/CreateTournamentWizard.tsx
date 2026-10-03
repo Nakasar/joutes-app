@@ -93,17 +93,24 @@ function initialsOf(name: string): string {
 export function CreateTournamentWizard({
   games,
   league = null,
+  event = null,
 }: {
   games: WizardGame[];
   /** Ligue au nom de laquelle le tournoi est créé, si le tunnel vient de là. */
   league?: { id: string; name: string } | null;
+  /**
+   * Événement dont on crée le tournoi, si le tunnel vient de sa page. Le
+   * tournoi lui est associé, reprend son nom et son jeu, et ses inscrits y
+   * sont transférés une fois le tournoi créé.
+   */
+  event?: { id: string; name: string; gameId?: string } | null;
 }) {
   const t = useTranslations("Tournaments");
   const router = useRouter();
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState(event?.name ?? "");
   const [query, setQuery] = useState("");
-  const [gameId, setGameId] = useState<string | null>(null);
+  const [gameId, setGameId] = useState<string | null>(event?.gameId ?? null);
   const [customGame, setCustomGame] = useState("");
   const [format, setFormat] = useState<TournamentFormatKey | null>(null);
   // Nombre de rondes (suisses) ou taille du bracket (élimination) ; `AUTO`
@@ -117,6 +124,8 @@ export function CreateTournamentWizard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreatedTournament | null>(null);
+  const [transferred, setTransferred] = useState<number | null>(null);
+  const exitHref = event ? `/events/${event.id}` : "/tournaments";
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<Partial<Record<StepKey, HTMLDivElement | null>>>({});
@@ -294,6 +303,7 @@ export function CreateTournamentWizard({
           name: name.trim(),
           ...(gameId ? { gameId } : customGame.trim() ? { customGameName: customGame.trim() } : {}),
           ...(league ? { leagueId: league.id } : {}),
+          ...(event ? { eventId: event.id } : {}),
           settings: { allowSelfReporting: true, requireConfirmation: false, preRegistration: false },
         },
         { fallback: t("new.createError") }
@@ -337,6 +347,19 @@ export function CreateTournamentWizard({
       setupError = err instanceof Error ? err.message : t("wizard.setupError");
     }
 
+    // Les inscrits de l'événement deviennent les joueurs du tournoi. Un échec
+    // ici ne défait rien : le transfert se rejoue depuis la page de l'événement.
+    if (event) {
+      try {
+        const result = (await post(`/api/tournaments/${tournament.id}/import-event-players`, {}, {
+          fallback: t("eventLink.importError"),
+        })) as { added: number };
+        setTransferred(result.added);
+      } catch (err) {
+        setupError ??= err instanceof Error ? err.message : t("eventLink.importError");
+      }
+    }
+
     // Un échec de configuration retient le raccourci vers le portail : mieux
     // vaut le dire sur l'écran final, avec le tournoi sous la main, que de
     // laisser l'organisateur découvrir seul une phase manquante.
@@ -351,8 +374,14 @@ export function CreateTournamentWizard({
 
   if (created) {
     return (
-      <WizardFrame onClose={() => router.push("/tournaments")} progress={100} stepLabel={t("wizard.steps.done")}>
-        <DoneStep tournament={created} error={error} summary={{ gameLabel, format, bestOf, lists }} />
+      <WizardFrame onClose={() => router.push(exitHref)} progress={100} stepLabel={t("wizard.steps.done")}>
+        <DoneStep
+          tournament={created}
+          error={error}
+          summary={{ gameLabel, format, bestOf, lists }}
+          event={event}
+          transferred={transferred}
+        />
       </WizardFrame>
     );
   }
@@ -361,7 +390,7 @@ export function CreateTournamentWizard({
 
   return (
     <WizardFrame
-      onClose={() => router.push("/tournaments")}
+      onClose={() => router.push(exitHref)}
       progress={progress}
       stepLabel={currentStepLabel}
       onAdvanced={name.trim() ? () => create({ advanced: true }) : undefined}
@@ -377,6 +406,12 @@ export function CreateTournamentWizard({
       {league && (
         <div className="mb-6 rounded-lg border bg-muted/40 p-3 text-sm">
           {t("leagueLink.wizardNotice", { league: league.name })}
+        </div>
+      )}
+
+      {event && (
+        <div className="mb-6 rounded-lg border bg-muted/40 p-3 text-sm">
+          {t("eventLink.wizardNotice", { event: event.name })}
         </div>
       )}
 
@@ -837,6 +872,8 @@ function DoneStep({
   tournament,
   error,
   summary,
+  event,
+  transferred,
 }: {
   tournament: CreatedTournament;
   error: string | null;
@@ -846,6 +883,8 @@ function DoneStep({
     bestOf: number | null;
     lists: boolean | null;
   };
+  event: { id: string; name: string } | null;
+  transferred: number | null;
 }) {
   const t = useTranslations("Tournaments");
   const { joinUrl, qrCodeUrl } = useJoinQrCode(tournament.joinCode ?? "");
@@ -877,6 +916,9 @@ function DoneStep({
       key: "lists",
       value: summary.lists ? t("wizard.done.listsAsked") : t("wizard.done.listsNotAsked"),
     },
+    ...(event && transferred !== null
+      ? [{ key: "players", value: t("eventLink.transferredCount", { count: transferred }) }]
+      : []),
   ];
 
   return (
@@ -941,7 +983,11 @@ function DoneStep({
               <Link href={`/tournaments/${tournament.id}/organizer`}>{t("wizard.done.open")}</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/tournaments">{t("wizard.done.backToList")}</Link>
+              {event ? (
+                <Link href={`/events/${event.id}`}>{t("eventLink.backToEvent")}</Link>
+              ) : (
+                <Link href="/tournaments">{t("wizard.done.backToList")}</Link>
+              )}
             </Button>
           </div>
         </div>

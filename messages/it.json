@@ -304,7 +304,11 @@
       "moreInfo": "Vedi maggiori informazioni",
       "price": "Prezzo",
       "participants": "Partecipanti",
-      "loginToJoin": "Accedi per iscriverti"
+      "loginToJoin": "Accedi per iscriverti",
+      "about": "Informazioni",
+      "registration": "Iscrizione",
+      "settings": "Impostazioni",
+      "organization": "Organizzazione"
     },
     "priceFree": "Gratuito",
     "participantsCount": "{count} iscritto/i",
@@ -340,6 +344,46 @@
         "responseDelayHelp": "Trascorso questo tempo, il posto viene proposto al giocatore successivo.",
         "hours": "{count} h"
       }
+    },
+    "externalLink": {
+      "lairSite": "Vedi sul sito del luogo",
+      "eventSite": "Vedi il sito dell'evento"
+    },
+    "legacyPortal": {
+      "title": "Vecchio portale dell'evento",
+      "description": "I turni e le classifiche di questo evento sono stati gestiti nel vecchio portale. Restano consultabili qui; per una nuova sessione usa la sezione Torneo."
+    },
+    "tournament": {
+      "noneTitle": "Nessun torneo associato.",
+      "noneOrganizerHint": "Crealo quando sei pronto: riprende nome, data, luogo e gioco dell'evento, e gli iscritti vi vengono trasferiti come giocatori.",
+      "noneVisitor": "Gli organizzatori non hanno ancora associato un torneo a questo evento.",
+      "playersCount": "{count, plural, =0 {nessun giocatore} one {# giocatore} other {# giocatori}}",
+      "playerSpace": "Il mio spazio giocatore",
+      "organizerSpace": "Gestisci il torneo",
+      "live": "Segui in diretta",
+      "notTransferredYet": "Sei iscritto all'evento: gli organizzatori ti aggiungeranno ai giocatori del torneo."
+    },
+    "announcements": {
+      "title": "Annunci",
+      "new": "Nuovo annuncio",
+      "message": "Messaggio",
+      "placeholder": "Il tuo annuncio agli iscritti…",
+      "notifyHint": "Gli iscritti ricevono una notifica alla pubblicazione.",
+      "priority": "Priorità",
+      "priorities": {
+        "normal": "Normale",
+        "important": "Importante",
+        "urgent": "Urgente"
+      },
+      "publish": "Pubblica",
+      "cancel": "Annulla",
+      "empty": "Nessun annuncio per ora.",
+      "delete": "Elimina l'annuncio",
+      "error": "Si è verificato un errore"
+    },
+    "interested": {
+      "title": "Interessati ({count})",
+      "empty": "Nessuno ha ancora messo questo evento tra i preferiti."
     }
   },
   "EventJoin": {
@@ -3696,7 +3740,7 @@
       "noTournaments": "Non organizzi nessun torneo disponibile.",
       "linkButton": "Collega il torneo",
       "unlink": "Scollega il torneo",
-      "importButton": "Importa gli iscritti",
+      "importButton": "Trasferisci gli iscritti",
       "importing": "Importazione in corso...",
       "importConfirm": "Conferma l'importazione",
       "importDialogTitle": "Importa gli iscritti dell'evento",
@@ -3707,7 +3751,14 @@
       "noneToUpdate": "Nessun cambio di stato.",
       "unchangedCount": "{count} giocatore/i già aggiornato/i.",
       "importSuccess": "Importazione completata: {added} giocatore/i aggiunto/i, {updated} stato/i aggiornato/i.",
-      "importError": "Errore durante l'importazione degli iscritti"
+      "importError": "Errore durante l'importazione degli iscritti",
+      "createButton": "Crea il torneo",
+      "transferHint": "Gli iscritti all'evento diventano i giocatori del torneo.",
+      "transferUpToDate": "Tutti gli iscritti sono stati trasferiti al torneo.",
+      "transferPending": "{count, plural, one {# modifica} other {# modifiche}} da trasferire dalle iscrizioni.",
+      "wizardNotice": "Questo è il torneo dell'evento «{event}»: i suoi iscritti verranno trasferiti come giocatori.",
+      "transferredCount": "{count, plural, =0 {Nessun iscritto trasferito} one {# iscritto trasferito} other {# iscritti trasferiti}}",
+      "backToEvent": "Torna all'evento"
     },
     "common": {
       "tournamentStatus": {
@@ -3976,7 +4027,8 @@
           "game": "Gioco",
           "format": "Formato",
           "bestOf": "Match",
-          "lists": "Liste"
+          "lists": "Liste",
+          "players": "Giocatori"
         },
         "listsAsked": "Richieste all'iscrizione",
         "listsNotAsked": "Non richieste",
