@@ -7,8 +7,9 @@
  * — à défaut, les **titres proches** : les prochains événements du même lieu
  *   dont le titre, débarrassé de ce qui distingue deux séances d'une même
  *   série (parenthèses, jours de la semaine, ponctuation), est le même ou
- *   presque. « Avant Première - Homeworlds (Samedi) » et « … (Dimanche) » se
- *   retrouvent ainsi.
+ *   presque, ou dont l'un prolonge l'autre. « Avant Première - Homeworlds
+ *   (Samedi) » et « … (Dimanche) » se retrouvent ainsi, comme « Avant-Première
+ *   - Réalité Fracturée » et « … - Troll à 2 Têtes ».
  */
 
 /** Ce qu'il faut d'un événement pour le comparer et l'afficher. */
@@ -24,6 +25,9 @@ export const SIMILAR_EVENTS_LIMIT = 3;
 
 /** Part de mots communs à partir de laquelle deux titres se ressemblent. */
 const SIMILARITY_THRESHOLD = 0.75;
+
+/** Mots qu'un titre doit compter pour qu'un titre qui le prolonge lui ressemble. */
+const EXTENDED_TITLE_MIN_WORDS = 4;
 
 // Jours de la semaine des langues de l'application : ils distinguent deux
 // séances d'une même série, pas deux événements.
@@ -58,8 +62,27 @@ export function titleSimilarity(a: string, b: string): number {
   return shared / (wordsA.size + wordsB.size - shared);
 }
 
+/**
+ * Un titre en prolonge un autre quand il en reprend tous les mots et en
+ * ajoute : « Avant-Première - Réalité Fracturée - Troll à 2 Têtes » prolonge
+ * « Avant-Première - Réalité Fracturée ».
+ *
+ * Le titre court doit compter assez de mots pour désigner un événement précis,
+ * et pas seulement un jeu : « Star Wars Unlimited » ne doit pas attirer toutes
+ * les soirées du jeu. Il doit aussi faire au moins la moitié du titre long.
+ */
+function extendsTitle(a: string, b: string): boolean {
+  const wordsA = new Set(titleWords(a));
+  const wordsB = new Set(titleWords(b));
+  const [shorter, longer] = wordsA.size <= wordsB.size ? [wordsA, wordsB] : [wordsB, wordsA];
+  if (shorter.size < EXTENDED_TITLE_MIN_WORDS) return false;
+  if (shorter.size * 2 < longer.size) return false;
+  for (const word of shorter) if (!longer.has(word)) return false;
+  return true;
+}
+
 export function areSimilarTitles(a: string, b: string): boolean {
-  return titleSimilarity(a, b) >= SIMILARITY_THRESHOLD;
+  return titleSimilarity(a, b) >= SIMILARITY_THRESHOLD || extendsTitle(a, b);
 }
 
 function startMillis(event: RelatedEventCandidate): number {

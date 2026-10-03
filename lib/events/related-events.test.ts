@@ -40,6 +40,30 @@ describe("areSimilarTitles", () => {
     assert.equal(areSimilarTitles(title, title), true);
   });
 
+  it("rapproche un titre de celui qui le prolonge", () => {
+    assert.equal(
+      areSimilarTitles(
+        "Avant-Première - Réalité Fracturée",
+        "Avant-Première - Réalité Fracturée - Troll à 2 Têtes"
+      ),
+      true
+    );
+  });
+
+  it("ne rapproche pas tous les événements d'un jeu de son seul nom", () => {
+    assert.equal(areSimilarTitles("Star Wars Unlimited", "Star Wars Unlimited - Tournoi hebdo"), false);
+  });
+
+  it("ne rapproche pas un titre d'un titre bien plus long qui le contient", () => {
+    assert.equal(
+      areSimilarTitles(
+        "Avant-Première - Réalité Fracturée",
+        "Avant-Première - Réalité Fracturée - Troll à 2 Têtes - Draft - Lots à gagner"
+      ),
+      false
+    );
+  });
+
   it("sépare deux tournois de jeux différents", () => {
     assert.equal(areSimilarTitles("Tournoi Riftbound", "Tournoi Lorcana"), false);
   });
