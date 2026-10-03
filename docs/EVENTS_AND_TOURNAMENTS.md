@@ -48,7 +48,12 @@ La section « Événements liés » montre, dans cet ordre :
   partagent au moins 75 % de leurs mots une fois retirés accents, ponctuation,
   ce qui est entre parenthèses ou crochets et les jours de la semaine :
   « Avant Première - Homeworlds (Samedi) » et « Avant Première - Homeworlds
-  (Dimanche) » se retrouvent ainsi. Voir `lib/events/related-events.ts`.
+  (Dimanche) » se retrouvent ainsi. Un titre est aussi proche d'un titre qui
+  le prolonge, s'il compte au moins 4 mots distinctifs et au moins la moitié
+  des mots de l'autre : « Avant-Première - Réalité Fracturée » et « … - Troll
+  à 2 Têtes ». Articles et mots génériques (tournoi, soirée, card game…) ne
+  comptent pas : « Soirée Star Wars Unlimited » n'attire donc pas toutes les
+  soirées du jeu. Voir `lib/events/related-events.ts`.
 
 Un événement privé lié ne s'affiche qu'à qui peut l'ouvrir, et ne peut être lié
 que par qui le voit. Un événement privé ne reçoit pas de suggestions.
