@@ -40,6 +40,15 @@ export function keySignature(keys: Document): string {
   return JSON.stringify(Object.entries(keys));
 }
 
+/** Forme comparable d'une collation. */
+function collationSignature(collation: Document | undefined): string | null {
+  // MongoDB restitue une collation complétée de toutes ses valeurs par défaut
+  // (`caseLevel`, `alternate`…) : seules la langue et la force distinguent
+  // celles qu'on déclare.
+  if (!collation) return null;
+  return JSON.stringify({ locale: collation.locale, strength: collation.strength ?? 3 });
+}
+
 /** Les options sémantiques d'un index, normalisées pour la comparaison. */
 function optionSignature(options: Document): string {
   return JSON.stringify(
@@ -47,10 +56,7 @@ function optionSignature(options: Document): string {
       const value = options[option];
       // `unique: false` et l'absence d'option disent la même chose.
       if (value === undefined || value === false) return null;
-      // MongoDB restitue une collation complétée de toutes ses valeurs par
-      // défaut (`caseLevel`, `alternate`…) : seules la langue et la force
-      // distinguent celles qu'on déclare.
-      if (option === "collation") return { locale: value.locale, strength: value.strength ?? 3 };
+      if (option === "collation") return collationSignature(value);
       return value;
     })
   );
@@ -101,13 +107,21 @@ export async function ensureIndexes(
       cache.set(collection, indexes);
     }
 
-    const sameKeys = indexes.find((index) => keySignature(index.key) === keySignature(keys));
-    if (sameKeys) {
-      outcomes.push(
-        optionSignature(sameKeys) === optionSignature(options)
-          ? { status: "present", definition, name: sameKeys.name }
-          : { status: "conflict", definition, name: sameKeys.name, existing: sameKeys }
-      );
+    // MongoDB accepte plusieurs index aux mêmes clés s'ils diffèrent par leur
+    // collation : on cherche donc une correspondance exacte parmi **tous**
+    // ceux qui ont ces clés, et un index de collation différente n'empêche
+    // pas de créer le nôtre à côté.
+    const sameKeys = indexes.filter((index) => keySignature(index.key) === keySignature(keys));
+    const exact = sameKeys.find((index) => optionSignature(index) === optionSignature(options));
+    if (exact) {
+      outcomes.push({ status: "present", definition, name: exact.name });
+      continue;
+    }
+    const clashing = sameKeys.find(
+      (index) => collationSignature(index.collation) === collationSignature(options.collation)
+    );
+    if (clashing) {
+      outcomes.push({ status: "conflict", definition, name: clashing.name, existing: clashing });
       continue;
     }
 

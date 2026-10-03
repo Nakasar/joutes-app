@@ -30,7 +30,7 @@ export const CARD_INDEXES: IndexDefinition[] = [
   {
     collection: "cards",
     keys: { gameId: 1, name: 1 },
-    options: { collation: { locale: "en", strength: 2 } },
+    options: { collation: { locale: "en", strength: 2 }, name: "gameId_1_name_1_en_2" },
     why: "La même recherche par nom, insensible à la casse (import de deck et de cube)",
   },
   {

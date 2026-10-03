@@ -200,3 +200,39 @@ describe("collations", () => {
     assert.equal(created.length, 0);
   });
 });
+
+describe("index de mêmes clés et de collations différentes", () => {
+  const collated: IndexDefinition = {
+    collection: "cards",
+    keys: { gameId: 1, name: 1 },
+    options: { collation: { locale: "en", strength: 2 }, name: "gameId_1_name_1_en_2" },
+    why: "nom insensible à la casse",
+  };
+
+  it("trouve l'index voulu même s'il n'est pas le premier de mêmes clés", async () => {
+    const { db, created } = fakeDb({
+      cards: {
+        indexes: [
+          { key: { gameId: 1, name: 1 }, name: "gameId_1_name_1" },
+          { key: { gameId: 1, name: 1 }, name: "autre_nom", collation: { locale: "en", strength: 2, caseLevel: false } },
+        ],
+      },
+    });
+
+    const [outcome] = await ensureIndexes(db, [collated]);
+
+    assert.equal(outcome.status, "present");
+    assert.equal(created.length, 0);
+  });
+
+  it("crée l'index en collation à côté d'un index simple", async () => {
+    const { db, created } = fakeDb({
+      cards: { indexes: [{ key: { gameId: 1, name: 1 }, name: "gameId_1_name_1" }] },
+    });
+
+    const [outcome] = await ensureIndexes(db, [collated]);
+
+    assert.equal(outcome.status, "created");
+    assert.equal(created.length, 1);
+  });
+});

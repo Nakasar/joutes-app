@@ -49,7 +49,7 @@ export const USER_INDEXES: IndexDefinition[] = [
   {
     collection: "user",
     keys: { displayName: 1, discriminator: 1 },
-    options: { collation: { locale: "en", strength: 2 } },
+    options: { collation: { locale: "en", strength: 2 }, name: "displayName_1_discriminator_1_en_2" },
     why: "Le profil d'une personne par son tag (pseudo#0000), insensible à la casse",
   },
   {
