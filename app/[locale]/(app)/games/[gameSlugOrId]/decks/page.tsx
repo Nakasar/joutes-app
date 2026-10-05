@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getDeckLegendFacets, searchDecks } from "@/lib/db/decks.ts";
 import { librarySortOptions, parseLibraryParams } from "@/lib/decks/library-filters.ts";
+import { readPage, toURLSearchParams } from "@/lib/navigation/url-query.ts";
 import { DeckLibraryClient } from "@/components/decks/DeckLibraryClient.tsx";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar.tsx";
 import {
@@ -137,7 +138,7 @@ async function DecksExplorer({ params, searchParams }: GameDecksPageProps) {
       sortOrder: "desc",
       favoritesOnly: favoritesOnly || filters.favoritesOnly,
       viewerId: session?.user?.id,
-      page: 1,
+      page: readPage(toURLSearchParams(rawParams)),
       limit: 20,
     }),
     getDeckLegendFacets(game.id),

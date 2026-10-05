@@ -18,6 +18,9 @@ import {
   ProductFilters,
   type ProductFilterState,
 } from "@/components/products/ProductFilters.tsx";
+import { writeProductBrowseState, type ProductBrowseState } from "@/lib/products/browse-state.ts";
+import { useUrlQuerySync } from "@/lib/navigation/use-url-query-sync.ts";
+import { sameQuery } from "@/lib/navigation/url-query.ts";
 import { ALL_EDITIONS } from "@/lib/constants/product-editions.ts";
 import { countActiveFacetFilters, serializeCardSearchCriteria } from "@/lib/cards/search-filters.ts";
 import { buildProductSearchFields } from "@/lib/products/search.ts";
@@ -34,12 +37,15 @@ export default function ProductsExplorer({
   gameSlug,
   gameName,
   initialData,
+  initialState,
   currentEdition,
   signedIn,
 }: {
   gameSlug: string;
   gameName: string;
   initialData: ProductCollectionResult;
+  /** Saisie, filtres et page relus de l'adresse : ceux de `initialData`. */
+  initialState: ProductBrowseState;
   /** Édition en cours du jeu : ce que l'API montre déjà par défaut. */
   currentEdition?: string;
   signedIn: boolean;
@@ -54,14 +60,12 @@ export default function ProductsExplorer({
   const [page, setPage] = useState(initialData.page);
   const [totalPages, setTotalPages] = useState(initialData.totalPages);
 
-  const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<ProductFilterState>({
-    ...EMPTY_PRODUCT_FILTERS,
-    // Le filtre part de l'édition en cours parce que c'est ce que la route rend
-    // déjà : afficher « toutes les éditions » au-dessus d'une grille filtrée
-    // ferait mentir la barre de filtres dès le premier rendu.
-    edition: currentEdition ?? ALL_EDITIONS,
-  });
+  const [search, setSearch] = useState(initialState.search);
+  const [filters, setFilters] = useState<ProductFilterState>(initialState.filters);
+  // Ce que la grille montre — ou est en train de charger —, recopié dans
+  // l'adresse : revenir d'une fiche rouvre la même recherche, à la même page.
+  const [shown, setShown] = useState<ProductBrowseState>({ ...initialState, page: initialData.page });
+  useUrlQuerySync(writeProductBrowseState(shown, currentEdition));
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -69,7 +73,6 @@ export default function ProductsExplorer({
   const [managed, setManaged] = useState<ProductCollectionItem | null>(null);
 
   const controllerRef = useRef<AbortController | null>(null);
-  const initializedRef = useRef(false);
   const dirtyRef = useRef(false);
 
   const searchFields = useMemo(
@@ -82,6 +85,7 @@ export default function ProductsExplorer({
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
+      setShown(next);
 
       setLoading(true);
       setLoadError(false);
@@ -125,11 +129,11 @@ export default function ProductsExplorer({
     [gameSlug, signedIn]
   );
 
-  // Le rendu serveur fournit déjà la première page, connecté comme non : ne pas
-  // la redemander au montage.
+  // Le rendu serveur fournit déjà la page demandée par l'adresse : la recherche
+  // n'est relancée que si la saisie ou les filtres s'écartent de ce qui est
+  // affiché — pas au montage, ni quand on revient sur la page.
   useEffect(() => {
-    if (!initializedRef.current) {
-      initializedRef.current = true;
+    if (search === shown.search && sameQuery(filters, shown.filters)) {
       return;
     }
 
@@ -138,7 +142,7 @@ export default function ProductsExplorer({
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [search, filters, fetchPage]);
+  }, [search, filters, fetchPage, shown.search, shown.filters]);
 
   const changeFilters = (next: Partial<ProductFilterState>) =>
     setFilters((current) => ({ ...current, ...next }));

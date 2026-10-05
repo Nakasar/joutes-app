@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { readPage, writePage } from "@/lib/navigation/url-query.ts";
+import { useUrlQuerySync } from "@/lib/navigation/use-url-query-sync.ts";
 import { Quiz } from "@/lib/types/Quiz.ts";
 import { Game } from "@/lib/types/Game.ts";
 import { Link } from "@/i18n/navigation.ts";
@@ -42,8 +45,15 @@ export default function QuizListClient({
 }: QuizListClientProps) {
   const [data, setData] = useState<PaginatedQuizzesResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [gameId, setGameId] = useState("all");
+  // Le jeu et la page vivent dans l'adresse : revenir d'un quizz rouvre la
+  // même liste.
+  const searchParams = useSearchParams();
+  const [page, setPage] = useState(() => readPage(new URLSearchParams(searchParams.toString())));
+  const [gameId, setGameId] = useState(() => searchParams.get("gameId") || "all");
+  const query = new URLSearchParams();
+  if (gameId !== "all") query.set("gameId", gameId);
+  writePage(query, page);
+  useUrlQuerySync(query);
 
   const fetchQuizzes = useCallback(async (currentGameId: string, currentPage: number) => {
     setIsLoading(true);

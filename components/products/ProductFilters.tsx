@@ -13,33 +13,21 @@ import { CardFacetFilters, FilterSection, facetLabel } from "@/components/cards/
 import { PRODUCT_KIND_KEYS } from "@/lib/constants/product-kinds";
 import { ALL_EDITIONS } from "@/lib/constants/product-editions";
 import {
-  EMPTY_CRITERIA,
   withToggledValue,
   withoutRange,
-  type CardSearchCriteria,
 } from "@/lib/cards/search-filters";
 import { currentWord, parseSearchSyntax, removeSearchWord, type SearchField } from "@/lib/cards/search-syntax";
 import type { ProductFacet } from "@/lib/products/search";
 
-export type ProductShape = "all" | "containers" | "units";
-export type ProductOwnership = "all" | "owned" | "unowned";
-
-export type ProductFilterState = {
-  setCode: string;
-  kind: string;
-  edition: string;
-  shape: ProductShape;
-  ownership: ProductOwnership;
-  criteria: CardSearchCriteria;
-};
-
-export const EMPTY_PRODUCT_FILTERS: Omit<ProductFilterState, "edition"> = {
-  setCode: "all",
-  kind: "all",
-  shape: "all",
-  ownership: "all",
-  criteria: EMPTY_CRITERIA,
-};
+// L'état vit dans `lib/products/browse-state` : le rendu serveur le relit
+// depuis l'adresse, et un module client ne peut pas lui prêter de valeurs.
+export {
+  EMPTY_PRODUCT_FILTERS,
+  type ProductFilterState,
+  type ProductOwnership,
+  type ProductShape,
+} from "@/lib/products/browse-state";
+import type { ProductFilterState } from "@/lib/products/browse-state";
 
 /**
  * Ce qui filtre en ce moment, dit d'un coup d'œil et retirable d'un clic —

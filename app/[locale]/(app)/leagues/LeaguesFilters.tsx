@@ -13,12 +13,9 @@ import {
 } from "@/components/ui/select.tsx";
 import { Search } from "lucide-react";
 
-export type LeaguesFiltersValues = {
-  search: string;
-  format: LeagueFormat | "all";
-  status: LeagueStatus | "all";
-  gameId: string;
-};
+import type { LeaguesFiltersValues } from "@/lib/leagues/browse-state.ts";
+
+export type { LeaguesFiltersValues };
 
 type LeaguesFiltersProps = {
   games: Game[];

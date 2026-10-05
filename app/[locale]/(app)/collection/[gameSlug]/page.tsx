@@ -8,6 +8,12 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getGameCollection } from "@/lib/db/collection.ts";
+import {
+  gameCollectionQuery,
+  readCollectionBrowseState,
+  writeCollectionBrowseState,
+} from "@/lib/collection/browse-state.ts";
+import { toURLSearchParams, type RawSearchParams } from "@/lib/navigation/url-query.ts";
 import { hasProducts } from "@/lib/db/products.ts";
 import { ObjectId } from "mongodb";
 import { collectionFormatsForGame } from "@/lib/collection/formats";
@@ -31,8 +37,10 @@ export async function generateMetadata({
 
 async function GameCollectionPageContent({
   params,
+  searchParams,
 }: {
   params: Promise<{ gameSlug: string }>;
+  searchParams: Promise<RawSearchParams>;
 }) {
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
@@ -49,11 +57,16 @@ async function GameCollectionPageContent({
     notFound();
   }
 
+  // La recherche est relue de l'adresse : revenir d'une fiche rend la grille
+  // qu'on avait sous les yeux.
+  const initialState = readCollectionBrowseState(toURLSearchParams(await searchParams));
+  const filtered = writeCollectionBrowseState(initialState).size > 0;
+
   const [initial, gameHasProducts] = await Promise.all([
     getGameCollection({
       owner: { type: "user", id: session.user.id },
       gameId: game.id,
-      page: 1,
+      ...gameCollectionQuery(initialState),
       limit: 48,
     }),
     game.features?.products ? hasProducts(new ObjectId(game.id)) : Promise.resolve(false),
@@ -61,7 +74,8 @@ async function GameCollectionPageContent({
 
   // Un jeu de figurines n'a pas de cartes : cet écran n'aurait rien à montrer.
   // On envoie directement là où sa collection se trouve.
-  if (gameHasProducts && initial.total === 0) {
+  // Une recherche sans résultat, elle, reste ici : c'est elle qui est vide.
+  if (gameHasProducts && initial.total === 0 && !filtered) {
     redirect(`/collection/${game.slug ?? game.id}/products`);
   }
 
@@ -73,6 +87,7 @@ async function GameCollectionPageContent({
         gameSlug={gameSlugOrId}
         gameName={game.name}
         initialData={initial}
+        initialState={initialState}
         hasProducts={gameHasProducts}
         valuePath={`/api/collection/games/${gameSlugOrId}/value`}
         transferFormats={collectionFormatsForGame(gameSlugOrId).map((format) => ({

@@ -14,15 +14,9 @@ import {
 import { Search, MapPin, LocateFixed, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-export type LairsFiltersValues = {
-  search: string;
-  gameId: string;
-  nearLocation?: {
-    longitude: number;
-    latitude: number;
-    maxDistanceKm: number;
-  };
-};
+import type { LairsFiltersValues } from "@/lib/lairs/browse-state.ts";
+
+export type { LairsFiltersValues };
 
 type LairsFiltersProps = {
   games: Game[];

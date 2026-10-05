@@ -103,5 +103,5 @@ async function LairsList({ searchParams }: { searchParams: SearchParams }) {
     readAllGames(),
   ]);
 
-  return <LairsClient initialData={initialLairsData} games={games} initialFilters={{ gameId }} />;
+  return <LairsClient initialData={initialLairsData} games={games} />;
 }

@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { League, LeagueFormat, LeagueStatus, PaginatedLeaguesResult } from "@/lib/types/League.ts";
 import { Game } from "@/lib/types/Game.ts";
 import { searchLeaguesAction } from "./actions.ts";
 import LeaguesFilters, { LeaguesFiltersValues } from "./LeaguesFilters.tsx";
 import { Link } from "@/i18n/navigation.ts";
+import { readLeaguesBrowseState, writeLeaguesBrowseState, type LeaguesBrowseState } from "@/lib/leagues/browse-state.ts";
+import { useUrlQuerySync } from "@/lib/navigation/use-url-query-sync.ts";
+import { sameQuery } from "@/lib/navigation/url-query.ts";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -50,15 +54,19 @@ const FORMAT_LABELS: Record<LeagueFormat, string> = {
 export default function LeaguesClient({ initialData, games }: LeaguesClientProps) {
   const [data, setData] = useState<PaginatedLeaguesResult>(initialData);
   const [isLoading, setIsLoading] = useState(false);
-  const [filters, setFilters] = useState<LeaguesFiltersValues>({
-    search: "",
-    format: "all",
-    status: "all",
-    gameId: "all",
-  });
+  const searchParams = useSearchParams();
+  // La recherche, les filtres et la page vivent dans l'adresse : revenir d'une
+  // ligue rouvre la liste telle qu'on l'avait laissée.
+  const [initial] = useState<LeaguesBrowseState>(() =>
+    readLeaguesBrowseState(new URLSearchParams(searchParams.toString()))
+  );
+  const [filters, setFilters] = useState<LeaguesFiltersValues>(initial.filters);
+  const [shown, setShown] = useState<LeaguesBrowseState>(initial);
+  useUrlQuerySync(writeLeaguesBrowseState(shown));
 
   const fetchLeagues = useCallback(
     async (currentFilters: LeaguesFiltersValues, page: number = 1) => {
+      setShown({ filters: currentFilters, page });
       setIsLoading(true);
       try {
         const result = await searchLeaguesAction({
@@ -79,10 +87,17 @@ export default function LeaguesClient({ initialData, games }: LeaguesClientProps
     []
   );
 
-  // Fetch when filters change
+  // Recherche quand les filtres changent : d'abord à la page lue dans l'adresse,
+  // puis à la première. Les filtres déjà cherchés ne sont pas
+  // redemandés — React et Next rejouent cet effet sans que rien n'ait changé, et
+  // la liste repartirait sinon à la première page.
+  const fetchedFiltersRef = useRef<typeof filters | null>(null);
   useEffect(() => {
-    fetchLeagues(filters, 1);
-  }, [filters, fetchLeagues]);
+    if (fetchedFiltersRef.current && sameQuery(fetchedFiltersRef.current, filters)) return;
+    const page = fetchedFiltersRef.current ? 1 : initial.page;
+    fetchedFiltersRef.current = filters;
+    fetchLeagues(filters, page);
+  }, [filters, fetchLeagues, initial.page]);
 
   const handleFiltersChange = (newFilters: LeaguesFiltersValues) => {
     setFilters(newFilters);
