@@ -1,7 +1,6 @@
 import { DateTime } from "luxon";
-import { Trophy } from "lucide-react";
+import { ArrowLeft, Trophy } from "lucide-react";
 
-import { Link } from "@/i18n/navigation.ts";
 import ReportButton from "@/components/ReportButton.tsx";
 import FavoriteDeckButton from "../FavoriteDeckButton.tsx";
 import { CopyDeckButton } from "@/components/decks/CopyDeckButton.tsx";
@@ -16,6 +15,7 @@ import type { DeckCardnexusOrder } from "@/lib/decks/cardnexus-order.ts";
 import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import type { DeckZone } from "@/lib/decks/zones.ts";
 import type { Deck } from "@/lib/types/Deck.ts";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 /**
  * Fiche d'un deck vue par quelqu'un d'autre que son auteur.
@@ -61,11 +61,16 @@ export function PublicDeckSheet({
     <div className="grid gap-6 lg:grid-cols-[minmax(320px,1fr)_320px] lg:items-start">
       <div className="flex min-w-0 flex-col gap-6">
         <header className="flex flex-col gap-3">
-          <nav className="text-[13px] text-muted-foreground">
-            <Link href="/decks/library" className="hover:text-foreground">
-              Librairie de decks
-            </Link>
-            {gameName && <> / {gameName}</>}
+          <nav className="flex flex-wrap items-center gap-x-2 text-[13px] text-muted-foreground">
+            {/* Revient là d'où l'on vient (l'accueil, une recherche…), sinon à la librairie. */}
+            <BackLink
+              href="/decks/library"
+              label="Librairie de decks"
+              className="inline-flex items-center gap-1 hover:text-foreground"
+            >
+              <ArrowLeft className="size-3.5" />
+            </BackLink>
+            {gameName && <span>· {gameName}</span>}
           </nav>
 
           {cover.image && (

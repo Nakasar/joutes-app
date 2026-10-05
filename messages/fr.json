@@ -6191,5 +6191,8 @@
       "size": "A4 · 210 × 297 mm",
       "empty": "Choisissez un lieu pour voir l'affiche."
     }
+  },
+  "Navigation": {
+    "back": "Retour"
   }
 }

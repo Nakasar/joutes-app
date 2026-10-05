@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button.tsx";
-import { Link } from "@/i18n/navigation.ts";
 import { headers } from "next/headers";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
@@ -13,6 +12,7 @@ import {
   GameToolHeaderSkeleton,
 } from "@/components/games/GameToolSkeletons.tsx";
 import GameCubesClient from "./GameCubesClient.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type GameParams = Promise<{ gameSlugOrId: string }>;
 
@@ -66,9 +66,7 @@ async function CubesHeader({ params }: { params: GameParams }) {
     <div className="flex flex-row flex-wrap justify-between">
       <div className="flex flex-row flex-wrap gap-4">
         <Button asChild>
-          <Link href={`/games/${game?.slug ?? gameSlugOrId}`}>
-            ← <span className={enabled ? undefined : "hidden lg:inline"}>{t("back")}</span>
-          </Link>
+          <BackLink href={`/games/${game?.slug ?? gameSlugOrId}`} label={<><span className={enabled ? undefined : "hidden lg:inline"}>{t("back")}</span></>}>← </BackLink>
         </Button>
         <h1 className="mb-4 text-3xl font-bold">
           {enabled && game ? t("title", { gameName: game.name }) : t("notFoundTitle")}

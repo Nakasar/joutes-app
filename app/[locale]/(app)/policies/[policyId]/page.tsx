@@ -12,8 +12,8 @@ import { ObjectId } from "mongodb";
 import { resolveCardMentions } from "@/lib/game-content-cards.ts";
 import PolicyDetailView from "./PolicyDetailView.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { Link } from "@/i18n/navigation.ts";
 import { Locale } from "@/i18n/config.ts";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type Props = { params: Promise<{ policyId: string }> };
 
@@ -70,9 +70,7 @@ async function PolicyDetailPageContent({ params }: Props) {
     <div className="container mx-auto p-6 max-w-3xl">
       <div className="mb-6">
         <Button asChild variant="ghost" size="sm">
-          <Link href={`/games/${gameSlug}/policies`}>
-            ← {t("policies.detail.backToList", { gameName: policy.game?.name ?? "" })}
-          </Link>
+          <BackLink href={`/games/${gameSlug}/policies`} label={t("policies.detail.backToList", { gameName: policy.game?.name ?? "" })}>← </BackLink>
         </Button>
       </div>
 

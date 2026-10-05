@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@/i18n/navigation.ts";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Boxes, Brush, Loader2, Package, PackageX, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
@@ -35,6 +34,7 @@ import { buildProductSearchFields } from "@/lib/products/search.ts";
 import type { ProductCollectionItem, ProductCollectionResult } from "@/lib/db/products-collection.ts";
 import ProductTile from "@/components/products/ProductTile.tsx";
 import ProductManager from "@/components/products/ProductManager.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 export default function ProductsBrowser({
   gameSlug,
@@ -215,13 +215,13 @@ export default function ProductsBrowser({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3">
-        <Link
+        <BackLink
           href={`${basePath}/${gameSlug}`}
           className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          label={t("backToCollection", { game: gameName })}
         >
           <ArrowLeft className="size-4" />
-          {t("backToCollection", { game: gameName })}
-        </Link>
+        </BackLink>
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">{t("subtitle", { game: gameName })}</p>

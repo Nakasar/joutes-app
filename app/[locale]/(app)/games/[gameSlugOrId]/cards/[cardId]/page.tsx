@@ -48,6 +48,7 @@ import {CardPriceTag} from "@/components/cards/CardPriceTag.tsx";
 import {chosenPriceSource, referenceCardPrice} from "@/lib/prices/preference.ts";
 import {viewerPricePreference, viewerPriceSources} from "@/lib/prices/viewer.ts";
 import { UserLabel } from "@/components/UserLabel.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 function hasNegativeVoteRatio(errata: Errata): boolean {
   return errata.votes.negative > errata.votes.positive;
@@ -120,9 +121,7 @@ async function CardDetail({
         <div className="flex flex-row flex-wrap justify-between">
           <div className="flex flex-row flex-wrap gap-4">
             <Button asChild>
-              <Link href={`/games/${gameSlugOrId}/cards`} className="text-blue-600 hover:underline">
-                ← {t("cards.detail.backToList")}
-              </Link>
+              <BackLink href={`/games/${gameSlugOrId}/cards`} className="text-blue-600 hover:underline" label={t("cards.detail.backToList")}>← </BackLink>
             </Button>
             <h1 className="text-3xl font-bold mb-6">{t("cards.detail.notFoundTitle")}</h1>
           </div>
@@ -146,9 +145,7 @@ async function CardDetail({
         <div className="flex flex-row flex-wrap justify-between">
           <div className="flex flex-row flex-wrap gap-4">
             <Button asChild>
-              <Link href={`/games/${gameSlugOrId}/cards`} className="text-blue-600 hover:underline">
-                ← {t("cards.detail.backToList")}
-              </Link>
+              <BackLink href={`/games/${gameSlugOrId}/cards`} className="text-blue-600 hover:underline" label={t("cards.detail.backToList")}>← </BackLink>
             </Button>
             <h1 className="text-3xl font-bold mb-6">{t("cards.detail.notFoundTitle")}</h1>
           </div>
@@ -628,9 +625,7 @@ async function CardNav({params}: {params: Promise<{ cardId: string; gameSlugOrId
     <div className="flex flex-row flex-wrap justify-between gap-4">
       <div className="flex flex-row flex-wrap items-center gap-4">
         <Button asChild variant="outline">
-          <Link href={`/games/${gameSlugOrId}/cards`}>
-            ← {t("cards.detail.backToList")}
-          </Link>
+          <BackLink href={`/games/${gameSlugOrId}/cards`} label={t("cards.detail.backToList")}>← </BackLink>
         </Button>
       </div>
       <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={'cards'} />

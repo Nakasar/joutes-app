@@ -6191,5 +6191,8 @@
       "size": "A4 · 210 × 297 mm",
       "empty": "Pick a venue to see the poster."
     }
+  },
+  "Navigation": {
+    "back": "Back"
   }
 }

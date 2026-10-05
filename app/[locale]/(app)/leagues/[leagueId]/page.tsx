@@ -32,6 +32,7 @@ import KillerTargetsClient from "./KillerTargetsClient.tsx";
 import PointsMatchReportingClient from "./PointsMatchReportingClient.tsx";
 import LeagueRankingClient from "./LeagueRankingClient.tsx";
 import ReportButton from "@/components/ReportButton.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 const STATUS_LABELS: Record<LeagueStatus, string> = {
   DRAFT: "Brouillon",
@@ -171,9 +172,9 @@ async function LeagueDetailContent({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <Button variant="ghost" size="icon" asChild>
-              <Link href="/leagues">
+              <BackLink href="/leagues" aria-label="Retour">
                 <ArrowLeft className="h-4 w-4" />
-              </Link>
+              </BackLink>
             </Button>
             <div className="space-y-2">
               <div className="flex items-center gap-3">

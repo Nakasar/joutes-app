@@ -6191,5 +6191,8 @@
       "size": "A4 · 210 × 297 mm",
       "empty": "Scegliete un luogo per vedere la locandina."
     }
+  },
+  "Navigation": {
+    "back": "Indietro"
   }
 }

@@ -48,6 +48,7 @@ import {
 } from "@/lib/collection/browse-state.ts";
 import { useUrlQuerySync } from "@/lib/navigation/use-url-query-sync.ts";
 import { sameQuery } from "@/lib/navigation/url-query.ts";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type Props = {
   gameSlug: string;
@@ -299,13 +300,13 @@ export default function GameCollectionBrowser({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3">
-        <Link
+        <BackLink
           href={basePath}
           className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          label={t("game.backToOverview")}
         >
           <ArrowLeft className="size-4" />
-          {t("game.backToOverview")}
-        </Link>
+        </BackLink>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-bold tracking-tight">{gameName}</h1>
           <div className="flex flex-wrap items-center gap-2">

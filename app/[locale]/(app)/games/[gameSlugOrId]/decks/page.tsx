@@ -16,8 +16,8 @@ import {
   GameToolHeaderSkeleton,
 } from "@/components/games/GameToolSkeletons.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { Link } from "@/i18n/navigation.ts";
 import { GameDeckCreateButton } from "./GameDeckCreateButton.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type GameParams = Promise<{ gameSlugOrId: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -102,7 +102,7 @@ async function DecksHeader({ params }: { params: GameParams }) {
     <div className="flex flex-row flex-wrap justify-between gap-4">
       <div className="flex flex-row flex-wrap items-center gap-4">
         <Button asChild variant="outline">
-          <Link href={`/games/${game.slug ?? gameSlugOrId}`}>← {t("back")}</Link>
+          <BackLink href={`/games/${game.slug ?? gameSlugOrId}`} label={t("back")}>← </BackLink>
         </Button>
         <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
       </div>

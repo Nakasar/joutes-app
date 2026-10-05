@@ -42,6 +42,7 @@ import ExportCardListDialog from "../ExportCardListDialog.tsx";
 import DrawSettingsDialog from "./DrawSettingsDialog.tsx";
 import { UserBadges } from "@/components/UserBadges.tsx";
 import type { UserBadges as UserBadgesData } from "@/lib/db/user-badges.ts";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type Props = {
   cube: Cube;
@@ -175,10 +176,9 @@ export default function CubeDetailClient({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3">
-        <Link href="/cubes" className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <BackLink href="/cubes" className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground" label={t("backToList")}>
           <ArrowLeft className="size-4" />
-          {t("backToList")}
-        </Link>
+        </BackLink>
         <div className="flex flex-wrap items-start gap-3">
           <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Boxes className="size-5" />

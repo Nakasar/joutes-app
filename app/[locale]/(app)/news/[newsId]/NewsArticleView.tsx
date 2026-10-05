@@ -29,6 +29,7 @@ import {
 } from "@/lib/news/localize.ts";
 import { locales, type Locale } from "@/i18n/config.ts";
 import { UserBadges } from "@/components/UserBadges.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 /**
  * La page d'une actualité, dans une langue.
@@ -150,10 +151,9 @@ export default async function NewsArticleView({ newsId, requestedLang }: Props) 
       {/* Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <Button asChild variant="ghost" size="sm">
-          <Link href="/news">
+          <BackLink href="/news" label="Retour aux actualités">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour aux actualités
-          </Link>
+          </BackLink>
         </Button>
         {canWrite && (
           <div className="flex flex-wrap items-center gap-2">

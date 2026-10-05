@@ -23,6 +23,7 @@ import QuizPlayer from "./QuizPlayer.tsx";
 import QuizTranslateMenu from "./QuizTranslateMenu.tsx";
 import DeleteQuizButton from "./DeleteQuizButton.tsx";
 import ReportButton from "@/components/ReportButton.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type Props = { params: Promise<{ quizId: string }> };
 
@@ -131,10 +132,9 @@ async function QuizArticle({ params }: Props) {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="flex flex-wrap items-center justify-between mb-6 gap-2">
         <Button asChild variant="ghost" size="sm">
-          <Link href="/quizz">
+          <BackLink href="/quizz" label="Retour aux quizz">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour aux quizz
-          </Link>
+          </BackLink>
         </Button>
         <div className="flex items-center gap-2">
           {canWrite && (

@@ -8,13 +8,13 @@ import {Suspense} from "react";
 import PoliciesClientView from "./PoliciesClientView.tsx";
 import {PoliciesHeaderSkeleton, PoliciesListSkeleton} from "./PoliciesSkeletons.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import { Link } from "@/i18n/navigation.ts";
 import {hasPermission} from "@/lib/db/permissions.ts";
 import AddPolicyDialog from "@/app/[locale]/(app)/games/[gameSlugOrId]/policies/AddPolicyDialog.tsx";
 import { getLocale, getTranslations } from "next-intl/server";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar.tsx";
 import {ObjectId} from "mongodb";
 import {resolveCardMentions} from "@/lib/game-content-cards.ts";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 const PAGE_SIZE = 20;
 
@@ -86,9 +86,7 @@ async function PoliciesHeader({ params }: { params: GameParams }) {
     <div className="flex flex-row flex-wrap justify-between">
       <div className="flex flex-row flex-wrap gap-4">
         <Button asChild>
-          <Link href={`/games/${game.slug}`} className="text-blue-600 hover:underline">
-            ← {t("policies.back")}
-          </Link>
+          <BackLink href={`/games/${game.slug}`} className="text-blue-600 hover:underline" label={t("policies.back")}>← </BackLink>
         </Button>
         <h1 className="text-3xl font-bold">{t("policies.title", { gameName: game.name })}</h1>
       </div>

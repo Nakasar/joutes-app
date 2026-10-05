@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button.tsx";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { hasPermission } from "@/lib/db/permissions.ts";
-import { Link } from "@/i18n/navigation.ts";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar.tsx";
 import { GameToolHeaderSkeleton } from "@/components/games/GameToolSkeletons.tsx";
 import ScannerClient from "./ScannerClient.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type GameParams = Promise<{ gameSlugOrId: string }>;
 
@@ -70,9 +70,7 @@ async function ScannerHeader({ params }: { params: GameParams }) {
     <div className="flex flex-row flex-wrap justify-between">
       <div className="flex flex-row flex-wrap gap-4">
         <Button asChild>
-          <Link href={`/games/${game?.slug ?? gameSlugOrId}`} className="text-blue-600 hover:underline">
-            ← <span className={enabled ? undefined : "hidden lg:inline"}>{t("back")}</span>
-          </Link>
+          <BackLink href={`/games/${game?.slug ?? gameSlugOrId}`} className="text-blue-600 hover:underline" label={<><span className={enabled ? undefined : "hidden lg:inline"}>{t("back")}</span></>}>← </BackLink>
         </Button>
         <h1 className="text-3xl font-bold mb-4">
           {enabled && game ? t("title", { gameName: game.name }) : t("notFoundTitle")}

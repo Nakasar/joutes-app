@@ -16,6 +16,7 @@ import {
   GameToolHeaderSkeleton,
 } from "@/components/games/GameToolSkeletons.tsx";
 import NewsCard from "./NewsCard.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 const PAGE_SIZE = 9;
 
@@ -95,10 +96,9 @@ async function NewsHeader({ params }: { params: GameParams }) {
     <div className="flex flex-row flex-wrap justify-between gap-4">
       <div className="flex flex-row flex-wrap items-center gap-4">
         <Button asChild variant="outline">
-          <Link href={`/games/${game.slug ?? gameSlugOrId}`}>
+          <BackLink href={`/games/${game.slug ?? gameSlugOrId}`} label={t("back")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            {t("back")}
-          </Link>
+          </BackLink>
         </Button>
         <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
       </div>
