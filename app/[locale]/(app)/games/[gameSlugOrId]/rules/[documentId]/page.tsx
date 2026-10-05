@@ -2,12 +2,12 @@ import type {Metadata} from 'next';
 import {Suspense} from 'react';
 import RuleDocumentViewer from './RuleDocumentViewer.tsx';
 import {readGameBySlugOrId} from '@/lib/db/games-cached.ts';
-import { Link } from "@/i18n/navigation.ts";
 import {Button} from '@/components/ui/button.tsx';
 import {getTranslations} from 'next-intl/server';
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar.tsx";
 import {GameToolHeaderSkeleton} from "@/components/games/GameToolSkeletons.tsx";
 import {getHyperlinkedEntries, buildRuleTree, getRuleSections, RuleDocument, RuleLang} from '@/lib/rules/riftbound.ts';
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type DocumentParams = Promise<{ gameSlugOrId: string; documentId: string }>;
 
@@ -80,9 +80,7 @@ async function DocumentHeader({params}: { params: DocumentParams }) {
     <div className="flex flex-row flex-wrap justify-between">
       <div className="flex flex-row flex-wrap gap-4">
         <Button asChild>
-          <Link href={`/games/${game.slug}/rules`} className="text-blue-600 hover:underline">
-            ← {t('rules.backToList')}
-          </Link>
+          <BackLink href={`/games/${game.slug}/rules`} className="text-blue-600 hover:underline" label={t('rules.backToList')}>← </BackLink>
         </Button>
         <h1 className="text-3xl font-bold">{t('rules.document.title', {gameName: game.name})}</h1>
       </div>

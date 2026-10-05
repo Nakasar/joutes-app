@@ -5,12 +5,12 @@ import {notFound} from "next/navigation";
 import {Suspense} from "react";
 import { getTranslations } from "next-intl/server";
 import {Button} from "@/components/ui/button.tsx";
-import { Link } from "@/i18n/navigation.ts";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar.tsx";
 import {
   GameToolGridSkeleton,
   GameToolHeaderSkeleton,
 } from "@/components/games/GameToolSkeletons.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type GameParams = Promise<{ gameSlugOrId: string }>;
 
@@ -73,9 +73,7 @@ async function CardsHeader({ params }: { params: GameParams }) {
     <div className="flex flex-row flex-wrap justify-between">
       <div className="flex flex-row flex-wrap gap-4">
         <Button asChild>
-          <Link href={`/games/${gameSlug}`} className="text-blue-600 hover:underline">
-            ← <span className="hidden lg:inline">{t("cards.back")}</span>
-          </Link>
+          <BackLink href={`/games/${gameSlug}`} className="text-blue-600 hover:underline" label={<><span className="hidden lg:inline">{t("cards.back")}</span></>}>← </BackLink>
         </Button>
         <h1 className="text-3xl font-bold mb-6">{t("cards.search.title")}</h1>
       </div>

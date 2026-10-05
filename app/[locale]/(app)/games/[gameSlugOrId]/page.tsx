@@ -28,6 +28,7 @@ import {
   GameHeroSkeleton,
   GameSectionSkeleton,
 } from "./GamePortalSkeletons.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 interface GameDetailPageProps {
   params: Promise<{
@@ -180,12 +181,11 @@ async function GameHero({ params }: GameDetailPageProps) {
       )}
 
       <div className="absolute top-8 left-8 z-20">
-        <Link href="/games">
-          <Button variant="secondary" className="bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70">
+        <Button variant="secondary" className="bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70" asChild>
+          <BackLink href="/games" label={t("detail.back")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            {t("detail.back")}
-          </Button>
-        </Link>
+          </BackLink>
+        </Button>
       </div>
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-8 pt-24 pb-16 space-y-6">

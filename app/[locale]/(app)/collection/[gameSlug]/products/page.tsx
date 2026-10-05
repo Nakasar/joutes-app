@@ -8,6 +8,10 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getProductCollection } from "@/lib/db/products-collection.ts";
+import { getGameProductFacets } from "@/lib/db/products.ts";
+import { productCollectionQuery, readProductBrowseState } from "@/lib/products/browse-state.ts";
+import { toURLSearchParams, type RawSearchParams } from "@/lib/navigation/url-query.ts";
+import { ObjectId } from "mongodb";
 import ProductsBrowser from "./ProductsBrowser.tsx";
 
 export async function generateMetadata({
@@ -28,8 +32,10 @@ export async function generateMetadata({
 
 async function ProductCollectionPageContent({
   params,
+  searchParams,
 }: {
   params: Promise<{ gameSlug: string }>;
+  searchParams: Promise<RawSearchParams>;
 }) {
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
@@ -46,11 +52,19 @@ async function ProductCollectionPageContent({
     notFound();
   }
 
+  // La recherche est relue de l'adresse : revenir d'une fiche, ou ouvrir un
+  // lien partagé, rend la grille qu'on avait sous les yeux.
+  const facets = await getGameProductFacets(new ObjectId(game.id));
+  const initialState = readProductBrowseState(toURLSearchParams(await searchParams), {
+    currentEdition: game.currentProductEdition,
+    facets,
+  });
+
   const initial = await getProductCollection({
     owner: { type: "user", id: session.user.id },
     gameId: game.id,
-    edition: game.currentProductEdition,
-    page: 1,
+    ...productCollectionQuery(initialState),
+    facets,
     limit: 48,
   });
 
@@ -60,6 +74,7 @@ async function ProductCollectionPageContent({
         gameSlug={game.slug ?? game.id}
         gameName={game.name}
         initialData={initial}
+        initialState={initialState}
         currentEdition={game.currentProductEdition}
       />
     </div>

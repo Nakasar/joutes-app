@@ -6,7 +6,6 @@ import { getTranslations } from "next-intl/server";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button.tsx";
-import { Link } from "@/i18n/navigation.ts";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar.tsx";
 import {
   GameToolGridSkeleton,
@@ -17,6 +16,7 @@ import { listGameSocialPosts, listGameSocialPostsWithHidden } from "@/lib/db/gam
 import { checkAdmin } from "@/lib/middleware/admin.ts";
 
 import SocialPostCard from "./SocialPostCard.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type GameParams = Promise<{ gameSlugOrId: string }>;
 
@@ -93,10 +93,9 @@ async function SocialHeader({ params }: { params: GameParams }) {
     <div className="flex flex-row flex-wrap justify-between gap-4">
       <div className="flex flex-row flex-wrap items-center gap-4">
         <Button asChild variant="outline">
-          <Link href={`/games/${game.slug ?? gameSlugOrId}`}>
+          <BackLink href={`/games/${game.slug ?? gameSlugOrId}`} label={t("back")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            {t("back")}
-          </Link>
+          </BackLink>
         </Button>
         <div>
           <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>

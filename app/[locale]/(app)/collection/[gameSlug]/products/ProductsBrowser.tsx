@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@/i18n/navigation.ts";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Boxes, Brush, Loader2, Package, PackageX, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
@@ -26,17 +25,22 @@ import {
   ProductFilters,
   type ProductFilterState,
 } from "@/components/products/ProductFilters.tsx";
+import { writeProductBrowseState, type ProductBrowseState } from "@/lib/products/browse-state.ts";
+import { useUrlQuerySync } from "@/lib/navigation/use-url-query-sync.ts";
+import { sameQuery } from "@/lib/navigation/url-query.ts";
 import { ALL_EDITIONS } from "@/lib/constants/product-editions.ts";
 import { countActiveFacetFilters, serializeCardSearchCriteria } from "@/lib/cards/search-filters.ts";
 import { buildProductSearchFields } from "@/lib/products/search.ts";
 import type { ProductCollectionItem, ProductCollectionResult } from "@/lib/db/products-collection.ts";
 import ProductTile from "@/components/products/ProductTile.tsx";
 import ProductManager from "@/components/products/ProductManager.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 export default function ProductsBrowser({
   gameSlug,
   gameName,
   initialData,
+  initialState,
   currentEdition,
   basePath = "/collection",
   apiBasePath = "/api/collection",
@@ -44,6 +48,8 @@ export default function ProductsBrowser({
   gameSlug: string;
   gameName: string;
   initialData: ProductCollectionResult;
+  /** Saisie, filtres et page relus de l'adresse : ceux de `initialData`. */
+  initialState: ProductBrowseState;
   /** Édition en cours du jeu : ce que la route rend déjà par défaut. */
   currentEdition?: string;
   basePath?: string;
@@ -60,12 +66,12 @@ export default function ProductsBrowser({
   const [page, setPage] = useState(initialData.page);
   const [totalPages, setTotalPages] = useState(initialData.totalPages);
 
-  const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<ProductFilterState>({
-    ...EMPTY_PRODUCT_FILTERS,
-    // Aligné sur ce que la route a déjà appliqué au premier rendu.
-    edition: currentEdition ?? ALL_EDITIONS,
-  });
+  const [search, setSearch] = useState(initialState.search);
+  const [filters, setFilters] = useState<ProductFilterState>(initialState.filters);
+  // Ce que la grille montre — ou est en train de charger —, recopié dans
+  // l'adresse : revenir d'une fiche rouvre la même recherche, à la même page.
+  const [shown, setShown] = useState<ProductBrowseState>({ ...initialState, page: initialData.page });
+  useUrlQuerySync(writeProductBrowseState(shown, currentEdition));
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -73,7 +79,6 @@ export default function ProductsBrowser({
   const [managed, setManaged] = useState<ProductCollectionItem | null>(null);
 
   const controllerRef = useRef<AbortController | null>(null);
-  const initializedRef = useRef(false);
 
   // Le vocabulaire de la saisie vient du catalogue du jeu, comme les filtres :
   // `faction:Rebelles`, `points<=8`, `set:LEG`… Rien n'est codé par jeu.
@@ -87,6 +92,7 @@ export default function ProductsBrowser({
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
+      setShown(next);
 
       setLoading(true);
       setLoadError(false);
@@ -129,11 +135,11 @@ export default function ProductsBrowser({
     [apiBasePath, gameSlug, initialData.limit]
   );
 
-  // Le rendu serveur fournit déjà la première page : ne pas la redemander au
-  // montage.
+  // Le rendu serveur fournit déjà la page demandée par l'adresse : la recherche
+  // n'est relancée que si la saisie ou les filtres s'écartent de ce qui est
+  // affiché — pas au montage, ni quand on revient sur la page.
   useEffect(() => {
-    if (!initializedRef.current) {
-      initializedRef.current = true;
+    if (search === shown.search && sameQuery(filters, shown.filters)) {
       return;
     }
 
@@ -142,7 +148,7 @@ export default function ProductsBrowser({
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [search, filters, fetchPage]);
+  }, [search, filters, fetchPage, shown.search, shown.filters]);
 
   const changeFilters = (next: Partial<ProductFilterState>) =>
     setFilters((current) => ({ ...current, ...next }));
@@ -209,13 +215,13 @@ export default function ProductsBrowser({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3">
-        <Link
+        <BackLink
           href={`${basePath}/${gameSlug}`}
           className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          label={t("backToCollection", { game: gameName })}
         >
           <ArrowLeft className="size-4" />
-          {t("backToCollection", { game: gameName })}
-        </Link>
+        </BackLink>
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">{t("subtitle", { game: gameName })}</p>

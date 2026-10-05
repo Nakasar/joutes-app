@@ -10,6 +10,7 @@ import { readOpeningState } from "@/lib/lairs/opening-hours.ts";
 
 import FollowLairButton from "./FollowLairButton.tsx";
 import { readViewer, requireVisibleLair } from "./lair-data.ts";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 /**
  * La bannière du lieu : son image, son logo, son nom, et de quoi agir.
@@ -92,10 +93,9 @@ export default async function LairHero({ lairId }: { lairId: string }) {
 
             <div className="flex flex-wrap items-center gap-2.5 pt-0.5">
               <Button variant="secondary" asChild size="sm">
-                <Link href="/lairs">
+                <BackLink href="/lairs" label={t("detail.backToList")}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  {t("detail.backToList")}
-                </Link>
+                </BackLink>
               </Button>
               {/* Suivre et Gérer demandent la session, et le compte derrière elle.
                   Leur frontière est ici plutôt qu'autour de la bannière : le nom

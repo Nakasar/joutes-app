@@ -3,6 +3,7 @@ import {readGameBySlugOrId} from "@/lib/db/games-cached.ts";
 import { Link } from "@/i18n/navigation.ts";
 import {getTranslations, setRequestLocale} from "next-intl/server";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 export default async function GameRulesPage({params}: { params: Promise<{ locale: string; gameSlugOrId: string }> }) {
   const {locale, gameSlugOrId} = await params;
@@ -18,9 +19,7 @@ export default async function GameRulesPage({params}: { params: Promise<{ locale
         <div className="flex flex-row flex-wrap justify-between">
           <div className="flex flex-row flex-wrap gap-4">
             <Button asChild>
-              <Link href={`/games/${gameSlugOrId}`} className="text-blue-600 hover:underline">
-                ← <span className="hidden lg:inline">{t("cards.back")}</span>
-              </Link>
+              <BackLink href={`/games/${gameSlugOrId}`} className="text-blue-600 hover:underline" label={<><span className="hidden lg:inline">{t("cards.back")}</span></>}>← </BackLink>
             </Button>
             <h1 className="text-3xl font-bold mb-4">{t("rules.notFoundTitle")}</h1>
           </div>
@@ -44,9 +43,7 @@ export default async function GameRulesPage({params}: { params: Promise<{ locale
       <div className="flex flex-row flex-wrap justify-between">
         <div className="flex flex-row flex-wrap gap-4">
           <Button asChild>
-            <Link href={`/games/${game.slug}`} className="text-blue-600 hover:underline">
-              ← {t("rules.back")}
-            </Link>
+            <BackLink href={`/games/${game.slug}`} className="text-blue-600 hover:underline" label={t("rules.back")}>← </BackLink>
           </Button>
           <h1 className="text-3xl font-bold mb-4">{t("rules.title", {gameName: game.name})}</h1>
         </div>

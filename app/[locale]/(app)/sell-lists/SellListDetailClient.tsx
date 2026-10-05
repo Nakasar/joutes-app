@@ -38,6 +38,7 @@ import ReportButton from "@/components/ReportButton.tsx";
 import type { SellList, SellListItem } from "@/lib/types/SellList.ts";
 import type { PaginatedSellListItems, SellListOwnerInfo } from "@/lib/db/sell-lists.ts";
 import { UserBadges } from "@/components/UserBadges.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 const CURRENCIES = ["EUR", "USD", "GBP", "JPY", "CNY"] as const;
 type CurrencyCode = (typeof CURRENCIES)[number];
@@ -159,13 +160,13 @@ export default function SellListDetailClient({
 
   return (
     <div className="space-y-6">
-      <Link
+      <BackLink
         href={backHref}
         className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        label={t("detail.back")}
       >
         <ArrowLeft className="size-4" />
-        {t("detail.back")}
-      </Link>
+      </BackLink>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">

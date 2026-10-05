@@ -41,11 +41,21 @@ import CollectionValueSection from "@/app/[locale]/(app)/collection/CollectionVa
 import type { CollectionValue } from "@/lib/collection/value.ts";
 import type { CardVariant, CollectionItem, GameCollectionResult } from "@/lib/db/collection.ts";
 import { CardPriceTag } from "@/components/cards/CardPriceTag.tsx";
+import {
+  writeCollectionBrowseState,
+  type CardOwnershipFilter,
+  type CollectionBrowseState,
+} from "@/lib/collection/browse-state.ts";
+import { useUrlQuerySync } from "@/lib/navigation/use-url-query-sync.ts";
+import { sameQuery } from "@/lib/navigation/url-query.ts";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type Props = {
   gameSlug: string;
   gameName: string;
   initialData: GameCollectionResult;
+  /** Saisie, filtres et page relus de l'adresse : ceux de `initialData`. */
+  initialState: CollectionBrowseState;
   /** Link prefix for the overview/sets/boosters/card-detail navigation. Override for a play-group's collection. */
   basePath?: string;
   /** API prefix for reads/writes. Override to manage a play-group's shared collection instead of the current user's. */
@@ -78,6 +88,7 @@ export default function GameCollectionBrowser({
   gameSlug,
   gameName,
   initialData,
+  initialState,
   basePath = "/collection",
   apiBasePath = "/api/collection",
   showBoosters = true,
@@ -97,10 +108,14 @@ export default function GameCollectionBrowser({
   const [page, setPage] = useState(initialData.page);
   const [totalPages, setTotalPages] = useState(initialData.totalPages);
 
-  const [search, setSearch] = useState("");
-  const [setCode, setSetCode] = useState("all");
-  const [type, setType] = useState("all");
-  const [ownership, setOwnership] = useState<"all" | "owned" | "unowned">("all");
+  const [search, setSearch] = useState(initialState.search);
+  const [setCode, setSetCode] = useState(initialState.setCode);
+  const [type, setType] = useState(initialState.type);
+  const [ownership, setOwnership] = useState<CardOwnershipFilter>(initialState.ownership);
+  // Ce que la grille montre — ou est en train de charger —, recopié dans
+  // l'adresse : revenir d'une fiche rouvre la même recherche, à la même page.
+  const [shown, setShown] = useState<CollectionBrowseState>({ ...initialState, page: initialData.page });
+  useUrlQuerySync(writeCollectionBrowseState(shown));
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
@@ -110,7 +125,6 @@ export default function GameCollectionBrowser({
   const [variantsLoading, setVariantsLoading] = useState(false);
 
   const controllerRef = useRef<AbortController | null>(null);
-  const initializedRef = useRef(false);
 
   // Ids des cartes déjà présentes dans une wishlist de l'utilisateur connecté
   // (cœur rouge sur les tuiles). Best-effort : ignoré si non connecté.
@@ -135,10 +149,11 @@ export default function GameCollectionBrowser({
   }, [gameSlug]);
 
   const fetchPage = useCallback(
-    async (opts: { search: string; setCode: string; type: string; ownership: "all" | "owned" | "unowned"; page: number }) => {
+    async (opts: CollectionBrowseState) => {
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
+      setShown(opts);
       setLoading(true);
       // Effacé dès le départ : garder le message d'échec pendant le nouvel essai
       // masquerait la grille et donnerait, là encore, l'impression que le clic
@@ -180,10 +195,13 @@ export default function GameCollectionBrowser({
     [gameSlug, apiBasePath]
   );
 
-  // Debounced refetch on filter changes (skip first render — SSR provided initial data).
+  // Debounced refetch on filter changes. Le rendu serveur fournit déjà la page
+  // demandée par l'adresse : rien n'est relancé tant que les filtres sont ceux
+  // affichés — ni au montage, ni quand on revient sur la page.
   useEffect(() => {
-    if (!initializedRef.current) {
-      initializedRef.current = true;
+    const asked = { search, setCode, type, ownership };
+    const displayed = { search: shown.search, setCode: shown.setCode, type: shown.type, ownership: shown.ownership };
+    if (sameQuery(asked, displayed)) {
       return;
     }
     const delay = search.trim() ? 300 : 0;
@@ -192,7 +210,7 @@ export default function GameCollectionBrowser({
     }, delay);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, setCode, type, ownership]);
+  }, [search, setCode, type, ownership, shown]);
 
   // Fetch other printings of the open card's name (only re-fetches when the name
   // changes, so clicking between variants of the same card doesn't re-fetch).
@@ -282,13 +300,13 @@ export default function GameCollectionBrowser({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3">
-        <Link
+        <BackLink
           href={basePath}
           className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          label={t("game.backToOverview")}
         >
           <ArrowLeft className="size-4" />
-          {t("game.backToOverview")}
-        </Link>
+        </BackLink>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-bold tracking-tight">{gameName}</h1>
           <div className="flex flex-wrap items-center gap-2">

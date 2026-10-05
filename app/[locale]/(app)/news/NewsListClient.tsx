@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { readPage, writePage } from "@/lib/navigation/url-query.ts";
+import { useUrlQuerySync } from "@/lib/navigation/use-url-query-sync.ts";
 import { News } from "@/lib/types/News.ts";
 import {
   localizeNews,
@@ -55,16 +58,37 @@ type Filters = {
   dateTo: string;
 };
 
+/** Les filtres et la page relus de l'adresse : revenir d'un article rouvre la même liste. */
+function readNewsQuery(params: URLSearchParams): { filters: Filters; page: number } {
+  return {
+    filters: {
+      gameId: params.get("gameId") || "all",
+      tag: params.get("tag") || "all",
+      dateFrom: params.get("dateFrom") ?? "",
+      dateTo: params.get("dateTo") ?? "",
+    },
+    page: readPage(params),
+  };
+}
+
+function writeNewsQuery(filters: Filters, page: number): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.gameId !== "all") params.set("gameId", filters.gameId);
+  if (filters.tag !== "all") params.set("tag", filters.tag);
+  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+  if (filters.dateTo) params.set("dateTo", filters.dateTo);
+  writePage(params, page);
+  return params;
+}
+
 export default function NewsListClient({ games, tags, userId, canWrite }: NewsListClientProps) {
+  const searchParams = useSearchParams();
+  const [initial] = useState(() => readNewsQuery(new URLSearchParams(searchParams.toString())));
   const [data, setData] = useState<PaginatedNewsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState<Filters>({
-    gameId: "all",
-    tag: "all",
-    dateFrom: "",
-    dateTo: "",
-  });
+  const [page, setPage] = useState(initial.page);
+  const [filters, setFilters] = useState<Filters>(initial.filters);
+  useUrlQuerySync(writeNewsQuery(filters, page));
   const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
 
   const fetchNews = useCallback(async (currentFilters: Filters, currentPage: number) => {

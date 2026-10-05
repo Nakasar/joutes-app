@@ -9,6 +9,8 @@ import { Metadata } from "next/types";
 import { getPlayGroupByIdAndUser, isGameEnabledForPlayGroup } from "@/lib/db/play-groups.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getGameCollection } from "@/lib/db/collection.ts";
+import { gameCollectionQuery, readCollectionBrowseState } from "@/lib/collection/browse-state.ts";
+import { toURLSearchParams, type RawSearchParams } from "@/lib/navigation/url-query.ts";
 import GameCollectionBrowser from "@/app/[locale]/(app)/collection/[gameSlug]/GameCollectionBrowser.tsx";
 
 
@@ -27,8 +29,10 @@ export async function generateMetadata({
 
 async function PlayGroupGameCollectionPageContent({
   params,
+  searchParams,
 }: {
   params: Promise<{ playGroupId: string; gameSlug: string }>;
+  searchParams: Promise<RawSearchParams>;
 }) {
   const { playGroupId, gameSlug } = await params;
 
@@ -51,10 +55,13 @@ async function PlayGroupGameCollectionPageContent({
     notFound();
   }
 
+  // La recherche est relue de l'adresse : revenir d'une fiche rend la grille
+  // qu'on avait sous les yeux.
+  const initialState = readCollectionBrowseState(toURLSearchParams(await searchParams));
   const initial = await getGameCollection({
     owner: { type: "playGroup", id: group.id },
     gameId: game.id,
-    page: 1,
+    ...gameCollectionQuery(initialState),
     limit: 48,
   });
 
@@ -64,6 +71,7 @@ async function PlayGroupGameCollectionPageContent({
         gameSlug={game.slug ?? game.id}
         gameName={game.name}
         initialData={initial}
+        initialState={initialState}
         basePath={`/play-groups/${group.id}/collection`}
         apiBasePath={`/api/play-groups/${group.id}/collection`}
         valuePath={`/api/play-groups/${group.id}/collection/games/${game.slug ?? game.id}/value`}

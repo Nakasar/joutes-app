@@ -66,6 +66,7 @@ import type { PaginatedWishlistItems, WishlistOwnerInfo } from "@/lib/db/wishlis
 import type { Game } from "@/lib/types/Game.ts";
 import type { BoosterCard } from "@/lib/types/booster.ts";
 import { UserBadges } from "@/components/UserBadges.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 /** Le palier mis en avant : le moins cher qui ouvre la gestion avancée. */
 const UNLOCKING_PLAN_LABEL = SUBSCRIPTION_PLANS.expert.label;
@@ -239,13 +240,13 @@ export default function WishlistDetailClient({
 
   return (
     <div className="space-y-6">
-      <Link
+      <BackLink
         href={wishlist.ownerType === "playGroup" ? `/play-groups/${wishlist.ownerId}/wishlists` : "/wishlists"}
         className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        label={t("detail.back")}
       >
         <ArrowLeft className="size-4" />
-        {t("detail.back")}
-      </Link>
+      </BackLink>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">

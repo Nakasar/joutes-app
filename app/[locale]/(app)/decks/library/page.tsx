@@ -11,6 +11,7 @@ import { getDeckLegendFacets, getFeaturedDecks, searchDecks } from "@/lib/db/dec
 import { getAllGames } from "@/lib/db/games.ts";
 import { getDeckCardInfos } from "@/lib/db/deck-cards.ts";
 import { librarySortOptions, parseLibraryParams } from "@/lib/decks/library-filters.ts";
+import { readPage, toURLSearchParams } from "@/lib/navigation/url-query.ts";
 import { DeckLibraryClient } from "@/components/decks/DeckLibraryClient.tsx";
 import { FeaturedDecks } from "./FeaturedDecks.tsx";
 
@@ -49,7 +50,7 @@ async function DeckLibraryContent({ searchParams }: { searchParams: SearchParams
       sortOrder: "desc",
       favoritesOnly: favoritesOnly || filters.favoritesOnly,
       viewerId: session?.user?.id,
-      page: 1,
+      page: readPage(toURLSearchParams(params)),
       limit: 20,
     }),
     getDeckLegendFacets(filters.gameId !== "all" ? filters.gameId : undefined),

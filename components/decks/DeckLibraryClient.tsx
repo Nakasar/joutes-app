@@ -26,7 +26,9 @@ import { Label } from "@/components/ui/label.tsx";
 import { FacetChip } from "@/components/cards/CardFacetFilters.tsx";
 import { SegmentedControl } from "@/components/decks/SegmentedControl.tsx";
 import { DeckLibraryCard } from "@/components/decks/DeckLibraryCard.tsx";
-import { Link, usePathname, useRouter } from "@/i18n/navigation.ts";
+import { Link } from "@/i18n/navigation.ts";
+import { sameQuery, writePage } from "@/lib/navigation/url-query.ts";
+import { useUrlQuerySync } from "@/lib/navigation/use-url-query-sync.ts";
 import { cn } from "@/lib/utils.ts";
 import type { PaginatedDecksResult } from "@/lib/db/decks.ts";
 import type { DeckLegendFacet } from "@/lib/db/decks.ts";
@@ -79,17 +81,22 @@ export function DeckLibraryClient({
   currentUserId?: string;
   lockedGameId?: string;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-
   const [filters, setFilters] = useState<LibraryFilters>(initialFilters);
   const [search, setSearch] = useState(initialFilters.search);
   const [data, setData] = useState(initialData);
   const [legends, setLegends] = useState(initialLegends);
   const [legendOpen, setLegendOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const firstRenderRef = useRef(true);
+  const [page, setPage] = useState(initialData.page);
+  // Les filtres et la page effectivement cherchés, recopiés dans l'adresse :
+  // revenir d'un deck rouvre la même recherche, à la même page.
+  const [applied, setApplied] = useState({ filters: initialFilters, page: initialData.page });
+  const urlParams = buildLibraryParams(applied.filters);
+  // Le jeu imposé est déjà dans le chemin : le répéter en paramètre ferait
+  // une adresse plus longue qui ne dit rien de plus.
+  if (lockedGameId) urlParams.delete("gameId");
+  writePage(urlParams, applied.page);
+  useUrlQuerySync(urlParams);
   const controllerRef = useRef<AbortController | null>(null);
 
   const formats = games.find((game) => game.id === filters.gameId)?.formats ?? [];
@@ -98,7 +105,7 @@ export function DeckLibraryClient({
   // frappe, les seconds attendent que la main se pose.
   useEffect(() => {
     const timer = window.setTimeout(
-      () => setFilters((current) => ({ ...current, search })),
+      () => setFilters((current) => (current.search === search ? current : { ...current, search })),
       SEARCH_DEBOUNCE_MS
     );
     return () => window.clearTimeout(timer);
@@ -109,6 +116,7 @@ export function DeckLibraryClient({
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
+      setApplied({ filters: current, page: pageNumber });
       setLoading(true);
 
       try {
@@ -143,26 +151,20 @@ export function DeckLibraryClient({
   );
 
   useEffect(() => {
-    // Le premier rendu affiche déjà les résultats préparés par le serveur :
-    // les redemander ferait clignoter la grille pour rien.
-    if (firstRenderRef.current) {
-      firstRenderRef.current = false;
+    // Le serveur a déjà préparé les résultats de l'adresse : tant que les
+    // filtres sont ceux qui sont affichés, les redemander ferait clignoter la
+    // grille pour rien — et la ramènerait à la première page.
+    if (sameQuery(filters, applied.filters)) {
       return;
     }
 
     const timer = window.setTimeout(() => {
       setPage(1);
       void fetchDecks(filters, 1);
-      const params = buildLibraryParams(filters);
-      // Le jeu imposé est déjà dans le chemin : le répéter en paramètre ferait
-      // une adresse plus longue qui ne dit rien de plus.
-      if (lockedGameId) params.delete("gameId");
-      const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     }, FILTER_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [filters, fetchDecks, pathname, router, lockedGameId]);
+  }, [filters, fetchDecks, applied.filters]);
 
   // La liste des légendes dépend du jeu retenu : garder celles d'un autre jeu
   // proposerait des filtres qui ne rendent jamais rien.

@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { DateTime } from "luxon";
-import { Hammer, Share2, Star } from "lucide-react";
+import { ArrowLeft, Hammer, Share2, Star } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button.tsx";
@@ -26,6 +26,7 @@ import {
   MatchupsSection,
   SheetCard,
 } from "./DeckSheetSections.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type SheetTab = "description" | "guide" | "cards";
 
@@ -236,11 +237,12 @@ export function DeckSheet({
   return (
     <div className="flex flex-col gap-6 pb-20 lg:pb-0">
       <header className="flex flex-col gap-3">
-        <nav className="text-[13px] text-muted-foreground">
-          <Link href="/decks" className="hover:text-foreground">
-            Mes decks
-          </Link>
-          {gameName && <> / {gameName}</>}
+        <nav className="flex flex-wrap items-center gap-x-2 text-[13px] text-muted-foreground">
+          {/* Revient là d'où l'on vient (l'accueil, une recherche…), sinon à ses decks. */}
+          <BackLink href="/decks" label="Mes decks" className="inline-flex items-center gap-1 hover:text-foreground">
+            <ArrowLeft className="size-3.5" />
+          </BackLink>
+          {gameName && <span>· {gameName}</span>}
         </nav>
 
         {/* La couverture ouvre la fiche, quand le deck en a une. Elle se

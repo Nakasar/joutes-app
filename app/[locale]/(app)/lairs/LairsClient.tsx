@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { Lair } from "@/lib/types/Lair.ts";
 import { Game } from "@/lib/types/Game.ts";
 import { PaginatedLairsResult } from "@/lib/db/lairs.ts";
 import { searchLairsAction } from "./actions.ts";
 import LairsFilters, { LairsFiltersValues } from "./LairsFilters.tsx";
-import { Link, usePathname, useRouter } from "@/i18n/navigation.ts";
+import { Link } from "@/i18n/navigation.ts";
+import { readLairsBrowseState, writeLairsBrowseState, type LairsBrowseState } from "@/lib/lairs/browse-state.ts";
+import { useUrlQuerySync } from "@/lib/navigation/use-url-query-sync.ts";
+import { sameQuery } from "@/lib/navigation/url-query.ts";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -16,27 +20,27 @@ import { useTranslations } from "next-intl";
 type LairsClientProps = {
   initialData: PaginatedLairsResult;
   games: Game[];
-  initialFilters: {
-    gameId?: string;
-  };
 };
 
-export default function LairsClient({ initialData, games, initialFilters }: LairsClientProps) {
-  const pathname = usePathname();
-  const router = useRouter();
+export default function LairsClient({ initialData, games }: LairsClientProps) {
   const t = useTranslations("Lairs");
+  const searchParams = useSearchParams();
+  // La recherche, les filtres et la page vivent dans l'adresse : revenir d'une
+  // fiche rouvre la liste telle qu'on l'avait laissée.
+  const [initial] = useState<LairsBrowseState>(() =>
+    readLairsBrowseState(new URLSearchParams(searchParams.toString()))
+  );
   const [data, setData] = useState<PaginatedLairsResult>(initialData);
   const [isLoading, setIsLoading] = useState(false);
-  const [filters, setFilters] = useState<LairsFiltersValues>({
-    search: "",
-    gameId: initialFilters.gameId ? initialFilters.gameId : "all",
-    nearLocation: undefined,
-  });
+  const [filters, setFilters] = useState<LairsFiltersValues>(initial.filters);
+  const [shown, setShown] = useState<LairsBrowseState>(initial);
+  useUrlQuerySync(writeLairsBrowseState(shown));
 
   const fetchLairs = useCallback(async (
     currentFilters: LairsFiltersValues,
     page: number = 1
   ) => {
+    setShown({ filters: currentFilters, page });
     setIsLoading(true);
     try {
       const result = await searchLairsAction({
@@ -60,18 +64,20 @@ export default function LairsClient({ initialData, games, initialFilters }: Lair
     }
   }, []);
 
-  // Fetch when filters change
+  // Recherche quand les filtres changent : d'abord à la page lue dans l'adresse,
+  // puis à la première. Les filtres déjà cherchés ne sont pas
+  // redemandés — React et Next rejouent cet effet sans que rien n'ait changé, et
+  // la liste repartirait sinon à la première page.
+  const fetchedFiltersRef = useRef<typeof filters | null>(null);
   useEffect(() => {
-    fetchLairs(filters, 1);
-  }, [filters, fetchLairs]);
+    if (fetchedFiltersRef.current && sameQuery(fetchedFiltersRef.current, filters)) return;
+    const page = fetchedFiltersRef.current ? 1 : initial.page;
+    fetchedFiltersRef.current = filters;
+    fetchLairs(filters, page);
+  }, [filters, fetchLairs, initial.page]);
 
   const handleFiltersChange = (newFilters: LairsFiltersValues) => {
     setFilters(newFilters);
-    if (newFilters.gameId === 'all') {
-      router.push(pathname)
-    } else {
-      router.push(pathname + `?gameId=${newFilters.gameId}`);
-    }
   };
 
   const handlePageChange = (newPage: number) => {

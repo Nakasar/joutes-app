@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getDeckLegendFacets, searchDecks } from "@/lib/db/decks.ts";
 import { librarySortOptions, parseLibraryParams } from "@/lib/decks/library-filters.ts";
+import { readPage, toURLSearchParams } from "@/lib/navigation/url-query.ts";
 import { DeckLibraryClient } from "@/components/decks/DeckLibraryClient.tsx";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar.tsx";
 import {
@@ -15,8 +16,8 @@ import {
   GameToolHeaderSkeleton,
 } from "@/components/games/GameToolSkeletons.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { Link } from "@/i18n/navigation.ts";
 import { GameDeckCreateButton } from "./GameDeckCreateButton.tsx";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 type GameParams = Promise<{ gameSlugOrId: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -101,7 +102,7 @@ async function DecksHeader({ params }: { params: GameParams }) {
     <div className="flex flex-row flex-wrap justify-between gap-4">
       <div className="flex flex-row flex-wrap items-center gap-4">
         <Button asChild variant="outline">
-          <Link href={`/games/${game.slug ?? gameSlugOrId}`}>← {t("back")}</Link>
+          <BackLink href={`/games/${game.slug ?? gameSlugOrId}`} label={t("back")}>← </BackLink>
         </Button>
         <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
       </div>
@@ -137,7 +138,7 @@ async function DecksExplorer({ params, searchParams }: GameDecksPageProps) {
       sortOrder: "desc",
       favoritesOnly: favoritesOnly || filters.favoritesOnly,
       viewerId: session?.user?.id,
-      page: 1,
+      page: readPage(toURLSearchParams(rawParams)),
       limit: 20,
     }),
     getDeckLegendFacets(game.id),

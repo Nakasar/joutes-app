@@ -4,6 +4,7 @@ import { ArrowLeft, Layers, LayoutGrid } from "lucide-react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { CompletionBar } from "@/app/[locale]/(app)/collection/CollectionOverview.tsx";
 import type { SetCompletion } from "@/lib/db/collection.ts";
+import { BackLink } from "@/components/navigation/BackLink.tsx";
 
 export default async function SetsOverview({
   gameSlug,
@@ -21,13 +22,13 @@ export default async function SetsOverview({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3">
-        <Link
+        <BackLink
           href={`${basePath}/${gameSlug}`}
           className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          label={t("game.backToCollection", { game: gameName })}
         >
           <ArrowLeft className="size-4" />
-          {t("game.backToCollection", { game: gameName })}
-        </Link>
+        </BackLink>
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold tracking-tight">{t("sets.title")}</h1>
           <p className="text-muted-foreground">{t("sets.subtitle", { game: gameName })}</p>

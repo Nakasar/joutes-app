@@ -21,6 +21,7 @@ import {notFound} from "next/navigation";
 import {locales, type Locale} from "@/i18n/config.ts";
 import {ThemeProvider} from "next-themes";
 import {ThemeToggle} from "@/components/theme-toggle.tsx";
+import { InAppHistoryTracker } from "@/components/navigation/InAppHistoryTracker.tsx";
 
 /**
  * Les langues préfabriquées : chacune reçoit sa propre coquille, au lieu d'une
@@ -208,6 +209,12 @@ async function LocalizedFrame({ children }: { children: React.ReactNode }) {
           composant ne rend rien. */}
       <Suspense fallback={null}>
         <WebMcpTools />
+      </Suspense>
+      {/* Compte les pages parcourues, pour que les boutons « retour » ramènent
+          là d'où l'on vient (voir `BackLink`). Ne rend rien ; même frontière
+          que ci-dessus, et pour la même raison : il lit le chemin courant. */}
+      <Suspense fallback={null}>
+        <InAppHistoryTracker />
       </Suspense>
       {isWinterTheme && <WinterDecorations />}
       {isHalloweenTheme && <HalloweenDecorations />}
