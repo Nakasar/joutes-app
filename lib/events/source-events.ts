@@ -21,7 +21,7 @@ import type { Event } from "@/lib/types/Event";
 export const EVENTS_TIMEZONE = "Europe/Paris";
 
 /** Les auteurs que le rafraîchissement a le droit de réécrire. */
-export const AUTOMATED_EVENT_AUTHORS = ["AI-SCRAPPING", "JSON-MAPPING", "HTML-SCRAPPING", "HOBBYNEXT"] as const;
+export const AUTOMATED_EVENT_AUTHORS = ["AI-SCRAPPING", "JSON-MAPPING", "HTML-SCRAPPING", "HOBBYNEXT", "RIFTBOUND"] as const;
 
 export type EventStatus = Event["status"];
 

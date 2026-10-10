@@ -104,15 +104,28 @@ export type EventHobbynextConfig = {
   ownerId: string;
 };
 
+/**
+ * Un lieu sur Riftbound (l'agenda des boutiques de Riot, playriftbound.com) :
+ * son identifiant d'organisateur, un UUID.
+ */
+export type EventRiftboundConfig = {
+  organizerId: string;
+};
+
 // Type pour une source d'événements
 export type EventSource = {
-  /** Pour une source Hobbynext, déduite de `hobbynextConfig.ownerId` (voir `hobbynextSourceUrl`). */
+  /**
+   * Pour une source Hobbynext, déduite de `hobbynextConfig.ownerId` (voir
+   * `hobbynextSourceUrl`) ; pour une source Riftbound, de
+   * `riftboundConfig.organizerId` (voir `riftboundSourceUrl`).
+   */
   url: string;
-  type: 'IA' | 'MAPPING' | 'HTML' | 'HOBBYNEXT';
+  type: 'IA' | 'MAPPING' | 'HTML' | 'HOBBYNEXT' | 'RIFTBOUND';
   instructions?: string;
   mappingConfig?: EventMappingConfig;
   htmlConfig?: EventHtmlConfig;
   hobbynextConfig?: EventHobbynextConfig;
+  riftboundConfig?: EventRiftboundConfig;
   /**
    * Les champs d'un formulaire à envoyer pour obtenir la page — la ville à
    * afficher, un filtre. Quand ils sont là, la page est demandée en POST

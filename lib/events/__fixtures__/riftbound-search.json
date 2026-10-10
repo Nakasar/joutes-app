@@ -1,0 +1,286 @@
+{
+  "data": {
+    "__typename": "Query",
+    "competeTournamentSearch": {
+      "__typename": "CompeteTournamentSearchConnection",
+      "edges": [
+        {
+          "__typename": "CompeteTournamentSearchEdge",
+          "cursor": "REFURTp0OjE3OTIxNzAwMDA6MTE3MTczNjY5NDUyMDI3Nzkz",
+          "node": {
+            "__typename": "RbTournamentSearchResult",
+            "distanceMeters": 20,
+            "organizer": {
+              "__typename": "OrganizerSummary",
+              "id": "01a03e92-43e0-7bb9-9e69-d7fd97c2c8d0",
+              "isFavorited": null,
+              "name": "La Caverne du Gobelin THIONVILLE (Gobcorp)",
+              "physicalAddress": {
+                "__typename": "Location",
+                "adminArea1": "Grand Est",
+                "city": "Thionville",
+                "formattedAddress": "23 Rue Brûlée, 57100 Thionville, France",
+                "latitude": 49.357659999999996,
+                "longitude": 6.1656813
+              }
+            },
+            "tournament": {
+              "__typename": "CompeteTournament",
+              "config": {
+                "__typename": "RiftboundTournamentConfig",
+                "format": "LIMITED_SEALED",
+                "participantCapacity": 16,
+                "playerFormat": "ONE_V_ONE",
+                "tournamentType": "PRE_RIFT"
+              },
+              "entryFee": null,
+              "id": "117173669452027793",
+              "name": "Avant-Première - Radiance",
+              "pricing": "FREE",
+              "registrantCounts": [
+                {
+                  "__typename": "TournamentRegistrantCount",
+                  "count": 5,
+                  "status": "REGISTERED"
+                }
+              ],
+              "startsAt": "2026-10-16T17:00:00Z"
+            }
+          }
+        },
+        {
+          "__typename": "CompeteTournamentSearchEdge",
+          "cursor": "REFURTp0OjE3OTIzMDg2MDA6MTE3MTczNjcyMjIyOTkyODIy",
+          "node": {
+            "__typename": "RbTournamentSearchResult",
+            "distanceMeters": 20,
+            "organizer": {
+              "__typename": "OrganizerSummary",
+              "id": "01a03e92-43e0-7bb9-9e69-d7fd97c2c8d0",
+              "isFavorited": null,
+              "name": "La Caverne du Gobelin THIONVILLE (Gobcorp)",
+              "physicalAddress": {
+                "__typename": "Location",
+                "adminArea1": "Grand Est",
+                "city": "Thionville",
+                "formattedAddress": "23 Rue Brûlée, 57100 Thionville, France",
+                "latitude": 49.357659999999996,
+                "longitude": 6.1656813
+              }
+            },
+            "tournament": {
+              "__typename": "CompeteTournament",
+              "config": {
+                "__typename": "RiftboundTournamentConfig",
+                "format": "LIMITED_SEALED",
+                "participantCapacity": 16,
+                "playerFormat": "ONE_V_ONE",
+                "tournamentType": "PRE_RIFT"
+              },
+              "entryFee": null,
+              "id": "117173672222992822",
+              "name": "Avant-Première - Radiance",
+              "pricing": "FREE",
+              "registrantCounts": [
+                {
+                  "__typename": "TournamentRegistrantCount",
+                  "count": 2,
+                  "status": "REGISTERED"
+                }
+              ],
+              "startsAt": "2026-10-18T07:30:00Z"
+            }
+          }
+        },
+        {
+          "__typename": "CompeteTournamentSearchEdge",
+          "cursor": "REFURTp0OjE3OTIzMjQ4MDA6MTE3MTczNjc1ODg0NDQ0NTg0",
+          "node": {
+            "__typename": "RbTournamentSearchResult",
+            "distanceMeters": 20,
+            "organizer": {
+              "__typename": "OrganizerSummary",
+              "id": "01a03e92-43e0-7bb9-9e69-d7fd97c2c8d0",
+              "isFavorited": null,
+              "name": "La Caverne du Gobelin THIONVILLE (Gobcorp)",
+              "physicalAddress": {
+                "__typename": "Location",
+                "adminArea1": "Grand Est",
+                "city": "Thionville",
+                "formattedAddress": "23 Rue Brûlée, 57100 Thionville, France",
+                "latitude": 49.357659999999996,
+                "longitude": 6.1656813
+              }
+            },
+            "tournament": {
+              "__typename": "CompeteTournament",
+              "config": {
+                "__typename": "RiftboundTournamentConfig",
+                "format": "LIMITED_SEALED",
+                "participantCapacity": 16,
+                "playerFormat": "ONE_V_ONE",
+                "tournamentType": "PRE_RIFT"
+              },
+              "entryFee": null,
+              "id": "117173675884444584",
+              "name": "Avant-Première - Radiance",
+              "pricing": "FREE",
+              "registrantCounts": [
+                {
+                  "__typename": "TournamentRegistrantCount",
+                  "count": 2,
+                  "status": "REGISTERED"
+                }
+              ],
+              "startsAt": "2026-10-18T12:00:00Z"
+            }
+          }
+        },
+        {
+          "__typename": "CompeteTournamentSearchEdge",
+          "cursor": "REFURTp0OjE3OTQ3MzE0MDA6MTE3MTczNjkxMTIzNTk2MjA4",
+          "node": {
+            "__typename": "RbTournamentSearchResult",
+            "distanceMeters": 20,
+            "organizer": {
+              "__typename": "OrganizerSummary",
+              "id": "01a03e92-43e0-7bb9-9e69-d7fd97c2c8d0",
+              "isFavorited": null,
+              "name": "La Caverne du Gobelin THIONVILLE (Gobcorp)",
+              "physicalAddress": {
+                "__typename": "Location",
+                "adminArea1": "Grand Est",
+                "city": "Thionville",
+                "formattedAddress": "23 Rue Brûlée, 57100 Thionville, France",
+                "latitude": 49.357659999999996,
+                "longitude": 6.1656813
+              }
+            },
+            "tournament": {
+              "__typename": "CompeteTournament",
+              "config": {
+                "__typename": "RiftboundTournamentConfig",
+                "format": "CONSTRUCTED",
+                "participantCapacity": 24,
+                "playerFormat": "ONE_V_ONE",
+                "tournamentType": "SUMMONER_SKIRMISH"
+              },
+              "entryFee": null,
+              "id": "117173691123596208",
+              "name": "Skirmish Radiance - Novembre",
+              "pricing": "FREE",
+              "registrantCounts": [
+                {
+                  "__typename": "TournamentRegistrantCount",
+                  "count": 2,
+                  "status": "REGISTERED"
+                }
+              ],
+              "startsAt": "2026-11-15T08:30:00Z"
+            }
+          }
+        },
+        {
+          "__typename": "CompeteTournamentSearchEdge",
+          "cursor": "REFURTpmOjE3OTE5MTI2MDA6MTE3MzY1OTA0MzMzODUyMzY5",
+          "node": {
+            "__typename": "RbTournamentSearchResult",
+            "distanceMeters": 4028,
+            "organizer": {
+              "__typename": "OrganizerSummary",
+              "id": "019fd322-010b-7f88-92f5-b2cac776d6df",
+              "isFavorited": null,
+              "name": "Uchronies Games",
+              "physicalAddress": {
+                "__typename": "Location",
+                "adminArea1": "IDF",
+                "city": "Paris",
+                "formattedAddress": "61 Rue Letellier, 75015 Paris, France",
+                "latitude": 48.846934399999995,
+                "longitude": 2.2991402
+              }
+            },
+            "tournament": {
+              "__typename": "CompeteTournament",
+              "config": {
+                "__typename": "RiftboundTournamentConfig",
+                "format": "CONSTRUCTED",
+                "participantCapacity": 32,
+                "playerFormat": "ONE_V_ONE",
+                "tournamentType": "NEXUS_NIGHT"
+              },
+              "entryFee": {
+                "__typename": "CompeteEntryFee",
+                "currency": "EUR",
+                "minorUnits": 700
+              },
+              "id": "117365904333852369",
+              "name": "Nexus Night 1v1 – Uchronies Games",
+              "pricing": "PAID",
+              "registrantCounts": [],
+              "startsAt": "2026-10-13T17:30:00Z"
+            }
+          }
+        },
+        {
+          "__typename": "CompeteTournamentSearchEdge",
+          "cursor": "REFURTp0OjE3OTIxNzAwMDA6MTE3MTczNjY5NDUyMDI3Nzkz",
+          "node": {
+            "__typename": "RbTournamentSearchResult",
+            "distanceMeters": 20,
+            "organizer": {
+              "__typename": "OrganizerSummary",
+              "id": "01a03e92-43e0-7bb9-9e69-d7fd97c2c8d0",
+              "isFavorited": null,
+              "name": "La Caverne du Gobelin THIONVILLE (Gobcorp)",
+              "physicalAddress": {
+                "__typename": "Location",
+                "adminArea1": "Grand Est",
+                "city": "Thionville",
+                "formattedAddress": "23 Rue Brûlée, 57100 Thionville, France",
+                "latitude": 49.357659999999996,
+                "longitude": 6.1656813
+              }
+            },
+            "tournament": {
+              "__typename": "CompeteTournament",
+              "config": {
+                "__typename": "RiftboundTournamentConfig",
+                "format": "LIMITED_SEALED",
+                "participantCapacity": 8,
+                "playerFormat": "ONE_V_ONE",
+                "tournamentType": "PRE_RIFT"
+              },
+              "entryFee": {
+                "__typename": "CompeteEntryFee",
+                "currency": "EUR",
+                "minorUnits": 550
+              },
+              "id": "117173669452000001",
+              "name": "Nexus Night complète",
+              "pricing": "PAID",
+              "registrantCounts": [
+                {
+                  "__typename": "TournamentRegistrantCount",
+                  "count": 8,
+                  "status": "REGISTERED"
+                },
+                {
+                  "__typename": "TournamentRegistrantCount",
+                  "count": 2,
+                  "status": "WAITLISTED"
+                }
+              ],
+              "startsAt": "2026-10-23T17:30:00Z"
+            }
+          }
+        }
+      ],
+      "pageInfo": {
+        "__typename": "PageInfo",
+        "endCursor": "REFURTp0OjE3OTg5NjUwMDA6MTE3MTczNjk4NTk2MTQyMDA2",
+        "hasNextPage": false
+      }
+    }
+  }
+}

@@ -1916,6 +1916,7 @@
           "nothingSaved": "Vor dem letzten Schritt wird nichts gespeichert.",
           "unknownNote": "Weiter geht es nur mit einer Website, die Joutes lesen kann.",
           "hobbynextHint": "Stehen deine Veranstaltungen auf Hobbynext (Asmodee)? Füge den Link einer davon ein, zum Beispiel https://event.hobbynext.com/de/events/38425.",
+          "riftboundHint": "Stehen deine Veranstaltungen auf playriftbound.com? Füge den Link einer davon ein, zum Beispiel https://playriftbound.com/de-DE/events/117173669452027793.",
           "organizer": "Ort über „{event}“ gefunden.",
           "organizerIn": "Ort über „{event}“ gefunden, in {city}."
         },
@@ -2007,6 +2008,7 @@
             "venues": "Angezeigte Städte",
             "allVenues": "Alle",
             "hobbynextPage": "Hobbynext — Ort Nr. {id}",
+            "riftboundPage": "Riftbound — dein Laden",
             "games": "Spiele",
             "gamesAuto": "Automatisch erkannt",
             "page": "Gelesene Seite",
@@ -2041,6 +2043,8 @@
           "HOBBYNEXT_EVENT_REQUIRED": "Füge bei Hobbynext den Link einer deiner Veranstaltungen ein: Er bezeichnet deinen Laden.",
           "HOBBYNEXT_NOT_FOUND": "Hobbynext liefert diese Veranstaltung nicht. Stammt sie von einer anderen Plattform (Star Wars: Unlimited…), füge stattdessen den Link einer Veranstaltung ein, die du auf Hobbynext erstellt hast.",
           "HOBBYNEXT_NO_ORGANIZER": "Diese Veranstaltung wurde von einer anderen Plattform importiert und nennt keinen Laden. Füge den Link einer Veranstaltung ein, die du auf Hobbynext erstellt hast.",
+          "RIFTBOUND_EVENT_REQUIRED": "Füge bei playriftbound.com den Link einer deiner Veranstaltungen ein: Er bezeichnet deinen Laden.",
+          "RIFTBOUND_NOT_FOUND": "Riftbound liefert diese Veranstaltung nicht. Prüfe den Link oder füge den Link einer anderen deiner Veranstaltungen ein.",
           "FAILED": "Etwas ist schiefgelaufen. Versuche es gleich noch einmal."
         }
       },

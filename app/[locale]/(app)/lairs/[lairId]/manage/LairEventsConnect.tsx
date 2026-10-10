@@ -481,6 +481,7 @@ function Wizard({
               </div>
               <p className="text-xs text-muted-foreground">{t("site.urlHint")}</p>
               <p className="text-xs text-muted-foreground">{t("site.hobbynextHint")}</p>
+              <p className="text-xs text-muted-foreground">{t("site.riftboundHint")}</p>
             </div>
 
             {checkedUrl && site && (
@@ -1304,6 +1305,7 @@ function ConnectedView({
   const venues = source.htmlConfig?.venues ?? [];
   const aliases = source.gameAliases ?? {};
   const isHobbynext = source.type === "HOBBYNEXT";
+  const isRiftbound = source.type === "RIFTBOUND";
   const next = nextRefreshAt({ frequency, pro: isPro, now: DateTime.now().setZone(PARIS) }).setLocale(locale);
 
   const disconnect = () => {
@@ -1374,8 +1376,8 @@ function ConnectedView({
           )}
 
           <div className="grid gap-3 sm:grid-cols-2">
-            {/* Hobbynext ne lit que les événements du lieu : pas de ville à choisir. */}
-            {!isHobbynext && (
+            {/* Hobbynext et Riftbound ne lisent que les événements du lieu : pas de ville à choisir. */}
+            {!isHobbynext && !isRiftbound && (
               <Facet
                 title={t("connected.facets.venues")}
                 value={venues.length > 0 ? venues.join(", ") : t("connected.facets.allVenues")}
@@ -1400,7 +1402,9 @@ function ConnectedView({
               value={
                 isHobbynext
                   ? t("connected.facets.hobbynextPage", { id: source.hobbynextConfig?.ownerId ?? "" })
-                  : source.url.replace(/^https?:\/\/(www\.)?/, "")
+                  : isRiftbound
+                    ? t("connected.facets.riftboundPage")
+                    : source.url.replace(/^https?:\/\/(www\.)?/, "")
               }
               action={t("connected.changePage")}
               onAction={onChangePage}
@@ -1514,8 +1518,8 @@ function SettingsView({
   const [saving, startSaving] = useTransition();
 
   // Le préréglage se retrouve au domaine, comme côté serveur : la source ne
-  // porte pas sa clé. Une source Hobbynext se relit par son identifiant.
-  const preset = source.type === "HOBBYNEXT" ? null : findPresetForUrl(source.url);
+  // porte pas sa clé. Une source Hobbynext ou Riftbound se relit par son identifiant.
+  const preset = source.type === "HOBBYNEXT" || source.type === "RIFTBOUND" ? null : findPresetForUrl(source.url);
   const presetKey = managerSiteKey(source) ?? "";
   const asksVenues = preset ? presetAsksVenues(preset) : false;
 
