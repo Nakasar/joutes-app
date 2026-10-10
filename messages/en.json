@@ -1918,7 +1918,8 @@
           "hobbynextHint": "Are your events on Hobbynext (Asmodee)? Paste the link of one of them, for example https://event.hobbynext.com/en/events/38425.",
           "riftboundHint": "Are your events on playriftbound.com? Paste the link of one of them, for example https://playriftbound.com/en-US/events/117173669452027793.",
           "organizer": "Venue found through “{event}”.",
-          "organizerIn": "Venue found through “{event}”, in {city}."
+          "organizerIn": "Venue found through “{event}”, in {city}.",
+          "organizerBy": "Venue found through “{event}”, organized by {name}."
         },
         "unknown": {
           "title": "We cannot read this website yet",

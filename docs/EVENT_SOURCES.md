@@ -2,7 +2,7 @@
 
 Un lieu public peut déclarer des **sources** d'où ses événements sont
 moissonnés automatiquement : une page lue par sélecteurs CSS, un JSON décrit
-champ par champ, l'agenda du lieu sur Hobbynext, ou — en dernier recours — une
+champ par champ, l'agenda du lieu sur Hobbynext ou sur Riftbound, ou — en dernier recours — une
 page lue par un modèle. Le
 cron `/api/cron/refresh-events` passe chaque matin à 8 h et relit les lieux
 dont c'est le jour : **le mercredi** pour tous, **chaque jour** pour un lieu
@@ -23,6 +23,7 @@ depuis son écran de gestion, connecte la page de son site en quelques
 | `lib/events/html-source.ts` | La lecture d'une page par sélecteurs : titre composé, champs, jeu |
 | `lib/events/html-presets.ts` | Les configurations toutes faites (boutique Oasis, Animations du Gobelin), avec leurs domaines |
 | `lib/events/hobbynext-source.ts` | La lecture de l'agenda Hobbynext d'Asmodee : dates, jeux, liens, pagination |
+| `lib/events/riftbound-source.ts` | La lecture de l'agenda Riftbound de Riot (playriftbound.com) : requêtes enregistrées, recherche autour du lieu, prix, capacité |
 | `lib/events/connect.ts` | La connexion par le gérant : reconnaître une page à son domaine, bâtir sa source, résumer les jeux, dire quel lieu relire aujourd'hui |
 | `lib/db/events.ts` — `upsertEventsForLair` | Exécute le verdict du rapprochement en une écriture groupée |
 | `lib/db/lairs.ts` — `*EventsRefreshReport`, `*EventsSourceRequest` | Le compte rendu du dernier tour et la demande d'aide du gérant, hors du lieu |
@@ -233,6 +234,47 @@ une URL qui ne correspond pas à l'identifiant.
   `remaining_seats` vaut 0 est complet. Les événements non publics sont
   ignorés. Les événements portent `addedBy: "HOBBYNEXT"`.
 
+### Source Riftbound
+
+[playriftbound.com](https://playriftbound.com/fr-FR/events/) est l'agenda que
+Riot tient pour les boutiques de Riftbound. Le site s'appuie sur une API
+GraphQL (`https://playriftbound.com/api/gql`) qui a deux exigences :
+
+- **des requêtes enregistrées** : toute requête libre est refusée, seules les
+  opérations du manifeste du site passent, désignées par leur empreinte
+  (`RIFTBOUND_OPERATIONS`). Si Riot en retire une, la lecture échoue
+  (`PERSISTED_QUERY_NOT_IN_LIST`, « Riftbound ne reconnaît plus la requête de
+  Joutes ») sans rien retirer. Les nouvelles empreintes se relèvent dans le
+  module JavaScript du site au format `apollo-persisted-query-manifest`
+  (`"name":"CompeteTournamentSearch"`, etc.) ;
+- **des en-têtes de client** : `apollographql-client-name` et
+  `apollographql-client-version`, sans quoi elle répond « No client headers set ».
+
+Trois opérations servent : `GetCompeteTournamentForRiftboundPlayer` (un
+événement, dont `organizerId`), `OrganizerSummary` (l'adresse et les
+coordonnées d'un organisateur) et `CompeteTournamentSearch` (la recherche).
+
+La source ne demande que l'**identifiant de l'organisateur** (un UUID), que le
+site ne montre nulle part : le formulaire le retrouve à partir du lien d'un
+événement du lieu (« Trouver »). L'URL de la source en est déduite
+(`riftboundSourceUrl`) et sert de clé, comme pour Hobbynext.
+
+- **Pas de liste par organisateur** : la seule liste publique est une
+  recherche autour d'un point, triée par date. On lit l'adresse de
+  l'organisateur, on cherche dans un rayon de 500 m
+  (`RIFTBOUND_SEARCH_RADIUS_METERS`) à partir du début du jour, et on ne garde
+  que ses événements. Au-delà de 20 pages, la lecture **échoue** au lieu d'être
+  tronquée : les boutiques voisines remplissent aussi les pages, et une lecture
+  tronquée retirerait au rapprochement les événements les plus lointains du lieu.
+- **Dates** : en vrai UTC. L'API ne donne pas de fin dans la recherche : durée
+  par défaut.
+- **Le reste** : le jeu est « Riftbound » (ou le jeu de la plateforme dont le
+  nom le contient), le prix vient de `entryFee` en centimes — en euros
+  seulement, une autre devise laisse le prix vide —, `pricing: FREE` vaut 0, et
+  un événement dont les inscrits atteignent `participantCapacity` est complet.
+  Le lien est la page publique (`https://playriftbound.com/fr-FR/events/<id>`).
+  Les événements portent `addedBy: "RIFTBOUND"`.
+
 ### Source en correspondance
 
 - **Chemin vers les événements** : `data.events`, `results[0].items`… ; `$`
@@ -290,6 +332,11 @@ parmi les préréglages (`hosts`). Rien n'est lu à ce stade.
   réglages relisent par son identifiant (`hobbynextOwnerFromSourceUrl`). Un
   lien qui n'est pas celui d'un événement, un événement inconnu ou importé
   d'une autre plateforme ont chacun leur erreur (`HOBBYNEXT_*`).
+- **Riftbound** : même parcours, avec le lien d'un événement de
+  playriftbound.com. La vérification montre l'événement et le nom de la
+  boutique ; la source enregistrée est une source `RIFTBOUND`
+  (`buildRiftboundManagerSource`), relue par `riftboundOrganizerFromSourceUrl`.
+  Erreurs : `RIFTBOUND_EVENT_REQUIRED`, `RIFTBOUND_NOT_FOUND`.
 - **Site inconnu** : le gérant envoie l'adresse et un mot à l'équipe
   (`requestEventSourceHelp`). La demande est écrite sur le lieu
   (`eventsSourceRequest`, hors de `toLair`), l'équipe reçoit un courriel à

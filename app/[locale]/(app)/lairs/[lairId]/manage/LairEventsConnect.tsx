@@ -492,9 +492,11 @@ function Wizard({
                   <p>{site.asksVenues ? t("site.knownVenues") : t("site.knownSimple")}</p>
                   {site.organizer && (
                     <p className="text-muted-foreground">
-                      {site.organizer.city
-                        ? t("site.organizerIn", { event: site.organizer.eventName ?? "", city: site.organizer.city })
-                        : t("site.organizer", { event: site.organizer.eventName ?? "" })}
+                      {site.organizer.name
+                        ? t("site.organizerBy", { event: site.organizer.eventName ?? "", name: site.organizer.name })
+                        : site.organizer.city
+                          ? t("site.organizerIn", { event: site.organizer.eventName ?? "", city: site.organizer.city })
+                          : t("site.organizer", { event: site.organizer.eventName ?? "" })}
                     </p>
                   )}
                 </div>

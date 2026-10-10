@@ -784,8 +784,12 @@ export async function findHobbynextOwner(eventId: string): Promise<HobbynextOwne
 // Source Riftbound
 // ---------------------------------------------------------------------------
 
-/** Au-delà, la recherche est tronquée : un lieu n'annonce pas cinq cents événements. */
-const MAX_RIFTBOUND_PAGES = 10;
+/**
+ * Au-delà, la lecture échoue plutôt que d'être tronquée : la recherche ramène
+ * aussi les boutiques voisines, triée par date, et une lecture tronquée
+ * retirerait du lieu ses événements les plus lointains au rapprochement.
+ */
+const MAX_RIFTBOUND_PAGES = 20;
 
 /**
  * Une requête enregistrée à l'API de Riftbound : ses données, ou une erreur
@@ -870,7 +874,13 @@ async function readRiftboundSource(
     page += 1;
   } while (after && page < MAX_RIFTBOUND_PAGES);
   if (after) {
-    warnings.add(`plus de ${MAX_RIFTBOUND_PAGES} pages d'événements : la suite est ignorée`);
+    return {
+      source,
+      ok: false,
+      error: `Plus de ${MAX_RIFTBOUND_PAGES} pages d'événements autour du lieu : lecture abandonnée plutôt que tronquée`,
+      warnings: [],
+      events: [],
+    };
   }
 
   const extraction = extractRiftboundEvents({ nodes, organizerId, source, games, now });

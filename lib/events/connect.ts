@@ -81,10 +81,10 @@ export type RecognizedSite = {
   asksVenues: boolean;
   /**
    * Pour Hobbynext et Riftbound : l'événement dont le lien a été collé, et sa
-   * ville — ou, pour Riftbound, le nom de la boutique —, de quoi faire
+   * ville (Hobbynext) ou le nom de la boutique (Riftbound) — de quoi faire
    * reconnaître au gérant que c'est bien la sienne.
    */
-  organizer?: { eventName?: string; city?: string };
+  organizer?: { eventName?: string; city?: string; name?: string };
 };
 
 /**

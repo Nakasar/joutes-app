@@ -1918,7 +1918,8 @@
           "hobbynextHint": "I tuoi eventi sono su Hobbynext (Asmodee)? Incolla il link di uno di essi, per esempio https://event.hobbynext.com/it/events/38425.",
           "riftboundHint": "I tuoi eventi sono su playriftbound.com? Incolla il link di uno di essi, per esempio https://playriftbound.com/it-IT/events/117173669452027793.",
           "organizer": "Luogo trovato tramite «{event}».",
-          "organizerIn": "Luogo trovato tramite «{event}», a {city}."
+          "organizerIn": "Luogo trovato tramite «{event}», a {city}.",
+          "organizerBy": "Luogo trovato tramite «{event}», organizzato da {name}."
         },
         "unknown": {
           "title": "Non sappiamo ancora leggere questo sito",

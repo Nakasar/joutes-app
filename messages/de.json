@@ -1918,7 +1918,8 @@
           "hobbynextHint": "Stehen deine Veranstaltungen auf Hobbynext (Asmodee)? Füge den Link einer davon ein, zum Beispiel https://event.hobbynext.com/de/events/38425.",
           "riftboundHint": "Stehen deine Veranstaltungen auf playriftbound.com? Füge den Link einer davon ein, zum Beispiel https://playriftbound.com/de-DE/events/117173669452027793.",
           "organizer": "Ort über „{event}“ gefunden.",
-          "organizerIn": "Ort über „{event}“ gefunden, in {city}."
+          "organizerIn": "Ort über „{event}“ gefunden, in {city}.",
+          "organizerBy": "Ort über „{event}“ gefunden, veranstaltet von {name}."
         },
         "unknown": {
           "title": "Diese Website können wir noch nicht lesen",

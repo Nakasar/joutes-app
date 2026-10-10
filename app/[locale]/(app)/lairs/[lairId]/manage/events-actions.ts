@@ -242,7 +242,7 @@ export async function recognizeEventPage(
       if (!("ok" in organizer)) return organizer;
       const found = {
         ...(organizer.eventName ? { eventName: organizer.eventName } : {}),
-        ...(organizer.organizerName ? { city: organizer.organizerName } : {}),
+        ...(organizer.organizerName ? { name: organizer.organizerName } : {}),
       };
       return { success: true, site: { ...RIFTBOUND_SITE, ...(Object.keys(found).length > 0 ? { organizer: found } : {}) } };
     }

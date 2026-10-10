@@ -290,7 +290,7 @@ type RiftboundSearchResult = {
     name?: unknown;
     startsAt?: unknown;
     pricing?: unknown;
-    entryFee?: { minorUnits?: unknown } | null;
+    entryFee?: { currency?: unknown; minorUnits?: unknown } | null;
     registrantCounts?: { status?: unknown; count?: unknown }[] | null;
     config?: { participantCapacity?: unknown } | null;
   } | null;
@@ -354,13 +354,16 @@ export function extractRiftboundEvents({
       continue;
     }
 
-    const price = priceOf(tournament.pricing, tournament.entryFee?.minorUnits);
+    const price = priceOf(tournament.pricing, tournament.entryFee);
+    if (price === null) {
+      warnings.push(`droit d'entrée dans une autre devise que l'euro, prix laissé vide (« ${name} »)`);
+    }
 
     events.push({
       name,
       ...dates,
       gameName,
-      ...(price !== undefined ? { price } : {}),
+      ...(typeof price === "number" ? { price } : {}),
       status: statusOf(tournament.registrantCounts, tournament.config?.participantCapacity),
       url: externalId ? `${RIFTBOUND_EVENT_PAGE}${externalId}` : undefined,
       addedBy: "RIFTBOUND",
@@ -392,10 +395,15 @@ function resolveGame(
   return RIFTBOUND_GAME;
 }
 
-/** Gratuit, ou le droit d'entrée en unités (centimes) ramené en euros. */
-function priceOf(pricing: unknown, minorUnits: unknown): number | undefined {
+/**
+ * Gratuit, ou le droit d'entrée en centimes ramené en euros. Joutes n'écrit
+ * qu'un nombre, lu comme des euros : un droit dans une autre devise — un lieu
+ * suisse, britannique — rend `null`, plutôt qu'un prix faux.
+ */
+function priceOf(pricing: unknown, entryFee: { currency?: unknown; minorUnits?: unknown } | null | undefined): number | null | undefined {
+  const minorUnits = entryFee?.minorUnits;
   if (typeof minorUnits === "number" && Number.isFinite(minorUnits) && minorUnits >= 0) {
-    return minorUnits / 100;
+    return entryFee?.currency === "EUR" ? minorUnits / 100 : null;
   }
   return pricing === "FREE" ? 0 : undefined;
 }

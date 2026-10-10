@@ -78,6 +78,16 @@ describe("riftbound", () => {
     assert.equal(full?.status, "sold-out");
   });
 
+  it("laisse le prix vide pour un droit d'entrée dans une autre devise", () => {
+    const node = {
+      organizer: { id: ORGANIZER_ID },
+      tournament: { id: "1", name: "Nexus Night", startsAt: "2026-10-20T17:00:00Z", pricing: "PAID", entryFee: { currency: "CHF", minorUnits: 800 } },
+    };
+    const { events, warnings } = extractRiftboundEvents({ nodes: [node], organizerId: ORGANIZER_ID, source: SOURCE, games: GAMES, now: NOW });
+    assert.equal(events[0].price, undefined);
+    assert.equal(warnings.length, 1);
+  });
+
   it("nomme le jeu par son nom sur la plateforme, ou par celui qui le contient", () => {
     assert.ok(extract().events.every((event) => event.gameName === "Riftbound"));
 
