@@ -15,12 +15,14 @@ import { z } from "zod";
 import * as lairsDb from "@/lib/db/lairs.ts";
 import {
   findHobbynextOwner,
+  findRiftboundOrganizer,
   previewEventSource,
   refreshEvents as refreshEventsService,
   RefreshEventsResult,
 } from "@/lib/services/refresh-events.ts";
 import type { SourceEvent } from "@/lib/events/source-events.ts";
 import { parseHobbynextEventRef } from "@/lib/events/hobbynext-source.ts";
+import { parseRiftboundEventRef } from "@/lib/events/riftbound-source.ts";
 import { getUserById } from "@/lib/db/users.ts";
 import { notifyManagerSourceReady } from "@/lib/services/event-source-requests.ts";
 
@@ -468,3 +470,36 @@ const HOBBYNEXT_LOOKUP_ERRORS: Record<"NOT_FOUND" | "NO_ORGANIZER" | "FAILED", s
     "Cet événement n'a pas d'organisateur Hobbynext : il a été importé d'une autre plateforme. Prenez un événement créé sur Hobbynext par le lieu.",
   FAILED: "Hobbynext n'a pas pu être interrogé",
 };
+
+/**
+ * L'identifiant Riftbound d'un lieu, depuis le lien — ou le numéro — d'un de
+ * ses événements : playriftbound.com ne montre nulle part celui du lieu.
+ */
+export async function lookupRiftboundOrganizer(
+  eventRef: string,
+): Promise<{ success: true; organizerId: string; eventName?: string; organizerName?: string } | { success: false; error: string }> {
+  try {
+    await requireAdmin();
+
+    const eventId = parseRiftboundEventRef(String(eventRef ?? ""));
+    if (!eventId) {
+      return { success: false, error: "Collez le lien d'un événement Riftbound, ou son numéro" };
+    }
+
+    const lookup = await findRiftboundOrganizer(eventId);
+    if (lookup.ok) {
+      const { organizerId, eventName, organizerName } = lookup;
+      return { success: true, organizerId, ...(eventName ? { eventName } : {}), ...(organizerName ? { organizerName } : {}) };
+    }
+
+    return {
+      success: false,
+      error: lookup.reason === "NOT_FOUND"
+        ? "Riftbound ne donne pas cet événement"
+        : lookup.message ?? "Riftbound n'a pas pu être interrogé",
+    };
+  } catch (error) {
+    console.error("Erreur lors de la recherche d'un lieu Riftbound:", error);
+    return { success: false, error: "Riftbound n'a pas pu être interrogé" };
+  }
+}

@@ -3,6 +3,7 @@ import type { EventSource } from "@/lib/types/Lair";
 import { HTML_PRESETS, type HtmlPreset } from "./html-presets";
 import { canonicalGameName, normalizeEventName, type SourceEvent } from "./source-events";
 import { hobbynextSourceUrl } from "./hobbynext-source";
+import { riftboundSourceUrl } from "./riftbound-source";
 
 /**
  * Le mot qu'un champ de formulaire porte pour être demandé ville par ville —
@@ -79,10 +80,11 @@ export type RecognizedSite = {
   label: string;
   asksVenues: boolean;
   /**
-   * Pour Hobbynext : l'événement dont le lien a été collé, et sa ville — de
-   * quoi faire reconnaître au gérant que c'est bien sa boutique.
+   * Pour Hobbynext et Riftbound : l'événement dont le lien a été collé, et sa
+   * ville (Hobbynext) ou le nom de la boutique (Riftbound) — de quoi faire
+   * reconnaître au gérant que c'est bien la sienne.
    */
-  organizer?: { eventName?: string; city?: string };
+  organizer?: { eventName?: string; city?: string; name?: string };
 };
 
 /**
@@ -93,6 +95,15 @@ export type RecognizedSite = {
 export const HOBBYNEXT_SITE_KEY = "hobbynext";
 
 export const HOBBYNEXT_SITE: RecognizedSite = { key: HOBBYNEXT_SITE_KEY, label: "Hobbynext", asksVenues: false };
+
+/**
+ * Riftbound, l'agenda des boutiques de Riot (playriftbound.com) : comme
+ * Hobbynext, une source à part (`RIFTBOUND`), connectée par le lien d'un des
+ * événements du lieu.
+ */
+export const RIFTBOUND_SITE_KEY = "riftbound";
+
+export const RIFTBOUND_SITE: RecognizedSite = { key: RIFTBOUND_SITE_KEY, label: "Riftbound", asksVenues: false };
 
 export function describePreset(preset: HtmlPreset): RecognizedSite {
   return { key: preset.key, label: preset.label, asksVenues: presetAsksVenues(preset) };
@@ -170,6 +181,26 @@ export function buildHobbynextManagerSource({
   };
 }
 
+/** La source Riftbound d'un gérant : son identifiant d'organisateur, et ses alias. */
+export function buildRiftboundManagerSource({
+  organizerId,
+  gameAliases,
+}: {
+  organizerId: string;
+  gameAliases?: Record<string, string>;
+}): EventSource {
+  const aliases = cleanAliases(gameAliases);
+  const id = organizerId.trim().toLowerCase();
+
+  return {
+    url: riftboundSourceUrl(id),
+    type: "RIFTBOUND",
+    riftboundConfig: { organizerId: id },
+    ...(Object.keys(aliases).length > 0 ? { gameAliases: aliases } : {}),
+    managedBy: "owner",
+  };
+}
+
 function cleanAliases(gameAliases: Record<string, string> | undefined): Record<string, string> {
   return Object.fromEntries(
     Object.entries(gameAliases ?? {})
@@ -179,18 +210,20 @@ function cleanAliases(gameAliases: Record<string, string> | undefined): Record<s
 }
 
 /**
- * La clé de site d'une source connectée : `hobbynext`, ou celle du
+ * La clé de site d'une source connectée : `hobbynext`, `riftbound`, ou celle du
  * préréglage que son domaine désigne. C'est ce que l'écran des réglages
  * renvoie pour relire la source.
  */
 export function managerSiteKey(source: EventSource): string | null {
   if (source.type === "HOBBYNEXT") return HOBBYNEXT_SITE_KEY;
+  if (source.type === "RIFTBOUND") return RIFTBOUND_SITE_KEY;
   return findPresetForUrl(source.url)?.key ?? null;
 }
 
-/** Ce que l'écran connecté dit de la source : « Hobbynext », ou le domaine du site. */
+/** Ce que l'écran connecté dit de la source : « Hobbynext », « Riftbound », ou le domaine du site. */
 export function managerSourceLabel(source: EventSource): string {
   if (source.type === "HOBBYNEXT") return HOBBYNEXT_SITE.label;
+  if (source.type === "RIFTBOUND") return RIFTBOUND_SITE.label;
   try {
     return new URL(source.url).hostname.replace(/^www\./, "");
   } catch {

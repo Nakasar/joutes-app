@@ -8,10 +8,12 @@ import { HTML_PRESETS } from "@/lib/events/html-presets.ts";
 import { normalizeEventName } from "@/lib/events/source-events.ts";
 import { isWebUrl } from "@/lib/schemas/lair.schema.ts";
 import { hobbynextSourceUrl, isHobbynextId } from "@/lib/events/hobbynext-source.ts";
+import { isRiftboundOrganizerId, riftboundSourceUrl } from "@/lib/events/riftbound-source.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
   EventSourcePreview,
   lookupHobbynextOwner,
+  lookupRiftboundOrganizer,
   markEventSourceRequestDone,
   previewLairEventSource,
   refreshEvents,
@@ -334,7 +336,8 @@ export function LairEventSourcesForm({
             <p className="text-sm text-muted-foreground">
               D&apos;où viennent les événements du lieu. Une source par sélecteurs lit une page
               sans modèle ; une source en correspondance décrit un JSON champ par champ ; une
-              source Hobbynext lit l&apos;agenda du lieu chez Asmodee ; une source lue par
+              source Hobbynext lit l&apos;agenda du lieu chez Asmodee, une source Riftbound celui de
+              playriftbound.com ; une source lue par
               l&apos;IA n&apos;a besoin que d&apos;une URL, mais coûte un appel et se trompe parfois. Testez une source pour voir ce qu&apos;elle rend avant de
               l&apos;enregistrer.
             </p>
@@ -445,6 +448,21 @@ export function LairEventSourcesForm({
                       >
                         Hobbynext
                       </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={source.type === "RIFTBOUND" ? "default" : "outline"}
+                        onClick={() => {
+                          const organizerId = source.riftboundConfig?.organizerId ?? "";
+                          patch(key, {
+                            url: isRiftboundOrganizerId(organizerId) ? riftboundSourceUrl(organizerId) : "",
+                            type: "RIFTBOUND",
+                            riftboundConfig: { organizerId },
+                          });
+                        }}
+                      >
+                        Riftbound
+                      </Button>
                     </div>
                     <button
                       type="button"
@@ -466,6 +484,18 @@ export function LairEventSourcesForm({
                         ...source,
                         url: isHobbynextId(ownerId) ? hobbynextSourceUrl(ownerId) : "",
                         hobbynextConfig: { ownerId },
+                      })
+                    }
+                  />
+                ) : source.type === "RIFTBOUND" ? (
+                  <RiftboundField
+                    sourceKey={key}
+                    organizerId={source.riftboundConfig?.organizerId ?? ""}
+                    onChange={(organizerId) =>
+                      patch(key, {
+                        ...source,
+                        url: isRiftboundOrganizerId(organizerId) ? riftboundSourceUrl(organizerId) : "",
+                        riftboundConfig: { organizerId },
                       })
                     }
                   />
@@ -840,7 +870,7 @@ export function LairEventSourcesForm({
                   </div>
                 )}
 
-                {source.type !== "HOBBYNEXT" && (
+                {source.type !== "HOBBYNEXT" && source.type !== "RIFTBOUND" && (
                 <div>
                   <label
                     htmlFor={`source-form-${key}`}
@@ -996,6 +1026,95 @@ function HobbynextField({
               }
             }}
             placeholder="https://event.hobbynext.com/fr/events/38425"
+            className={`${FIELD_CLASS} font-mono flex-1 min-w-[12rem]`}
+          />
+          <Button type="button" size="sm" variant="outline" onClick={lookup} disabled={looking || eventRef.trim() === ""}>
+            {looking ? "Recherche…" : "Trouver"}
+          </Button>
+        </div>
+        {found && (
+          <p className={`text-xs mt-1 ${found.ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+            {found.text}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Le lieu d'une source Riftbound : son identifiant d'organisateur, un UUID que
+ * playriftbound.com ne montre nulle part ; on le retrouve depuis le lien d'un
+ * événement du lieu, comme pour Hobbynext.
+ */
+function RiftboundField({
+  sourceKey,
+  organizerId,
+  onChange,
+}: {
+  sourceKey: string;
+  organizerId: string;
+  onChange: (organizerId: string) => void;
+}) {
+  const [eventRef, setEventRef] = useState("");
+  const [looking, startLooking] = useTransition();
+  const [found, setFound] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const lookup = () =>
+    startLooking(async () => {
+      setFound(null);
+      const result = await lookupRiftboundOrganizer(eventRef);
+      if (!result.success) {
+        setFound({ ok: false, text: result.error });
+        return;
+      }
+      onChange(result.organizerId);
+      const where = [result.organizerName, result.eventName ? `« ${result.eventName} »` : undefined].filter(Boolean).join(", organisateur de ");
+      setFound({ ok: true, text: `Lieu trouvé${where ? ` : ${where}` : ""}.` });
+    });
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <label
+          htmlFor={`riftbound-organizer-${sourceKey}`}
+          className="block text-xs font-medium text-muted-foreground mb-1"
+        >
+          Identifiant Riftbound du lieu
+        </label>
+        <input
+          id={`riftbound-organizer-${sourceKey}`}
+          type="text"
+          value={organizerId}
+          onChange={(e) => onChange(e.target.value.trim().toLowerCase())}
+          placeholder="01a03e92-43e0-7bb9-9e69-d7fd97c2c8d0"
+          className={`${FIELD_CLASS} font-mono`}
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Le champ <span className="font-mono">organizerId</span> des événements du lieu. Les
+          événements sont cherchés autour de l&apos;adresse que Riftbound donne au lieu.
+        </p>
+      </div>
+      <div>
+        <label
+          htmlFor={`riftbound-event-${sourceKey}`}
+          className="block text-xs font-medium text-muted-foreground mb-1"
+        >
+          Le retrouver depuis un événement du lieu
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <input
+            id={`riftbound-event-${sourceKey}`}
+            type="text"
+            value={eventRef}
+            onChange={(e) => setEventRef(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                lookup();
+              }
+            }}
+            placeholder="https://playriftbound.com/fr-FR/events/117173669452027793"
             className={`${FIELD_CLASS} font-mono flex-1 min-w-[12rem]`}
           />
           <Button type="button" size="sm" variant="outline" onClick={lookup} disabled={looking || eventRef.trim() === ""}>

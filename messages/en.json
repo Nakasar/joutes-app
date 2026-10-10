@@ -1916,8 +1916,10 @@
           "nothingSaved": "Nothing is saved before the last step.",
           "unknownNote": "Continuing is only possible with a website Joutes can read.",
           "hobbynextHint": "Are your events on Hobbynext (Asmodee)? Paste the link of one of them, for example https://event.hobbynext.com/en/events/38425.",
+          "riftboundHint": "Are your events on playriftbound.com? Paste the link of one of them, for example https://playriftbound.com/en-US/events/117173669452027793.",
           "organizer": "Venue found through “{event}”.",
-          "organizerIn": "Venue found through “{event}”, in {city}."
+          "organizerIn": "Venue found through “{event}”, in {city}.",
+          "organizerBy": "Venue found through “{event}”, organized by {name}."
         },
         "unknown": {
           "title": "We cannot read this website yet",
@@ -2007,6 +2009,7 @@
             "venues": "Cities shown",
             "allVenues": "All",
             "hobbynextPage": "Hobbynext — venue #{id}",
+            "riftboundPage": "Riftbound — your shop",
             "games": "Games",
             "gamesAuto": "Recognised automatically",
             "page": "Page read",
@@ -2041,6 +2044,8 @@
           "HOBBYNEXT_EVENT_REQUIRED": "On Hobbynext, paste the link of one of your events: that is what identifies your shop.",
           "HOBBYNEXT_NOT_FOUND": "Hobbynext does not return this event. If it comes from another platform (Star Wars: Unlimited…), paste the link of an event you created on Hobbynext instead.",
           "HOBBYNEXT_NO_ORGANIZER": "This event was imported from another platform and names no shop. Paste the link of an event you created on Hobbynext.",
+          "RIFTBOUND_EVENT_REQUIRED": "On playriftbound.com, paste the link of one of your events: that is what identifies your shop.",
+          "RIFTBOUND_NOT_FOUND": "Riftbound does not return this event. Check the link, or paste the link of another of your events.",
           "FAILED": "Something went wrong. Try again in a moment."
         }
       },

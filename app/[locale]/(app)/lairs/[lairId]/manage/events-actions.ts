@@ -15,11 +15,12 @@ import {
 import * as lairsDb from "@/lib/db/lairs.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
 import { lairHasPro } from "@/lib/subscriptions/access.ts";
-import { findHobbynextOwner, previewEventSource, refreshEvents } from "@/lib/services/refresh-events.ts";
+import { findHobbynextOwner, findRiftboundOrganizer, previewEventSource, refreshEvents } from "@/lib/services/refresh-events.ts";
 import { notifyTeamOfSourceRequest } from "@/lib/services/event-source-requests.ts";
 import {
   buildHobbynextManagerSource,
   buildManagerSource,
+  buildRiftboundManagerSource,
   describePreset,
   findManagerSource,
   findPresetByKey,
@@ -28,6 +29,8 @@ import {
   HOBBYNEXT_SITE_KEY,
   managerSiteKey,
   presetAsksVenues,
+  RIFTBOUND_SITE,
+  RIFTBOUND_SITE_KEY,
   summarizeGames,
   type GameSummary,
   type ManagerSourceInput,
@@ -40,6 +43,11 @@ import {
   isHobbynextPageUrl,
   parseHobbynextEventRef,
 } from "@/lib/events/hobbynext-source.ts";
+import {
+  isRiftboundPageUrl,
+  parseRiftboundEventRef,
+  riftboundOrganizerFromSourceUrl,
+} from "@/lib/events/riftbound-source.ts";
 import type { EventSource, LairEventsRefreshReport } from "@/lib/types/Lair.ts";
 
 /**
@@ -65,6 +73,8 @@ export type EventsConnectError =
   | "HOBBYNEXT_EVENT_REQUIRED"
   | "HOBBYNEXT_NOT_FOUND"
   | "HOBBYNEXT_NO_ORGANIZER"
+  | "RIFTBOUND_EVENT_REQUIRED"
+  | "RIFTBOUND_NOT_FOUND"
   | "FAILED";
 
 type Failure = { success: false; error: EventsConnectError; message?: string };
@@ -136,8 +146,29 @@ async function resolveHobbynextOwner(
 }
 
 /**
+ * L'identifiant Riftbound d'un lieu, depuis le lien d'un de ses événements ou
+ * l'URL d'une source déjà connectée — comme pour Hobbynext.
+ */
+async function resolveRiftboundOrganizer(
+  url: string,
+): Promise<{ ok: true; organizerId: string; eventName?: string; organizerName?: string } | Failure> {
+  const fromSource = riftboundOrganizerFromSourceUrl(url);
+  if (fromSource) return { ok: true, organizerId: fromSource };
+
+  if (!isRiftboundPageUrl(url)) return { success: false, error: "UNKNOWN_SITE" };
+
+  const eventId = parseRiftboundEventRef(url);
+  if (!eventId) return { success: false, error: "RIFTBOUND_EVENT_REQUIRED" };
+
+  const lookup = await findRiftboundOrganizer(eventId);
+  if (lookup.ok) return lookup;
+  if (lookup.reason === "NOT_FOUND") return { success: false, error: "RIFTBOUND_NOT_FOUND" };
+  return { success: false, error: "READ_FAILED", ...(lookup.message ? { message: lookup.message } : {}) };
+}
+
+/**
  * La source que décrit ce que le gérant a choisi : un préréglage reconnu à
- * son domaine, ou Hobbynext. Tout est revérifié ici — la clé envoyée par le
+ * son domaine, Hobbynext ou Riftbound. Tout est revérifié ici — la clé envoyée par le
  * navigateur doit être celle que l'adresse désigne.
  */
 async function resolveManagerSource(
@@ -149,6 +180,16 @@ async function resolveManagerSource(
     return {
       ok: true,
       source: buildHobbynextManagerSource({ ownerId: owner.ownerId, gameAliases: input.gameAliases }),
+      asksVenues: false,
+    };
+  }
+
+  if (input.presetKey === RIFTBOUND_SITE_KEY) {
+    const organizer = await resolveRiftboundOrganizer(input.url);
+    if (!("ok" in organizer)) return organizer;
+    return {
+      ok: true,
+      source: buildRiftboundManagerSource({ organizerId: organizer.organizerId, gameAliases: input.gameAliases }),
       asksVenues: false,
     };
   }
@@ -168,9 +209,9 @@ async function resolveManagerSource(
  * gérant a une réponse aussitôt collée l'adresse, et qu'un site inconnu ne
  * l'engage dans aucune étape.
  *
- * Sauf pour Hobbynext : le lien collé est celui d'un événement, et l'API
- * d'Asmodee est interrogée une fois pour en tirer l'organisateur — c'est ce
- * qui dit, dès cette étape, si le lien désigne bien une boutique.
+ * Sauf pour Hobbynext et Riftbound : le lien collé est celui d'un événement,
+ * et l'API de la plateforme est interrogée pour en tirer l'organisateur —
+ * c'est ce qui dit, dès cette étape, si le lien désigne bien une boutique.
  */
 export async function recognizeEventPage(
   lairId: string,
@@ -194,6 +235,16 @@ export async function recognizeEventPage(
         ...(owner.city ? { city: owner.city } : {}),
       };
       return { success: true, site: { ...HOBBYNEXT_SITE, ...(Object.keys(organizer).length > 0 ? { organizer } : {}) } };
+    }
+
+    if (isRiftboundPageUrl(parsed.data)) {
+      const organizer = await resolveRiftboundOrganizer(parsed.data);
+      if (!("ok" in organizer)) return organizer;
+      const found = {
+        ...(organizer.eventName ? { eventName: organizer.eventName } : {}),
+        ...(organizer.organizerName ? { name: organizer.organizerName } : {}),
+      };
+      return { success: true, site: { ...RIFTBOUND_SITE, ...(Object.keys(found).length > 0 ? { organizer: found } : {}) } };
     }
 
     const preset = findPresetForUrl(parsed.data);

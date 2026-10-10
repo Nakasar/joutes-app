@@ -1916,8 +1916,10 @@
           "nothingSaved": "Rien n'est enregistré avant la dernière étape.",
           "unknownNote": "Continuer n'est possible qu'avec un site que Joutes sait lire.",
           "hobbynextHint": "Vos événements sont sur Hobbynext (Asmodee) ? Collez le lien de l'un d'eux, par exemple https://event.hobbynext.com/fr/events/38425.",
+          "riftboundHint": "Vos événements sont sur playriftbound.com ? Collez le lien de l'un d'eux, par exemple https://playriftbound.com/fr-FR/events/117173669452027793.",
           "organizer": "Lieu trouvé grâce à « {event} ».",
-          "organizerIn": "Lieu trouvé grâce à « {event} », à {city}."
+          "organizerIn": "Lieu trouvé grâce à « {event} », à {city}.",
+          "organizerBy": "Lieu trouvé grâce à « {event} », organisé par {name}."
         },
         "unknown": {
           "title": "Nous ne savons pas encore lire ce site",
@@ -2007,6 +2009,7 @@
             "venues": "Villes affichées",
             "allVenues": "Toutes",
             "hobbynextPage": "Hobbynext — lieu n° {id}",
+            "riftboundPage": "Riftbound — votre boutique",
             "games": "Jeux",
             "gamesAuto": "Reconnus automatiquement",
             "page": "Page lue",
@@ -2041,6 +2044,8 @@
           "HOBBYNEXT_EVENT_REQUIRED": "Sur Hobbynext, collez le lien de l'un de vos événements : c'est lui qui désigne votre boutique.",
           "HOBBYNEXT_NOT_FOUND": "Hobbynext ne donne pas cet événement. S'il vient d'une autre plateforme (Star Wars: Unlimited…), collez plutôt le lien d'un événement que vous avez créé sur Hobbynext.",
           "HOBBYNEXT_NO_ORGANIZER": "Cet événement a été importé d'une autre plateforme et n'indique pas de boutique. Collez le lien d'un événement que vous avez créé sur Hobbynext.",
+          "RIFTBOUND_EVENT_REQUIRED": "Sur playriftbound.com, collez le lien de l'un de vos événements : c'est lui qui désigne votre boutique.",
+          "RIFTBOUND_NOT_FOUND": "Riftbound ne donne pas cet événement. Vérifiez le lien, ou collez celui d'un autre de vos événements.",
           "FAILED": "Une erreur est survenue. Réessayez dans un instant."
         }
       },

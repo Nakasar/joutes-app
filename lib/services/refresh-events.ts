@@ -38,14 +38,28 @@ import {
   readHobbynextOwner,
   type HobbynextOwnerLookup,
 } from "@/lib/events/hobbynext-source";
+import {
+  extractRiftboundEvents,
+  readRiftboundOrganizer,
+  readRiftboundSearchPage,
+  readRiftboundTournamentOrganizer,
+  RIFTBOUND_API_URL,
+  RIFTBOUND_CLIENT_HEADERS,
+  riftboundData,
+  riftboundRequestBody,
+  riftboundSearchVariables,
+  type RiftboundOperation,
+  type RiftboundOrganizerLookup,
+} from "@/lib/events/riftbound-source";
 
 /**
  * La moisson des événements d'un lieu.
  *
- * Quatre sortes de sources : une page lue par un modèle (`IA`), un JSON décrit
+ * Cinq sortes de sources : une page lue par un modèle (`IA`), un JSON décrit
  * champ par champ (`MAPPING`), une page lue par sélecteurs CSS (`HTML`, sans
  * modèle — voir `lib/events/html-source.ts`), et l'agenda d'un lieu sur
- * Hobbynext (`HOBBYNEXT` — voir `lib/events/hobbynext-source.ts`). Chacune est lue **séparément** et rend son
+ * Hobbynext (`HOBBYNEXT` — voir `lib/events/hobbynext-source.ts`) ou sur
+ * Riftbound (`RIFTBOUND` — voir `lib/events/riftbound-source.ts`). Chacune est lue **séparément** et rend son
  * propre résultat — succès ou échec, événements, avertissements —, pour trois
  * raisons :
  *
@@ -217,6 +231,9 @@ async function readEventSource(
     }
     if (source.type === "HOBBYNEXT") {
       return await readHobbynextSource(source, games, now);
+    }
+    if (source.type === "RIFTBOUND") {
+      return await readRiftboundSource(source, games, now);
     }
     return await readAISource(source, lair, games, now);
   } catch (error) {
@@ -761,4 +778,138 @@ export async function findHobbynextOwner(eventId: string): Promise<HobbynextOwne
     return { ok: false, reason: "FAILED", message: describeError(error) };
   }
   return readHobbynextOwner(data);
+}
+
+// ---------------------------------------------------------------------------
+// Source Riftbound
+// ---------------------------------------------------------------------------
+
+/**
+ * Au-delà, la lecture échoue plutôt que d'être tronquée : la recherche ramène
+ * aussi les boutiques voisines, triée par date, et une lecture tronquée
+ * retirerait du lieu ses événements les plus lointains au rapprochement.
+ */
+const MAX_RIFTBOUND_PAGES = 20;
+
+/**
+ * Une requête enregistrée à l'API de Riftbound : ses données, ou une erreur
+ * qui dit pourquoi — `NOT_FOUND` quand l'API ne connaît pas ce qu'on demande.
+ */
+async function queryRiftbound(
+  operation: RiftboundOperation,
+  variables: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const response = await fetch(RIFTBOUND_API_URL, {
+    method: "POST",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    headers: {
+      "User-Agent": USER_AGENT,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...RIFTBOUND_CLIENT_HEADERS,
+    },
+    body: riftboundRequestBody(operation, variables),
+  });
+
+  // Une requête refusée répond en 400 avec un corps GraphQL qui dit pourquoi :
+  // on le lit avant de juger le statut.
+  const text = await readResponseText(response);
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error(response.ok ? "La réponse n'est pas un JSON valide" : `HTTP ${response.status}`);
+  }
+
+  const result = riftboundData(json);
+  if (!result.ok) {
+    throw new RiftboundError(result.error, result.code);
+  }
+  return result.data;
+}
+
+class RiftboundError extends Error {
+  constructor(message: string, readonly code?: string) {
+    super(message);
+    this.name = "RiftboundError";
+  }
+}
+
+/**
+ * Lit l'agenda d'un lieu sur Riftbound : son adresse d'abord, puis toutes
+ * les pages de la recherche autour d'elle, dont on ne garde que ses
+ * événements — à partir du début du jour, pour que la soirée en cours reste.
+ */
+async function readRiftboundSource(
+  source: EventSource,
+  games: Pick<Game, "name">[],
+  now: DateTime,
+): Promise<SourceReadResult> {
+  const organizerId = source.riftboundConfig?.organizerId;
+  if (!organizerId) {
+    return { source, ok: false, error: "Source Riftbound sans identifiant de lieu", warnings: [], events: [] };
+  }
+
+  const organizer = readRiftboundOrganizer(await queryRiftbound("organizer", { id: organizerId }));
+  if (!organizer) {
+    return { source, ok: false, error: "Riftbound ne donne pas d'adresse pour ce lieu", warnings: [], events: [] };
+  }
+
+  const warnings = new Warnings();
+  const startDate = now.startOf("day").toUTC().toISO() as string;
+  const nodes: unknown[] = [];
+  let after: string | null = null;
+  let page = 0;
+  do {
+    const data = await queryRiftbound(
+      "search",
+      riftboundSearchVariables({ latitude: organizer.latitude, longitude: organizer.longitude, startDate, after }),
+    );
+    const results = readRiftboundSearchPage(data);
+    if (!results) {
+      return { source, ok: false, error: "La réponse de Riftbound n'a pas de liste d'événements", warnings: [], events: [] };
+    }
+    nodes.push(...results.nodes);
+    after = results.next;
+    page += 1;
+  } while (after && page < MAX_RIFTBOUND_PAGES);
+  if (after) {
+    return {
+      source,
+      ok: false,
+      error: `Plus de ${MAX_RIFTBOUND_PAGES} pages d'événements autour du lieu : lecture abandonnée plutôt que tronquée`,
+      warnings: [],
+      events: [],
+    };
+  }
+
+  const extraction = extractRiftboundEvents({ nodes, organizerId, source, games, now });
+  for (const warning of extraction.warnings) warnings.add(warning);
+
+  return { source, ok: true, warnings: warnings.list(), events: extraction.events };
+}
+
+/**
+ * L'organisateur d'un événement Riftbound, et sa ville : ce qui permet de
+ * retrouver l'identifiant d'un lieu à partir du lien d'un de ses événements,
+ * le seul que le site montre. Ne lève pas.
+ */
+export async function findRiftboundOrganizer(eventId: string): Promise<RiftboundOrganizerLookup> {
+  try {
+    const lookup = readRiftboundTournamentOrganizer(await queryRiftbound("tournament", { tournamentId: eventId }));
+    if (!lookup.ok) return lookup;
+
+    // Le nom de la boutique aide le gérant à la reconnaître ; et sans
+    // adresse, la lecture échouerait de toute façon — autant le dire tout de suite.
+    const organizer = readRiftboundOrganizer(await queryRiftbound("organizer", { id: lookup.organizerId }));
+    if (!organizer) {
+      return { ok: false, reason: "FAILED", message: "Riftbound ne donne pas d'adresse pour ce lieu" };
+    }
+    const place = organizer.name ?? organizer.address;
+    return { ...lookup, ...(place ? { organizerName: place } : {}) };
+  } catch (error) {
+    if (error instanceof RiftboundError && error.code === "NOT_FOUND") return { ok: false, reason: "NOT_FOUND" };
+    console.error(`Erreur à la lecture de l'événement Riftbound ${eventId}:`, error);
+    return { ok: false, reason: "FAILED", message: describeError(error) };
+  }
 }

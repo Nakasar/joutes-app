@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { hobbynextSourceUrl, isHobbynextId } from "@/lib/events/hobbynext-source";
+import { isRiftboundOrganizerId, riftboundSourceUrl } from "@/lib/events/riftbound-source";
 
 // Pour la validation d'ID MongoDB (ObjectId est un string hexadecimal de 24 caractères)
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID doit être un ObjectId MongoDB valide");
@@ -77,14 +78,20 @@ const eventHobbynextConfigSchema = z.object({
   ownerId: z.string().trim().refine(isHobbynextId, "L'identifiant Hobbynext du lieu est un nombre"),
 });
 
+// Schéma pour un lieu sur Riftbound
+const eventRiftboundConfigSchema = z.object({
+  organizerId: z.string().trim().toLowerCase().refine(isRiftboundOrganizerId, "L'identifiant Riftbound du lieu est un UUID"),
+});
+
 // Schéma pour une source d'événements
 export const eventSourceSchema = z.object({
   url: z.string().url("L'URL doit être valide"),
-  type: z.enum(['IA', 'MAPPING', 'HTML', 'HOBBYNEXT']),
+  type: z.enum(['IA', 'MAPPING', 'HTML', 'HOBBYNEXT', 'RIFTBOUND']),
   instructions: z.string().max(2000, "Les consignes sont trop longues").optional(),
   mappingConfig: eventMappingConfigSchema.optional(),
   htmlConfig: eventHtmlConfigSchema.optional(),
   hobbynextConfig: eventHobbynextConfigSchema.optional(),
+  riftboundConfig: eventRiftboundConfigSchema.optional(),
   formFields: z
     .record(z.string().trim().min(1).max(100), z.string().max(500))
     .optional(),
@@ -121,6 +128,21 @@ export const eventSourceSchema = z.object({
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "L'URL d'une source Hobbynext doit correspondre à son identifiant",
+      path: ["url"],
+    });
+  }
+  if (data.type === 'RIFTBOUND' && !data.riftboundConfig) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "L'identifiant Riftbound du lieu est requis",
+      path: ["riftboundConfig", "organizerId"],
+    });
+  }
+  // Même règle que pour Hobbynext : l'URL est la clé des événements.
+  if (data.type === 'RIFTBOUND' && data.riftboundConfig && data.url !== riftboundSourceUrl(data.riftboundConfig.organizerId)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "L'URL d'une source Riftbound doit correspondre à son identifiant",
       path: ["url"],
     });
   }

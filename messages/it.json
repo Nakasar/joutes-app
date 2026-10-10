@@ -1916,8 +1916,10 @@
           "nothingSaved": "Nulla viene salvato prima dell'ultimo passo.",
           "unknownNote": "Continuare è possibile solo con un sito che Joutes sa leggere.",
           "hobbynextHint": "I tuoi eventi sono su Hobbynext (Asmodee)? Incolla il link di uno di essi, per esempio https://event.hobbynext.com/it/events/38425.",
+          "riftboundHint": "I tuoi eventi sono su playriftbound.com? Incolla il link di uno di essi, per esempio https://playriftbound.com/it-IT/events/117173669452027793.",
           "organizer": "Luogo trovato tramite «{event}».",
-          "organizerIn": "Luogo trovato tramite «{event}», a {city}."
+          "organizerIn": "Luogo trovato tramite «{event}», a {city}.",
+          "organizerBy": "Luogo trovato tramite «{event}», organizzato da {name}."
         },
         "unknown": {
           "title": "Non sappiamo ancora leggere questo sito",
@@ -2007,6 +2009,7 @@
             "venues": "Città mostrate",
             "allVenues": "Tutte",
             "hobbynextPage": "Hobbynext — luogo n. {id}",
+            "riftboundPage": "Riftbound — il tuo negozio",
             "games": "Giochi",
             "gamesAuto": "Riconosciuti automaticamente",
             "page": "Pagina letta",
@@ -2041,6 +2044,8 @@
           "HOBBYNEXT_EVENT_REQUIRED": "Su Hobbynext, incolla il link di uno dei tuoi eventi: è quello che identifica il tuo negozio.",
           "HOBBYNEXT_NOT_FOUND": "Hobbynext non restituisce questo evento. Se proviene da un'altra piattaforma (Star Wars: Unlimited…), incolla invece il link di un evento che hai creato su Hobbynext.",
           "HOBBYNEXT_NO_ORGANIZER": "Questo evento è stato importato da un'altra piattaforma e non indica alcun negozio. Incolla il link di un evento che hai creato su Hobbynext.",
+          "RIFTBOUND_EVENT_REQUIRED": "Su playriftbound.com, incolla il link di uno dei tuoi eventi: è quello che identifica il tuo negozio.",
+          "RIFTBOUND_NOT_FOUND": "Riftbound non restituisce questo evento. Controlla il link, o incolla quello di un altro dei tuoi eventi.",
           "FAILED": "Si è verificato un errore. Riprova tra un istante."
         }
       },
