@@ -1098,6 +1098,22 @@
         "errata": "Errata",
         "clarification": "Clarification",
         "ruling": "Ruling"
+      },
+      "mcp": {
+        "title": "Vérification du deck",
+        "waiting": "Vérification du deck…",
+        "noIssues": "Aucun problème détecté",
+        "issues": "{count, plural, one {# problème} other {# problèmes}}",
+        "unrecognized": "{count, plural, one {# carte non reconnue} other {# cartes non reconnues}}",
+        "banned": "{count, plural, one {# carte bannie} other {# cartes bannies}}",
+        "invalidSections": "{count, plural, one {# section invalide} other {# sections invalides}}",
+        "notes": "{count, plural, one {# carte avec des notes} other {# cartes avec des notes}}",
+        "hint": "Cliquez sur une carte pour voir ses erratas et rulings.",
+        "openOnJoutes": "Ouvrir sur Joutes",
+        "copyCode": "Copier le code",
+        "copied": "Code copié",
+        "close": "Fermer",
+        "error": "Le deck n'a pas pu être vérifié."
       }
     },
     "Loop": {

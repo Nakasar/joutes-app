@@ -1098,6 +1098,22 @@
         "errata": "Errata",
         "clarification": "Klarifizierung",
         "ruling": "Entscheidung"
+      },
+      "mcp": {
+        "title": "Deckprüfung",
+        "waiting": "Deck wird geprüft…",
+        "noIssues": "Keine Probleme gefunden",
+        "issues": "{count, plural, one {# Problem} other {# Probleme}}",
+        "unrecognized": "{count, plural, one {# nicht erkannte Karte} other {# nicht erkannte Karten}}",
+        "banned": "{count, plural, one {# gebannte Karte} other {# gebannte Karten}}",
+        "invalidSections": "{count, plural, one {# ungültiger Bereich} other {# ungültige Bereiche}}",
+        "notes": "{count, plural, one {# Karte mit Anmerkungen} other {# Karten mit Anmerkungen}}",
+        "hint": "Klicke auf eine Karte, um ihre Errata und Rulings zu sehen.",
+        "openOnJoutes": "Auf Joutes öffnen",
+        "copyCode": "Code kopieren",
+        "copied": "Code kopiert",
+        "close": "Schließen",
+        "error": "Das Deck konnte nicht geprüft werden."
       }
     },
     "Loop": {

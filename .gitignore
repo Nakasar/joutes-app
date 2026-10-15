@@ -60,3 +60,6 @@ next-env.d.ts
 # canevas assemblé des maquettes (≈ 2,5 Mo, régénéré depuis les .dc.html)
 /design/*/*.html
 !/design/*/*.dc.html
+
+# vues MCP App empaquetées (scripts/build-mcp-apps.mjs, avant dev et build)
+/app/mcp/apps/*.generated.ts

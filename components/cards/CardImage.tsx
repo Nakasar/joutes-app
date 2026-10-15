@@ -27,6 +27,8 @@ type Props = {
    */
   title?: string;
   loading?: "lazy" | "eager";
+  /** Image injoignable (hôte bloqué, lien mort) : à l'appelant de la remplacer. */
+  onError?: () => void;
 };
 
 /**
@@ -50,9 +52,10 @@ export default function CardImage({
   frame = DEFAULT_FRAME,
   title,
   loading,
+  onError,
 }: Props) {
   if (!isLandscapeCard(orientation)) {
-    return <img src={src} alt={alt} title={title} loading={loading} className={className} />;
+    return <img src={src} alt={alt} title={title} loading={loading} className={className} onError={onError} />;
   }
 
   const [frameWidth, frameHeight] = frame.split("/").map(Number);
@@ -71,6 +74,7 @@ export default function CardImage({
         alt={alt}
         title={title}
         loading={loading}
+        onError={onError}
         className="absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2 -rotate-90 object-cover"
         style={{
           width: `${(frameHeight / frameWidth) * 100}%`,

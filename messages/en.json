@@ -1098,6 +1098,22 @@
         "errata": "Errata",
         "clarification": "Clarification",
         "ruling": "Ruling"
+      },
+      "mcp": {
+        "title": "Deck check",
+        "waiting": "Checking the deck…",
+        "noIssues": "No issues found",
+        "issues": "{count, plural, one {# issue} other {# issues}}",
+        "unrecognized": "{count, plural, one {# unrecognized card} other {# unrecognized cards}}",
+        "banned": "{count, plural, one {# banned card} other {# banned cards}}",
+        "invalidSections": "{count, plural, one {# invalid section} other {# invalid sections}}",
+        "notes": "{count, plural, one {# card with notes} other {# cards with notes}}",
+        "hint": "Click a card to see its erratas and rulings.",
+        "openOnJoutes": "Open on Joutes",
+        "copyCode": "Copy code",
+        "copied": "Code copied",
+        "close": "Close",
+        "error": "The deck could not be checked."
       }
     },
     "Loop": {

@@ -1,0 +1,26 @@
+/*
+  Feuille de la vue MCP App du vérificateur de deck. Tailwind n'y lit que les
+  fichiers de la vue et les composants qu'elle partage avec le site ; les
+  couleurs du thème viennent de app/globals.css, recopiées à la place du
+  marqueur ci-dessous par scripts/build-mcp-apps.mjs.
+*/
+@import "tailwindcss" source(none);
+@plugin "@tailwindcss/typography";
+
+@source "./";
+@source "../../components/decks/DeckCheckView.tsx";
+@source "../../components/cards/CardImage.tsx";
+
+@custom-variant dark (&:is(.dark *));
+
+/* @globals-theme */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+}

@@ -43,7 +43,7 @@ import { getUserByEmail, getUserByTagOrId, getUsersByIds } from "@/lib/db/users"
 import { formatDuration } from "@/lib/tournament-timer";
 import { removeSellListItemByCollectionEntryId } from "@/lib/db/sell-lists";
 import { collectionLanguage } from "@/lib/schemas/collection.schema";
-import { parseDeckList, serializeDeckList } from "@/app/[locale]/(app)/games/riftbound/deck-checker/utils";
+import { parseDeckList, serializeDeckList, stringifyDeckList } from "@/app/[locale]/(app)/games/riftbound/deck-checker/utils";
 import {
     DeckList,
     DeckListCard,
@@ -59,6 +59,10 @@ import { anyUserHasPermission } from "@/lib/db/permissions";
 import { createErrataSchema } from "@/lib/schemas/errata.schema";
 import { locales } from "@/i18n/config";
 import type { ErrataDb, ErrataType } from "@/lib/types/errata";
+import { registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
+import type { DeckViewCard, DeckViewList } from "@/components/decks/DeckCheckView";
+import { DECK_CHECK_VIEW_URI, type DeckCheckResult } from "@/mcp-apps/deck-check/result";
+import { DECK_CHECK_VIEW_HTML } from "./apps/deck-check.generated";
 import { AUTH_REQUIRED, registerJoutesTool, ToolResult, userIdFrom } from "./tool-policy";
 
 type ToolExtra = ServerContext;
@@ -781,7 +785,14 @@ async function handleCheckDeck(args: { deckList: string; gameName?: string }): P
     }
 
     const validated = await validateDeckList(parsed);
-    const code = serializeDeckList(validated);
+    // Un code de deck ne s'écrit qu'avec des cartes reconnues : avec une carte
+    // inconnue, le lien rouvre le vérificateur sur la liste en texte.
+    let code: string | undefined;
+    try {
+        code = serializeDeckList(validated);
+    } catch {
+        code = undefined;
+    }
 
     const allCards = [
         ...validated.champions,
@@ -807,10 +818,70 @@ async function handleCheckDeck(args: { deckList: string; gameName?: string }): P
         formatDeckSection("Runes", validated.runes),
     ].filter(Boolean).join("\n\n");
 
-    return textResult(
-        `Deck vérifié${issues ? ` — problèmes : ${issues}` : " — aucun problème détecté"}.\n\n${sections}\n\n` +
-        `Lien : https://joutes.app/games/riftbound/deck-checker?input=${encodeURIComponent(code)}\nCode : ${code}`
-    );
+    const url = `https://joutes.app/games/riftbound/deck-checker?input=${encodeURIComponent(code ?? stringifyDeckList(validated))}`;
+    const structuredContent: DeckCheckResult = { deck: deckForView(validated), code, url };
+
+    return {
+        ...textResult(
+            `Deck vérifié${issues ? ` — problèmes : ${issues}` : " — aucun problème détecté"}.\n\n${sections}\n\n` +
+            `Lien : ${url}${code ? `\nCode : ${code}` : ""}`
+        ),
+        structuredContent,
+    };
+}
+
+/**
+ * Le deck tel que la vue l'affiche : des erratas, seulement ce qu'elle en lit
+ * (pas les traductions, votes ni auteurs), pour garder la réponse légère.
+ */
+function deckForView(deck: DeckList): DeckViewList {
+    const section = (cards: DeckListCard[]): DeckViewCard[] => cards.map(card => ({
+        ...card,
+        erratas: card.erratas?.map(errata => ({
+            id: errata.id,
+            type: errata.type,
+            details: errata.details,
+            source: errata.source,
+            errataDate: errata.errataDate,
+            deprecatedAt: errata.deprecatedAt,
+        })),
+    }));
+    return {
+        champions: section(deck.champions),
+        legends: section(deck.legends),
+        maindeck: section(deck.maindeck),
+        sideboard: section(deck.sideboard),
+        battlefields: section(deck.battlefields),
+        runes: section(deck.runes),
+    };
+}
+
+/**
+ * Hôtes des illustrations de cartes, que la vue charge : la galerie officielle
+ * de Riftbound, celle de RB-TCG-Arena pour les cartes qu'elle n'a pas encore
+ * (Arcane), et le stockage de Joutes pour les images déposées. Une image
+ * ailleurs est bloquée par le client : la vue affiche alors le nom de la carte.
+ */
+const CARD_IMAGE_DOMAINS = [
+    "https://cmsassets.rgpub.io",
+    "https://russeus.github.io",
+    "https://*.public.blob.vercel-storage.com",
+];
+
+/** La vue MCP App du vérificateur de deck (mcp-apps/deck-check). */
+function registerDeckCheckView(server: McpServer) {
+    const ui = { csp: { resourceDomains: CARD_IMAGE_DOMAINS }, prefersBorder: true };
+    registerAppResource(server, "Vérificateur de deck", DECK_CHECK_VIEW_URI, {
+        description: "Deck Riftbound vérifié, affiché comme sur Joutes : cartes, erratas et rulings.",
+        _meta: { ui },
+    }, async () => ({
+        contents: [{
+            uri: DECK_CHECK_VIEW_URI,
+            mimeType: RESOURCE_MIME_TYPE,
+            text: DECK_CHECK_VIEW_HTML,
+            _meta: { ui },
+        }],
+    }));
 }
 
 // --- Erratas ---
@@ -1192,8 +1263,10 @@ export function registerJoutesDataTools(server: McpServer) {
             cardIds: z.array(z.string()).optional().describe("Remplace les cartes visées, par identifiant"),
         },
     }, withToolLogging("update_errata", handleUpdateErrata));
+    registerDeckCheckView(server);
     registerJoutesTool(server, "check_deck", {
         title: "Check deck legality",
+        view: DECK_CHECK_VIEW_URI,
         description: "Vérifier une liste de deck Riftbound : cartes reconnues, bannies, erratas. Accepte une liste texte (« 3 Nom de carte » par ligne), un code de deck, ou un lien Piltover Archive.",
         inputSchema: {
             deckList: z.string().describe("Liste texte, code de deck, ou lien https://piltoverarchive.com/decks/view/..."),
