@@ -121,7 +121,7 @@ export default function ProductBrowser({ gameId, selectedProductId, recentProduc
   const shown = isSearching ? results : recentProducts;
 
   return (
-    <div className="bg-card rounded-lg shadow-md p-6 space-y-3">
+    <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
       <div>
         <label className="block text-sm font-medium text-foreground mb-1" htmlFor="product-browser-search">
           Modifier un produit existant

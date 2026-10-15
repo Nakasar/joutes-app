@@ -185,7 +185,7 @@ export function DeckBuilderForm({
         </div>
       )}
 
-      <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+      <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Sections du deck</h2>
           <p className="text-sm text-muted-foreground">
@@ -352,7 +352,7 @@ export function DeckBuilderForm({
         </p>
       </section>
 
-      <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+      <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Règles du deck</h2>
           <p className="text-sm text-muted-foreground">

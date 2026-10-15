@@ -12,6 +12,8 @@ import CardForm from "./CardForm.tsx";
 import CardBrowser from "./CardBrowser.tsx";
 import ReindexButton from "./ReindexButton.tsx";
 import BulkPrintingsForm from "./BulkPrintingsForm.tsx";
+import { AdminPage } from "../_components/AdminPage.tsx";
+import { cn } from "@/lib/utils.ts";
 
 export default async function AdminCardsPage({
   searchParams,
@@ -33,57 +35,57 @@ export default async function AdminCardsPage({
     : [[], [], 0, null];
 
   return (
-    <div className="bg-muted/50 p-8">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Gestion des cartes</h1>
-          <p className="text-muted-foreground">
-            Ajoutez une carte à un jeu ou modifiez une carte existante, avec ses attributs propres au jeu.
-          </p>
-        </div>
+    <AdminPage
+      title="Cartes"
+      description="Ajoutez une carte à un jeu ou modifiez une carte existante, avec ses attributs propres au jeu."
+      width="wide"
+      actions={
+        selectedGame && (
+          <ReindexButton
+            gameId={selectedGame.id}
+            gameName={selectedGame.name}
+            hasSearchIndex={hasCardIndex(selectedGame.slug)}
+          />
+        )
+      }
+    >
+      <nav aria-label="Jeu" className="flex flex-wrap items-center gap-1.5">
+        {games.map((game) => (
+          <Link
+            key={game.id}
+            href={`/admin/cards?gameId=${game.id}`}
+            aria-current={game.id === selectedGame?.id ? "page" : undefined}
+            className={cn(
+              "flex h-9 items-center rounded-full border px-3.5 text-sm font-medium transition-colors",
+              game.id === selectedGame?.id
+                ? "border-foreground bg-foreground text-background"
+                : "border-border bg-card hover:border-foreground/40"
+            )}
+          >
+            {game.name}
+          </Link>
+        ))}
+        {games.length === 0 && <p className="text-sm text-muted-foreground">Aucun jeu enregistré.</p>}
+        {selectedGame && (
+          <span className="ml-auto text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">{cardCount.toLocaleString("fr-FR")}</span> carte
+            {cardCount === 1 ? "" : "s"} pour {selectedGame.name}
+          </span>
+        )}
+      </nav>
 
-        <div className="bg-card rounded-lg shadow-md p-6 space-y-3">
-          <label className="block text-sm font-medium text-foreground">Jeu</label>
-          <div className="flex flex-wrap gap-2">
-            {games.map((game) => (
-              <Link
-                key={game.id}
-                href={`/admin/cards?gameId=${game.id}`}
-                className={`px-3 py-1.5 rounded-lg border text-sm ${
-                  game.id === selectedGame?.id
-                    ? "border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-300"
-                    : "border-input text-foreground hover:border-blue-500"
-                }`}
-              >
-                {game.name}
-              </Link>
-            ))}
-          </div>
-          {games.length === 0 && <p className="text-sm text-muted-foreground">Aucun jeu enregistré.</p>}
-
-          {selectedGame && (
-            <div className="flex flex-wrap items-start justify-between gap-3 border-t pt-3">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{cardCount}</span> carte{cardCount === 1 ? "" : "s"} pour{" "}
-                {selectedGame.name}.
-              </p>
-              <ReindexButton
-                gameId={selectedGame.id}
-                gameName={selectedGame.name}
-                hasSearchIndex={hasCardIndex(selectedGame.slug)}
-              />
-            </div>
-          )}
-        </div>
-
-        {selectedGame ? (
-          <>
+      {selectedGame ? (
+        // La liste à gauche, la carte en cours d'édition à droite : on passe
+        // d'une carte à l'autre sans perdre la liste des yeux.
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+          <div className="flex flex-col gap-6">
             <CardBrowser gameId={selectedGame.id} selectedCardId={card?.id} recentCards={recentCards} />
-
             <BulkPrintingsForm gameId={selectedGame.id} gameName={selectedGame.name} />
+          </div>
 
+          <div className="flex min-w-0 flex-col gap-4">
             {cardId && !card && (
-              <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 Aucune carte « {cardId} » pour ce jeu.
               </div>
             )}
@@ -98,13 +100,13 @@ export default async function AdminCardsPage({
               attributeFields={attributeFields}
               card={card ?? undefined}
             />
-          </>
-        ) : (
-          <div className="bg-card rounded-lg shadow-md p-6 text-sm text-muted-foreground">
-            Choisissez un jeu pour ajouter ou modifier une carte.
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
+          Choisissez un jeu pour ajouter ou modifier une carte.
+        </div>
+      )}
+    </AdminPage>
   );
 }

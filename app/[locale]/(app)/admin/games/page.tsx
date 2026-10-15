@@ -1,6 +1,7 @@
 import { getAllGames } from "@/lib/db/games.ts";
 import { GameForm } from "./GameForm.tsx";
 import { GameList } from "./GameList.tsx";
+import { AdminPage } from "../_components/AdminPage.tsx";
 import { requireAdmin } from "@/lib/middleware/admin.ts";
 
 export default async function AdminGamesPage() {
@@ -9,17 +10,12 @@ export default async function AdminGamesPage() {
   const games = await getAllGames();
 
   return (
-    <div className="bg-muted/50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">
-            Gestion des Jeux
-          </h1>
-          <GameForm />
-        </div>
-
-        <GameList games={games} />
-      </div>
-    </div>
+    <AdminPage
+      title="Jeux"
+      description="Le catalogue des jeux, leurs fonctionnalités et leur deck builder."
+      actions={<GameForm />}
+    >
+      <GameList games={games} />
+    </AdminPage>
   );
 }

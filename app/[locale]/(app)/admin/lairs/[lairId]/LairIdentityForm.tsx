@@ -114,7 +114,7 @@ export function LairIdentityForm({ lair }: { lair: Lair }) {
         </div>
       )}
 
-      <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+      <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Identité</h2>
           <p className="text-sm text-muted-foreground">
@@ -184,7 +184,7 @@ export function LairIdentityForm({ lair }: { lair: Lair }) {
         </div>
       </section>
 
-      <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+      <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Bannière</h2>
           <p className="text-sm text-muted-foreground">Affichée en tête de la vitrine du lieu.</p>

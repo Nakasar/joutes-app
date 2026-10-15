@@ -57,7 +57,7 @@ function CardRow({
 
   if (selected) {
     return (
-      <li className="flex items-center gap-3 rounded-lg border border-blue-500 bg-blue-500/5 p-2 text-sm">
+      <li className="flex items-center gap-3 rounded-lg border border-sky-500 bg-sky-500/10 p-2 text-sm">
         {content}
         <span className="flex-shrink-0 text-xs text-muted-foreground">En cours de modification</span>
       </li>
@@ -71,7 +71,7 @@ function CardRow({
         className="flex items-center gap-3 rounded-lg border border-transparent p-2 text-sm hover:border-input hover:bg-muted/50"
       >
         {content}
-        <span className="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400">Modifier</span>
+        <span className="flex-shrink-0 text-xs text-sky-700 dark:text-sky-300">Modifier</span>
       </Link>
     </li>
   );
@@ -124,7 +124,7 @@ export default function CardBrowser({ gameId, selectedCardId, recentCards }: Pro
   const shown = isSearching ? results : recentCards;
 
   return (
-    <div className="bg-card rounded-lg shadow-md p-6 space-y-3">
+    <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
       <div>
         <label className="block text-sm font-medium text-foreground mb-1" htmlFor="card-browser-search">
           Modifier une carte existante

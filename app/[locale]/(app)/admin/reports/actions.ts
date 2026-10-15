@@ -2,12 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/middleware/admin.ts";
-import { deleteReportsForContent, ignoreReportsForContent } from "@/lib/db/reports.ts";
+import {
+  deleteReportsForContent,
+  ignoreReportsForContent,
+  restoreIgnoredReportsForContent,
+} from "@/lib/db/reports.ts";
 import { getReportedContentPreview, moderateReportedContent } from "@/lib/db/reportable-content.ts";
 import { moderateReportSchema } from "@/lib/schemas/report.schema.ts";
 import { ReportableContentType } from "@/lib/types/Report.ts";
 
 export type ModerationResult = { success: boolean; error?: string };
+
+/** Après « Ignorer » : de quoi annuler le geste depuis la notification. */
+export type IgnoreResult = ModerationResult & { ignoredAt?: string };
 
 type ModerationInput = { contentType: ReportableContentType; contentId: string };
 
@@ -15,7 +22,7 @@ type ModerationInput = { contentType: ReportableContentType; contentId: string }
  * Masque les signalements d'un contenu : ils ne réapparaîtront dans la liste
  * que si le contenu est signalé à nouveau.
  */
-export async function ignoreReportedContentAction(input: ModerationInput): Promise<ModerationResult> {
+export async function ignoreReportedContentAction(input: ModerationInput): Promise<IgnoreResult> {
   try {
     const session = await requireAdmin();
 
@@ -24,7 +31,7 @@ export async function ignoreReportedContentAction(input: ModerationInput): Promi
       return { success: false, error: parsed.error.issues[0]?.message ?? "Signalement invalide" };
     }
 
-    await ignoreReportsForContent({
+    const { ignoredAt } = await ignoreReportsForContent({
       contentType: parsed.data.contentType,
       contentId: parsed.data.contentId,
       ignoredBy: session.user.id,
@@ -32,7 +39,7 @@ export async function ignoreReportedContentAction(input: ModerationInput): Promi
 
     revalidatePath("/admin/reports");
 
-    return { success: true };
+    return { success: true, ignoredAt: ignoredAt.toISOString() };
   } catch (error) {
     console.error("Erreur lors de l'ignorance d'un signalement:", error);
     return { success: false, error: "Erreur lors du traitement du signalement" };
@@ -80,5 +87,36 @@ export async function deleteReportedContentAction(input: ModerationInput): Promi
   } catch (error) {
     console.error("Erreur lors de la suppression d'un contenu signalé:", error);
     return { success: false, error: "Erreur lors de la suppression du contenu" };
+  }
+}
+
+/**
+ * Annule un « Ignorer » qui vient d'être fait : les signalements fermés par ce
+ * geste repassent en attente.
+ */
+export async function restoreIgnoredReportsAction(
+  input: ModerationInput & { ignoredAt: string }
+): Promise<ModerationResult> {
+  try {
+    await requireAdmin();
+
+    const parsed = moderateReportSchema.safeParse(input);
+    const ignoredAt = new Date(input.ignoredAt);
+    if (!parsed.success || Number.isNaN(ignoredAt.getTime())) {
+      return { success: false, error: "Signalement invalide" };
+    }
+
+    await restoreIgnoredReportsForContent({
+      contentType: parsed.data.contentType,
+      contentId: parsed.data.contentId,
+      ignoredAt,
+    });
+
+    revalidatePath("/admin/reports");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la réouverture d'un signalement:", error);
+    return { success: false, error: "Le signalement n'a pas pu être rouvert" };
   }
 }

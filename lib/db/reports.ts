@@ -212,7 +212,7 @@ export async function ignoreReportsForContent({
   contentType: ReportableContentType;
   contentId: string;
   ignoredBy: string;
-}): Promise<number> {
+}): Promise<{ count: number; ignoredAt: Date }> {
   const now = new Date();
 
   const result = await db.collection<ReportDb>(COLLECTION_NAME).updateMany(
@@ -224,6 +224,31 @@ export async function ignoreReportsForContent({
         ignoredBy: new ObjectId(ignoredBy),
         updatedAt: now,
       },
+    }
+  );
+
+  return { count: result.modifiedCount, ignoredAt: now };
+}
+
+/**
+ * Annule `ignoreReportsForContent` : les signalements fermés à cet instant
+ * précis (`ignoredAt`) repassent en attente. L'instant sert de clé, pour ne
+ * rouvrir que ce que ce geste-là avait fermé, et pas un « ignoré » plus ancien.
+ */
+export async function restoreIgnoredReportsForContent({
+  contentType,
+  contentId,
+  ignoredAt,
+}: {
+  contentType: ReportableContentType;
+  contentId: string;
+  ignoredAt: Date;
+}): Promise<number> {
+  const result = await db.collection<ReportDb>(COLLECTION_NAME).updateMany(
+    { contentType, contentId, status: "ignored", ignoredAt },
+    {
+      $set: { status: "pending", updatedAt: new Date() },
+      $unset: { ignoredAt: "", ignoredBy: "" },
     }
   );
 

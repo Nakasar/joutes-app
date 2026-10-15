@@ -72,7 +72,7 @@ export function GameLinksForm({ game }: { game: Game }) {
         </div>
       )}
 
-      <section className="bg-card space-y-4 rounded-lg p-6 shadow-md">
+      <section className="space-y-4 rounded-2xl border border-border bg-card p-6">
         <div>
           <h2 className="text-foreground text-lg font-semibold">Site et réseaux de l&apos;éditeur</h2>
           <p className="text-muted-foreground text-sm">

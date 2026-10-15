@@ -49,7 +49,7 @@ export default function EditionSettings({
   };
 
   return (
-    <div className="bg-card rounded-lg shadow-md p-6 space-y-4">
+    <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
       <div>
         <h2 className="text-lg font-semibold text-foreground">Édition en cours</h2>
         <p className="text-sm text-muted-foreground">

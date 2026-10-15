@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button.tsx";
 import { registerDiscordCommands } from "./actions.ts";
+import { AdminPage, AdminPanel } from "../_components/AdminPage.tsx";
 
 export const metadata: Metadata = {
   title: "Admin — Discord",
@@ -10,14 +11,17 @@ export const metadata: Metadata = {
 
 export default function AdminDiscordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-xl rounded-2xl border bg-card p-8 text-center shadow-xl shadow-black/20 backdrop-blur-sm">
-        <h1 className="mb-4 text-2xl font-bold text-foreground">Discord</h1>
-        <p className="mb-6 text-muted-foreground">
-          Administration des commandes Discord Joutes Tools.
+    <AdminPage
+      title="Discord"
+      description={<p>Administration des commandes Discord Joutes Tools.</p>}
+      width="narrow"
+    >
+      <AdminPanel className="flex flex-col items-start gap-4 p-6">
+        <p className="text-sm text-muted-foreground">
+          Réenregistre auprès de Discord les commandes slash du bot, après en avoir ajouté ou modifié une.
         </p>
-        <Button onClick={registerDiscordCommands}>Update commands</Button>
-      </div>
-    </div>
+        <Button onClick={registerDiscordCommands}>Mettre à jour les commandes</Button>
+      </AdminPanel>
+    </AdminPage>
   );
 }

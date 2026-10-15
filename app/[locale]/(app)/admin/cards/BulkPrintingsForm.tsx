@@ -114,7 +114,7 @@ export default function BulkPrintingsForm({ gameId, gameName }: Props) {
   };
 
   return (
-    <div className="bg-card rounded-lg shadow-md">
+    <div className="rounded-2xl border border-border bg-card">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}

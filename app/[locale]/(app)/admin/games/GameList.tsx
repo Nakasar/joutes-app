@@ -1,132 +1,124 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Search, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Game } from "@/lib/types/Game.ts";
 import { deleteGame } from "./actions.ts";
-import { Link } from "@/i18n/navigation.ts";
+import { Link, useRouter } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
-import {GAME_TYPES} from "@/lib/constants/game-types.ts";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog.tsx";
+import { GAME_TYPES } from "@/lib/constants/game-types.ts";
+import { GAME_FEATURE_KEYS } from "@/lib/constants/game-features.ts";
 
+/**
+ * Les jeux en cartes : l'icône, le type et le nombre de fonctionnalités actives
+ * se lisent d'un coup d'œil, et la carte entière mène à la fiche.
+ */
 export function GameList({ games }: { games: Game[] }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [gameToDelete, setGameToDelete] = useState<Game | null>(null);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce jeu ?")) return;
+  const needle = query.trim().toLocaleLowerCase("fr");
+  const shown = games
+    .filter((game) => !needle || `${game.name} ${game.slug ?? ""}`.toLocaleLowerCase("fr").includes(needle))
+    .sort((a, b) => a.name.localeCompare(b.name, "fr"));
 
-    setError(null);
+  const remove = (game: Game) => {
     startTransition(async () => {
-      const result = await deleteGame(id);
-      
+      const result = await deleteGame(game.id);
       if (!result.success) {
-        setError(result.error || "Erreur lors de la suppression du jeu");
+        toast.error(result.error || "Erreur lors de la suppression du jeu");
+        return;
       }
+      toast.success(`${game.name} supprimé.`);
+      router.refresh();
     });
   };
 
-  // Le tableau est plus large qu'un téléphone : `overflow-x-auto` le laisse
-  // défiler dans sa carte. `overflow-hidden` coupait les colonnes qui
-  // dépassaient — la liste s'arrêtait au type du jeu, et rien ne permettait
-  // d'aller voir sa description ni ses actions.
   return (
-    <div className="bg-card rounded-lg shadow-md overflow-x-auto">
-      {error && (
-        <div className="m-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
-          {error}
-        </div>
-      )}
-      
-      <table className="min-w-full divide-y divide-border">
-        <thead className="bg-muted/50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Icône
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Nom
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Type
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Description
-            </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-card divide-y divide-border">
-          {games.length === 0 ? (
-            <tr>
-              <td colSpan={5} className="px-6 py-4 text-center text-muted-foreground">
-                Aucun jeu pour le moment
-              </td>
-            </tr>
-          ) : (
-            games.map((game) => (
-              <tr key={game.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {game.icon ? <img
-                    src={game.icon}
-                    alt={game.name}
-                    className="h-10 w-10 rounded object-cover"
-                  /> : (
-                    <div className="h-10 w-10 rounded bg-muted flex items-center justify-center text-muted-foreground">
-                      <span className="text-lg font-semibold">
-                        {game.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <Link
-                    href={`/admin/games/${game.slug ?? game.id}`}
-                    className="text-sm font-medium text-foreground hover:text-blue-600 dark:hover:text-blue-400"
-                  >
+    <div className="flex flex-col gap-5">
+      <label className="flex h-11 max-w-md items-center gap-2 rounded-lg border border-border bg-card px-3">
+        <Search className="size-4 text-muted-foreground" aria-hidden />
+        <span className="sr-only">Rechercher un jeu</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Nom ou slug"
+          className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+        />
+      </label>
+
+      {shown.length === 0 ? (
+        <p className="rounded-2xl border border-border bg-card px-5 py-8 text-sm text-muted-foreground">
+          {games.length === 0 ? "Aucun jeu pour le moment." : "Aucun jeu ne correspond à cette recherche."}
+        </p>
+      ) : (
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {shown.map((game) => {
+            const enabled = GAME_FEATURE_KEYS.filter((key) => game.features?.[key] === true).length;
+            const href = `/admin/games/${game.slug ?? game.id}`;
+            return (
+              <li
+                key={game.id}
+                className="group relative flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-foreground/30"
+              >
+                {game.icon ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={game.icon} alt="" className="size-14 shrink-0 rounded-xl object-cover" />
+                ) : (
+                  <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-xl font-bold text-white dark:bg-sky-500">
+                    {game.name.charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  {/* Le lien couvre toute la carte ; le bouton de suppression passe au-dessus. */}
+                  <Link href={href} className="truncate font-semibold after:absolute after:inset-0 after:rounded-2xl">
                     {game.name}
                   </Link>
-                  {game.slug && (
-                    <div className="font-mono text-xs text-muted-foreground mt-0.5">
-                      {game.slug}
-                    </div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-500/15 text-blue-800 dark:text-blue-300">
-                    {GAME_TYPES[game.type] ?? 'Autre'}
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted-foreground">
+                    <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">
+                      {GAME_TYPES[game.type] ?? "Autre"}
+                    </span>
+                    <span>
+                      {enabled} fonctionnalité{enabled > 1 ? "s" : ""} active{enabled > 1 ? "s" : ""}
+                    </span>
                   </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-foreground max-w-xs truncate">
-                    {game.description}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex flex-wrap gap-2 justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      asChild
-                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                    >
-                      <Link href={`/admin/games/${game.slug ?? game.id}`}>Gérer</Link>
-                    </Button>
-                    <button
-                      onClick={() => handleDelete(game.id)}
-                      disabled={isPending}
-                      className="text-destructive hover:text-destructive/80 disabled:opacity-50"
-                    >
-                      Supprimer
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative z-10 size-10 text-muted-foreground hover:text-destructive"
+                  aria-label={`Supprimer ${game.name}`}
+                  title="Supprimer le jeu"
+                  onClick={() => setGameToDelete(game)}
+                >
+                  <Trash2 aria-hidden />
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <ConfirmDialog
+        open={!!gameToDelete}
+        onOpenChange={(open) => {
+          if (!open) setGameToDelete(null);
+        }}
+        title={`Supprimer ${gameToDelete?.name ?? "ce jeu"} ?`}
+        description="Le jeu disparaît du catalogue. On ne pourra pas revenir en arrière."
+        confirmLabel="Supprimer"
+        destructive
+        busy={isPending}
+        onConfirm={() => {
+          if (gameToDelete) remove(gameToDelete);
+          setGameToDelete(null);
+        }}
+      />
     </div>
   );
 }
