@@ -54,6 +54,11 @@ export const EVENT_INDEXES: IndexDefinition[] = [
     options: { partialFilterExpression: { boardsNeedsUpdate: true } },
     why: "Le cron des tableaux Discord, qui ne veut que les événements marqués",
   },
+  {
+    collection: "events",
+    keys: { addedBy: 1, _id: -1 },
+    why: "Le centre des contributions de l'administration : les évènements écrits par quelqu'un, et non importés, par date de création",
+  },
 
   {
     collection: "event-guest-participants",

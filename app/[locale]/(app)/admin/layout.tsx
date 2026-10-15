@@ -134,6 +134,12 @@ async function AdminChrome({ children }: { children: React.ReactNode }) {
                 Exports
               </Link>
               <Link
+                href="/admin/contributions"
+                className="inline-flex items-center shrink-0 whitespace-nowrap px-1 pt-1 text-sm font-medium text-foreground border-b-2 border-transparent hover:border-blue-500"
+              >
+                Contributions
+              </Link>
+              <Link
                 href="/admin/reports"
                 className="inline-flex items-center shrink-0 whitespace-nowrap px-1 pt-1 text-sm font-medium text-foreground border-b-2 border-transparent hover:border-blue-500"
               >

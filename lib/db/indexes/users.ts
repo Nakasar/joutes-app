@@ -196,6 +196,11 @@ export const USER_INDEXES: IndexDefinition[] = [
   },
   {
     collection: "playGroups",
+    keys: { createdAt: -1 },
+    why: "Le centre des contributions de l'administration : les groupes, du plus récent au plus ancien",
+  },
+  {
+    collection: "playGroups",
     keys: { "members.userId": 1, updatedAt: -1 },
     why: "Le rôle d'armes : branche « j'en suis membre », et mes groupes",
   },

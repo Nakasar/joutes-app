@@ -130,6 +130,16 @@ export const CARD_INDEXES: IndexDefinition[] = [
     keys: { gameId: 1, title: 1, createdAt: -1 },
     why: "Les règles d'un jeu, par titre",
   },
+  {
+    collection: "erratas",
+    keys: { createdAt: -1 },
+    why: "Le centre des contributions de l'administration : les errata, du plus récent au plus ancien",
+  },
+  {
+    collection: "policies",
+    keys: { createdAt: -1 },
+    why: "Le centre des contributions de l'administration : les règles, de la plus récente à la plus ancienne",
+  },
 
   {
     collection: "wishlist-items",
@@ -253,6 +263,16 @@ export const CARD_INDEXES: IndexDefinition[] = [
     keys: { favoritedBy: 1 },
     why: "Les decks favoris d'une personne",
   },
+  {
+    collection: "decks",
+    keys: { visibility: 1, createdAt: -1 },
+    why: "Le centre des contributions de l'administration : les decks publics et non répertoriés, par date de création",
+  },
+  {
+    collection: "wishlists",
+    keys: { visibility: 1, createdAt: -1 },
+    why: "Le centre des contributions de l'administration : les listes de souhaits partagées, par date de création",
+  },
 
   {
     collection: "cubes",
@@ -294,5 +314,10 @@ export const CARD_INDEXES: IndexDefinition[] = [
     collection: "quizzes",
     keys: { gameId: 1, createdAt: -1 },
     why: "Les quiz d'un jeu",
+  },
+  {
+    collection: "quizzes",
+    keys: { createdAt: -1 },
+    why: "Le centre des contributions de l'administration : les quiz, du plus récent au plus ancien",
   },
 ];
