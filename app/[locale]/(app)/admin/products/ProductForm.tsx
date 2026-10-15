@@ -235,7 +235,7 @@ export default function ProductForm({ gameId, gameName, attributeFields, product
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-card rounded-lg shadow-md p-6 space-y-4">
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-card p-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-foreground">
           {product ? `Modifier le produit ${product.id}` : `Nouveau produit — ${gameName}`}

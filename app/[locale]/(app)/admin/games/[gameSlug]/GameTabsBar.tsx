@@ -37,7 +37,7 @@ export default function GameTabsBar({
   return (
     <nav
       aria-label="Sections du jeu"
-      className="mb-6 flex gap-1 overflow-x-auto border-b border-border"
+      className="flex gap-1 overflow-x-auto border-b border-border"
     >
       {GAME_TABS.map((tab) => (
         <Link
@@ -49,9 +49,9 @@ export default function GameTabsBar({
           }
           aria-current={tab === active ? "page" : undefined}
           className={cn(
-            "shrink-0 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm transition-colors",
+            "flex h-11 shrink-0 items-center whitespace-nowrap border-b-2 px-3.5 text-sm transition-colors",
             tab === active
-              ? "border-primary font-medium text-foreground"
+              ? "border-sky-600 font-semibold text-foreground dark:border-sky-400"
               : "border-transparent text-muted-foreground hover:text-foreground",
           )}
         >

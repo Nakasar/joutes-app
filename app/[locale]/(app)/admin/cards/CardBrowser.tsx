@@ -124,7 +124,7 @@ export default function CardBrowser({ gameId, selectedCardId, recentCards }: Pro
   const shown = isSearching ? results : recentCards;
 
   return (
-    <div className="bg-card rounded-lg shadow-md p-6 space-y-3">
+    <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
       <div>
         <label className="block text-sm font-medium text-foreground mb-1" htmlFor="card-browser-search">
           Modifier une carte existante

@@ -329,7 +329,7 @@ export function LairEventSourcesForm({
 
       <RefreshReportCard report={report} />
 
-      <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+      <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-foreground">Sources d&apos;événements</h2>
@@ -1357,7 +1357,7 @@ function RefreshReportCard({ report }: { report: LairEventsRefreshReport | null 
   const failing = report.sources.filter((source) => !source.ok);
 
   return (
-    <section className="bg-card rounded-lg shadow-md p-6 space-y-3">
+    <section className="rounded-2xl border border-border bg-card p-6 space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Dernier rafraîchissement</h2>

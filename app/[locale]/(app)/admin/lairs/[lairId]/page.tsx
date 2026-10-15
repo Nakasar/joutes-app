@@ -11,6 +11,7 @@ import { LairIdentityForm } from "./LairIdentityForm.tsx";
 import { LairGamesForm } from "./LairGamesForm.tsx";
 import { LairEventSourcesForm } from "./LairEventSourcesForm.tsx";
 import { CalendarModeSwitch } from "../CalendarModeSwitch.tsx";
+import { AdminPage, AdminPanel } from "../../_components/AdminPage.tsx";
 
 /**
  * La fiche d'administration d'un lieu.
@@ -51,12 +52,15 @@ export default async function AdminLairPage({
 
   const games = await getAllGames();
   const active = readLairTab(tab);
-  // Le rapport n'est lu que pour l'onglet qui l'affiche : il est hors du lieu
-  // à dessein (voir `getLairEventsRefreshReport`).
-  const refreshReport = active === "sources" ? await getLairEventsRefreshReport(lair.id) : null;
+  // Le compte rendu et la demande d'aide vivent hors du lieu (voir
+  // `getLairEventsRefreshReport`) ; deux lectures d'un seul document, qui
+  // donnent l'état de l'agenda affiché dans l'en-tête de chaque onglet.
+  const [refreshReport, sourceRequest] = await Promise.all([
+    getLairEventsRefreshReport(lair.id),
+    getLairEventsSourceRequest(lair.id),
+  ]);
   // La demande d'aide du gérant, avec son courriel pour lui répondre.
-  const sourceRequest = active === "sources" ? await getLairEventsSourceRequest(lair.id) : null;
-  const requester = sourceRequest ? await getUserById(sourceRequest.requestedBy) : null;
+  const requester = active === "sources" && sourceRequest ? await getUserById(sourceRequest.requestedBy) : null;
   const helpRequest = sourceRequest
     ? {
         ...(sourceRequest.url ? { url: sourceRequest.url } : {}),
@@ -68,50 +72,59 @@ export default async function AdminLairPage({
     : null;
   const declaredGames = games.filter((game) => lair.games?.includes(game.id));
   const sourcesCount = lair.eventsSourceUrls?.length ?? 0;
+  const failing = refreshReport?.sources.some((source) => !source.ok) ?? false;
+  const helpPending = sourceRequest?.status === "pending";
 
   return (
-    <div className="bg-muted/50 p-4 sm:p-8">
-      <div className="max-w-6xl mx-auto">
-        <Link href="/admin/lairs" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Lieux
-        </Link>
-
-        <div className="mt-2 mb-6 flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            {lair.banner ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={lair.banner} alt="" className="h-14 w-20 shrink-0 rounded-lg object-cover" />
-            ) : (
-              <div className="h-14 w-20 shrink-0 rounded-lg bg-muted flex items-center justify-center text-xl font-semibold text-muted-foreground">
-                {lair.name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="min-w-0">
-              <h1 className="text-3xl font-bold text-foreground">{lair.name}</h1>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {lair.isPrivate && <Badge variant="secondary">Privé</Badge>}
-                {declaredGames.length === 0 ? (
-                  <span className="text-sm text-muted-foreground">Aucun jeu déclaré</span>
-                ) : (
-                  declaredGames.map((game) => (
-                    <Badge key={game.id} variant="outline">
-                      {game.name}
-                    </Badge>
-                  ))
-                )}
-                <span className="text-sm text-muted-foreground">
-                  {sourcesCount} source{sourcesCount > 1 ? "s" : ""} d&apos;événements
+    <AdminPage
+      back={{ href: "/admin/lairs", label: "Lieux" }}
+      title={
+        <span className="flex items-center gap-3">
+          {lair.banner ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={lair.banner} alt="" className="size-12 shrink-0 rounded-xl object-cover" />
+          ) : (
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-xl font-bold text-white dark:bg-sky-500">
+              {lair.name.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <span className="min-w-0">{lair.name}</span>
+          {lair.isPrivate && <Badge variant="secondary">Privé</Badge>}
+        </span>
+      }
+      description={
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          {declaredGames.length === 0 ? (
+            <span>Aucun jeu déclaré</span>
+          ) : (
+            <span className="flex flex-wrap gap-1">
+              {declaredGames.map((game) => (
+                <span key={game.id} className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">
+                  {game.name}
                 </span>
-              </div>
-            </div>
-          </div>
-
-          <Button variant="outline" asChild>
-            <Link href={`/lairs/${lair.id}`}>Voir la vitrine</Link>
-          </Button>
-        </div>
-
-        <LairTabsBar lairId={lairId} active={active} />
+              ))}
+            </span>
+          )}
+          <span>
+            {sourcesCount === 0
+              ? "Agenda saisi à la main"
+              : `${sourcesCount} source${sourcesCount > 1 ? "s" : ""} d'évènements`}
+          </span>
+          {(failing || helpPending) && (
+            <span className="flex items-center gap-1.5 font-medium text-red-800 dark:text-red-300">
+              <span className="size-2 rounded-full bg-red-600" aria-hidden />
+              {helpPending ? "Le gérant demande de l'aide" : "Import en échec"}
+            </span>
+          )}
+        </span>
+      }
+      actions={
+        <Button variant="outline" asChild className="h-10">
+          <Link href={`/lairs/${lair.id}`}>Voir la vitrine</Link>
+        </Button>
+      }
+    >
+        <LairTabsBar lairId={lairId} active={active} alert={failing || helpPending} />
 
         {active === "identite" && <LairIdentityForm lair={lair} />}
 
@@ -123,7 +136,7 @@ export default async function AdminLairPage({
 
         {active === "vitrine" && (
           <div className="space-y-6">
-            <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+            <AdminPanel className="space-y-4 p-6">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">Vue du calendrier</h2>
                 <p className="text-sm text-muted-foreground">
@@ -132,9 +145,9 @@ export default async function AdminLairPage({
                 </p>
               </div>
               <CalendarModeSwitch lair={lair} />
-            </section>
+            </AdminPanel>
 
-            <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+            <AdminPanel className="space-y-4 p-6">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">
                   Vitrine, annonces et gérants
@@ -148,10 +161,9 @@ export default async function AdminLairPage({
               <Button variant="outline" asChild>
                 <Link href={`/lairs/${lair.id}/manage`}>Ouvrir la gestion du lieu</Link>
               </Button>
-            </section>
+            </AdminPanel>
           </div>
         )}
-      </div>
-    </div>
+    </AdminPage>
   );
 }

@@ -1,88 +1,76 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { Game } from "@/lib/types/Game.ts";
 import { GAME_FEATURE_OPTIONS, type GameFeatureKey } from "@/lib/constants/game-features.ts";
-import { Button } from "@/components/ui/button.tsx";
+import { Switch } from "@/components/ui/switch.tsx";
+import { useRouter } from "@/i18n/navigation.ts";
 import { updateGameFeatures } from "../actions.ts";
 
 /**
- * Les fonctionnalités qu'un jeu expose.
+ * Les fonctionnalités qu'un jeu expose, en interrupteurs enregistrés aussitôt :
+ * plus de bouton à ne pas oublier en bas de page.
  *
  * La liste se rend depuis `GAME_FEATURE_OPTIONS` : ajouter une fonctionnalité
  * à la table la fait apparaître ici sans toucher à ce fichier.
  */
 export function GameFeaturesForm({ game }: { game: Game }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [features, setFeatures] = useState<Partial<Record<GameFeatureKey, boolean>>>(
     game.features ?? {},
   );
 
-  const submit = () => {
-    setMessage(null);
+  const toggle = (key: GameFeatureKey, label: string, enabled: boolean) => {
+    const previous = features;
+    const next = { ...features, [key]: enabled };
+    setFeatures(next);
 
     startTransition(async () => {
-      const result = await updateGameFeatures(game.id, features);
-
-      setMessage(
-        result.success
-          ? { ok: true, text: "Fonctionnalités enregistrées." }
-          : { ok: false, text: result.error ?? "Erreur lors de l'enregistrement" },
-      );
+      const result = await updateGameFeatures(game.id, next);
+      if (!result.success) {
+        // L'interrupteur revient où il était : l'écran ne montre que ce qui est enregistré.
+        setFeatures(previous);
+        toast.error(result.error ?? "La fonctionnalité n'a pas pu être enregistrée.");
+        return;
+      }
+      toast.success(`${label} ${enabled ? "activé" : "désactivé"} pour ${game.name}.`);
+      router.refresh();
     });
   };
 
   return (
-    <div className="space-y-6">
-      {message && (
-        <div
-          className={`rounded-lg border p-3 text-sm ${
-            message.ok
-              ? "border-emerald-500/30 bg-emerald-500/10 text-foreground"
-              : "border-destructive/30 bg-destructive/10 text-destructive"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
-
-      <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Fonctionnalités</h2>
-          <p className="text-sm text-muted-foreground">
-            Ce que le jeu expose aux joueurs : onglets de la barre d&apos;outils, tuiles de sa fiche
-            et routes d&apos;API. Une fonctionnalité décochée devient invisible, mais rien n&apos;est
-            supprimé.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {GAME_FEATURE_OPTIONS.map(({ value, label, description }) => (
-            <label
-              key={value}
-              className="flex items-start gap-2 rounded-lg border border-input p-3 cursor-pointer hover:border-blue-500"
-            >
-              <input
-                type="checkbox"
-                checked={features[value] === true}
-                onChange={(e) => setFeatures((previous) => ({ ...previous, [value]: e.target.checked }))}
-                className="mt-0.5 size-4 shrink-0"
-              />
-              <span className="min-w-0">
-                <span className="block text-sm text-foreground">{label}</span>
-                <span className="block text-xs text-muted-foreground">{description}</span>
-              </span>
-            </label>
-          ))}
-        </div>
-      </section>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={submit} disabled={isPending}>
-          {isPending ? "Enregistrement…" : "Enregistrer les fonctionnalités"}
-        </Button>
+    <section className="rounded-2xl border border-border bg-card">
+      <div className="border-b border-border px-6 py-5">
+        <h2 className="text-lg font-semibold text-foreground">Fonctionnalités</h2>
+        <p className="text-sm text-muted-foreground">
+          Ce que le jeu expose aux joueurs : onglets de la barre d&apos;outils, tuiles de sa fiche et
+          routes d&apos;API. Chaque changement est enregistré tout de suite ; une fonctionnalité
+          coupée devient invisible, mais rien n&apos;est supprimé.
+        </p>
       </div>
-    </div>
+
+      <ul className="divide-y divide-border">
+        {GAME_FEATURE_OPTIONS.map(({ value, label, description }) => {
+          const id = `feature-${value}`;
+          return (
+            <li key={value} className="flex items-center gap-4 px-6 py-4">
+              <label htmlFor={id} className="min-w-0 flex-1 cursor-pointer">
+                <span className="block text-[15px] font-medium text-foreground">{label}</span>
+                <span className="block text-sm text-muted-foreground">{description}</span>
+              </label>
+              <Switch
+                id={id}
+                checked={features[value] === true}
+                disabled={isPending}
+                onCheckedChange={(checked) => toggle(value, label, checked)}
+                className="data-[state=checked]:bg-sky-600 dark:data-[state=checked]:bg-sky-500"
+              />
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

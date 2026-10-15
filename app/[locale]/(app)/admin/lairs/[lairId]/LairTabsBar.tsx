@@ -8,7 +8,7 @@ export type LairTab = (typeof LAIR_TABS)[number];
 const LABELS: Record<LairTab, string> = {
   identite: "Identité",
   jeux: "Jeux",
-  sources: "Sources d'événements",
+  sources: "Agenda",
   vitrine: "Vitrine et accès",
 };
 
@@ -17,11 +17,20 @@ export function readLairTab(value: string | undefined): LairTab {
   return LAIR_TABS.includes(value as LairTab) ? (value as LairTab) : "identite";
 }
 
-export default function LairTabsBar({ lairId, active }: { lairId: string; active: LairTab }) {
+/** `alert` marque l'onglet Agenda d'un point rouge quand il demande une intervention. */
+export default function LairTabsBar({
+  lairId,
+  active,
+  alert = false,
+}: {
+  lairId: string;
+  active: LairTab;
+  alert?: boolean;
+}) {
   return (
     <nav
       aria-label="Sections du lieu"
-      className="mb-6 flex gap-1 overflow-x-auto border-b border-border"
+      className="flex gap-1 overflow-x-auto border-b border-border"
     >
       {LAIR_TABS.map((tab) => (
         <Link
@@ -29,13 +38,16 @@ export default function LairTabsBar({ lairId, active }: { lairId: string; active
           href={tab === "identite" ? `/admin/lairs/${lairId}` : `/admin/lairs/${lairId}?tab=${tab}`}
           aria-current={tab === active ? "page" : undefined}
           className={cn(
-            "shrink-0 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm transition-colors",
+            "flex h-11 shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3.5 text-sm transition-colors",
             tab === active
-              ? "border-primary font-medium text-foreground"
+              ? "border-sky-600 font-semibold text-foreground dark:border-sky-400"
               : "border-transparent text-muted-foreground hover:text-foreground",
           )}
         >
           {LABELS[tab]}
+          {tab === "sources" && alert && (
+            <span className="size-2 rounded-full bg-red-600" aria-label="à surveiller" />
+          )}
         </Link>
       ))}
     </nav>

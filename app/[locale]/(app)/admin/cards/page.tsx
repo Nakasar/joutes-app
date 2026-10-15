@@ -42,7 +42,7 @@ export default async function AdminCardsPage({
           </p>
         </div>
 
-        <div className="bg-card rounded-lg shadow-md p-6 space-y-3">
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
           <label className="block text-sm font-medium text-foreground">Jeu</label>
           <div className="flex flex-wrap gap-2">
             {games.map((game) => (
@@ -100,7 +100,7 @@ export default async function AdminCardsPage({
             />
           </>
         ) : (
-          <div className="bg-card rounded-lg shadow-md p-6 text-sm text-muted-foreground">
+          <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
             Choisissez un jeu pour ajouter ou modifier une carte.
           </div>
         )}

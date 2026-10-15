@@ -197,7 +197,7 @@ export function GameTournamentDefaultsForm({
 
       {/* Statistiques relevées à chaque partie. Elles décident de ce qu'on peut
           départager : le bloc suivant n'a de choix à offrir que grâce à elles. */}
-      <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+      <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Statistiques de match</h2>
           <p className="text-sm text-muted-foreground">
@@ -251,7 +251,7 @@ export function GameTournamentDefaultsForm({
 
       {/* Départages, dans l'ordre. Même règle qu'au formulaire de phase : les
           points de match passent avant, et ne sont pas un critère. */}
-      <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+      <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h2 className="text-lg font-semibold text-foreground">Départage des égalités</h2>
@@ -350,7 +350,7 @@ export function GameTournamentDefaultsForm({
       </section>
 
       {/* Format d'une phase : ce que le tunnel de création pré-remplit. */}
-      <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+      <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Format par défaut</h2>
           <p className="text-sm text-muted-foreground">
@@ -434,7 +434,7 @@ export function GameTournamentDefaultsForm({
 
       {/* Catalogue de scénarios. Le pool d'une phase reste libre : ce catalogue
           évite de retaper les missions officielles à chaque tournoi. */}
-      <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+      <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Scénarios disponibles</h2>
           <p className="text-sm text-muted-foreground">

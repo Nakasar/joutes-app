@@ -20,6 +20,7 @@ import { GameFeaturesForm } from "./GameFeaturesForm.tsx";
 import { DeckBuilderForm } from "./DeckBuilderForm.tsx";
 import { BoosterTypesForm } from "./BoosterTypesForm.tsx";
 import { FeaturedLairsManager } from "../FeaturedLairsManager.tsx";
+import { AdminPage } from "../../_components/AdminPage.tsx";
 
 /**
  * La fiche d'administration d'un jeu.
@@ -67,51 +68,41 @@ export default async function AdminGamePage({
   );
 
   return (
-    <div className="bg-muted/50 p-4 sm:p-8">
-      <div className="max-w-6xl mx-auto">
-        <Link
-          href="/admin/games"
-          className="text-sm text-muted-foreground hover:text-foreground"
-        >
-          ← Jeux
-        </Link>
-
-        <div className="mt-2 mb-6 flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            {game.icon ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={game.icon}
-                alt=""
-                className="size-14 shrink-0 rounded-lg object-cover"
-              />
-            ) : (
-              <div className="size-14 shrink-0 rounded-lg bg-muted flex items-center justify-center text-xl font-semibold text-muted-foreground">
-                {game.name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="min-w-0">
-              <h1 className="text-3xl font-bold text-foreground">{game.name}</h1>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{GAME_TYPES[game.type] ?? "Autre"}</Badge>
-                {game.slug && (
-                  <Badge variant="outline" className="font-mono">
-                    {game.slug}
-                  </Badge>
-                )}
-                <span className="text-sm text-muted-foreground">
-                  {enabledFeatures} fonctionnalité{enabledFeatures > 1 ? "s" : ""} active
-                  {enabledFeatures > 1 ? "s" : ""}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <Button variant="outline" asChild>
-            <Link href={`/games/${game.slug ?? game.id}`}>Voir la fiche publique</Link>
-          </Button>
-        </div>
-
+    <AdminPage
+      back={{ href: "/admin/games", label: "Jeux" }}
+      title={
+        <span className="flex items-center gap-3">
+          {game.icon ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={game.icon} alt="" className="size-12 shrink-0 rounded-xl object-cover" />
+          ) : (
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-xl font-bold text-white dark:bg-sky-500">
+              {game.name.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <span className="min-w-0">{game.name}</span>
+        </span>
+      }
+      description={
+        <span className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">{GAME_TYPES[game.type] ?? "Autre"}</Badge>
+          {game.slug && (
+            <Badge variant="outline" className="font-mono">
+              {game.slug}
+            </Badge>
+          )}
+          <span>
+            {enabledFeatures} fonctionnalité{enabledFeatures > 1 ? "s" : ""} active
+            {enabledFeatures > 1 ? "s" : ""}
+          </span>
+        </span>
+      }
+      actions={
+        <Button variant="outline" asChild className="h-10">
+          <Link href={`/games/${game.slug ?? game.id}`}>Voir la fiche publique</Link>
+        </Button>
+      }
+    >
         <GameTabsBar gameSlug={gameSlug} active={active} />
 
         {active === "identite" && <GameIdentityForm game={game} />}
@@ -159,7 +150,7 @@ export default async function AdminGamePage({
         )}
 
         {active === "lieux" && (
-          <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+          <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
             <div>
               <h2 className="text-lg font-semibold text-foreground">Lieux mis en avant</h2>
               <p className="text-sm text-muted-foreground">
@@ -172,7 +163,7 @@ export default async function AdminGamePage({
         )}
 
         {active === "tournois" && (
-          <section className="bg-card rounded-lg shadow-md p-6 space-y-4">
+          <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
             <div>
               <h2 className="text-lg font-semibold text-foreground">Réglages de tournoi</h2>
               <p className="text-sm text-muted-foreground">
@@ -186,7 +177,6 @@ export default async function AdminGamePage({
             </Button>
           </section>
         )}
-      </div>
-    </div>
+    </AdminPage>
   );
 }

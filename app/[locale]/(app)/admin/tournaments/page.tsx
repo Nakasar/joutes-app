@@ -52,7 +52,7 @@ export default async function AdminTournamentsPage() {
           </p>
         </div>
 
-        <div className="bg-card rounded-lg shadow-md overflow-x-auto">
+        <div className="rounded-2xl border border-border bg-card overflow-x-auto">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted/50">
               <tr>

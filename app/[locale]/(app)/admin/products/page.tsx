@@ -55,7 +55,7 @@ export default async function AdminProductsPage({
           </p>
         </div>
 
-        <div className="bg-card rounded-lg shadow-md p-6 space-y-3">
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
           <label className="block text-sm font-medium text-foreground">Jeu</label>
           <div className="flex flex-wrap gap-2">
             {games.map((game) => (
