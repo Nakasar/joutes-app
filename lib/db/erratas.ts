@@ -349,6 +349,90 @@ export async function createErrata(data: {
 }
 
 /**
+ * Modifie partiellement un errata : seuls les champs fournis changent. Une
+ * `source` vide la retire ; `deprecatedAt: null` rétablit un errata obsolète.
+ * La date de mise à jour du contenu n'avance que si le texte change, comme
+ * depuis l'app. Les droits sont vérifiés par l'appelant.
+ *
+ * Renvoie les cartes de l'errata avant et après modification, que l'appelant
+ * revalide, ou `null` si l'errata n'existe pas.
+ */
+export async function updateErrataById(
+  errataId: string,
+  data: {
+    type?: ErrataType;
+    details?: string;
+    source?: string;
+    errataDate?: Date;
+    deprecatedAt?: Date | null;
+    cardIds?: string[];
+    /** Restreint les nouvelles cartes visées à ce jeu. */
+    gameId?: string;
+  },
+): Promise<{ previousCardIds: string[]; cardIds: string[] } | null> {
+  if (!ObjectId.isValid(errataId)) {
+    return null;
+  }
+
+  const _id = new ObjectId(errataId);
+  const existing = await db
+    .collection<ErrataDb & { cardId?: string }>("erratas")
+    .findOne({ _id });
+  if (!existing) {
+    return null;
+  }
+
+  if (data.details !== undefined && !data.details.trim()) {
+    throw new ErrataInputError("Le contenu de l'errata est requis.");
+  }
+
+  const cardIds = data.cardIds ? await checkErrataCardIds(data.cardIds, data.gameId) : undefined;
+
+  const $set: Partial<ErrataDb> = {};
+  const $unset: Record<string, ""> = {};
+
+  if (data.type !== undefined) $set.type = data.type;
+  if (data.errataDate !== undefined) $set.errataDate = data.errataDate;
+  if (cardIds) $set.cardIds = cardIds;
+
+  if (data.details !== undefined && data.details !== existing.details) {
+    $set.details = data.details;
+    $set.contentUpdatedAt = new Date();
+  }
+
+  if (data.source !== undefined) {
+    if (data.source) $set.source = data.source;
+    else $unset.source = "";
+  }
+
+  if (data.deprecatedAt === null) {
+    $unset.deprecatedAt = "";
+  } else if (data.deprecatedAt !== undefined) {
+    $set.deprecatedAt = data.deprecatedAt;
+  }
+
+  if (Object.keys($set).length > 0 || Object.keys($unset).length > 0) {
+    await db.collection<ErrataDb>("erratas").updateOne(
+      { _id },
+      {
+        ...(Object.keys($set).length > 0 ? { $set } : {}),
+        ...(Object.keys($unset).length > 0 ? { $unset } : {}),
+      },
+    );
+  }
+
+  // Repli sur le `cardId` scalaire des documents pas encore migrés, comme le
+  // fait `buildErrataCardIdsMatchFilter`.
+  const previousCardIds = existing.cardIds?.length
+    ? existing.cardIds
+    : existing.cardId
+      ? [existing.cardId]
+      : [];
+
+  return { previousCardIds, cardIds: cardIds ?? previousCardIds };
+}
+
+/**
  * Pose, change ou retire le vote d'un utilisateur sur un errata — revoter à
  * l'identique retire le vote. Renvoie le décompte à jour, ou `null` si
  * l'errata n'existe pas.
