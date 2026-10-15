@@ -1,175 +1,321 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { DateTime } from "luxon";
+import { Lock, RefreshCw, Search, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Lair } from "@/lib/types/Lair.ts";
 import { Game } from "@/lib/types/Game.ts";
 import { deleteLair, refreshEvents } from "./actions.ts";
-import { Link } from "@/i18n/navigation.ts";
+import { Link, useRouter } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog.tsx";
+import { cn } from "@/lib/utils.ts";
+
+/**
+ * L'état de l'agenda d'un lieu, tel que la liste le résume :
+ * - `failing` : une source a échoué au dernier tour ;
+ * - `help` : le gérant a demandé de l'aide et attend une réponse ;
+ * - `ok` : le dernier tour a réussi ;
+ * - `pending` : des sources, mais aucun tour encore ;
+ * - `manual` : aucune source, les évènements sont saisis à la main.
+ */
+export type LairAgendaState = "failing" | "help" | "ok" | "pending" | "manual";
+
+export type LairAgendaSummary = {
+  state: LairAgendaState;
+  /** ISO 8601 du dernier tour. */
+  refreshedAt?: string;
+  /** Évènements rendus par les sources au dernier tour. */
+  found?: number;
+  /** Le premier message d'erreur d'une source, s'il y en a un. */
+  error?: string;
+  sources: number;
+};
+
+type Filter = "all" | "attention" | "imported" | "manual";
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: "all", label: "Tous" },
+  { key: "attention", label: "À surveiller" },
+  { key: "imported", label: "Agenda importé" },
+  { key: "manual", label: "Saisie à la main" },
+];
+
+const needsAttention = (state: LairAgendaState) => state === "failing" || state === "help";
 
 export function LairList({
   lairs,
   games,
+  agendas,
+  initialFilter,
 }: {
   lairs: Lair[];
   games: Game[];
+  agendas: Record<string, LairAgendaSummary>;
+  initialFilter: Filter;
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<Filter>(initialFilter);
+  const [lairToDelete, setLairToDelete] = useState<Lair | null>(null);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce lieu ?")) return;
+  const gameName = (gameId: string) => games.find((g) => g.id === gameId)?.name || gameId;
+  const agendaOf = (lair: Lair): LairAgendaSummary => agendas[lair.id] ?? { state: "manual", sources: 0 };
 
-    setError(null);
-    setSuccess(null);
+  const needle = query.trim().toLocaleLowerCase("fr");
+  const shown = lairs
+    .filter((lair) => {
+      const state = agendaOf(lair).state;
+      if (filter === "attention" && !needsAttention(state)) return false;
+      if (filter === "imported" && state === "manual") return false;
+      if (filter === "manual" && state !== "manual") return false;
+      return !needle || `${lair.name} ${lair.address ?? ""}`.toLocaleLowerCase("fr").includes(needle);
+    })
+    // Ce qui demande une intervention d'abord, puis l'ordre alphabétique.
+    .sort(
+      (a, b) =>
+        Number(needsAttention(agendaOf(b).state)) - Number(needsAttention(agendaOf(a).state)) ||
+        a.name.localeCompare(b.name, "fr")
+    );
+
+  const attention = lairs.filter((lair) => needsAttention(agendaOf(lair).state)).length;
+
+  const refresh = (lair: Lair) => {
+    setBusyId(lair.id);
     startTransition(async () => {
-      const result = await deleteLair(id);
-
-      if (!result.success) {
-        setError(result.error || "Erreur lors de la suppression du lieu");
-      }
-    });
-  };
-  
-  const handleRefreshEvents = async (id: string) => {
-    setError(null);
-    setSuccess(null);
-    startTransition(async () => {
-      const result = await refreshEvents(id);
-
+      const result = await refreshEvents(lair.id);
+      setBusyId(null);
       if (result.success) {
-        setSuccess(result.message || "Événements rafraîchis avec succès");
+        toast.success(result.message || `Agenda de ${lair.name} relu.`);
       } else {
-        setError(result.error || "Erreur lors du rafraîchissement des événements");
+        toast.error(result.error || "L'agenda n'a pas pu être relu.");
       }
+      router.refresh();
     });
   };
 
-  const getGameName = (gameId: string) => {
-    return games.find((g) => g.id === gameId)?.name || gameId;
+  const remove = (lair: Lair) => {
+    startTransition(async () => {
+      const result = await deleteLair(lair.id);
+      if (!result.success) {
+        toast.error(result.error || "Erreur lors de la suppression du lieu");
+        return;
+      }
+      toast.success(`${lair.name} supprimé.`);
+      router.refresh();
+    });
   };
 
-  // Comme la liste des jeux : le tableau défile dans sa carte plutôt que d'être
-  // coupé à la largeur de l'écran.
   return (
-    <div className="bg-card rounded-lg shadow-md overflow-x-auto">
-      {error && (
-        <div className="m-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
-          {error}
+    <div className="flex flex-col gap-5">
+      {attention > 0 && filter !== "attention" && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-950 dark:bg-red-500/10 dark:text-red-100">
+          <span className="min-w-60 flex-1">
+            <strong>
+              {attention} agenda{attention > 1 ? "s" : ""} à surveiller
+            </strong>{" "}
+            : un import a échoué ou un gérant attend de l&apos;aide.
+          </span>
+          <Button variant="outline" size="sm" className="h-10" onClick={() => setFilter("attention")}>
+            Ne montrer qu&apos;eux
+          </Button>
         </div>
       )}
-      
-      {success && (
-        <div className="m-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-700 dark:text-emerald-300 text-sm">
-          {success}
+
+      <div className="flex flex-wrap items-center gap-2.5">
+        <label className="flex h-11 min-w-64 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-3">
+          <Search className="size-4 text-muted-foreground" aria-hidden />
+          <span className="sr-only">Rechercher un lieu</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Nom, ville ou adresse"
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+          />
+        </label>
+        <div role="group" aria-label="État de l'agenda" className="flex flex-wrap gap-1.5">
+          {FILTERS.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={filter === key}
+              onClick={() => setFilter(key)}
+              className={cn(
+                "h-9 rounded-full border px-3.5 text-sm font-medium transition-colors",
+                filter === key
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border bg-card hover:border-foreground/40"
+              )}
+            >
+              {label}
+              {key === "attention" && attention > 0 ? ` · ${attention}` : ""}
+            </button>
+          ))}
         </div>
-      )}
-      
-      <table className="min-w-full divide-y divide-border">
-        <thead className="bg-muted/50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Bannière
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Nom
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Jeux supportés
-            </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-card divide-y divide-border">
-          {lairs.length === 0 ? (
-            <tr>
-              <td colSpan={4} className="px-6 py-4 text-center text-muted-foreground">
-                Aucun lieu pour le moment
-              </td>
+      </div>
+
+      {/* Le tableau défile dans sa carte plutôt que d'être coupé à la largeur de l'écran. */}
+      <div className="overflow-x-auto rounded-2xl border border-border bg-card">
+        <table className="w-full min-w-[860px] text-left">
+          <thead>
+            <tr className="border-b border-border text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+              <th className="px-5 py-3">Lieu</th>
+              <th className="px-3 py-3">Jeux</th>
+              <th className="px-3 py-3">Agenda</th>
+              <th className="px-5 py-3 text-right">Actions</th>
             </tr>
-          ) : (
-            lairs.map((lair) => (
-              <tr key={lair.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {lair.banner ?
-                  <img
-                    src={lair.banner}
-                    alt={lair.name}
-                    className="h-16 w-24 rounded object-cover"
-                  /> : (
-                    <div className="h-16 w-24 rounded bg-muted flex items-center justify-center text-muted-foreground">
-                      <span className="text-lg font-semibold">
-                        {lair.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <Link
-                    href={`/admin/lairs/${lair.id}`}
-                    className="text-sm font-medium text-foreground hover:text-blue-600 dark:hover:text-blue-400"
-                  >
-                    {lair.name}
-                  </Link>
-                  {lair.address && (
-                    <div className="text-xs text-muted-foreground mt-0.5 max-w-xs truncate">
-                      {lair.address}
-                    </div>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1">
-                    {lair.games.length === 0 ? (
-                      <span className="text-sm text-muted-foreground">Aucun jeu</span>
-                    ) : (
-                      lair.games.map((gameId) => (
-                        <span
-                          key={gameId}
-                          className="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-300"
-                        >
-                          {getGameName(gameId)}
+          </thead>
+          <tbody>
+            {shown.map((lair) => {
+              const agenda = agendaOf(lair);
+              const alert = needsAttention(agenda.state);
+              return (
+                <tr key={lair.id} className={cn("border-b border-border/60 last:border-b-0", alert && "bg-red-50/60 dark:bg-red-500/5")}>
+                  <td className="px-5 py-3.5">
+                    <Link href={`/admin/lairs/${lair.id}`} className="flex min-w-0 items-center gap-3">
+                      {lair.banner ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={lair.banner} alt="" className="size-10 shrink-0 rounded-lg object-cover" />
+                      ) : (
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-sky-600 font-bold text-white dark:bg-sky-500">
+                          {lair.name.charAt(0).toUpperCase()}
                         </span>
-                      ))
+                      )}
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="flex items-center gap-1.5 font-semibold hover:underline">
+                          {lair.name}
+                          {lair.isPrivate && <Lock className="size-3.5 text-muted-foreground" aria-label="Privé" />}
+                        </span>
+                        {lair.address && <span className="max-w-xs truncate text-[13px] text-muted-foreground">{lair.address}</span>}
+                      </span>
+                    </Link>
+                  </td>
+                  <td className="px-3 py-3.5">
+                    {lair.games.length === 0 ? (
+                      <span className="text-[13px] text-muted-foreground">Aucun jeu</span>
+                    ) : (
+                      <span className="flex flex-wrap gap-1">
+                        {lair.games.map((gameId) => (
+                          <span key={gameId} className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold">
+                            {gameName(gameId)}
+                          </span>
+                        ))}
+                      </span>
                     )}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex gap-2 justify-end">
-                    {lair.eventsSourceUrls && lair.eventsSourceUrls.length > 0 && (
-                      <button
-                        onClick={() => handleRefreshEvents(lair.id)}
-                        disabled={isPending}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50"
-                        title="Rafraîchir les événements"
+                  </td>
+                  <td className="px-3 py-3.5">
+                    <AgendaCell agenda={agenda} />
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <span className="flex justify-end gap-1.5">
+                      {agenda.sources > 0 && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="size-10"
+                          aria-label={`Relire l'agenda de ${lair.name}`}
+                          title="Relire l'agenda maintenant"
+                          disabled={isPending && busyId === lair.id}
+                          onClick={() => refresh(lair)}
+                        >
+                          <RefreshCw className={cn(busyId === lair.id && "animate-spin")} aria-hidden />
+                        </Button>
+                      )}
+                      <Button asChild variant="secondary" className="h-10">
+                        <Link href={`/admin/lairs/${lair.id}`}>Ouvrir</Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-10 text-muted-foreground hover:text-destructive"
+                        aria-label={`Supprimer ${lair.name}`}
+                        title="Supprimer le lieu"
+                        onClick={() => setLairToDelete(lair)}
                       >
-                        🔄 Rafraîchir
-                      </button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      asChild
-                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                    >
-                      <Link href={`/admin/lairs/${lair.id}`}>Gérer</Link>
-                    </Button>
-                    <button
-                      onClick={() => handleDelete(lair.id)}
-                      disabled={isPending}
-                      className="text-destructive hover:text-destructive/80 disabled:opacity-50"
-                    >
-                      Supprimer
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+                        <Trash2 aria-hidden />
+                      </Button>
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {shown.length === 0 && <p className="px-5 py-8 text-sm text-muted-foreground">Aucun lieu ne correspond à ces filtres.</p>}
+      </div>
+
+      <ConfirmDialog
+        open={!!lairToDelete}
+        onOpenChange={(open) => {
+          if (!open) setLairToDelete(null);
+        }}
+        title={`Supprimer ${lairToDelete?.name ?? "ce lieu"} ?`}
+        description="Le lieu disparaît de l'annuaire, avec son agenda. On ne pourra pas revenir en arrière."
+        confirmLabel="Supprimer"
+        destructive
+        busy={isPending}
+        onConfirm={() => {
+          if (lairToDelete) remove(lairToDelete);
+          setLairToDelete(null);
+        }}
+      />
     </div>
+  );
+}
+
+const AGENDA_DOTS: Record<LairAgendaState, string> = {
+  failing: "bg-red-600",
+  help: "bg-amber-500",
+  ok: "bg-emerald-600",
+  pending: "bg-slate-400",
+  manual: "bg-slate-400",
+};
+
+function AgendaCell({ agenda }: { agenda: LairAgendaSummary }) {
+  const when = agenda.refreshedAt
+    ? DateTime.fromISO(agenda.refreshedAt).setLocale("fr").toRelative()
+    : undefined;
+
+  const [label, detail] = (() => {
+    switch (agenda.state) {
+      case "failing":
+        return ["Import en échec", agenda.error ? `${agenda.error}${when ? ` · ${when}` : ""}` : when];
+      case "help":
+        return ["Le gérant demande de l'aide", when ? `Dernière lecture ${when}` : undefined];
+      case "ok":
+        return [
+          "Importé",
+          `${when ? `Lu ${when}` : "Lu"} · ${agenda.found ?? 0} évènement${(agenda.found ?? 0) > 1 ? "s" : ""}`,
+        ];
+      case "pending":
+        return ["Importé", "Pas encore lu"];
+      case "manual":
+        return ["Saisie à la main", undefined];
+    }
+  })();
+
+  return (
+    <span className="flex flex-col gap-0.5">
+      <span className="flex items-center gap-2 text-sm font-medium">
+        <span className={cn("size-2 shrink-0 rounded-full", AGENDA_DOTS[agenda.state])} aria-hidden />
+        {label}
+      </span>
+      {detail && (
+        <span
+          className={cn(
+            "max-w-xs truncate text-[13px]",
+            agenda.state === "failing" ? "font-medium text-red-800 dark:text-red-300" : "text-muted-foreground"
+          )}
+          title={detail}
+        >
+          {detail}
+        </span>
+      )}
+    </span>
   );
 }
