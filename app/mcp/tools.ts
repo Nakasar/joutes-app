@@ -59,13 +59,20 @@ import {
 } from "@/app/[locale]/(app)/games/riftbound/deck-checker/action";
 import type { Game } from "@/lib/types/Game";
 import type { Wishlist } from "@/lib/types/Wishlist";
+import { revalidatePath } from "next/cache";
+import { createErrata, ErrataInputError, updateErrataById } from "@/lib/db/erratas";
+import { anyUserHasPermission } from "@/lib/db/permissions";
+import { createErrataSchema } from "@/lib/schemas/errata.schema";
+import { locales } from "@/i18n/config";
+import type { ErrataDb, ErrataType } from "@/lib/types/errata";
 
 type ToolResult = { content: TextContent[]; isError?: boolean };
 type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
 
 // Enveloppe chaque outil MCP pour logger son invocation et catcher les erreurs
-// non gérées par le handler lui-même. Les TournamentError portent un message
-// utilisateur : il est renvoyé tel quel plutôt qu'un message générique.
+// non gérées par le handler lui-même. Les TournamentError et ErrataInputError
+// portent un message utilisateur : il est renvoyé tel quel plutôt qu'un
+// message générique.
 export function withToolLogging<Args extends unknown[]>(
     name: string,
     handler: (...args: Args) => Promise<ToolResult>
@@ -76,7 +83,7 @@ export function withToolLogging<Args extends unknown[]>(
             return await handler(...args);
         } catch (error) {
             console.error(`[MCP] Erreur lors de l'exécution de l'outil "${name}":`, error);
-            const message = error instanceof TournamentError
+            const message = error instanceof TournamentError || error instanceof ErrataInputError
                 ? error.message
                 : `Erreur lors de l'exécution de l'outil "${name}".`;
             return errorResult(message);
@@ -818,6 +825,207 @@ async function handleCheckDeck(args: { deckList: string; gameName?: string }): P
     );
 }
 
+// --- Erratas ---
+
+/**
+ * Cartes visées par un errata, données par identifiant et/ou par nom dans le
+ * jeu. Un errata s'affiche sur toutes les impressions d'une carte de même nom :
+ * une seule impression par nom suffit donc, sans demander setCode et
+ * collectorNumber comme pour la collection.
+ */
+async function resolveErrataCardIds(
+    gameId: ObjectId,
+    cardNames: string[] = [],
+    cardIds: string[] = []
+): Promise<{ cardIds: string[] } | { error: ToolResult }> {
+    const resolved = [...cardIds];
+    const missing: string[] = [];
+
+    for (const cardName of cardNames) {
+        const card = await db.collection<{ id: string }>("cards").findOne(
+            { gameId, name: { $regex: `^${escapeRegex(cardName.trim())}$`, $options: "i" } },
+            { projection: { id: 1 }, sort: { setCode: 1, collectorNumber: 1 } }
+        );
+        if (card) resolved.push(card.id);
+        else missing.push(cardName);
+    }
+
+    if (missing.length > 0) {
+        return { error: errorResult(`Carte(s) introuvable(s) dans ce jeu : ${missing.join(", ")}.`) };
+    }
+
+    return { cardIds: resolved };
+}
+
+/** Jeu d'un errata, retrouvé par ses cartes : un errata ne porte pas de jeu. */
+async function gameOfCards(cardIds: string[]): Promise<(Game & { _id: ObjectId }) | null> {
+    const card = await db.collection<{ id: string; gameId: ObjectId }>("cards").findOne(
+        { id: { $in: cardIds } },
+        { projection: { gameId: 1 } }
+    );
+    if (!card) return null;
+    return db.collection<Game & { _id: ObjectId }>("games").findOne({ _id: card.gameId });
+}
+
+/** zod ne dit que « expected date » d'une date illisible : on précise le format. */
+function invalidErrataDate(errataDate?: string): ToolResult | null {
+    if (errataDate === undefined || !Number.isNaN(Date.parse(errataDate))) return null;
+    return errorResult(`Date "${errataDate}" invalide : format attendu ISO 8601, par exemple 2026-10-15.`);
+}
+
+function revalidateErrataPages(gameSlug: string | undefined, cardIds: Iterable<string>) {
+    for (const cardId of new Set(cardIds)) {
+        revalidatePath(`/games/${gameSlug ?? "riftbound"}/cards/${cardId}`);
+    }
+    revalidatePath("/riftbound/erratas");
+}
+
+/**
+ * Création ouverte à tout utilisateur connecté, comme depuis l'app : les
+ * erratas sont un contenu communautaire, arbitré par les votes et les
+ * signalements.
+ */
+async function handleCreateErrata(
+    args: {
+        gameName: string;
+        cardNames?: string[];
+        cardIds?: string[];
+        type: ErrataType;
+        details: string;
+        originalLang?: string;
+        source?: string;
+        errataDate?: string;
+    },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const game = await resolveGame(args.gameName);
+    if (!game) return errorResult(`Jeu "${args.gameName}" non trouvé.`);
+
+    const cards = await resolveErrataCardIds(game._id, args.cardNames, args.cardIds);
+    if ("error" in cards) return cards.error;
+
+    const invalidDate = invalidErrataDate(args.errataDate);
+    if (invalidDate) return invalidDate;
+
+    // Même schéma que l'API HTTP : mêmes limites de taille, mêmes messages.
+    const parsed = createErrataSchema.safeParse({
+        cardIds: cards.cardIds,
+        type: args.type,
+        details: args.details,
+        originalLang: args.originalLang,
+        source: args.source || undefined,
+        errataDate: args.errataDate,
+    });
+    if (!parsed.success) {
+        return errorResult(parsed.error.issues[0]?.message || "Données invalides.");
+    }
+
+    const { id, cardIds } = await createErrata({
+        ...parsed.data,
+        errataDate: parsed.data.errataDate ?? new Date(),
+        createdBy: userId,
+        gameId: game._id.toString(),
+    });
+
+    revalidateErrataPages(game.slug, cardIds);
+
+    return textResult(
+        `Errata créé (ID: ${id}, type : ${parsed.data.type}) sur ${cardIds.length} carte(s) de ${game.name}.`
+    );
+}
+
+const updateErrataSchema = createErrataSchema
+    .pick({ type: true, details: true, source: true, errataDate: true })
+    .partial();
+
+/**
+ * Modification réservée à l'auteur de l'errata ou à un modérateur (permission
+ * `erratas:manage`), comme depuis l'app. Seuls les champs fournis changent.
+ */
+async function handleUpdateErrata(
+    args: {
+        errataId: string;
+        type?: ErrataType;
+        details?: string;
+        source?: string;
+        errataDate?: string;
+        deprecated?: boolean;
+        gameName?: string;
+        cardNames?: string[];
+        cardIds?: string[];
+    },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    if (!ObjectId.isValid(args.errataId)) return errorResult("Identifiant d'errata invalide.");
+
+    const errata = await db.collection<ErrataDb & { cardId?: string }>("erratas").findOne(
+        { _id: new ObjectId(args.errataId) },
+        { projection: { createdBy: 1, cardIds: 1, cardId: 1 } }
+    );
+    if (!errata) return errorResult("Errata introuvable.");
+
+    const isAuthor = errata.createdBy?.toString() === userId;
+    if (!isAuthor && !(await anyUserHasPermission([userId], "erratas:manage"))) {
+        return errorResult("Seul l'auteur de l'errata ou un modérateur peut le modifier.");
+    }
+
+    const invalidDate = invalidErrataDate(args.errataDate);
+    if (invalidDate) return invalidDate;
+
+    const parsed = updateErrataSchema.safeParse({
+        type: args.type,
+        details: args.details,
+        source: args.source,
+        errataDate: args.errataDate,
+    });
+    if (!parsed.success) {
+        return errorResult(parsed.error.issues[0]?.message || "Données invalides.");
+    }
+
+    // Les cartes se résolvent dans le jeu de l'errata, ou celui donné en
+    // argument : un errata ne passe pas d'un jeu à l'autre par erreur de nom.
+    const currentCardIds = errata.cardIds?.length ? errata.cardIds : errata.cardId ? [errata.cardId] : [];
+    const errataGame = await gameOfCards(currentCardIds);
+    let game = errataGame;
+    if (args.gameName) {
+        game = await resolveGame(args.gameName);
+        if (!game) return errorResult(`Jeu "${args.gameName}" non trouvé.`);
+    }
+
+    let cardIds: string[] | undefined;
+    if (args.cardNames?.length || args.cardIds?.length) {
+        if (!game) return errorResult("Précisez gameName pour résoudre les cartes de cet errata.");
+        const cards = await resolveErrataCardIds(game._id, args.cardNames, args.cardIds);
+        if ("error" in cards) return cards.error;
+        cardIds = cards.cardIds;
+    }
+
+    const changes = {
+        ...parsed.data,
+        cardIds,
+        deprecatedAt: args.deprecated === undefined ? undefined : args.deprecated ? new Date() : null,
+    };
+    if (Object.values(changes).every((value) => value === undefined)) {
+        return errorResult("Rien à modifier : précisez au moins un champ.");
+    }
+
+    const result = await updateErrataById(args.errataId, {
+        ...changes,
+        gameId: cardIds ? game?._id.toString() : undefined,
+    });
+    if (!result) return errorResult("Errata introuvable.");
+
+    revalidateErrataPages((game ?? errataGame)?.slug, [...result.previousCardIds, ...result.cardIds]);
+
+    return textResult(`Errata ${args.errataId} mis à jour.`);
+}
+
 // --- Enregistrement des outils ---
 
 export function registerJoutesDataTools(server: McpServer) {
@@ -967,6 +1175,35 @@ export function registerJoutesDataTools(server: McpServer) {
             seed: z.number().int().min(1).optional(),
         },
     }, withToolLogging("add_tournament_player", handleAddTournamentPlayer));
+    server.registerTool("create_errata", {
+        title: "Create errata",
+        description: "Proposer un errata, une clarification ou un ruling sur une ou plusieurs cartes d'un jeu. Cartes données par nom (cardNames) et/ou identifiant (cardIds). Ouvert à tout utilisateur connecté ; la communauté arbitre par les votes.",
+        inputSchema: {
+            gameName: z.string().describe("Nom ou slug du jeu"),
+            cardNames: z.array(z.string()).optional().describe("Noms exacts des cartes visées"),
+            cardIds: z.array(z.string()).optional().describe("Identifiants des cartes visées"),
+            type: z.enum(["errata", "clarification", "ruling"]),
+            details: z.string().describe("Contenu de l'errata (Markdown)"),
+            originalLang: z.enum(locales).optional().describe("Langue du contenu (défaut : fr)"),
+            source: z.string().optional().describe("Lien ou référence de l'annonce officielle"),
+            errataDate: z.string().optional().describe("Date de publication par l'éditeur, ISO 8601 (défaut : aujourd'hui)"),
+        },
+    }, withToolLogging("create_errata", handleCreateErrata));
+    server.registerTool("update_errata", {
+        title: "Update errata",
+        description: "Modifier un errata existant ; seuls les champs fournis changent. Réservé à l'auteur de l'errata et aux modérateurs.",
+        inputSchema: {
+            errataId: z.string(),
+            type: z.enum(["errata", "clarification", "ruling"]).optional(),
+            details: z.string().optional().describe("Nouveau contenu (Markdown)"),
+            source: z.string().optional().describe("Nouvelle source ; chaîne vide pour la retirer"),
+            errataDate: z.string().optional().describe("Date de publication par l'éditeur, ISO 8601"),
+            deprecated: z.boolean().optional().describe("true pour marquer l'errata obsolète, false pour le rétablir"),
+            gameName: z.string().optional().describe("Jeu dans lequel résoudre cardNames (défaut : celui de l'errata)"),
+            cardNames: z.array(z.string()).optional().describe("Remplace les cartes visées, par nom"),
+            cardIds: z.array(z.string()).optional().describe("Remplace les cartes visées, par identifiant"),
+        },
+    }, withToolLogging("update_errata", handleUpdateErrata));
     server.registerTool("check_deck", {
         title: "Check deck legality",
         description: "Vérifier une liste de deck Riftbound : cartes reconnues, bannies, erratas. Accepte une liste texte (« 3 Nom de carte » par ligne), un code de deck, ou un lien Piltover Archive.",

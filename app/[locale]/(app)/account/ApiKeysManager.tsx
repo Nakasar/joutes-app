@@ -350,6 +350,8 @@ export default function ApiKeysManager() {
               <li><strong>search_rules</strong>: Rechercher dans les règles et politiques d'un jeu</li>
               <li><strong>get_rule</strong>: Récupérer une règle par son ID.</li>
               <li><strong>vote_errata</strong>: Voter pour un errata (auth requise)</li>
+              <li><strong>create_errata</strong> : Proposer un errata, une clarification ou un ruling (auth requise)</li>
+              <li><strong>update_errata</strong> : Modifier un errata, réservé à son auteur et aux modérateurs (auth requise)</li>
             </ul>
           </div>
         </CardContent>
