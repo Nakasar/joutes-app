@@ -1,10 +1,5 @@
-import {
-    ServerNotification,
-    ServerRequest,
-    TextContent,
-} from "@modelcontextprotocol/sdk/types.js";
-import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
-import { createMcpHandler } from 'mcp-handler';
+import type { ServerContext, TextContent } from "@modelcontextprotocol/server";
+import { createMcpHandler, getPublicOrigin } from 'mcp-handler';
 import { NextResponse } from "next/server";
 import { getEventsForUser, getAllEvents } from "@/lib/db/events";
 import { getAllLairs, getLairById } from "@/lib/db/lairs";
@@ -24,11 +19,12 @@ import { validateApiKey } from "@/lib/db/api-keys";
 import { MCP_TOKEN } from "@/lib/well-known/auth-md";
 import { MCP_SERVER_INFO } from "@/lib/well-known/mcp-server-card";
 import { registerJoutesDataTools, withToolLogging } from "./tools";
+import { registerJoutesTool, requiresAccount, userIdFrom } from "./tool-policy";
 
 // Gestionnaires pour chaque outil
-async function handleSearchEvents(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
+async function handleSearchEvents(argsRaw: Record<string, unknown>, ctx: ServerContext): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
-        const userId: string = extra.authInfo?.extra?.userId as string;
+        const userId = userIdFrom(ctx);
 
         let events: Event[];
 
@@ -165,9 +161,9 @@ async function handleSearchLairs(argsRaw: Record<string, unknown>): Promise<{ co
     }
 }
 
-async function handleCreateEvent(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
+async function handleCreateEvent(argsRaw: Record<string, unknown>, ctx: ServerContext): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
-        const userId: string = extra.authInfo?.extra?.userId as string;
+        const userId = userIdFrom(ctx);
 
         if (!userId) {
             return {
@@ -257,9 +253,9 @@ async function handleCreateEvent(argsRaw: Record<string, unknown>, extra: Reques
     }
 }
 
-async function handleFollowLair(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
+async function handleFollowLair(argsRaw: Record<string, unknown>, ctx: ServerContext): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
-        const userId: string = extra.authInfo?.extra?.userId as string;
+        const userId = userIdFrom(ctx);
 
         if (!userId) {
             return {
@@ -328,9 +324,9 @@ async function handleFollowLair(argsRaw: Record<string, unknown>, extra: Request
     }
 }
 
-async function handleAddGame(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
+async function handleAddGame(argsRaw: Record<string, unknown>, ctx: ServerContext): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
-        const userId: string = extra.authInfo?.extra?.userId as string;
+        const userId = userIdFrom(ctx);
 
         if (!userId) {
             return {
@@ -604,38 +600,66 @@ async function handleGetRule(params: {
 const HANDLER_TIMEOUT_MS = 55_000;
 
 // Route principale MCP
+//
+// Ce que chaque outil exige (compte ou non) et ce qu'il touche (lecture,
+// écriture, suppression) est déclaré dans `TOOL_POLICIES` (./tool-policy.ts),
+// pas ici : `registerJoutesTool` en tire les annotations du protocole.
 const handler = createMcpHandler(server => {
-    server.tool("search_events", "Rechercher des évènements sur la plateforme Joutes. Supporte la personnalisation pour l'utilisateur authentifié et le filtrage par jeux.", {
-        month: z.number().min(1).max(12).optional(),
-        year: z.number().min(2020).optional(),
-        gameNames: z.array(z.string()).optional(),
-        personalized: z.boolean().optional(),
-        userLocation: z.object({
-            latitude: z.number().min(-90).max(90),
-            longitude: z.number().min(-180).max(180)
-        }).optional(),
-        maxDistanceKm: z.number().min(0).optional()
+    registerJoutesTool(server, "search_events", {
+        title: "Search events",
+        description: "Rechercher des évènements sur la plateforme Joutes. Supporte la personnalisation pour l'utilisateur authentifié et le filtrage par jeux.",
+        inputSchema: {
+            month: z.number().min(1).max(12).optional(),
+            year: z.number().min(2020).optional(),
+            gameNames: z.array(z.string()).optional(),
+            personalized: z.boolean().optional(),
+            userLocation: z.object({
+                latitude: z.number().min(-90).max(90),
+                longitude: z.number().min(-180).max(180)
+            }).optional(),
+            maxDistanceKm: z.number().min(0).optional()
+        },
     }, withToolLogging("search_events", handleSearchEvents));
-    server.tool("search_lairs", "Rechercher des lieux (lairs) sur la plateforme Joutes.", {
-        name: z.string().optional()
+    registerJoutesTool(server, "search_lairs", {
+        title: "Search lairs",
+        description: "Rechercher des lieux (lairs) sur la plateforme Joutes.",
+        inputSchema: {
+            name: z.string().optional()
+        },
     }, withToolLogging("search_lairs", handleSearchLairs));
-    server.tool("create_event", "Créer un nouvel évènement dans un lieu. Nécessite d'être propriétaire du lieu.", {
-        lairId: z.string(),
-        name: z.string(),
-        gameName: z.string(),
-        startDateTime: z.string(),
-        endDateTime: z.string(),
-        url: z.string().optional(),
-        price: z.string().transform((val) => parseFloat(val)).optional()
+    registerJoutesTool(server, "create_event", {
+        title: "Create event",
+        description: "Créer un nouvel évènement dans un lieu. Nécessite d'être propriétaire du lieu.",
+        inputSchema: {
+            lairId: z.string(),
+            name: z.string(),
+            gameName: z.string(),
+            startDateTime: z.string(),
+            endDateTime: z.string(),
+            url: z.string().optional(),
+            price: z.string().optional()
+        },
     }, withToolLogging("create_event", handleCreateEvent));
-    server.tool("follow_lair", "Suivre un lieu pour recevoir ses évènements.", {
-        lairId: z.string()
+    registerJoutesTool(server, "follow_lair", {
+        title: "Follow lair",
+        description: "Suivre un lieu pour recevoir ses évènements.",
+        inputSchema: {
+            lairId: z.string()
+        },
     }, withToolLogging("follow_lair", handleFollowLair));
-    server.tool("add_game", "Ajouter un jeu à la liste des jeux suivis par l'utilisateur.", {
-        gameId: z.string()
+    registerJoutesTool(server, "add_game", {
+        title: "Follow game",
+        description: "Ajouter un jeu à la liste des jeux suivis par l'utilisateur.",
+        inputSchema: {
+            gameId: z.string()
+        },
     }, withToolLogging("add_game", handleAddGame));
-    server.tool("list_games", "Lister tous les jeux disponibles sur la plateforme.", {}, withToolLogging("list_games", handleListGames));
-    server.registerTool("search_card", {
+    registerJoutesTool(server, "list_games", {
+        title: "List games",
+        description: "Lister tous les jeux disponibles sur la plateforme.",
+        inputSchema: {},
+    }, withToolLogging("list_games", handleListGames));
+    registerJoutesTool(server, "search_card", {
         title: "Search cards",
         description: "Search for cards and their details, erratas and rulings.",
         inputSchema: {
@@ -643,7 +667,7 @@ const handler = createMcpHandler(server => {
             cardName: z.string(),
         },
     }, withToolLogging("search_card", handleSearchCard));
-    server.registerTool("search_rules", {
+    registerJoutesTool(server, "search_rules", {
         title: "Search rules and policies",
         description: "Search for rules, policies, tournament regulation, keywords...",
         inputSchema: {
@@ -651,7 +675,7 @@ const handler = createMcpHandler(server => {
             query: z.string(),
         },
     }, withToolLogging("search_rules", handleSearchRules));
-    server.registerTool("vote_errata", {
+    registerJoutesTool(server, "vote_errata", {
         title: "Vote on errata",
         description: "Vote on the correctness of card erratas or rulings.",
         inputSchema: {
@@ -659,7 +683,7 @@ const handler = createMcpHandler(server => {
             vote: z.enum(["upvote", "downvote"]),
         },
     }, withToolLogging("vote_errata", handleVoteErrata));
-    server.registerTool("get_rule", {
+    registerJoutesTool(server, "get_rule", {
         title: "Get rule by ID",
         description: "Get the content of a tournament rule (TR) or core rule (CR) by its ID.",
         inputSchema: {
@@ -672,23 +696,19 @@ const handler = createMcpHandler(server => {
     // Partagé avec la carte du serveur : ce que dit la poignée de main et ce
     // que dit `/.well-known/mcp/server-card.json` ne peuvent pas diverger.
     serverInfo: MCP_SERVER_INFO,
-}, {
-    basePath: '',
     verboseLogs: true,
-    maxDuration: 60,
 });
 
 // Durée max de la fonction serverless. Sans cet export, Vercel applique sa
 // limite de plateforme (300s) : une requête bloquée y restait jusqu'au 504.
 export const maxDuration = 60;
 
-// mcp-handler construit sa Response depuis un faux ServerResponse Node et
-// appelle le handler interne en `void fn(res)` : si l'enregistrement des outils
-// échoue, le rejet est avalé et la promesse retournée n'est jamais résolue —
-// la requête reste pendante jusqu'au timeout de la plateforme. On borne donc
-// l'attente pour renvoyer une erreur explicite plutôt que de laisser filer.
-// Aucune route ici n'est longue durée : GET et DELETE répondent 405 et POST est
-// une requête/réponse JSON-RPC unitaire.
+// Garde-fou hérité de mcp-handler 1.x, qui avalait le rejet d'un
+// enregistrement d'outils raté et laissait la requête pendante jusqu'au
+// timeout de la plateforme. La 2.x passe directement par le transport du SDK,
+// mais une requête bloquée (base injoignable…) doit toujours finir en erreur
+// explicite plutôt qu'en 504. Aucune route ici n'est longue durée : GET et
+// DELETE répondent 405 et POST est une requête/réponse JSON-RPC unitaire.
 function withTimeout(promise: Promise<Response>): Promise<Response> {
     return new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
@@ -699,13 +719,53 @@ function withTimeout(promise: Promise<Response>): Promise<Response> {
     });
 }
 
-async function authHandler(req: Request) {
+/**
+ * Les outils appelés par cette requête POST, lus sans consommer le corps.
+ * Couvre les lots JSON-RPC, que les clients 2025-03-26 envoient encore.
+ */
+async function calledToolNames(req: Request): Promise<string[]> {
+    if (req.method !== "POST") return [];
     try {
-        const authorization = req.headers?.get("authorization") ?? undefined;
-        const accessToken = authorization?.startsWith("Bearer ")
-            ? authorization.replace("Bearer ", "")
-            : authorization;
+        const body: unknown = await req.clone().json();
+        const messages = Array.isArray(body) ? body : [body];
+        return messages.flatMap(message => {
+            const m = message as { method?: unknown; params?: { name?: unknown } } | null;
+            return m?.method === "tools/call" && typeof m.params?.name === "string" ? [m.params.name] : [];
+        });
+    } catch {
+        return [];
+    }
+}
 
+/**
+ * 401 pour un appel anonyme à un outil qui exige un compte.
+ *
+ * Le serveur accepte les connexions sans jeton, pour les outils publics. Un
+ * client qui s'y est connecté ainsi doit pourtant apprendre, au moment où il
+ * appelle un outil réservé, qu'il lui faut un jeton et où le demander : c'est
+ * ce que dit l'en-tête `WWW-Authenticate` (RFC 9728), et ce que les clients
+ * MCP suivent pour lancer la connexion. Un résultat d'outil en erreur, lui,
+ * n'est lu que par le modèle, qui ne peut pas connecter l'utilisateur.
+ */
+function authenticationChallenge(req: Request, invalidToken: boolean): Response {
+    const resourceMetadata = new URL("/.well-known/oauth-protected-resource", getPublicOrigin(req)).toString();
+    const params = [`resource_metadata="${resourceMetadata}"`];
+    if (invalidToken) {
+        params.push(`error="invalid_token"`, `error_description="Jeton invalide ou expiré"`);
+    }
+    return NextResponse.json(
+        { error: "unauthorized", error_description: "Cet outil nécessite un compte Joutes connecté." },
+        { status: 401, headers: { "WWW-Authenticate": `Bearer ${params.join(", ")}` } }
+    );
+}
+
+async function authHandler(req: Request) {
+    const authorization = req.headers?.get("authorization") ?? undefined;
+    const accessToken = authorization?.startsWith("Bearer ")
+        ? authorization.replace("Bearer ", "")
+        : authorization;
+
+    try {
         if (accessToken) {
             if (accessToken.startsWith("jts_")) {
                 const key = await validateApiKey(accessToken);
@@ -747,6 +807,14 @@ async function authHandler(req: Request) {
     }
 
     console.log(`[MCP] Requête ${req.method} reçue`);
+
+    if (!req.auth) {
+        const toolNames = await calledToolNames(req);
+        if (toolNames.some(requiresAccount)) {
+            return authenticationChallenge(req, Boolean(accessToken));
+        }
+    }
+
     try {
         return await withTimeout(handler(req));
     } catch (error) {
@@ -757,35 +825,5 @@ async function authHandler(req: Request) {
         );
     }
 }
-
-/*
-const authHandler = mcpHandler({
-    jwksUrl: "https://www.joutes.app/api/auth/jwks",
-    verifyOptions: {
-        audience: "https://www.joutes.app/",
-        issuer: "https://www.joutes.app/api/auth",
-    },
-}, (req, jwt) => {
-    req.auth = req.auth ? {
-        ...req.auth,
-        clientId: '',
-        scopes: [],
-        extra: {
-            ...req.auth.extra,
-            userId: jwt.sub,
-        },
-    } : {
-        token: '',
-        clientId: '',
-        scopes: [],
-        extra: {
-            userId: jwt.sub,
-        },
-    };
-    return handler(req);
-}, {
-    resourceMetadataMappings: {},
-});
-*/
 
 export { authHandler as GET, authHandler as POST, authHandler as DELETE };

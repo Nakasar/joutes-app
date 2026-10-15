@@ -1,10 +1,4 @@
-import {
-    ServerNotification,
-    ServerRequest,
-    TextContent,
-} from "@modelcontextprotocol/sdk/types.js";
-import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer, ServerContext } from "@modelcontextprotocol/server";
 import { ObjectId } from "mongodb";
 import { z } from "zod";
 import db from "@/lib/mongodb";
@@ -65,9 +59,9 @@ import { anyUserHasPermission } from "@/lib/db/permissions";
 import { createErrataSchema } from "@/lib/schemas/errata.schema";
 import { locales } from "@/i18n/config";
 import type { ErrataDb, ErrataType } from "@/lib/types/errata";
+import { AUTH_REQUIRED, registerJoutesTool, ToolResult, userIdFrom } from "./tool-policy";
 
-type ToolResult = { content: TextContent[]; isError?: boolean };
-type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
+type ToolExtra = ServerContext;
 
 // Enveloppe chaque outil MCP pour logger son invocation et catcher les erreurs
 // non gérées par le handler lui-même. Les TournamentError et ErrataInputError
@@ -97,12 +91,6 @@ function textResult(text: string): ToolResult {
 
 function errorResult(text: string): ToolResult {
     return { content: [{ type: "text", text }], isError: true };
-}
-
-const AUTH_REQUIRED = errorResult("Authentification requise pour utiliser cet outil.");
-
-function userIdFrom(extra: ToolExtra): string | undefined {
-    return extra.authInfo?.extra?.userId as string | undefined;
 }
 
 /** Résout un jeu par nom ou slug (insensible à la casse pour le nom). */
@@ -1029,7 +1017,7 @@ async function handleUpdateErrata(
 // --- Enregistrement des outils ---
 
 export function registerJoutesDataTools(server: McpServer) {
-    server.registerTool("get_collection", {
+    registerJoutesTool(server, "get_collection", {
         title: "Get card collection",
         description: "Consulter la collection de cartes de l'utilisateur ou d'un de ses groupes de jeu : vue d'ensemble par jeu, ou détail paginé pour un jeu (filtres par set, recherche, cartes possédées uniquement).",
         inputSchema: {
@@ -1041,7 +1029,7 @@ export function registerJoutesDataTools(server: McpServer) {
             page: z.number().int().min(1).optional(),
         },
     }, withToolLogging("get_collection", handleGetCollection));
-    server.registerTool("add_card_to_collection", {
+    registerJoutesTool(server, "add_card_to_collection", {
         title: "Add card to collection",
         description: "Ajouter des exemplaires d'une carte à la collection personnelle ou à celle d'un groupe de jeu. La carte est résolue par jeu + nom (précisez setCode/collectorNumber si plusieurs impressions existent).",
         inputSchema: {
@@ -1055,7 +1043,7 @@ export function registerJoutesDataTools(server: McpServer) {
             playGroupId: z.string().optional(),
         },
     }, withToolLogging("add_card_to_collection", handleAddCardToCollection));
-    server.registerTool("remove_card_from_collection", {
+    registerJoutesTool(server, "remove_card_from_collection", {
         title: "Remove card from collection",
         description: "Retirer des exemplaires d'une carte de la collection personnelle ou de celle d'un groupe de jeu.",
         inputSchema: {
@@ -1067,12 +1055,12 @@ export function registerJoutesDataTools(server: McpServer) {
             playGroupId: z.string().optional(),
         },
     }, withToolLogging("remove_card_from_collection", handleRemoveCardFromCollection));
-    server.registerTool("list_wishlists", {
+    registerJoutesTool(server, "list_wishlists", {
         title: "List wishlists",
         description: "Lister les wishlists de l'utilisateur (personnelles et celles de ses groupes de jeu).",
         inputSchema: {},
     }, withToolLogging("list_wishlists", handleListWishlists));
-    server.registerTool("get_wishlist", {
+    registerJoutesTool(server, "get_wishlist", {
         title: "Get wishlist",
         description: "Consulter le contenu d'une wishlist (paginé, avec recherche), avec le lien pour la commander sur CardNexus.",
         inputSchema: {
@@ -1081,7 +1069,7 @@ export function registerJoutesDataTools(server: McpServer) {
             page: z.number().int().min(1).optional(),
         },
     }, withToolLogging("get_wishlist", handleGetWishlist));
-    server.registerTool("create_wishlist", {
+    registerJoutesTool(server, "create_wishlist", {
         title: "Create wishlist",
         description: "Créer une wishlist personnelle ou pour un groupe de jeu.",
         inputSchema: {
@@ -1091,7 +1079,7 @@ export function registerJoutesDataTools(server: McpServer) {
             playGroupId: z.string().optional(),
         },
     }, withToolLogging("create_wishlist", handleCreateWishlist));
-    server.registerTool("add_card_to_wishlist", {
+    registerJoutesTool(server, "add_card_to_wishlist", {
         title: "Add card to wishlist",
         description: "Ajouter une carte à une wishlist (résolue par jeu + nom ; ré-ajouter une carte déjà présente incrémente sa quantité).",
         inputSchema: {
@@ -1104,7 +1092,7 @@ export function registerJoutesDataTools(server: McpServer) {
             note: z.string().optional(),
         },
     }, withToolLogging("add_card_to_wishlist", handleAddCardToWishlist));
-    server.registerTool("remove_card_from_wishlist", {
+    registerJoutesTool(server, "remove_card_from_wishlist", {
         title: "Remove card from wishlist",
         description: "Retirer une carte d'une wishlist, par identifiant d'item ou par nom de carte.",
         inputSchema: {
@@ -1113,12 +1101,12 @@ export function registerJoutesDataTools(server: McpServer) {
             cardName: z.string().optional(),
         },
     }, withToolLogging("remove_card_from_wishlist", handleRemoveCardFromWishlist));
-    server.registerTool("list_play_groups", {
+    registerJoutesTool(server, "list_play_groups", {
         title: "List play groups",
         description: "Lister les groupes de jeu de l'utilisateur, avec leurs membres et rôles.",
         inputSchema: {},
     }, withToolLogging("list_play_groups", handleListPlayGroups));
-    server.registerTool("create_play_group", {
+    registerJoutesTool(server, "create_play_group", {
         title: "Create play group",
         description: "Créer un groupe de jeu dont l'utilisateur sera propriétaire.",
         inputSchema: {
@@ -1126,7 +1114,7 @@ export function registerJoutesDataTools(server: McpServer) {
             description: z.string().optional(),
         },
     }, withToolLogging("create_play_group", handleCreatePlayGroup));
-    server.registerTool("invite_to_play_group", {
+    registerJoutesTool(server, "invite_to_play_group", {
         title: "Invite to play group",
         description: "Inviter un utilisateur (email, username#0000 ou id) dans un groupe de jeu. Réservé au propriétaire et aux admins du groupe.",
         inputSchema: {
@@ -1134,19 +1122,19 @@ export function registerJoutesDataTools(server: McpServer) {
             userIdentifier: z.string().describe("Email, tag username#0000 ou id de l'utilisateur"),
         },
     }, withToolLogging("invite_to_play_group", handleInviteToPlayGroup));
-    server.registerTool("list_tournaments", {
+    registerJoutesTool(server, "list_tournaments", {
         title: "List tournaments",
         description: "Lister les tournois de l'utilisateur : ceux qu'il gère et ceux où il est inscrit comme joueur.",
         inputSchema: {},
     }, withToolLogging("list_tournaments", handleListTournaments));
-    server.registerTool("get_tournament", {
+    registerJoutesTool(server, "get_tournament", {
         title: "Get tournament",
         description: "Consulter un tournoi (phases, joueurs, classement) par son id ou son code de participation. Réservé au staff et aux joueurs inscrits.",
         inputSchema: {
             tournamentIdOrJoinCode: z.string(),
         },
     }, withToolLogging("get_tournament", handleGetTournament));
-    server.registerTool("create_tournament", {
+    registerJoutesTool(server, "create_tournament", {
         title: "Create tournament",
         description: "Créer un tournoi (statut brouillon) dont l'utilisateur sera organisateur.",
         inputSchema: {
@@ -1157,7 +1145,7 @@ export function registerJoutesDataTools(server: McpServer) {
             preRegistration: z.boolean().optional().describe("Mode pré-inscription (défaut false)"),
         },
     }, withToolLogging("create_tournament", handleCreateTournament));
-    server.registerTool("update_tournament", {
+    registerJoutesTool(server, "update_tournament", {
         title: "Update tournament",
         description: "Modifier le nom ou le statut d'un tournoi. Réservé aux organisateurs et arbitres.",
         inputSchema: {
@@ -1166,7 +1154,7 @@ export function registerJoutesDataTools(server: McpServer) {
             status: z.enum(["draft", "in-progress", "completed"]).optional(),
         },
     }, withToolLogging("update_tournament", handleUpdateTournament));
-    server.registerTool("add_tournament_player", {
+    registerJoutesTool(server, "add_tournament_player", {
         title: "Add tournament player",
         description: "Inscrire un joueur à un tournoi par email, tag username#0000, ou nom libre (invité). Réservé aux organisateurs et arbitres.",
         inputSchema: {
@@ -1175,7 +1163,7 @@ export function registerJoutesDataTools(server: McpServer) {
             seed: z.number().int().min(1).optional(),
         },
     }, withToolLogging("add_tournament_player", handleAddTournamentPlayer));
-    server.registerTool("create_errata", {
+    registerJoutesTool(server, "create_errata", {
         title: "Create errata",
         description: "Proposer un errata, une clarification ou un ruling sur une ou plusieurs cartes d'un jeu. Cartes données par nom (cardNames) et/ou identifiant (cardIds). Ouvert à tout utilisateur connecté ; la communauté arbitre par les votes.",
         inputSchema: {
@@ -1189,7 +1177,7 @@ export function registerJoutesDataTools(server: McpServer) {
             errataDate: z.string().optional().describe("Date de publication par l'éditeur, ISO 8601 (défaut : aujourd'hui)"),
         },
     }, withToolLogging("create_errata", handleCreateErrata));
-    server.registerTool("update_errata", {
+    registerJoutesTool(server, "update_errata", {
         title: "Update errata",
         description: "Modifier un errata existant ; seuls les champs fournis changent. Réservé à l'auteur de l'errata et aux modérateurs.",
         inputSchema: {
@@ -1204,7 +1192,7 @@ export function registerJoutesDataTools(server: McpServer) {
             cardIds: z.array(z.string()).optional().describe("Remplace les cartes visées, par identifiant"),
         },
     }, withToolLogging("update_errata", handleUpdateErrata));
-    server.registerTool("check_deck", {
+    registerJoutesTool(server, "check_deck", {
         title: "Check deck legality",
         description: "Vérifier une liste de deck Riftbound : cartes reconnues, bannies, erratas. Accepte une liste texte (« 3 Nom de carte » par ligne), un code de deck, ou un lien Piltover Archive.",
         inputSchema: {
