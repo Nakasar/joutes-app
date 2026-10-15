@@ -212,7 +212,7 @@ export function LairList({
                     <AgendaCell agenda={agenda} />
                   </td>
                   <td className="px-5 py-3.5">
-                    <span className="flex justify-end gap-1.5">
+                    <span className="flex flex-wrap justify-end gap-1.5">
                       {agenda.sources > 0 && (
                         <Button
                           variant="outline"
