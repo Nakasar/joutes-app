@@ -61,7 +61,7 @@ const KEYWORD_GLOSSARY_HEADER_ID = 804;
 // on card text, e.g. "[Predict 2]") are defined in their own CR section rather
 // than in the numbered Keyword Glossary above — but should still be treated
 // as keywords for styling/auto-linking purposes.
-const EXTRA_KEYWORD_IDS = new Set(['436']); // Predict / Prédiction
+const EXTRA_KEYWORD_IDS = new Set(['437']); // Predict / Prédiction
 
 export function isKeywordEntry(entry: RuleEntry, document: RuleDocument): boolean {
   if (document !== 'CR' || !isTitle(entry)) return false;
