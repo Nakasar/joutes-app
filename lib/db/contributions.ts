@@ -233,7 +233,7 @@ const SOURCES: Record<ContributionKind, Source> = {
         kind: "wishlist",
         id: doc._id.toString(),
         title: doc.name || "Liste de souhaits",
-        detail: [doc.ownerType === "play-group" ? "Liste d'un groupe" : undefined, VISIBILITY_DETAILS[doc.visibility]]
+        detail: [doc.ownerType === "playGroup" ? "Liste d'un groupe" : undefined, VISIBILITY_DETAILS[doc.visibility]]
           .filter(Boolean)
           .join(" · ") || undefined,
         excerpt: contributionExcerpt(doc.description),
