@@ -83,6 +83,11 @@ export const USER_INDEXES: IndexDefinition[] = [
     keys: { isPublicProfile: 1, "showcase.showCity": 1, "location.city": 1 },
     why: "Le registre des profils filtré par ville",
   },
+  {
+    collection: "user",
+    keys: { createdAt: -1 },
+    why: "L'accueil de l'administration : les inscriptions des 30 derniers jours, tous profils confondus",
+  },
 
   {
     collection: "userFollowers",

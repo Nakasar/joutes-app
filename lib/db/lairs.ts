@@ -197,6 +197,81 @@ export async function getLairEventsRefreshReport(id: string): Promise<LairEvents
   return (doc?.eventsRefresh as LairEventsRefreshReport | undefined) ?? null;
 }
 
+/** Ce que la liste des lieux de l'administration montre de l'import de chaque agenda. */
+export type LairAdminHealth = {
+  /** Le dernier compte rendu de rafraîchissement, s'il y en a eu un. */
+  refresh: LairEventsRefreshReport | null;
+  /** Une demande d'aide du gérant attend une réponse. */
+  helpRequested: boolean;
+};
+
+/**
+ * Une lecture d'un lieu « à surveiller » : une de ses sources a échoué au
+ * dernier tour, ou son gérant a demandé de l'aide et attend encore.
+ */
+const NEEDS_ATTENTION_FILTER: Filter<Document> = {
+  $or: [{ "eventsRefresh.sources.ok": false }, { "eventsSourceRequest.status": "pending" }],
+};
+
+/**
+ * L'état de l'import d'agenda de tous les lieux, en une lecture.
+ *
+ * Même réserve que `getLairEventsRefreshReport` : ces comptes rendus restent
+ * dans l'administration.
+ */
+export async function getLairsAdminHealth(): Promise<Map<string, LairAdminHealth>> {
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find({}, { projection: { eventsRefresh: 1, eventsSourceRequest: 1 } })
+    .toArray();
+
+  return new Map(
+    docs.map((doc) => [
+      doc._id.toString(),
+      {
+        refresh: (doc.eventsRefresh as LairEventsRefreshReport | undefined) ?? null,
+        helpRequested: (doc.eventsSourceRequest as LairEventsSourceRequest | undefined)?.status === "pending",
+      },
+    ])
+  );
+}
+
+/** Le nombre de lieux dont l'agenda demande une intervention (cf. `NEEDS_ATTENTION_FILTER`). */
+export async function countLairsNeedingAttention(): Promise<number> {
+  return db.collection(COLLECTION_NAME).countDocuments(NEEDS_ATTENTION_FILTER);
+}
+
+/** Les lieux dont l'agenda demande une intervention, pour l'accueil de l'administration. */
+export async function getLairsNeedingAttention(limit = 5): Promise<{ id: string; name: string }[]> {
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find(NEEDS_ATTENTION_FILTER, { projection: { name: 1 } })
+    .limit(limit)
+    .toArray();
+
+  return docs.map((doc) => ({ id: doc._id.toString(), name: String(doc.name ?? "") }));
+}
+
+/**
+ * Les lieux dont le nom contient la saisie, privés compris : c'est la
+ * recherche de l'administration, pas celle de l'annuaire.
+ */
+export async function searchLairsForAdmin(term: string, limit = 5): Promise<Lair[]> {
+  const trimmed = term.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const pattern = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find({ name: { $regex: pattern, $options: "i" } })
+    .limit(limit)
+    .toArray();
+
+  return docs.map(toLair);
+}
+
 export async function searchLairs(options: SearchLairsOptions): Promise<PaginatedLairsResult> {
   const {
     userId,
