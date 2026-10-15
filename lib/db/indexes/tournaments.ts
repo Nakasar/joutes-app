@@ -35,6 +35,11 @@ export const TOURNAMENT_INDEXES: IndexDefinition[] = [
     keys: { leagueId: 1, createdAt: -1 },
     why: "Les tournois d'une ligue",
   },
+  {
+    collection: "tournaments",
+    keys: { createdAt: -1 },
+    why: "Le centre des contributions de l'administration : les tournois, du plus récent au plus ancien",
+  },
 
   {
     collection: "tournament-players",
@@ -177,6 +182,11 @@ export const TOURNAMENT_INDEXES: IndexDefinition[] = [
     collection: "leagues",
     keys: { organizerIds: 1, createdAt: -1 },
     why: "Ligues gérées : branche « j'organise »",
+  },
+  {
+    collection: "leagues",
+    keys: { createdAt: -1 },
+    why: "Le centre des contributions de l'administration : les ligues, de la plus récente à la plus ancienne",
   },
   {
     collection: "league-participants",

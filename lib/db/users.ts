@@ -1,6 +1,6 @@
 import db from "@/lib/mongodb";
 import { User, UserShowcase } from "@/lib/types/User";
-import { ObjectId } from "mongodb";
+import { ObjectId, type Document } from "mongodb";
 import { toUser } from "@/lib/users/document";
 import { generateFriendCode } from "@/lib/utils/friend-codes";
 import {
@@ -653,15 +653,7 @@ export async function searchUsersForAdmin(
     return [];
   }
 
-  const projection = {
-    name: 1,
-    username: 1,
-    displayName: 1,
-    discriminator: 1,
-    image: 1,
-    avatar: 1,
-    isPublicProfile: 1,
-  };
+  const projection = ADMIN_USER_PROJECTION;
 
   // Le pseudonyme de compte vit sous `name` pour les comptes créés par
   // better-auth, et sous `username` pour les plus anciens : les deux se
@@ -691,14 +683,48 @@ export async function searchUsersForAdmin(
     : cursor
   ).toArray();
 
-  return docs.map((doc) => ({
+  return docs.map(toAdminUserSummary);
+}
+
+const ADMIN_USER_PROJECTION = {
+  name: 1,
+  username: 1,
+  displayName: 1,
+  discriminator: 1,
+  image: 1,
+  avatar: 1,
+  isPublicProfile: 1,
+};
+
+function toAdminUserSummary(doc: Document): AdminUserSummary {
+  return {
     id: doc._id.toString(),
     username: doc.name || doc.username || "",
     displayName: doc.displayName || undefined,
     discriminator: doc.discriminator || undefined,
     avatar: doc.image || doc.avatar || undefined,
     isPublicProfile: doc.isPublicProfile === true,
-  }));
+  };
+}
+
+/**
+ * Les auteurs d'une page de l'administration, en une lecture : même
+ * projection que `searchUsersForAdmin`, donc sans adresse e-mail.
+ */
+export async function getAdminUserSummaries(userIds: string[]): Promise<Map<string, AdminUserSummary>> {
+  const objectIds = [...new Set(userIds)]
+    .filter((id) => ObjectId.isValid(id))
+    .map((id) => ObjectId.createFromHexString(id));
+  if (objectIds.length === 0) {
+    return new Map();
+  }
+
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find({ _id: { $in: objectIds } }, { projection: ADMIN_USER_PROJECTION })
+    .toArray();
+
+  return new Map(docs.map((doc) => [doc._id.toString(), toAdminUserSummary(doc)]));
 }
 
 /**
