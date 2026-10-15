@@ -1,8 +1,6 @@
 'use client';
 
 import {useEffect, useState} from "react";
-import {DateTime} from "luxon";
-import ReactMarkdown from "react-markdown";
 import {Button} from "@/components/ui/button.tsx";
 import {Label} from "@/components/ui/label.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
@@ -25,46 +23,24 @@ import {
   validateDeckList, type DeckListCard, type DeckList, analyzeDeckListImageBase64Action,
   analyzeDeckListImageURLAction, canAnalyzeDeckListImagesAction, getDeckFromPiltover, getDeckFromPiltoverCode
 } from "./action.ts";
-import {type ErrataType} from "@/lib/types/errata.ts";
 import {type BoosterCard} from "@/lib/types/booster.ts";
 import {useSession} from "@/lib/auth-client.ts";
 import {parseDeckList, serializeDeckList, stringifyDeckList} from "@/app/[locale]/(app)/games/riftbound/deck-checker/utils.ts";
 import {upload} from "@vercel/blob/client";
 import {DECK_IMAGE_MAX_SIZE, deckImageUploadPathname} from "@/lib/games/deck-images.ts";
 import {Pencil} from "lucide-react";
-import {useLocale, useTranslations} from "next-intl";
+import {useTranslations} from "next-intl";
 import CardImage from "@/components/cards/CardImage.tsx";
-
-const ConstructionRules = {
-  legends: {
-    min: 1,
-    max: 1,
-  },
-  champions: {
-    min: 1,
-    max: 1,
-  },
-  maindeck: {
-    min: 39,
-    max: 39,
-  },
-  sideboard: {
-    min: 0,
-    max: 10,
-  },
-  runes: {
-    min: 12,
-    max: 12,
-  },
-}
-
-
-// ── Errata type badge ─────────────────────────────────────────────────────────
-const ERRATA_CLASS: Record<ErrataType, string> = {
-  errata: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  clarification: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  ruling: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-};
+import {
+  ConstructionRules,
+  DeckCardDetails,
+  DeckCardTile,
+  DeckSection as SharedDeckSection,
+  hasCardDetails,
+  type DeckViewCard,
+  type SectionRules,
+  UnrecognizedCards,
+} from "@/components/decks/DeckCheckView.tsx";
 
 // ── Edit card dialog ──────────────────────────────────────────────────────────
 function EditCardDialog({
@@ -172,79 +148,31 @@ function EditCardDialog({
 }
 
 // ── Card tile ─────────────────────────────────────────────────────────────────
-function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?: () => void; onQuantityChange?: (delta: number) => void}) {
-  const hasErratas = (card.erratas?.length ?? 0) > 0;
+function CardTile({card, onEdit, onQuantityChange}: {card: DeckViewCard; onEdit?: () => void; onQuantityChange?: (delta: number) => void}) {
   const t = useTranslations('Games.DeckChecker');
-  const locale = useLocale();
-  const formatDate = (value: string | Date) => {
-    const parsedDate = value instanceof Date ? DateTime.fromJSDate(value) : DateTime.fromISO(value);
-    return parsedDate.isValid ? parsedDate.setLocale(locale).toLocaleString(DateTime.DATE_MED) : value.toString();
-  };
-
-  const statusPill = card.banned ? (
-    <div className="mt-1 flex justify-center">
-      <span className="bg-red-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-widest">
-        {t('cards.banned')}
-      </span>
-    </div>
-  ) : hasErratas ? (
-    <div className="mt-1 flex justify-center">
-      <span className="cursor-pointer bg-yellow-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-widest">
-        {t('cards.notes')}
-      </span>
-    </div>
-  ) : null;
 
   const cardContent = (
-    <div className="flex flex-col">
-      <div
-        className={`relative rounded-lg overflow-hidden shadow-md bg-gray-800 group cursor-pointer${hasErratas ? ' ring-2 ring-yellow-600' : ''}${card.banned ? ' ring-2 ring-red-500' : ''}`}
-        style={{aspectRatio: '2.5 / 3.5'}}
-      >
-        {card.image ? (
-          <CardImage
-            src={card.image}
-            alt={card.name}
-            orientation={card.orientation}
-            frame="2.5/3.5"
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-700 p-2 gap-1">
-            <span className="text-3xl opacity-40">?</span>
-            <span className="text-red-400 text-center text-xs font-medium leading-tight line-clamp-3">{card.name}</span>
-          </div>
-        )}
-        <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5">
-          {onQuantityChange && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onQuantityChange(-1); }}
-              disabled={card.quantity <= 1}
-              className="w-5 h-5 flex items-center justify-center bg-black/75 hover:bg-black text-white text-sm font-bold rounded leading-none opacity-0 group-hover/card:opacity-100 transition-opacity disabled:opacity-20 disabled:cursor-not-allowed"
-            >−</button>
-          )}
-          <div className="bg-black/75 text-white text-xs font-bold rounded px-1.5 py-0.5 leading-none">
-            &times;{card.quantity}
-          </div>
-          {onQuantityChange && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onQuantityChange(+1); }}
-              className="w-5 h-5 flex items-center justify-center bg-black/75 hover:bg-black text-white text-sm font-bold rounded leading-none opacity-0 group-hover/card:opacity-100 transition-opacity"
-            >+</button>
-          )}
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-4 pb-1.5 px-1.5">
-          <p className={`text-xs font-medium truncate ${!card.recognized ? 'text-red-400' : 'text-white'}`}>
-            {card.name}
-          </p>
-        </div>
-      </div>
-      {statusPill}
-    </div>
+    <DeckCardTile
+      card={card}
+      controls={onQuantityChange && {
+        before: (
+          <button
+            onClick={(e) => { e.stopPropagation(); onQuantityChange(-1); }}
+            disabled={card.quantity <= 1}
+            className="w-5 h-5 flex items-center justify-center bg-black/75 hover:bg-black text-white text-sm font-bold rounded leading-none opacity-0 group-hover/card:opacity-100 transition-opacity disabled:opacity-20 disabled:cursor-not-allowed"
+          >−</button>
+        ),
+        after: (
+          <button
+            onClick={(e) => { e.stopPropagation(); onQuantityChange(+1); }}
+            className="w-5 h-5 flex items-center justify-center bg-black/75 hover:bg-black text-white text-sm font-bold rounded leading-none opacity-0 group-hover/card:opacity-100 transition-opacity"
+          >+</button>
+        ),
+      }}
+    />
   );
 
-  const cardWithDialog = (!card.recognized && !hasErratas) ? cardContent : (
+  const cardWithDialog = !hasCardDetails(card) ? cardContent : (
     <Dialog>
       <DialogTrigger asChild>{cardContent}</DialogTrigger>
       <DialogContent className="min-w-4xl max-h-[90vh] overflow-y-auto">
@@ -259,64 +187,7 @@ function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-6 mt-1">
-          {/* Card image */}
-          {card.image && (
-            <CardImage
-              src={card.image}
-              alt={card.name}
-              orientation={card.orientation}
-              className="w-40 shrink-0 rounded-lg shadow-md self-start"
-            />
-          )}
-
-          {/* Details */}
-          <div className="flex-1 min-w-0">
-            {card.banned && (
-              <p className="mb-4 text-sm text-red-500 font-medium">
-                {t('cards.bannedMessage')}
-              </p>
-            )}
-
-            {hasErratas ? (
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                  {t('cards.errataSectionTitle', { count: card.erratas!.length })}
-                </h3>
-                {card.erratas!.map((errata, i) => (
-                  <div key={errata.id ?? i} className={`rounded-lg border p-3 ${errata.deprecatedAt ? 'opacity-50' : ''}`}>
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded ${ERRATA_CLASS[errata.type]}`}>
-                        {t(`errataTypes.${errata.type}`)}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(errata.errataDate)}
-                      </span>
-
-                      {errata.deprecatedAt && (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                          {t('cards.deprecated')}
-                        </span>
-                      )}
-                    </div>
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown>{errata.details}</ReactMarkdown>
-                    </div>
-                    {errata.source && (
-                      <div className="mt-2 pt-2 border-t">
-                        <a href={errata.source} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
-                          {t('cards.source')}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">{t('cards.noErrata')}</p>
-            )}
-          </div>
-        </div>
+        <DeckCardDetails card={card} />
       </DialogContent>
     </Dialog>
   );
@@ -341,54 +212,19 @@ function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?
 }
 
 // ── Section grid ──────────────────────────────────────────────────────────────
-type SectionRules = { min: number; max: number };
-
-
-function DeckSection({title, cards, compact, rules, onEditCard, onQuantityChange}: {title: string; cards: DeckListCard[]; compact?: boolean; rules?: SectionRules; onEditCard?: (index: number) => void; onQuantityChange?: (index: number, delta: number) => void}) {
-  const t = useTranslations('Games.DeckChecker');
-  const total = cards.reduce((sum, c) => sum + c.quantity, 0);
-  const ruleNote = rules ? (rules.min === rules.max
-    ? t('sections.rules.requiredCount', { count: rules.min })
-    : t('sections.rules.requiredRange', { min: rules.min, max: rules.max })) : null;
-
-  // Hide section only when empty AND (no rules OR min is 0)
-  if (cards.length === 0 && (!rules || rules.min === 0)) return null;
-
-  const isInvalid = rules ? (total < rules.min || total > rules.max) : false;
-
+function DeckSection({onEditCard, onQuantityChange, ...props}: {title: string; cards: DeckListCard[]; compact?: boolean; rules?: SectionRules; onEditCard?: (index: number) => void; onQuantityChange?: (index: number, delta: number) => void}) {
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <span className={`text-sm font-medium ${isInvalid ? 'text-red-500' : 'text-muted-foreground'}`}>
-          ({t('sections.count', { count: total })})
-        </span>
-        {isInvalid && (
-          <span className="text-[10px] font-bold bg-red-600 text-white rounded-full px-2 py-0.5 uppercase tracking-widest leading-none">
-            {t('sections.invalid')}
-          </span>
-        )}
-        {rules && (
-          <span className="text-xs text-muted-foreground italic">
-            {ruleNote}
-          </span>
-        )}
-      </div>
-      {cards.length > 0 && (
-        <div className={compact
-          ? "grid grid-cols-2 gap-2"
-          : "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2"}>
-          {cards.map((card, idx) => (
-            <CardTile
-              key={`${card.name}-${idx}`}
-              card={card}
-              onEdit={onEditCard ? () => onEditCard(idx) : undefined}
-              onQuantityChange={onQuantityChange ? (delta) => onQuantityChange(idx, delta) : undefined}
-            />
-          ))}
-        </div>
+    <SharedDeckSection
+      {...props}
+      renderCard={(card, idx) => (
+        <CardTile
+          key={`${card.name}-${idx}`}
+          card={card}
+          onEdit={onEditCard ? () => onEditCard(idx) : undefined}
+          onQuantityChange={onQuantityChange ? (delta) => onQuantityChange(idx, delta) : undefined}
+        />
       )}
-    </div>
+    />
   );
 }
 
@@ -627,14 +463,7 @@ export function RiftboundDeckChecker({ input }: { input?: string }) {
           <DeckSection title={t('sections.mainDeck')} cards={deckList.maindeck} rules={ConstructionRules.maindeck} onEditCard={(i) => setEditingCard({ section: 'maindeck', index: i })} onQuantityChange={(i, d) => handleQuantityChange('maindeck', i, d)} />
           <DeckSection title={t('sections.sideboard')} cards={deckList.sideboard} rules={ConstructionRules.sideboard} onEditCard={(i) => setEditingCard({ section: 'sideboard', index: i })} onQuantityChange={(i, d) => handleQuantityChange('sideboard', i, d)} />
 
-          {unrecognized.length > 0 && (
-            <div className="border border-red-500/40 rounded-lg p-4 bg-red-950/20">
-              <h3 className="text-sm font-semibold text-red-400 mb-2">⚠ {t('cards.unrecognizedTitle')}</h3>
-              <ul className="list-disc list-inside space-y-0.5">
-                {unrecognized.map((c, i) => <li key={i} className="text-red-400 text-sm">{c.name}</li>)}
-              </ul>
-            </div>
-          )}
+          <UnrecognizedCards cards={unrecognized} />
         </div>
       )}
 

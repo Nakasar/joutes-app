@@ -5,6 +5,7 @@ import type {
     ToolAnnotations,
 } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { RESOURCE_URI_META_KEY } from "@modelcontextprotocol/ext-apps/server";
 
 /**
  * Ce que chaque outil MCP exige et ce qu'il touche, en un seul tableau.
@@ -167,7 +168,18 @@ export function userIdFrom(ctx: ServerContext): string | undefined {
 export function registerJoutesTool<Shape extends z.ZodRawShape>(
     server: McpServer,
     name: JoutesToolName,
-    config: { title: string; description: string; inputSchema: Shape },
+    config: {
+        title: string;
+        description: string;
+        inputSchema: Shape;
+        /**
+         * Vue MCP App à afficher sous l'appel, pour les clients qui en
+         * affichent (`ui://…`, enregistrée avec `registerAppResource`).
+         * L'outil renvoie alors ses données en `structuredContent`, et garde
+         * son texte pour le modèle et les clients sans vue.
+         */
+        view?: string;
+    },
     handler: (args: z.output<z.ZodObject<Shape>>, ctx: ServerContext) => Promise<ToolResult>,
 ): void {
     const policy: ToolPolicy = TOOL_POLICIES[name];
@@ -178,7 +190,12 @@ export function registerJoutesTool<Shape extends z.ZodRawShape>(
         description: note ? `${config.description}\n\n${note}` : config.description,
         inputSchema: z.object(config.inputSchema),
         annotations: { title: config.title, ...toolAnnotations(policy) },
-        _meta: { securitySchemes: toolSecuritySchemes(policy.access) },
+        _meta: {
+            securitySchemes: toolSecuritySchemes(policy.access),
+            // La clé à plat est celle des premiers clients MCP Apps, que
+            // `registerAppTool` de l'extension renseigne aussi.
+            ...(config.view && { ui: { resourceUri: config.view }, [RESOURCE_URI_META_KEY]: config.view }),
+        },
     }, async (args, ctx) => {
         if (policy.access === "account" && !userIdFrom(ctx)) return AUTH_REQUIRED;
         return handler(args as z.output<z.ZodObject<Shape>>, ctx);

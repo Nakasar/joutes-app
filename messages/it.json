@@ -1098,6 +1098,22 @@
         "errata": "Errata",
         "clarification": "Chiarimento",
         "ruling": "Decisione"
+      },
+      "mcp": {
+        "title": "Verifica del mazzo",
+        "waiting": "Verifica del mazzo in corso…",
+        "noIssues": "Nessun problema rilevato",
+        "issues": "{count, plural, one {# problema} other {# problemi}}",
+        "unrecognized": "{count, plural, one {# carta non riconosciuta} other {# carte non riconosciute}}",
+        "banned": "{count, plural, one {# carta bandita} other {# carte bandite}}",
+        "invalidSections": "{count, plural, one {# sezione non valida} other {# sezioni non valide}}",
+        "notes": "{count, plural, one {# carta con note} other {# carte con note}}",
+        "hint": "Clicca su una carta per vederne errata e ruling.",
+        "openOnJoutes": "Apri su Joutes",
+        "copyCode": "Copia il codice",
+        "copied": "Codice copiato",
+        "close": "Chiudi",
+        "error": "Non è stato possibile verificare il mazzo."
       }
     },
     "Loop": {
