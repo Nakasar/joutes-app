@@ -1,6 +1,7 @@
 import { getAchievementById } from "@/lib/db/achievements.ts";
 import { AchievementForm } from "../../AchievementForm.tsx";
 import { notFound } from "next/navigation";
+import { AdminPage } from "../../../_components/AdminPage.tsx";
 
 interface EditAchievementPageProps {
   params: Promise<{
@@ -17,10 +18,13 @@ export default async function EditAchievementPage({ params }: EditAchievementPag
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold">Modifier le Succès</h1>
+    <AdminPage
+      title="Modifier le Succès"
+      back={{ href: "/admin/achievements", label: "Succès" }}
+      width="narrow"
+    >
       <AchievementForm initialData={achievement} />
-    </div>
+    </AdminPage>
   );
 }
 

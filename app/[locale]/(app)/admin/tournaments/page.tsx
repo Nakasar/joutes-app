@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/middleware/admin.ts";
 import { getAllGames } from "@/lib/db/games.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { resolveGameTournamentDefaults } from "@/lib/tournaments/game-defaults.ts";
+import { AdminPage } from "../_components/AdminPage.tsx";
 
 /**
  * Réglages de tournoi des jeux : la liste, et l'état de chacun.
@@ -41,87 +42,85 @@ export default async function AdminTournamentsPage() {
     });
 
   return (
-    <div className="bg-muted/50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Réglages de tournoi</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Ce qu&apos;un tournoi de chaque jeu applique par défaut : statistiques relevées,
-            ordre de départage, barème et scénarios proposés. Les organisateurs partent de ces
-            réglages et restent libres de les modifier tournoi par tournoi.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card overflow-x-auto">
-          <table className="min-w-full divide-y divide-border">
-            <thead className="bg-muted/50">
+    <AdminPage
+      title="Réglages de tournoi"
+      description={
+        <p>
+          Ce qu&apos;un tournoi de chaque jeu applique par défaut : statistiques relevées,
+          ordre de départage, barème et scénarios proposés. Les organisateurs partent de ces
+          réglages et restent libres de les modifier tournoi par tournoi.
+        </p>
+      }
+    >
+      <div className="rounded-2xl border border-border bg-card overflow-x-auto">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-muted/50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Jeu
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Statistiques
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Départages
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Scénarios
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-card divide-y divide-border">
+            {rows.length === 0 ? (
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Jeu
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Statistiques
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Départages
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Scénarios
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Actions
-                </th>
+                <td colSpan={5} className="px-6 py-4 text-center text-muted-foreground">
+                  Aucun jeu pour le moment
+                </td>
               </tr>
-            </thead>
-            <tbody className="bg-card divide-y divide-border">
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-muted-foreground">
-                    Aucun jeu pour le moment
-                  </td>
-                </tr>
-              ) : (
-                rows.map((row) => (
-                  <tr key={row.id} className={row.tournamentsEnabled ? "" : "opacity-60"}>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap items-center gap-3">
-                        {row.icon ? (
-                          <img src={row.icon} alt="" className="h-8 w-8 rounded object-cover" />
-                        ) : (
-                          <div className="h-8 w-8 rounded bg-muted flex items-center justify-center text-muted-foreground">
-                            {row.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <div className="text-sm font-medium text-foreground">{row.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {row.tournamentsEnabled ? "Tournois activés" : "Tournois désactivés"}
-                            {row.configured ? " · réglé" : " · réglages du jeu"}
-                          </div>
+            ) : (
+              rows.map((row) => (
+                <tr key={row.id} className={row.tournamentsEnabled ? "" : "opacity-60"}>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                      {row.icon ? (
+                        <img src={row.icon} alt="" className="h-8 w-8 rounded object-cover" />
+                      ) : (
+                        <div className="h-8 w-8 rounded bg-muted flex items-center justify-center text-muted-foreground">
+                          {row.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <div className="text-sm font-medium text-foreground">{row.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {row.tournamentsEnabled ? "Tournois activés" : "Tournois désactivés"}
+                          {row.configured ? " · réglé" : " · réglages du jeu"}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-foreground">{row.presetLabel}</td>
-                    <td className="px-6 py-4 text-sm text-foreground">
-                      {row.tiebreakerCount === 0
-                        ? "Aucun"
-                        : `${row.tiebreakerCount} critère${row.tiebreakerCount > 1 ? "s" : ""}`}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-foreground">
-                      {row.scenarioCount === 0 ? "—" : row.scenarioCount}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/admin/tournaments/${row.id}`}>Configurer</Link>
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-foreground">{row.presetLabel}</td>
+                  <td className="px-6 py-4 text-sm text-foreground">
+                    {row.tiebreakerCount === 0
+                      ? "Aucun"
+                      : `${row.tiebreakerCount} critère${row.tiebreakerCount > 1 ? "s" : ""}`}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-foreground">
+                    {row.scenarioCount === 0 ? "—" : row.scenarioCount}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <Button asChild variant="ghost" size="sm">
+                      <Link href={`/admin/tournaments/${row.id}`}>Configurer</Link>
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-    </div>
+    </AdminPage>
   );
 }

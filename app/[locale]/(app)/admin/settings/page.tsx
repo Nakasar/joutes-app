@@ -8,6 +8,7 @@ import {
 } from "@/lib/games/deck-image-model.ts";
 import { DeckImageModelForm } from "./DeckImageModelForm.tsx";
 import type { DeckImageModelState } from "./actions.ts";
+import { AdminPage } from "../_components/AdminPage.tsx";
 
 export default async function AdminSettingsPage() {
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
@@ -26,14 +27,11 @@ export default async function AdminSettingsPage() {
     : { modelId: DECK_IMAGE_MODEL_DEFAULT, isCustom: false };
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Réglages</h1>
-        <p className="mt-1 text-muted-foreground">
-          Ce qui se change sans redéploiement.
-        </p>
-      </div>
-
+    <AdminPage
+      title="Réglages"
+      description={<p>Ce qui se change sans redéploiement.</p>}
+      width="narrow"
+    >
       <Card>
         <CardHeader>
           <CardTitle>Lecture d&apos;une liste de deck en photo</CardTitle>
@@ -51,6 +49,6 @@ export default async function AdminSettingsPage() {
           />
         </CardContent>
       </Card>
-    </div>
+    </AdminPage>
   );
 }
