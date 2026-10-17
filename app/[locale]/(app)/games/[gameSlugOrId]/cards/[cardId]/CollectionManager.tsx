@@ -88,6 +88,12 @@ type CollectionManagerProps = {
   apiBasePath?: string;
   /** Set when managing a play-group's shared collection — enables username autocompletion when marking a card borrowed. */
   playGroupId?: string;
+  /**
+   * Langues du jeu (`getLanguagesForGame`), en minuscules et dans l'ordre
+   * d'affichage : seules celles-là sont proposées à l'ajout. Absent = toutes
+   * les langues, les trois plus courantes en boutons et les autres en liste.
+   */
+  languages?: string[];
 };
 
 export default function CollectionManager({
@@ -102,6 +108,7 @@ export default function CollectionManager({
   onChange,
   apiBasePath = "/api/collection",
   playGroupId,
+  languages,
 }: CollectionManagerProps) {
   const sellListApiBasePath = playGroupId ? `/api/play-groups/${playGroupId}/sell-list` : "/api/sell-lists/mine";
 
@@ -137,6 +144,13 @@ export default function CollectionManager({
     { code: "JA" as const, label: t("cards.collection.languages.ja") },
     { code: "KO" as const, label: t("cards.collection.languages.ko") },
   ];
+  const languageOptions = [...primaryLanguages, ...secondaryLanguages];
+  // Un jeu qui déclare ses langues les propose toutes en boutons, dans son
+  // ordre : la liste est courte, et la langue la plus probable vient en tête.
+  const shownPrimaryLanguages = languages
+    ? languages.flatMap((code) => languageOptions.filter((option) => option.code.toLowerCase() === code))
+    : primaryLanguages;
+  const shownSecondaryLanguages = languages ? [] : secondaryLanguages;
   const conditionOptions = [
     { value: "Damaged" as const, label: t("cards.collection.conditions.damaged") },
     { value: "Played" as const, label: t("cards.collection.conditions.played") },
@@ -381,7 +395,7 @@ export default function CollectionManager({
               <div className="space-y-1">
                 <Label htmlFor="language">{t("cards.collection.fields.language")}</Label>
                 <div className="flex flex-wrap gap-2">
-                  {primaryLanguages.map((option) => (
+                  {shownPrimaryLanguages.map((option) => (
                     <Button
                       key={option.code}
                       type="button"
@@ -394,21 +408,23 @@ export default function CollectionManager({
                       {option.label}
                     </Button>
                   ))}
-                  <Select
-                    value={secondaryLanguages.some((option) => option.code === language) ? language : ""}
-                    onValueChange={(value) => setLanguage(value as LanguageCode)}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder={t("cards.collection.fields.otherLanguages")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {secondaryLanguages.map((option) => (
-                        <SelectItem key={option.code} value={option.code}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {shownSecondaryLanguages.length > 0 && (
+                    <Select
+                      value={shownSecondaryLanguages.some((option) => option.code === language) ? language : ""}
+                      onValueChange={(value) => setLanguage(value as LanguageCode)}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder={t("cards.collection.fields.otherLanguages")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {shownSecondaryLanguages.map((option) => (
+                          <SelectItem key={option.code} value={option.code}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                   <Button
                     type="button"
                     variant="ghost"
@@ -523,8 +539,7 @@ export default function CollectionManager({
                   <span className="text-muted-foreground">#{i + 1}</span>
                   {entry.language && (
                     <Badge variant="secondary">
-                      {primaryLanguages.find((option) => option.code === entry.language)?.label ??
-                        secondaryLanguages.find((option) => option.code === entry.language)?.label ??
+                      {languageOptions.find((option) => option.code === entry.language)?.label ??
                         entry.language}
                     </Badge>
                   )}

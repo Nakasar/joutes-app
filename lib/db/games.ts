@@ -35,6 +35,7 @@ function toGame(doc: WithId<Document>): Game {
     deckBuilder: doc.deckBuilder,
     currentProductEdition: doc.currentProductEdition,
     boosterTypes: doc.boosterTypes,
+    languages: doc.languages,
   };
 }
 
@@ -62,6 +63,7 @@ function toDocument(game: Omit<Game, "id">): Omit<GameDocument, "_id"> {
     deckBuilder: game.deckBuilder,
     currentProductEdition: game.currentProductEdition,
     boosterTypes: game.boosterTypes,
+    languages: game.languages,
   };
 }
 
@@ -234,6 +236,18 @@ export async function setGameBoosterTypes(
     boosterTypes === null
       ? { $unset: { boosterTypes: "" } }
       : { $set: { boosterTypes } }
+  );
+
+  return result.matchedCount > 0;
+}
+
+/**
+ * Langues d'un jeu ; `null` le rend aux langues de son catalogue.
+ */
+export async function setGameLanguages(id: string, languages: Game["languages"] | null): Promise<boolean> {
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(id) },
+    languages === null ? { $unset: { languages: "" } } : { $set: { languages } }
   );
 
   return result.matchedCount > 0;

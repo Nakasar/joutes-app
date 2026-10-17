@@ -81,6 +81,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid booster type" }, { status: 400 });
   }
 
+  // Un jeu qui déclare ses langues n'accepte que celles-là ; sans liste, la
+  // langue est libre, comme avant que l'administration puisse la régler.
+  if (game.languages !== undefined && !game.languages.includes(lang)) {
+    return NextResponse.json({ error: "Invalid language" }, { status: 400 });
+  }
+
   const booster = await createBooster({
     gameId: game.id,
     userId: session.user.id,

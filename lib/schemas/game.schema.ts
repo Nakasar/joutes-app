@@ -3,6 +3,7 @@ import { GAME_FEATURE_KEYS } from "@/lib/constants/game-features";
 import { GAME_LINK_KEYS } from "@/lib/constants/game-links";
 import { externalUrl } from "@/lib/lairs/urls";
 import { DECK_ZONE_KEYS } from "@/lib/decks/zones";
+import { CARD_LANGUAGES } from "@/lib/constants/card-languages";
 import {
   BOOSTER_TYPE_KEY_PATTERN,
   RESERVED_BOOSTER_TYPE_KEYS,
@@ -232,6 +233,16 @@ export const currentProductEditionSchema = z
   .string()
   .trim()
   .max(60, "Le nom d'une édition est trop long");
+
+/**
+ * Langues d'un jeu, dans l'ordre d'affichage. Au moins une : un jeu sans
+ * langue ne laisserait créer aucun booster. Les doublons sont retirés plutôt
+ * que refusés, l'ordre retenu étant celui de la première occurrence.
+ */
+export const gameLanguagesSchema = z
+  .array(z.enum(CARD_LANGUAGES as [string, ...string[]], { message: "Langue inconnue" }))
+  .min(1, "Choisissez au moins une langue")
+  .transform((languages) => [...new Set(languages)]);
 
 // Pour la validation d'ID MongoDB (ObjectId est un string hexadecimal de 24 caractères)
 export const gameIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du jeu doit être un ObjectId MongoDB valide");

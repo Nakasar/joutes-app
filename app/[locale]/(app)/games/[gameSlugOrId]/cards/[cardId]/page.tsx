@@ -417,6 +417,7 @@ async function CardDetail({
             image={card.image}
             alwaysFoil={card.foil === true}
             printings={printings}
+            languages={game.languages}
           />
           <AddToWishlistButton
             cardId={card.id}

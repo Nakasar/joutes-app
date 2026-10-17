@@ -86,6 +86,7 @@ async function GameCollectionPageContent({
       <GameCollectionBrowser
         gameSlug={gameSlugOrId}
         gameName={game.name}
+        languages={game.languages}
         initialData={initial}
         initialState={initialState}
         hasProducts={gameHasProducts}
