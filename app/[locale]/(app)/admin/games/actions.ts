@@ -10,6 +10,7 @@ import {
   gameDeckBuilderSchema,
   gameLinksSchema,
   gameBoosterTypesSchema,
+  gameLanguagesSchema,
 } from "@/lib/schemas/game.schema.ts";
 import { z } from "zod";
 import * as gamesDb from "@/lib/db/games.ts";
@@ -391,5 +392,45 @@ export async function setGameBoosterTypes(id: string, boosterTypes: unknown) {
     }
     console.error("Erreur lors de la mise à jour des types de boosters:", error);
     return { success: false, error: "Erreur lors de la mise à jour des types de boosters" };
+  }
+}
+
+/**
+ * Langues dans lesquelles les cartes du jeu sont imprimées.
+ *
+ * `null` rend le jeu aux langues présentes à son catalogue. Les boosters et
+ * exemplaires déjà enregistrés gardent leur langue, même retirée de la liste.
+ */
+export async function setGameLanguages(id: string, languages: unknown) {
+  try {
+    await requireAdmin();
+
+    const validatedId = gameIdSchema.parse(id);
+    const validated = languages === null ? null : gameLanguagesSchema.parse(languages);
+
+    const game = await gamesDb.getGameById(validatedId);
+
+    if (!game) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    const updated = await gamesDb.setGameLanguages(validatedId, validated);
+
+    if (!updated) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    // Boosters, recherche et fiches de cartes lisent le jeu depuis le catalogue en cache.
+    updateTag(GAMES_CACHE_TAG);
+    revalidatePath("/admin/games");
+    revalidatePath(`/admin/games/${game.slug ?? game.id}`);
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message || "Langues invalides" };
+    }
+    console.error("Erreur lors de la mise à jour des langues du jeu:", error);
+    return { success: false, error: "Erreur lors de la mise à jour des langues" };
   }
 }

@@ -7,6 +7,7 @@ import {boosterTypeStoredValues, normalizeBoosterType, OTHER_BOOSTER_TYPE} from 
 import {ObjectId} from "bson";
 import {removeSellListItemsByCollectionEntryIds} from "@/lib/db/sell-lists";
 import {getCardsByIds} from "@/lib/db/cards";
+import {toCollectionLanguage} from "@/lib/constants/card-languages";
 import {getCopyMarketPrices} from "@/lib/db/card-prices";
 import {copyPriceKey} from "@/lib/prices/copies";
 import {DEFAULT_MARKET_CURRENCY, sumCardPrices} from "@/lib/prices/display";
@@ -483,6 +484,10 @@ export async function addBoosterToCollection(userId: string, boosterId: string):
 
   const cards = await db.collection<BoosterCardDb>('booster-cards').find({boosterId: _id}).toArray();
   if (cards.length > 0) {
+    // Les cartes d'un booster sont dans sa langue : c'est la seule chose qui la
+    // dit, le catalogue n'ayant souvent que la version anglaise des cartes.
+    const booster = await db.collection<BoosterDb>('boosters').findOne({_id}, {projection: {lang: 1}});
+    const language = toCollectionLanguage(booster?.lang);
     await db.collection('collection-cards').insertMany(cards.map((c) => ({
       userId: uid,
       cardId: c.cardId,
@@ -493,6 +498,7 @@ export async function addBoosterToCollection(userId: string, boosterId: string):
       ...(c.foil ? {foil: true} : {}),
       ...(c.printingId ? {printingId: c.printingId} : {}),
       ...(c.printingId && c.printingName ? {printingName: c.printingName} : {}),
+      ...(language ? {language} : {}),
       fromBoosterId: _id,
     })));
   }

@@ -4,6 +4,7 @@ import meilisearch, {cardIndexFor, isUndeclaredCriteriaError} from "@/lib/meilis
 import db from "@/lib/mongodb";
 import {Game} from "@/lib/types/Game";
 import {getGameCardFilterFacets} from "@/lib/db/cards";
+import {getGameLanguages} from "@/lib/constants/card-languages";
 import {withMarketPrices} from "@/lib/db/card-prices";
 import {
   buildFacetFilters,
@@ -41,9 +42,12 @@ async function getFilterValues(gameSlug: string): Promise<CardFilterValues> {
   const types = (await cardsCollection.distinct("type", { gameId: game._id }))
     .filter((value): value is string => typeof value === "string" && value.length > 0)
     .sort();
-  const languages = (await cardsCollection.distinct("lang", { gameId: game._id }))
-    .filter((value): value is string => typeof value === "string" && value.length > 0)
-    .sort();
+  // Les langues réglées dans l'administration, sinon celles du catalogue : un
+  // jeu peut proposer une langue dont aucune carte n'est encore importée.
+  const languages = getGameLanguages(
+    game,
+    game.languages === undefined ? await cardsCollection.distinct("lang", { gameId: game._id }) : [],
+  );
 
   return { setCodes, types, languages };
 }

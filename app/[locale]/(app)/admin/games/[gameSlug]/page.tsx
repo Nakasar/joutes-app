@@ -19,6 +19,9 @@ import { GameLinksForm } from "./GameLinksForm.tsx";
 import { GameFeaturesForm } from "./GameFeaturesForm.tsx";
 import { DeckBuilderForm } from "./DeckBuilderForm.tsx";
 import { BoosterTypesForm } from "./BoosterTypesForm.tsx";
+import { GameLanguagesForm } from "./GameLanguagesForm.tsx";
+import { getCatalogLanguages } from "@/lib/db/cards.ts";
+import { getGameLanguages } from "@/lib/constants/card-languages.ts";
 import { FeaturedLairsManager } from "../FeaturedLairsManager.tsx";
 import { AdminPage } from "../../_components/AdminPage.tsx";
 
@@ -63,6 +66,7 @@ export default async function AdminGamePage({
   const zones = getDeckZones(game);
   const configured = (game.deckBuilder?.zones?.length ?? 0) > 0;
   const tCollection = await getTranslations("Collection");
+  const catalogLanguages = active === "langues" ? await getCatalogLanguages(game.id) : [];
   const boosterTypeDefaultLabels = Object.fromEntries(
     KNOWN_BOOSTER_TYPES.map((key) => [key, tCollection(`boosters.types.${key}`)]),
   );
@@ -128,6 +132,15 @@ export default async function AdminGamePage({
               configured={configured}
             />
           </div>
+        )}
+
+        {active === "langues" && (
+          <GameLanguagesForm
+            gameId={game.id}
+            initial={getGameLanguages(game, catalogLanguages)}
+            configured={game.languages !== undefined}
+            catalogLanguages={getGameLanguages(null, catalogLanguages)}
+          />
         )}
 
         {active === "boosters" && (

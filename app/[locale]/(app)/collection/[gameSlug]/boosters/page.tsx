@@ -24,6 +24,7 @@ import {
   normalizeBoosterType,
 } from "@/lib/constants/booster-types.ts";
 import { parseBoosterCardIds } from "@/lib/constants/boosters.ts";
+import { getLanguagesForGame } from "@/lib/db/cards.ts";
 import BoostersList from "./BoostersList.tsx";
 
 const PAGE_SIZE = 24;
@@ -81,18 +82,14 @@ async function BoostersPageContent({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(requestedPage, totalPages);
 
-  const [boosters, typesInUse, setCodesRaw, langsRaw] = await Promise.all([
+  const [boosters, typesInUse, setCodesRaw, langs] = await Promise.all([
     getBoosters({ ...filters, page: page - 1, limit: PAGE_SIZE, sort }),
     getBoosterTypesInUse({ userId: session.user.id, gameId: game.id }),
     db.collection("cards").distinct("setCode", { gameId: new ObjectId(game.id) }),
-    db.collection("cards").distinct("lang", { gameId: new ObjectId(game.id) }),
+    getLanguagesForGame(game),
   ]);
 
   const setCodes = (setCodesRaw as unknown[]).filter((v): v is string => typeof v === "string" && v.length > 0).sort();
-  let langs = (langsRaw as unknown[]).filter((v): v is string => typeof v === "string" && v.length > 0).sort();
-  if (langs.length === 0) {
-    langs = ['fr', 'en'];
-  }
 
   return (
     <div className="container mx-auto p-4 sm:p-6">

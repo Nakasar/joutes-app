@@ -6,6 +6,8 @@ import { isReservedCardKey, RESERVED_CARD_KEYS, type CardSource } from "@/lib/co
 import type { CardOrientation, CardPrinting } from "@/lib/types/card";
 import type { CardFilterFacet } from "@/lib/cards/search-filters";
 import { planPrintingAddition, type BulkPrinting } from "@/lib/cards/bulk-printings";
+import { getGameLanguages } from "@/lib/constants/card-languages";
+import type { Game } from "@/lib/types/Game";
 
 export type CardNameMatch = {
   id: string;
@@ -609,4 +611,22 @@ export async function findCardByAiIdentification(
   }
 
   return null;
+}
+
+/**
+ * Langues proposées pour un jeu : celles réglées dans l'administration, sinon
+ * celles de son catalogue (cf. `getGameLanguages`). Le catalogue n'est lu que
+ * si le jeu ne déclare pas sa liste.
+ */
+export async function getLanguagesForGame(game: Pick<Game, "id" | "languages">): Promise<string[]> {
+  if (game.languages !== undefined) {
+    return getGameLanguages(game);
+  }
+  return getGameLanguages(game, await getCatalogLanguages(game.id));
+}
+
+/** Langues des cartes présentes au catalogue d'un jeu, triées. */
+export async function getCatalogLanguages(gameId: string): Promise<string[]> {
+  const values = await db.collection("cards").distinct("lang", { gameId: new ObjectId(gameId) });
+  return values.filter((value): value is string => typeof value === "string" && value.length > 0).sort();
 }

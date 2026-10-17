@@ -77,6 +77,8 @@ type Props = {
    * correspondantes ne visent que la collection personnelle.
    */
   transferFormats?: CollectionFormatOption[];
+  /** Langues réglées pour le jeu, proposées à l'ajout d'un exemplaire (cf. `CollectionManager`). */
+  languages?: string[];
 };
 
 type ManageableCard = Pick<
@@ -96,6 +98,7 @@ export default function GameCollectionBrowser({
   playGroupId,
   valuePath,
   transferFormats,
+  languages,
 }: Props) {
   const t = useTranslations("Collection");
   const tProducts = useTranslations("Collection.products");
@@ -678,6 +681,7 @@ export default function GameCollectionBrowser({
                     onChange={(quantity) => setQuantity(manageCard.id, quantity)}
                     apiBasePath={apiBasePath}
                     playGroupId={playGroupId}
+                    languages={languages}
                   />
                 </div>
               </div>

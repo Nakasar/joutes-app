@@ -99,6 +99,14 @@ export type Game = {
    * plateforme, décrite dans `lib/constants/booster-types.ts`.
    */
   boosterTypes?: GameBoosterType[];
+  /**
+   * Langues dans lesquelles les cartes du jeu sont imprimées, dans l'ordre
+   * d'affichage, réglées depuis `/admin/games` : codes en minuscules de
+   * `lib/constants/card-languages.ts`. Elles sont proposées à la création d'un
+   * booster, comme filtre de la recherche et à l'ajout d'un exemplaire en
+   * collection. Absent = le jeu propose les langues présentes à son catalogue.
+   */
+  languages?: string[];
 };
 
 /**

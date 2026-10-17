@@ -70,6 +70,7 @@ async function PlayGroupGameCollectionPageContent({
       <GameCollectionBrowser
         gameSlug={game.slug ?? game.id}
         gameName={game.name}
+        languages={game.languages}
         initialData={initial}
         initialState={initialState}
         basePath={`/play-groups/${group.id}/collection`}
