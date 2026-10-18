@@ -20,6 +20,8 @@ import { MCP_TOKEN } from "@/lib/well-known/auth-md";
 import { MCP_SERVER_INFO } from "@/lib/well-known/mcp-server-card";
 import { registerJoutesDataTools, withToolLogging } from "./tools";
 import { registerJoutesTool, requiresAccount, userIdFrom } from "./tool-policy";
+import { linkLine, mcpLinks } from "@/lib/mcp/links";
+import { nanoid } from "nanoid";
 
 // Gestionnaires pour chaque outil
 async function handleSearchEvents(argsRaw: Record<string, unknown>, ctx: ServerContext): Promise<{ content: TextContent[]; isError?: boolean }> {
@@ -220,8 +222,10 @@ async function handleCreateEvent(argsRaw: Record<string, unknown>, ctx: ServerCo
         }
 
         // Créer l'évènement
+        // Même forme que depuis l'app : un identifiant court, et le créateur
+        // retenu comme organisateur.
         const event: Event = {
-            id: "", // Sera généré
+            id: nanoid(12),
             lairId: args.lairId,
             name: args.name,
             gameName: args.gameName,
@@ -230,7 +234,8 @@ async function handleCreateEvent(argsRaw: Record<string, unknown>, ctx: ServerCo
             url: args.url,
             price: args.price,
             status: "available",
-            addedBy: userId
+            addedBy: "USER",
+            creatorId: userId,
         };
 
         const createdEvent = await createEvent(event);
@@ -238,7 +243,7 @@ async function handleCreateEvent(argsRaw: Record<string, unknown>, ctx: ServerCo
         return {
             content: [{
                 type: "text",
-                text: `Évènement créé avec succès: **${createdEvent.name}** dans ${lair.name}`
+                text: `Évènement créé avec succès: **${createdEvent.name}** dans ${lair.name}` + linkLine(mcpLinks.event(createdEvent.id))
             }]
         };
     } catch (error) {
@@ -300,7 +305,7 @@ async function handleFollowLair(argsRaw: Record<string, unknown>, ctx: ServerCon
             return {
                 content: [{
                     type: "text",
-                    text: `Vous suivez maintenant le lieu **${lair.name}**.`
+                    text: `Vous suivez maintenant le lieu **${lair.name}**.` + linkLine(mcpLinks.lair(args.lairId))
                 }]
             };
         } else {
@@ -371,7 +376,7 @@ async function handleAddGame(argsRaw: Record<string, unknown>, ctx: ServerContex
             return {
                 content: [{
                     type: "text",
-                    text: `Le jeu **${game.name}** a été ajouté à votre liste.`
+                    text: `Le jeu **${game.name}** a été ajouté à votre liste.` + linkLine(mcpLinks.game(game.slug ?? game.id))
                 }]
             };
         } else {

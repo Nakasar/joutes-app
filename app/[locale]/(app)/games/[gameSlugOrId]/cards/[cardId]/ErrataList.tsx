@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 /**
  * Une entrée déjà rendue par le serveur. Le tri et le filtrage se font ici,
@@ -37,6 +37,24 @@ export default function ErrataList({
 }) {
   const [type, setType] = useState("all");
   const [showMuted, setShowMuted] = useState(false);
+
+  // Un lien `#errata-<id>` (celui que renvoient les outils MCP) doit tomber
+  // sur l'errata, même replié parmi les dépréciés.
+  const [anchor, setAnchor] = useState<string | null>(null);
+  useEffect(() => {
+    const hash = decodeURIComponent(window.location.hash.slice(1));
+    const target = entries.find((entry) => `errata-${entry.id}` === hash);
+    if (!target) return;
+    if (target.muted) setShowMuted(true);
+    setAnchor(hash);
+  }, [entries]);
+  useEffect(() => {
+    if (!anchor) return;
+    const element = document.getElementById(anchor);
+    if (!element) return;
+    element.scrollIntoView({ block: "start" });
+    setAnchor(null);
+  }, [anchor, showMuted]);
 
   // Seuls les types réellement présents méritent un onglet.
   const presentTypes = [...new Set(entries.map((entry) => entry.type))].filter((key) => typeLabels[key]);
@@ -77,7 +95,7 @@ export default function ErrataList({
 
       <div className="flex flex-col gap-4">
         {visible.map((entry) => (
-          <div key={entry.id}>{entry.node}</div>
+          <div key={entry.id} id={`errata-${entry.id}`} className="scroll-mt-20">{entry.node}</div>
         ))}
       </div>
 
@@ -98,7 +116,7 @@ export default function ErrataList({
           {showMuted ? (
             <div className="flex flex-col gap-3 px-4 pb-4">
               {muted.map((entry) => (
-                <div key={entry.id}>{entry.node}</div>
+                <div key={entry.id} id={`errata-${entry.id}`} className="scroll-mt-20">{entry.node}</div>
               ))}
             </div>
           ) : null}

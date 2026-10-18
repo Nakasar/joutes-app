@@ -58,6 +58,7 @@ import { createErrata, ErrataInputError, updateErrataById } from "@/lib/db/errat
 import { anyUserHasPermission } from "@/lib/db/permissions";
 import { createErrataSchema } from "@/lib/schemas/errata.schema";
 import { locales } from "@/i18n/config";
+import { linkLine, mcpLinks } from "@/lib/mcp/links";
 import type { ErrataDb, ErrataType } from "@/lib/types/errata";
 import { registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import type { DeckViewCard, DeckViewList } from "@/components/decks/DeckCheckView";
@@ -277,7 +278,8 @@ async function handleAddCardToCollection(
     await db.collection("collection-cards").insertMany(documents);
 
     return textResult(
-        `${quantity} exemplaire(s) de **${card.name}** (${card.setCode} #${card.collectorNumber}) ajouté(s) à la collection${resolved.owner.type === "playGroup" ? " du groupe" : ""}.`
+        `${quantity} exemplaire(s) de **${card.name}** (${card.setCode} #${card.collectorNumber}) ajouté(s) à la collection${resolved.owner.type === "playGroup" ? " du groupe" : ""}.` +
+        linkLine(mcpLinks.collection(game.slug ?? game._id.toString(), args.playGroupId))
     );
 }
 
@@ -318,7 +320,10 @@ async function handleRemoveCardFromCollection(
     if (removed === 0) {
         return errorResult(`Aucun exemplaire de "${card.name}" (${card.setCode} #${card.collectorNumber}) dans la collection.`);
     }
-    return textResult(`${removed} exemplaire(s) de **${card.name}** (${card.setCode} #${card.collectorNumber}) retiré(s) de la collection.`);
+    return textResult(
+        `${removed} exemplaire(s) de **${card.name}** (${card.setCode} #${card.collectorNumber}) retiré(s) de la collection.` +
+        linkLine(mcpLinks.collection(game.slug ?? game._id.toString(), args.playGroupId))
+    );
 }
 
 // --- Wishlists ---
@@ -402,7 +407,7 @@ async function handleCreateWishlist(
             description: args.description,
             visibility: args.visibility,
         });
-        return textResult(`Wishlist **${wishlist.name}** créée (ID: ${wishlist.id}).`);
+        return textResult(`Wishlist **${wishlist.name}** créée (ID: ${wishlist.id}).` + linkLine(mcpLinks.wishlist(wishlist.id)));
     } catch (error) {
         return errorResult(error instanceof Error ? error.message : "Erreur lors de la création de la wishlist.");
     }
@@ -462,7 +467,8 @@ async function handleAddCardToWishlist(
     );
 
     return textResult(
-        `**${card.name}** (${card.setCode} #${card.collectorNumber}) ajoutée à la wishlist « ${editable.wishlist.name} » (quantité totale : ${item.quantity}).`
+        `**${card.name}** (${card.setCode} #${card.collectorNumber}) ajoutée à la wishlist « ${editable.wishlist.name} » (quantité totale : ${item.quantity}).` +
+        linkLine(mcpLinks.wishlist(editable.wishlist.id))
     );
 }
 
@@ -506,7 +512,10 @@ async function handleRemoveCardFromWishlist(
 
     const removed = await removeWishlistItem(args.wishlistId, itemId);
     if (!removed) return errorResult("Carte non trouvée dans cette wishlist.");
-    return textResult(`Carte ${itemName ? `**${itemName}** ` : ""}retirée de la wishlist « ${editable.wishlist.name} ».`);
+    return textResult(
+        `Carte ${itemName ? `**${itemName}** ` : ""}retirée de la wishlist « ${editable.wishlist.name} ».` +
+        linkLine(mcpLinks.wishlist(editable.wishlist.id))
+    );
 }
 
 // --- Groupes de jeu ---
@@ -544,7 +553,7 @@ async function handleCreatePlayGroup(
     if (!userId) return AUTH_REQUIRED;
 
     const group = await createPlayGroup({ name: args.name, description: args.description, ownerId: userId });
-    return textResult(`Groupe de jeu **${group.name}** créé (ID: ${group.id}).`);
+    return textResult(`Groupe de jeu **${group.name}** créé (ID: ${group.id}).` + linkLine(mcpLinks.playGroup(group.id)));
 }
 
 async function handleInviteToPlayGroup(
@@ -579,7 +588,10 @@ async function handleInviteToPlayGroup(
         invitedById: userId,
     });
 
-    return textResult(`Invitation envoyée à **${targetUser.displayName || targetUser.username}** pour rejoindre « ${group.name} ».`);
+    return textResult(
+        `Invitation envoyée à **${targetUser.displayName || targetUser.username}** pour rejoindre « ${group.name} ».` +
+        linkLine(mcpLinks.playGroup(group.id))
+    );
 }
 
 // --- Tournois ---
@@ -694,7 +706,8 @@ async function handleCreateTournament(
     });
 
     return textResult(
-        `Tournoi **${tournament.name}** créé (ID: ${tournament.id}, code de participation : ${tournament.joinCode}).`
+        `Tournoi **${tournament.name}** créé (ID: ${tournament.id}, code de participation : ${tournament.joinCode}).` +
+        linkLine(mcpLinks.tournament(tournament.id))
     );
 }
 
@@ -719,7 +732,8 @@ async function handleUpdateTournament(
     });
 
     return textResult(
-        `Tournoi **${updated.name}** mis à jour (statut : ${TOURNAMENT_STATUS_LABELS[updated.status] ?? updated.status}).`
+        `Tournoi **${updated.name}** mis à jour (statut : ${TOURNAMENT_STATUS_LABELS[updated.status] ?? updated.status}).` +
+        linkLine(mcpLinks.tournament(updated.id))
     );
 }
 
@@ -742,7 +756,8 @@ async function handleAddTournamentPlayer(
     const sanitized = sanitizePlayer(player);
 
     return textResult(
-        `Joueur **${sanitized.displayName}${sanitized.discriminator ? `#${sanitized.discriminator}` : ""}** ajouté au tournoi « ${tournament.name} » (statut : ${sanitized.status}).`
+        `Joueur **${sanitized.displayName}${sanitized.discriminator ? `#${sanitized.discriminator}` : ""}** ajouté au tournoi « ${tournament.name} » (statut : ${sanitized.status}).` +
+        linkLine(mcpLinks.tournamentPlayers(tournament.id))
     );
 }
 
@@ -992,7 +1007,8 @@ async function handleCreateErrata(
     revalidateErrataPages(game.slug, cardIds);
 
     return textResult(
-        `Errata créé (ID: ${id}, type : ${parsed.data.type}) sur ${cardIds.length} carte(s) de ${game.name}.`
+        `Errata créé (ID: ${id}, type : ${parsed.data.type}) sur ${cardIds.length} carte(s) de ${game.name}.` +
+        linkLine(mcpLinks.errata(id, game.slug ?? game._id.toString(), cardIds[0]))
     );
 }
 
@@ -1080,9 +1096,16 @@ async function handleUpdateErrata(
     });
     if (!result) return errorResult("Errata introuvable.");
 
-    revalidateErrataPages((game ?? errataGame)?.slug, [...result.previousCardIds, ...result.cardIds]);
+    const finalGame = game ?? errataGame;
+    revalidateErrataPages(finalGame?.slug, [...result.previousCardIds, ...result.cardIds]);
 
-    return textResult(`Errata ${args.errataId} mis à jour.`);
+    const firstCardId = result.cardIds[0];
+    return textResult(
+        `Errata ${args.errataId} mis à jour.` +
+        (finalGame && firstCardId
+            ? linkLine(mcpLinks.errata(args.errataId, finalGame.slug ?? finalGame._id.toString(), firstCardId))
+            : "")
+    );
 }
 
 // --- Enregistrement des outils ---
