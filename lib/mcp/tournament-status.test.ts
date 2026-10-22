@@ -6,7 +6,13 @@ import type {
     TournamentPlayer,
     TournamentRound,
 } from "@/lib/types/Tournament";
-import { describeTournamentStatus, plannedRoundsLabel, type TournamentStatusInput } from "./tournament-status";
+import {
+    describeRoundMatches,
+    describeTournamentStatus,
+    findTournamentPlayer,
+    plannedRoundsLabel,
+    type TournamentStatusInput,
+} from "./tournament-status";
 
 const created = new Date("2026-10-22T10:00:00Z");
 
@@ -152,5 +158,45 @@ describe("état d'un joueur dans un tournoi (MCP)", () => {
 
     it("dit quand l'organisation n'a pas fixé le nombre de rondes", () => {
         assert.equal(plannedRoundsLabel(phase({ plannedRounds: undefined })), "nombre de rondes non fixé par l'organisation");
+    });
+});
+
+describe("tables d'une ronde, côté organisation (MCP)", () => {
+    it("liste les tables dans l'ordre de la salle et compte les résultats rentrés", () => {
+        const text = describeRoundMatches(phase(), round, [
+            match({ id: "m2", tableNumber: 2, players: [{ playerId: "p3", score: 0 }], status: "completed" }),
+            match({
+                id: "m1",
+                tableNumber: 1,
+                status: "completed",
+                winnerIds: ["p2"],
+                players: [{ playerId: "p1", score: 1 }, { playerId: "p2", score: 2 }],
+                games: [{ winnerId: "p2" }, { winnerId: "p1" }, { winnerId: "p2" }],
+            }),
+            match({ id: "m3", tableNumber: 3, status: "disputed" }),
+        ], players);
+        assert.match(text, /Résultats rentrés : 2\/3, 1 match contesté\./);
+        assert.match(text, /- Table 1 : Kevin#1234 vs Alice#4242 — victoire de Alice#4242 \(2-1\)/);
+        assert.ok(text.indexOf("Table 1") < text.indexOf("Table 2"));
+        assert.match(text, /Table 2 : Bob#1234 — BYE/);
+    });
+});
+
+describe("retrouver un joueur par son nom (MCP)", () => {
+    const twins = [...players, player("p4", "Alice", { discriminator: "1111" })];
+
+    it("accepte le pseudo sans casse, le discriminant ou l'id", () => {
+        const byName = findTournamentPlayer(players, "alice");
+        assert.ok("player" in byName && byName.player.id === "p2");
+        const byTag = findTournamentPlayer(twins, "Alice#1111");
+        assert.ok("player" in byTag && byTag.player.id === "p4");
+        const byId = findTournamentPlayer(players, "p3");
+        assert.ok("player" in byId && byId.player.displayName === "Bob");
+    });
+
+    it("ne tranche pas entre deux homonymes", () => {
+        const result = findTournamentPlayer(twins, "Alice");
+        assert.ok("error" in result);
+        assert.match(result.error, /Alice#4242.*Alice#1111/);
     });
 });

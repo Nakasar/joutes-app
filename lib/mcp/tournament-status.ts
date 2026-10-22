@@ -219,3 +219,73 @@ export function describeTournamentStatus(input: TournamentStatusInput): string {
     lines.push("", `Phases :\n${describePhases(phases)}`);
     return lines.join("\n");
 }
+
+// --- Côté organisation ---
+
+function matchState(match: TournamentMatch, playersById: Map<string, TournamentPlayer>): string {
+    if (match.players.length === 1) return "BYE";
+    if (match.status === "disputed") return "contesté";
+    if (match.status === "pending") return "à jouer";
+    if (match.status === "in-progress") {
+        return match.reportedBy ? "rapporté, en attente de confirmation" : "en cours";
+    }
+    if (match.resolution === "double-loss") return "double défaite";
+    const forfeit = match.resolution === "forfeit" ? " par forfait" : "";
+    if (match.winnerIds.length === 0) return `nul${forfeit}`;
+    const winners = match.winnerIds.map(id => playerLabel(playersById.get(id))).join(" et ");
+    const score = match.games.length > 0
+        ? ` (${[...match.players].sort((a, b) => b.score - a.score).map(p => p.score).join("-")})`
+        : "";
+    return `victoire de ${winners}${forfeit}${score}`;
+}
+
+/**
+ * Les tables d'une ronde, dans l'ordre de la salle, et ce qui reste à rentrer :
+ * ce qu'un organisateur regarde avant de lancer la suite.
+ */
+export function describeRoundMatches(
+    phase: TournamentPhase | null,
+    round: TournamentRound,
+    matches: TournamentMatch[],
+    players: TournamentPlayer[],
+): string {
+    const playersById = new Map(players.map(p => [p.id, p]));
+    const sorted = [...matches].sort(
+        (a, b) => (a.tableNumber ?? Number.MAX_SAFE_INTEGER) - (b.tableNumber ?? Number.MAX_SAFE_INTEGER)
+    );
+    const lines = sorted.map(match => {
+        const table = match.tableNumber !== undefined ? `Table ${match.tableNumber}` : "Sans table";
+        const names = match.players.map(p => playerLabel(playersById.get(p.playerId))).join(" vs ");
+        return `- ${table} : ${names} — ${matchState(match, playersById)} (match ${match.id})`;
+    });
+    const done = matches.filter(m => m.status === "completed").length;
+    const disputed = matches.filter(m => m.status === "disputed").length;
+    const summary = matches.length === 0
+        ? "Aucun match dans cette ronde."
+        : `Résultats rentrés : ${done}/${matches.length}${disputed ? `, ${plural(disputed, "match")} contesté${disputed > 1 ? "s" : ""}` : ""}.`;
+    return [describeRound(phase, round), summary, ...lines].join("\n");
+}
+
+export type PlayerLookup = { player: TournamentPlayer } | { error: string };
+
+/**
+ * Retrouve un joueur comme l'organisation le nomme : son id, « Pseudo#1234 »,
+ * ou son pseudo seul s'il n'a pas d'homonyme. Un pseudo partagé n'est jamais
+ * tranché au hasard : on liste les candidats.
+ */
+export function findTournamentPlayer(players: TournamentPlayer[], reference: string): PlayerLookup {
+    const ref = reference.trim();
+    const byId = players.find(p => p.id === ref);
+    if (byId) return { player: byId };
+
+    const [name, discriminator] = ref.split("#");
+    const sameName = players.filter(p => p.displayName.toLowerCase() === name.trim().toLowerCase());
+    const candidates = discriminator
+        ? sameName.filter(p => p.discriminator === discriminator.trim())
+        : sameName;
+    if (candidates.length === 1) return { player: candidates[0] };
+    if (candidates.length > 1) {
+        return { error: `Plusieurs joueurs s'appellent « ${name} » : ${candidates.map(p => `${playerLabel(p)} (ID: ${p.id})`).join(", ")}. Précisez le discriminant ou l'id.` };
+    }
+    return { error: `Aucun joueur « ${ref} » dans ce tournoi.` };
+}

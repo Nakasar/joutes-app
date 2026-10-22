@@ -33,6 +33,11 @@ export const mcpLinks = {
     tournament: (tournamentId: string, env?: Env) => joutesUrl(`/tournaments/${segment(tournamentId)}/organizer`, env),
     /** Le portail joueur : sa table, son adversaire, son classement. */
     tournamentPlayer: (tournamentId: string, env?: Env) => joutesUrl(`/tournaments/${segment(tournamentId)}/player`, env),
+    tournamentRound: (tournamentId: string, roundId: string, env?: Env) =>
+        joutesUrl(`/tournaments/${segment(tournamentId)}/organizer/rounds/${segment(roundId)}/matches`, env),
+    tournamentPlayerSheet: (tournamentId: string, playerId: string, env?: Env) =>
+        joutesUrl(`/tournaments/${segment(tournamentId)}/organizer/players/${segment(playerId)}`, env),
+    tournamentLive: (tournamentId: string, env?: Env) => joutesUrl(`/tournaments/${segment(tournamentId)}/organizer/live`, env),
     tournamentPlayers: (tournamentId: string, env?: Env) =>
         joutesUrl(`/tournaments/${segment(tournamentId)}/organizer/players`, env),
     /**

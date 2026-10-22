@@ -99,6 +99,12 @@ export const TOOL_POLICIES = {
     create_tournament: { access: "account", effect: "create" },
     update_tournament: { access: "account", effect: "update" },
     add_tournament_player: { access: "account", effect: "create" },
+    get_tournament_round: { access: "account", effect: "read" },
+    report_tournament_match_result: { access: "account", effect: "update" },
+    start_next_round: { access: "account", effect: "create" },
+    update_tournament_player: { access: "account", effect: "update" },
+    control_tournament_timer: { access: "account", effect: "update" },
+    send_tournament_announcement: { access: "account", effect: "create" },
 } as const satisfies Record<string, ToolPolicy>;
 
 export type JoutesToolName = keyof typeof TOOL_POLICIES;
