@@ -95,6 +95,7 @@ export const TOOL_POLICIES = {
     // Tournois
     list_tournaments: { access: "account", effect: "read" },
     get_tournament: { access: "account", effect: "read" },
+    get_my_tournament_status: { access: "account", effect: "read" },
     create_tournament: { access: "account", effect: "create" },
     update_tournament: { access: "account", effect: "update" },
     add_tournament_player: { access: "account", effect: "create" },

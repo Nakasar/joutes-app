@@ -27,13 +27,17 @@ import {
     addPlayerByIdentifier,
     assertCanManage,
     assertCanReadTournament,
+    canManageTournament,
     createTournament,
     getStandings,
     getTournamentByJoinCode,
     getTournamentById,
+    listMatchesByRound,
     listPhases,
     listPlayerTournamentsForUser,
     listPlayers,
+    listPuzzleSeats,
+    listRounds,
     listTournamentsForUser,
     sanitizePlayer,
     TournamentError,
@@ -59,6 +63,9 @@ import { anyUserHasPermission } from "@/lib/db/permissions";
 import { createErrataSchema } from "@/lib/schemas/errata.schema";
 import { locales } from "@/i18n/config";
 import { linkLine, mcpLinks } from "@/lib/mcp/links";
+import { describeRound, describeTournamentStatus, playerLabel, plannedRoundsLabel } from "@/lib/mcp/tournament-status";
+import { resolveCurrentRound, resolveDisplayPhase } from "@/lib/tournaments/current-round";
+import type { Tournament } from "@/lib/types/Tournament";
 import type { ErrataDb, ErrataType } from "@/lib/types/errata";
 import { registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import type { DeckViewCard, DeckViewList } from "@/components/decks/DeckCheckView";
@@ -627,6 +634,21 @@ async function handleListTournaments(_args: Record<string, never>, extra: ToolEx
     );
 }
 
+/** Un tournoi par son id, sinon par son code de participation. */
+async function findTournament(idOrJoinCode: string): Promise<Tournament | null> {
+    const value = idOrJoinCode.trim();
+    return ObjectId.isValid(value)
+        ? getTournamentById(value)
+        : getTournamentByJoinCode(value);
+}
+
+/** Le staff gère le tournoi depuis le portail organisateur, les joueurs depuis le leur. */
+function tournamentLink(tournament: Tournament, userId: string): string {
+    return canManageTournament(tournament, userId)
+        ? mcpLinks.tournament(tournament.id)
+        : mcpLinks.tournamentPlayer(tournament.id);
+}
+
 async function handleGetTournament(
     args: { tournamentIdOrJoinCode: string },
     extra: ToolExtra
@@ -634,18 +656,19 @@ async function handleGetTournament(
     const userId = userIdFrom(extra);
     if (!userId) return AUTH_REQUIRED;
 
-    const tournament = ObjectId.isValid(args.tournamentIdOrJoinCode)
-        ? await getTournamentById(args.tournamentIdOrJoinCode)
-        : await getTournamentByJoinCode(args.tournamentIdOrJoinCode);
+    const tournament = await findTournament(args.tournamentIdOrJoinCode);
     if (!tournament) return errorResult("Tournoi non trouvé.");
 
     await assertCanReadTournament(tournament, userId);
 
-    const [players, phases, standings] = await Promise.all([
+    const [players, phases, standings, rounds] = await Promise.all([
         listPlayers(tournament.id),
         listPhases(tournament.id),
         getStandings(tournament.id),
+        listRounds(tournament.id),
     ]);
+    const activePhase = resolveDisplayPhase(phases, tournament.currentPhaseId);
+    const currentRound = resolveCurrentRound(rounds, activePhase?.id);
 
     const phasesText = phases.map(p => {
         // Le rythme d'une phase change complètement la lecture du tournoi : en
@@ -657,11 +680,11 @@ async function handleGetTournament(
                 ? `, intervalles de ${Math.round(p.intervalHours / 24)} j`
                 : `, intervalles de ${p.intervalHours} h`
             : "";
-        return `- ${p.name} (${p.type}, ${p.status}${pacing})`;
+        return `- ${p.name} (${p.type}, ${p.status}${pacing}) — ${plannedRoundsLabel(p)}`;
     }).join("\n");
     const playersText = players.map(p => {
         const sanitized = sanitizePlayer(p);
-        return `- ${sanitized.displayName}${sanitized.discriminator ? `#${sanitized.discriminator}` : ""} (${sanitized.status})`;
+        return `- ${playerLabel(sanitized)} (${sanitized.status})`;
     }).join("\n");
     const standingsText = standings.slice(0, 20).map((s, index) => {
         // Une phase puzzle se classe au temps : les points et le bilan y sont
@@ -673,10 +696,94 @@ async function handleGetTournament(
     }).join("\n");
 
     return textResult(
-        `**${tournament.name}** (ID: ${tournament.id}) — ${TOURNAMENT_STATUS_LABELS[tournament.status] ?? tournament.status}${tournament.joinCode ? `, code de participation : ${tournament.joinCode}` : ""}\n\n` +
+        `**${tournament.name}** (ID: ${tournament.id}) — ${TOURNAMENT_STATUS_LABELS[tournament.status] ?? tournament.status}${tournament.joinCode ? `, code de participation : ${tournament.joinCode}` : ""}\n` +
+        `${describeRound(activePhase, currentRound)}\n\n` +
         `Phases (${phases.length}) :\n${phasesText || "Aucune phase."}\n\n` +
         `Joueurs (${players.length}) :\n${playersText || "Aucun joueur."}\n\n` +
-        `Classement :\n${standingsText || "Aucun classement."}`
+        `Classement :\n${standingsText || "Aucun classement."}` +
+        linkLine(tournamentLink(tournament, userId))
+    );
+}
+
+/**
+ * Le tournoi dont parle l'utilisateur quand il n'en nomme aucun : celui qu'il
+ * joue en ce moment. S'il en joue plusieurs à la fois, on ne choisit pas à sa
+ * place — mauvaise table, mauvais adversaire —, on les liste.
+ */
+async function resolveCurrentTournament(userId: string): Promise<{ tournament: Tournament } | { result: ToolResult }> {
+    const playing = (await listPlayerTournamentsForUser(userId))
+        .filter(({ tournament, player }) => tournament.status === "in-progress" && player.status !== "dropped");
+    if (playing.length === 1) return { tournament: playing[0].tournament };
+    if (playing.length > 1) {
+        const list = playing
+            .map(({ tournament }) => `- **${tournament.name}** (ID: ${tournament.id})`)
+            .join("\n");
+        return { result: textResult(`Vous jouez plusieurs tournois en cours. Précisez lequel (tournamentIdOrJoinCode) :\n${list}`) };
+    }
+
+    const managed = (await listTournamentsForUser(userId)).filter(t => t.status === "in-progress");
+    if (managed.length === 1) return { tournament: managed[0] };
+    if (managed.length > 1) {
+        const list = managed.map(t => `- **${t.name}** (ID: ${t.id})`).join("\n");
+        return { result: textResult(`Vous gérez plusieurs tournois en cours. Précisez lequel (tournamentIdOrJoinCode) :\n${list}`) };
+    }
+    return {
+        result: textResult("Aucun tournoi en cours où vous êtes inscrit. `list_tournaments` liste vos tournois, passés et à venir."),
+    };
+}
+
+async function handleGetMyTournamentStatus(
+    args: { tournamentIdOrJoinCode?: string },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    let tournament: Tournament | null;
+    if (args.tournamentIdOrJoinCode?.trim()) {
+        tournament = await findTournament(args.tournamentIdOrJoinCode);
+        if (!tournament) return errorResult("Tournoi non trouvé.");
+    } else {
+        const resolved = await resolveCurrentTournament(userId);
+        if ("result" in resolved) return resolved.result;
+        tournament = resolved.tournament;
+    }
+
+    await assertCanReadTournament(tournament, userId);
+
+    const [players, phases, rounds, standings] = await Promise.all([
+        listPlayers(tournament.id),
+        listPhases(tournament.id),
+        listRounds(tournament.id),
+        getStandings(tournament.id),
+    ]);
+    // Un compte ne s'inscrit qu'une fois, mais un ancien retrait ne doit pas
+    // masquer une inscription active.
+    const mine = players.filter(p => p.userId === userId);
+    const me = mine.find(p => p.status !== "dropped") ?? mine[0] ?? null;
+
+    // Mêmes repères que le portail joueur : la phase affichée et sa ronde.
+    const activePhase = resolveDisplayPhase(phases, tournament.currentPhaseId);
+    const currentRound = resolveCurrentRound(rounds, activePhase?.id);
+    const [roundMatches, puzzleSeats] = await Promise.all([
+        currentRound ? listMatchesByRound(tournament.id, currentRound.id) : Promise.resolve([]),
+        me && activePhase?.type === "time-race" ? listPuzzleSeats(tournament.id, activePhase.id) : Promise.resolve([]),
+    ]);
+
+    return textResult(
+        describeTournamentStatus({
+            tournament,
+            phases,
+            activePhase,
+            currentRound,
+            roundMatches,
+            players,
+            standings,
+            me,
+            puzzleSeat: me ? puzzleSeats.find(seat => seat.playerId === me.id) ?? null : null,
+        }) +
+        `\n\nID du tournoi : ${tournament.id}` +
+        linkLine(me ? mcpLinks.tournamentPlayer(tournament.id) : tournamentLink(tournament, userId))
     );
 }
 
@@ -1228,6 +1335,16 @@ export function registerJoutesDataTools(server: McpServer) {
             tournamentIdOrJoinCode: z.string(),
         },
     }, withToolLogging("get_tournament", handleGetTournament));
+    registerJoutesTool(server, "get_my_tournament_status", {
+        title: "Get my tournament status",
+        description:
+            "Où en est l'utilisateur dans un tournoi : sa table et son adversaire pour la ronde en cours (avec le résultat du match s'il est rapporté), " +
+            "son classement, ses points et son bilan, la ronde en cours et le nombre de rondes prévues par phase. " +
+            "Sans tournamentIdOrJoinCode, prend le tournoi en cours où l'utilisateur est inscrit. Lecture seule, réservé aux joueurs inscrits et au staff.",
+        inputSchema: {
+            tournamentIdOrJoinCode: z.string().optional().describe("Id ou code de participation du tournoi. Facultatif : par défaut, le tournoi en cours de l'utilisateur."),
+        },
+    }, withToolLogging("get_my_tournament_status", handleGetMyTournamentStatus));
     registerJoutesTool(server, "create_tournament", {
         title: "Create tournament",
         description: "Créer un tournoi (statut brouillon) dont l'utilisateur sera organisateur.",
