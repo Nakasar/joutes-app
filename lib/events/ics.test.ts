@@ -22,7 +22,7 @@ describe("buildEventIcs", () => {
 
   it("échappe les virgules et points-virgules", () => {
     assert.match(ics, /SUMMARY:Braderie\\, édition d'automne\r\n/);
-    assert.match(ics, /LOCATION:L'Antre-Temps\; Thionville\r\n/);
+    assert.match(ics, /LOCATION:L'Antre-Temps\\; Thionville\r\n/);
   });
 
   it("donne un identifiant stable", () => {

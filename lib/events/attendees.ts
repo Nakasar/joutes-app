@@ -38,12 +38,12 @@ export function canSeeAttendees(
   }
 }
 
-/** Minuscules et sans accents : « élo » trouve « Élodie ». */
 /** Les deux premières lettres ou chiffres d'un pseudo, pour l'avatar par défaut : « L'Ours » donne « LO ». */
 export function initials(name: string): string {
   return name.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 2);
 }
 
+/** Minuscules et sans accents : « élo » trouve « Élodie ». */
 export function searchKey(value: string): string {
   return value
     .normalize("NFD")
