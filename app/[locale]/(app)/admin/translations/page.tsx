@@ -94,6 +94,7 @@ export default async function AdminTranslationsPage({
       prefilledKeywords: prefill?.keywords ?? 0,
       staleSource: card.state === "stale" ? card.translation?.source : undefined,
       inserts: [...symbols, ...new Set(keywordValues)],
+      twins: card.twins,
     };
   }
 

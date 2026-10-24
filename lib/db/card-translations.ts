@@ -10,6 +10,7 @@ import {
   cardTranslationState,
   KEYWORD_GLOSSARY_FIELD,
   readCardTranslations,
+  sharesTranslationWith,
   type CardGlossaryEntry,
   type CardTranslation,
   type CardTranslations,
@@ -194,6 +195,8 @@ export type CardToTranslate = {
   attributes: { key: string; value: string | string[] }[];
   translation?: CardTranslation;
   state: CardTranslationState;
+  /** Les autres cartes du même nom, et si elles recevront la traduction. */
+  twins: { id: string; code: string; sameText: boolean; shared: boolean }[];
 };
 
 /** Les attributs qui se traduisent par le glossaire : du texte, pas des nombres. */
@@ -213,6 +216,25 @@ export async function getCardToTranslate(gameId: ObjectId, cardId: string, lang:
   if (!doc) return null;
 
   const translation = readCardTranslations(doc.translations)?.[lang];
+  const text = typeof doc.text === "string" ? doc.text : undefined;
+  const twinDocs = await db
+    .collection("cards")
+    .find(
+      { ...baseFilter(gameId, lang), name: doc.name, _id: { $ne: doc._id } },
+      { projection: { id: 1, text: 1, setCode: 1, collectorNumber: 1, translations: 1 } }
+    )
+    .sort({ setCode: 1, collectorNumber: 1 })
+    .toArray();
+  const twins = twinDocs.map((twin) => {
+    const twinText = typeof twin.text === "string" ? twin.text : undefined;
+    return {
+      id: twin.id as string,
+      code: [twin.setCode, twin.collectorNumber].filter(Boolean).join("-") || (twin.id as string),
+      sameText: (twinText ?? "") === (text ?? ""),
+      shared: sharesTranslationWith({ text }, { text: twinText, translation: readCardTranslations(twin.translations)?.[lang] }),
+    };
+  });
+
   return {
     id: doc.id as string,
     name: doc.name as string,
@@ -224,6 +246,7 @@ export async function getCardToTranslate(gameId: ObjectId, cardId: string, lang:
     attributes: textAttributes(doc),
     translation,
     state: cardTranslationState({ name: doc.name as string, text: doc.text as string | undefined }, translation),
+    twins,
   };
 }
 
@@ -234,42 +257,69 @@ export async function getCardToTranslate(gameId: ObjectId, cardId: string, lang:
  *
  * Rend `false` si la carte n'existe pas.
  */
+/**
+ * Enregistre la traduction d'une carte et la reporte sur les cartes du même
+ * nom (cf. `sharesTranslationWith`). Renvoie les identifiants des cartes
+ * modifiées, la carte traduite en tête, ou `null` si elle n'existe pas.
+ */
 export async function saveCardTranslation(
   gameId: ObjectId,
   cardId: string,
   lang: string,
   input: { name?: string; text?: string; status: CardTranslationStatus },
   userId: string
-): Promise<boolean> {
+): Promise<string[] | null> {
   const path = translationPath(lang);
   const cards = db.collection("cards");
   const card = await cards.findOne({ ...baseFilter(gameId, lang), id: cardId }, { projection: { _id: 1, name: 1, text: 1 } });
-  if (!card) return false;
+  if (!card) return null;
+
+  const cardText = typeof card.text === "string" ? card.text : undefined;
+  const twins = await cards
+    .find(
+      { ...baseFilter(gameId, lang), name: card.name, _id: { $ne: card._id } },
+      { projection: { _id: 1, id: 1, text: 1, [path]: 1 } }
+    )
+    .toArray();
+  const targets = [
+    card,
+    ...twins.filter((twin) =>
+      sharesTranslationWith(
+        { text: cardText },
+        {
+          text: typeof twin.text === "string" ? twin.text : undefined,
+          translation: readCardTranslations(twin.translations)?.[lang],
+        }
+      )
+    ),
+  ];
+  const filter = { _id: { $in: targets.map((target) => target._id) } };
+  const ids = targets.map((target) => (target === card ? cardId : (target.id as string)));
 
   const name = input.name?.trim() || undefined;
   const text = input.text?.replace(/\r\n/g, "\n").trim() || undefined;
 
   if (!name && !text) {
-    await cards.updateOne({ _id: card._id }, { $unset: { [path]: "" } });
-    return true;
+    // Une carte du même nom traduite pour elle-même garde sa traduction.
+    await cards.updateMany(filter, { $unset: { [path]: "" } });
+    return ids;
   }
 
-  await cards.updateOne(
-    { _id: card._id },
-    {
-      $set: {
-        [path]: {
-          ...(name ? { name } : {}),
-          ...(text ? { text } : {}),
-          status: input.status,
-          source: { name: card.name, ...(typeof card.text === "string" && card.text ? { text: card.text } : {}) },
-          updatedAt: new Date(),
-          updatedBy: userId,
-        },
+  await cards.updateMany(filter, {
+    $set: {
+      [path]: {
+        ...(name ? { name } : {}),
+        ...(text ? { text } : {}),
+        status: input.status,
+        // La source est celle de la carte traduite : une carte au texte
+        // différent se voit ainsi « à revoir ».
+        source: { name: card.name, ...(cardText ? { text: cardText } : {}) },
+        updatedAt: new Date(),
+        updatedBy: userId,
       },
-    }
-  );
-  return true;
+    },
+  });
+  return ids;
 }
 
 // --- Glossaire ---------------------------------------------------------------

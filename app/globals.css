@@ -145,6 +145,16 @@
   body {
     @apply bg-background text-foreground;
   }
+  /*
+   * `color-scheme` ne suffit pas sous Windows : Chrome y peint la liste d'un
+   * `select` avec le fond du `select` lui-même. Un `select` en `bg-transparent`
+   * ouvrait donc une liste blanche, où ses options gardaient le texte clair
+   * hérité du thème sombre. Les options portent leurs propres couleurs.
+   */
+  option,
+  optgroup {
+    @apply bg-popover text-popover-foreground;
+  }
 }
 
 /*

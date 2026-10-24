@@ -17,6 +17,8 @@ export type TranslationActionResult = {
   error?: string;
   /** Enregistré, mais la recherche n'est pas à jour. */
   warning?: string;
+  /** Les autres cartes du même nom qui ont reçu la traduction. */
+  shared?: number;
 };
 
 const languageSchema = z.string().refine(isCardLanguage, "Langue inconnue");
@@ -51,7 +53,7 @@ export async function saveTranslation(
     }
 
     const saved = await saveCardTranslation(new ObjectId(validatedGameId), cardId, validatedLang, data, session.user.id);
-    if (!saved) {
+    if (saved === null) {
       return { success: false, error: `La carte « ${cardId} » n'existe pas pour ce jeu.` };
     }
 
@@ -59,7 +61,7 @@ export async function saveTranslation(
     const indexConfig = cardIndexFor(game.slug);
     if (indexConfig) {
       try {
-        const cards = await getGameCardsForIndexing(new ObjectId(validatedGameId), [cardId]);
+        const cards = await getGameCardsForIndexing(new ObjectId(validatedGameId), saved);
         if (cards.length > 0) {
           await meilisearch.index(indexConfig.name).addDocuments(cards.map((card) => toSearchDocument(indexConfig, card)));
         }
@@ -70,9 +72,11 @@ export async function saveTranslation(
     }
 
     revalidatePath("/admin/translations");
-    revalidatePath(`/games/${game.slug ?? game.id}/cards/${cardId}`);
+    for (const id of saved) {
+      revalidatePath(`/games/${game.slug ?? game.id}/cards/${id}`);
+    }
 
-    return { success: true, warning };
+    return { success: true, warning, shared: saved.length - 1 };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.issues[0]?.message || "Données invalides" };
