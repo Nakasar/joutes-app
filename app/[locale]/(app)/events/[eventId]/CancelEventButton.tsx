@@ -23,13 +23,22 @@ type CancelEventButtonProps = {
   eventId: string;
   eventName: string;
   disabled?: boolean;
+  /**
+   * Ouverture pilotée de l'extérieur (le menu « … » de l'organisation) : le
+   * bouton déclencheur n'est alors pas rendu.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export default function CancelEventButton({ eventId, eventName, disabled }: CancelEventButtonProps) {
+export default function CancelEventButton({ eventId, eventName, disabled, open: controlledOpen, onOpenChange }: CancelEventButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const controlled = controlledOpen !== undefined;
+  const open = controlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (value: boolean) => (controlled ? onOpenChange?.(value) : setUncontrolledOpen(value));
   const [reason, setReason] = useState("");
 
   const handleCancel = async () => {
@@ -63,12 +72,14 @@ export default function CancelEventButton({ eventId, eventName, disabled }: Canc
       )}
 
       <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogTrigger asChild>
-          <Button variant="destructive" className="w-full" disabled={disabled}>
-            <XCircle className="h-4 w-4 mr-2" />
-            Annuler l&apos;événement
-          </Button>
-        </AlertDialogTrigger>
+        {!controlled && (
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" className="w-full" disabled={disabled}>
+              <XCircle className="h-4 w-4 mr-2" />
+              Annuler l&apos;événement
+            </Button>
+          </AlertDialogTrigger>
+        )}
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Annuler l&apos;événement</AlertDialogTitle>

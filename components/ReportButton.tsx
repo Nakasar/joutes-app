@@ -38,7 +38,7 @@ export default function ReportButton({
   contentType: ReportableContentType;
   contentId: string;
   variant?: "ghost" | "outline";
-  size?: "sm" | "icon-sm";
+  size?: "sm" | "icon-sm" | "icon";
   className?: string;
   /** Affiche le libellé « Signaler » à côté du drapeau. */
   withLabel?: boolean;

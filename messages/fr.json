@@ -407,7 +407,120 @@
         "self": "Un événement ne peut pas être lié à lui-même.",
         "unknown": "Une erreur est survenue."
       }
-    }
+    },
+    "share": {
+      "label": "Partager",
+      "copied": "Lien copié",
+      "failed": "Impossible de copier le lien"
+    },
+    "manage": {
+      "more": "Plus d'actions",
+      "qrCode": "Code de participation (QR)",
+      "cancel": "Annuler l'événement",
+      "delete": "Supprimer l'événement",
+      "edit": "Modifier",
+      "addDescription": "Ajoutez une description : programme, format, ce qu'il faut apporter…",
+      "places": "Places",
+      "allowJoin": "Inscriptions ouvertes",
+      "allowJoinHelp": "Les joueurs peuvent s'inscrire",
+      "preRegistration": "Pré-inscription",
+      "preRegistrationHelp": "Vous validez chaque inscrit"
+    },
+    "registrationCard": {
+      "join": "S'inscrire",
+      "requestJoin": "Demander à participer",
+      "requestJoinHelp": "L'organisation valide chaque inscription.",
+      "closed": "Les inscriptions sont fermées pour le moment.",
+      "creator": "Vous organisez cet événement.",
+      "registeredTitle": "Vous êtes inscrit",
+      "registeredSince": "depuis le {date}",
+      "pendingTitle": "Pré-inscription en attente",
+      "pendingDescription": "L'organisation doit valider votre inscription.",
+      "excluded": "Vous avez été exclu de cet événement par l'organisation.",
+      "addToCalendar": "Ajouter à mon agenda",
+      "leave": "Se désinscrire",
+      "cancelRequest": "Annuler ma demande",
+      "leaveTitle": "Libérer votre place ?",
+      "cancelRequestTitle": "Annuler votre demande ?",
+      "leaveDescription": "Si l'événement est complet, le premier joueur de la liste d'attente sera prévenu. Vous pourrez vous réinscrire s'il reste de la place.",
+      "stay": "Rester inscrit",
+      "confirmLeave": "Me désinscrire"
+    },
+    "pagination": {
+      "label": "Pages",
+      "previous": "Page précédente",
+      "next": "Page suivante",
+      "page": "Page {page}"
+    },
+    "attendees": {
+      "title": "Qui vient ?",
+      "search": "Rechercher un inscrit",
+      "searchPlaceholder": "Rechercher un joueur",
+      "hiddenParticipants": "Les inscrits ne sont visibles que par les autres inscrits. Inscrivez-vous pour voir qui vient.",
+      "hiddenOrganizers": "L'organisation garde la liste des inscrits privée.",
+      "empty": "Personne n'est encore inscrit. Soyez le premier !",
+      "you": "Vous",
+      "noResult": "Aucun inscrit ne correspond à « {query} ».",
+      "range": "{from}–{to} sur {total}"
+    },
+    "participantsTable": {
+      "error": "Une erreur est survenue",
+      "search": "Rechercher un inscrit",
+      "searchPlaceholder": "Pseudo, e-mail…",
+      "filterLabel": "Filtrer par statut",
+      "filters": {
+        "all": "Tous",
+        "REGISTERED": "Inscrits",
+        "PRE_REGISTERED": "Pré-inscrits",
+        "EXCLUDED": "Exclus"
+      },
+      "export": "Exporter",
+      "selection": "{count, plural, one {# sélectionné} other {# sélectionnés}}",
+      "validate": "Valider",
+      "remove": "Retirer",
+      "clearSelection": "Tout désélectionner",
+      "selectPage": "Sélectionner la page",
+      "select": "Sélectionner {name}",
+      "columns": {
+        "rank": "#",
+        "player": "Joueur",
+        "email": "E-mail",
+        "status": "Statut",
+        "registeredAt": "Inscrit le",
+        "actions": "Actions"
+      },
+      "guest": "Invité (sans compte)",
+      "status": {
+        "REGISTERED": "Inscrit",
+        "PRE_REGISTERED": "Pré-inscrit",
+        "EXCLUDED": "Exclu",
+        "NOT_REGISTERED": "Non inscrit"
+      },
+      "actionsFor": "Actions pour {name}",
+      "changeStatus": "Changer le statut",
+      "removeOne": "Retirer de l'événement",
+      "empty": "Personne n'est encore inscrit.",
+      "noResult": "Aucun inscrit ne correspond à cette recherche.",
+      "range": "{from}–{to} sur {total}",
+      "perPage": "Par page",
+      "removeTitle": "{count, plural, one {Retirer cet inscrit ?} other {Retirer # inscrits ?}}",
+      "removeDescription": "{count, plural, one {{name} sera retiré de l'événement.} other {Ces # inscrits seront retirés de l'événement.}} Les places libérées sont proposées à la liste d'attente."
+    },
+    "tabs": {
+      "label": "Organisation de l'événement",
+      "overview": "Aperçu",
+      "participants": "Inscrits",
+      "waitlist": "Liste d'attente",
+      "interested": "Intéressés"
+    },
+    "banner": {
+      "alt": "Bannière de {name}",
+      "change": "Changer la bannière",
+      "add": "Ajouter une bannière"
+    },
+    "spotsLeft": "{count, plural, one {# place restante} other {# places restantes}}",
+    "organizedBy": "Organisé par",
+    "organizedWith": "avec {name}"
   },
   "EventJoin": {
     "pending": "Les lutins de joutes sont en train de valider votre inscription, patientez un peu !",
@@ -1259,11 +1372,42 @@
         },
         "maxParticipants": {
           "label": "Nombre max de participants (optionnel)",
-          "placeholder": "Illimité"
+          "placeholder": "Illimité",
+          "help": "Vide = illimité. Au-delà, une liste d'attente s'ouvre."
         },
         "preRegistration": {
           "label": "Activer la pré-inscription",
           "help": "Si activé, les participants qui s'inscrivent auront le statut \"Pré-inscrit\" et devront être validés par l'organisateur."
+        },
+        "banner": {
+          "label": "Bannière",
+          "help": "Facultative · JPG, PNG ou WebP · 5 Mo max · 1500 × 500 conseillé",
+          "error": "L'envoi de l'image a échoué",
+          "current": "Bannière de l'événement",
+          "replace": "Remplacer",
+          "remove": "Retirer",
+          "uploading": "Envoi en cours…",
+          "drop": "Glissez une image ici ou cliquez pour parcourir",
+          "fallback": "Sans image, la page affiche un fond neutre.",
+          "fallbackGame": "Sans image, la page affiche la bannière du jeu."
+        },
+        "description": {
+          "label": "Description",
+          "write": "Écrire",
+          "preview": "Aperçu",
+          "placeholder": "Programme, format, ce qu'il faut apporter…",
+          "help": "Markdown accepté : **gras**, listes, liens.",
+          "empty": "Rien à prévisualiser."
+        },
+        "visibility": {
+          "label": "Qui voit la liste des inscrits ?",
+          "public": "Tout le monde",
+          "publicHelp": "pseudos seulement, jamais les e-mails",
+          "participants": "Les inscrits",
+          "organizers": "L'organisation seulement"
+        },
+        "allowJoin": {
+          "label": "Ouvrir les inscriptions dès la publication"
         }
       },
       "actions": {
@@ -1273,7 +1417,25 @@
       },
       "errors": {
         "generic": "Une erreur est survenue",
-        "createFailed": "Une erreur est survenue lors de la création de l'événement"
+        "createFailed": "Une erreur est survenue lors de la création de l'événement",
+        "updateFailed": "Une erreur est survenue lors de l'enregistrement"
+      },
+      "hint": "Vous pourrez tout modifier après la création.",
+      "sections": {
+        "information": "Informations",
+        "registration": "Inscriptions"
+      },
+      "edit": {
+        "title": "Modifier l'événement",
+        "hint": "Les inscrits sont prévenus si l'horaire change.",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "scheduleNotice": "{count, plural, one {L'inscrit sera prévenu} other {Les # inscrits seront prévenus}} du changement d'horaire."
+      },
+      "preview": {
+        "title": "Aperçu dans l'agenda",
+        "help": "La bannière apparaît en haut de la page de l'événement et dans les liens partagés.",
+        "unnamed": "Nom de l'événement"
       }
     }
   },

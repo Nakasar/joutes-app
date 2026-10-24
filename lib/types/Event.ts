@@ -1,6 +1,13 @@
 import { GeoJSONPoint } from "./Lair";
 import {GameTypeKey} from "@/lib/constants/game-types";
 
+/**
+ * Qui voit la liste publique des inscrits (« Qui vient ? ») : leurs pseudos,
+ * jamais leurs e-mails. Absent = `public`. L'organisation voit toujours la
+ * liste complète. Voir `lib/events/attendees.ts`.
+ */
+export type ParticipantsVisibility = 'public' | 'participants' | 'organizers';
+
 export type RegistrationStatus = 'NOT_REGISTERED' | 'PRE_REGISTERED' | 'REGISTERED' | 'EXCLUDED';
 
 /**
@@ -25,6 +32,13 @@ export type Event = {
   lairId?: string;
   name: string;
   description?: string;
+  /**
+   * Bannière de l'événement : une image déposée sur notre stockage
+   * (`/api/events/banner`, cf. `isAppBlobImageUrl`). Sans elle, la page
+   * reprend la bannière du jeu.
+   */
+  banner?: string;
+  participantsVisibility?: ParticipantsVisibility;
   startDateTime: string;
   endDateTime: string;
   gameName: string;

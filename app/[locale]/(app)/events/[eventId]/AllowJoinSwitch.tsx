@@ -4,6 +4,7 @@ import { Switch } from "@/components/ui/switch.tsx";
 import { useState } from "react";
 import { toggleAllowJoinAction } from "../actions.ts";
 import { useRouter } from "@/i18n/navigation.ts";
+import { useTranslations } from "next-intl";
 
 type AllowJoinSwitchProps = {
   eventId: string;
@@ -14,6 +15,7 @@ export default function AllowJoinSwitch({ eventId, initialAllowJoin }: AllowJoin
   const [allowJoin, setAllowJoin] = useState(initialAllowJoin);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const t = useTranslations("EventDetail.manage");
 
   const handleToggle = async (checked: boolean) => {
     setIsLoading(true);
@@ -33,21 +35,19 @@ export default function AllowJoinSwitch({ eventId, initialAllowJoin }: AllowJoin
   };
 
   return (
-    <div className="flex items-center justify-between p-4 border rounded-lg">
-      <div className="space-y-0.5">
-        <label htmlFor="allow-join" className="text-sm font-medium">
-          Inscriptions ouvertes
-        </label>
-        <p className="text-sm text-muted-foreground">
-          Autorise les utilisateurs à s&apos;inscrire à l&apos;événement
-        </p>
-      </div>
+    <div className="flex items-center gap-3">
       <Switch
         id="allow-join"
         checked={allowJoin}
         onCheckedChange={handleToggle}
         disabled={isLoading}
       />
+      <div>
+        <label htmlFor="allow-join" className="block text-sm font-semibold">
+          {t("allowJoin")}
+        </label>
+        <p className="text-xs text-muted-foreground">{t("allowJoinHelp")}</p>
+      </div>
     </div>
   );
 }

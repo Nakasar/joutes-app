@@ -43,7 +43,7 @@ async function NewEventPageContent({
       : null;
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto p-4 sm:p-6 max-w-6xl">
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">{t("page.title")}</h1>
@@ -76,7 +76,7 @@ export default function NewEventPage(props: Parameters<typeof NewEventPageConten
   return (
     <Suspense
       fallback={
-        <div className="container mx-auto p-6 max-w-4xl">
+        <div className="container mx-auto p-4 sm:p-6 max-w-6xl">
           <EditorFormSkeleton fields={4} label="Chargement du formulaire" />
         </div>
       }

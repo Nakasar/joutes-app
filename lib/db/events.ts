@@ -160,6 +160,7 @@ export async function getEventsByLairId(lairId: string, {year, month, gameId, us
     id: event.id,
     lairId: event.lairId,
     name: event.name,
+    banner: event.banner,
     description: event.description,
     startDateTime: event.startDateTime,
     endDateTime: event.endDateTime,
@@ -298,6 +299,7 @@ export async function getAllEvents({year, month, games, userId}: {
     id: event.id,
     lairId: event.lairId,
     name: event.name,
+    banner: event.banner,
     startDateTime: event.startDateTime,
     endDateTime: event.endDateTime,
     gameName: event.gameName,
@@ -447,6 +449,7 @@ export async function getEventsByLairIds(lairIds: string[], {
     id: event.id,
     lairId: event.lairId,
     name: event.name,
+    banner: event.banner,
     startDateTime: event.startDateTime,
     endDateTime: event.endDateTime,
     gameName: event.gameName,
@@ -978,6 +981,7 @@ export async function getEventsForUser(
     id: event.id,
     lairId: event.lairId,
     name: event.name,
+    banner: event.banner,
     startDateTime: event.startDateTime,
     endDateTime: event.endDateTime,
     gameName: event.gameName,
@@ -1053,7 +1057,17 @@ export async function getEventById(eventId: string): Promise<Event | null> {
         ],
         as: "creator",
       },
-    }
+    },
+    {
+      // La bannière du jeu sert de repli quand l'événement n'a pas la sienne.
+      $lookup: {
+        from: "games",
+        localField: "gameName",
+        foreignField: "name",
+        pipeline: [{ $project: { _id: 0, name: 1, icon: 1, banner: 1, type: 1, slug: 1 } }],
+        as: "matchedGame",
+      },
+    },
   ];
 
   const events = await db
@@ -1072,9 +1086,12 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     lairId: event.lairId,
     name: event.name,
     description: event.description,
+    banner: event.banner,
+    participantsVisibility: event.participantsVisibility,
     startDateTime: event.startDateTime,
     endDateTime: event.endDateTime,
     gameName: event.gameName,
+    game: event.matchedGame?.[0],
     url: event.url,
     price: event.price,
     status: event.status,

@@ -4,9 +4,9 @@ import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent, addEventToFavorites, removeEventFromFavorites, deleteEvent, updateEvent, updateParticipantRegistrationStatus, linkEvents, unlinkEvents } from "@/lib/db/events.ts";
 import { getLairsOwnedByUser } from "@/lib/db/lairs.ts";
-import {getUserById, getUserByTagOrId, updateUserDisplayName} from "@/lib/db/users.ts";
+import {getUserById, getUserByTagOrId, getUsersByIds, updateUserDisplayName} from "@/lib/db/users.ts";
 import { nanoid } from 'nanoid';
-import { Event, RegistrationStatus } from "@/lib/types/Event.ts";
+import { Event, ParticipantsVisibility, RegistrationStatus } from "@/lib/types/Event.ts";
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
 import { notifyEventAll, notifyUser } from "@/lib/services/notifications.ts";
@@ -24,9 +24,22 @@ import { removeFromEventWaitlist, setWaitlistResponseHours } from "@/lib/db/even
 import { notifyEventDeleted, notifyEventRescheduledIfNeeded } from "@/lib/events/event-notifications.ts";
 import { canManageEvent } from "@/lib/events/tournament-link.ts";
 import { parseEventReference } from "@/lib/events/related-events.ts";
+import { isAppBlobImageUrl } from "@/lib/media/blob-image-url.ts";
+import {
+  ATTENDEES_PAGE_SIZE,
+  canSeeAttendees,
+  pageAttendees,
+  readParticipantsVisibility,
+} from "@/lib/events/attendees.ts";
+import { orderParticipants } from "@/lib/events/waitlist.ts";
 
 type CreateEventInput = {
   name: string;
+  description?: string;
+  /** Adresse rendue par `/api/events/banner`. */
+  banner?: string;
+  participantsVisibility?: ParticipantsVisibility;
+  allowJoin?: boolean;
   startDateTime: string;
   endDateTime: string;
   gameName: string;
@@ -41,6 +54,14 @@ type UpdateEventDetailsInput = {
   eventId: string;
   name: string;
   description: string;
+  /** Adresse rendue par `/api/events/banner` ; `null` retire la bannière, absent la garde. */
+  banner?: string | null;
+  participantsVisibility?: ParticipantsVisibility;
+  /**
+   * Lieu de l'événement ; `null` le rend privé, absent le garde. Un nouveau
+   * lieu doit appartenir à qui modifie, comme à la création.
+   */
+  lairId?: string | null;
   startDateTime: string;
   endDateTime: string;
   gameName: string;
@@ -48,6 +69,16 @@ type UpdateEventDetailsInput = {
   price?: number;
   maxParticipants?: number;
 };
+
+const MAX_DESCRIPTION_LENGTH = 10_000;
+
+/**
+ * Une bannière n'est acceptée que venant de notre stockage : une adresse
+ * quelconque ferait charger à chaque visiteur une image servie par un tiers.
+ */
+function invalidBanner(banner: string | null | undefined): boolean {
+  return typeof banner === "string" && !isAppBlobImageUrl(banner);
+}
 
 export async function createEventAction(input: CreateEventInput) {
   try {
@@ -69,6 +100,14 @@ export async function createEventAction(input: CreateEventInput) {
       }
     }
 
+    if (invalidBanner(input.banner)) {
+      return { success: false, error: "Cette image de bannière n'est pas acceptée" };
+    }
+
+    if ((input.description?.length ?? 0) > MAX_DESCRIPTION_LENGTH) {
+      return { success: false, error: "La description est trop longue" };
+    }
+
     // Valider les dates
     const startDate = new Date(input.startDateTime);
     const endDate = new Date(input.endDateTime);
@@ -81,7 +120,9 @@ export async function createEventAction(input: CreateEventInput) {
     const event: Event = {
       id: nanoid(12),
       name: input.name,
-      description: '',
+      description: input.description?.trim() ?? '',
+      ...(input.banner ? { banner: input.banner } : {}),
+      participantsVisibility: readParticipantsVisibility(input.participantsVisibility),
       startDateTime: input.startDateTime,
       endDateTime: input.endDateTime,
       gameName: input.gameName,
@@ -92,7 +133,7 @@ export async function createEventAction(input: CreateEventInput) {
       addedBy: "USER",
       creatorId: session.user.id,
       runningState: "not-started",
-      allowJoin: true,
+      allowJoin: input.allowJoin ?? true,
       participants: [],
       participantRegistrations: {},
       preRegistration: input.preRegistration || false,
@@ -127,8 +168,24 @@ export async function updateEventDetailsAction(input: UpdateEventDetailsInput) {
       return { success: false, error: "Événement introuvable" };
     }
 
-    if (!isUserOrganizer(event, session.user.id)) {
+    if (!canManageEvent(event, session.user.id)) {
       return { success: false, error: "Seuls les organisateurs de l'événement peuvent modifier ces informations" };
+    }
+
+    if (invalidBanner(input.banner)) {
+      return { success: false, error: "Cette image de bannière n'est pas acceptée" };
+    }
+
+    if (input.description.length > MAX_DESCRIPTION_LENGTH) {
+      return { success: false, error: "La description est trop longue" };
+    }
+
+    // Changer de lieu demande d'en être propriétaire, comme à la création.
+    if (input.lairId && input.lairId !== event.lairId) {
+      const ownedLairs = await getLairsOwnedByUser(session.user.id);
+      if (!ownedLairs.some((lair) => lair.id === input.lairId)) {
+        return { success: false, error: "Vous n'êtes pas propriétaire de ce lieu" };
+      }
     }
 
     const startDate = DateTime.fromISO(input.startDateTime);
@@ -163,6 +220,11 @@ export async function updateEventDetailsAction(input: UpdateEventDetailsInput) {
     const updated = await updateEvent(input.eventId, {
       name: input.name,
       description: input.description,
+      ...(input.banner !== undefined ? { banner: input.banner ?? undefined } : {}),
+      ...(input.participantsVisibility !== undefined
+        ? { participantsVisibility: readParticipantsVisibility(input.participantsVisibility) }
+        : {}),
+      ...(input.lairId !== undefined ? { lairId: input.lairId ?? undefined } : {}),
       startDateTime: input.startDateTime,
       endDateTime: input.endDateTime,
       gameName: input.gameName,
@@ -1074,5 +1136,79 @@ export async function unlinkEventAction(eventId: string, otherEventId: string): 
   } catch (error) {
     console.error("Erreur lors de la suppression du lien entre événements:", error);
     return { success: false, error: "unknown" };
+  }
+}
+
+export type EventAttendee = {
+  id: string;
+  displayName: string;
+  discriminator?: string;
+  profileImage?: string;
+};
+
+export type EventAttendeesResult =
+  | { success: true; items: EventAttendee[]; total: number; page: number; pageCount: number }
+  | { success: false; error: string };
+
+/**
+ * « Qui vient ? » : une page des inscrits confirmés, pseudos seulement.
+ *
+ * Les pré-inscrits, les exclus et les invités sans compte n'y figurent pas ;
+ * la liste complète est celle de l'organisation. La visibilité choisie par
+ * l'organisation se revérifie ici, pas seulement à l'affichage.
+ */
+export async function getEventAttendeesAction(
+  eventId: string,
+  { query = "", page = 0 }: { query?: string; page?: number } = {}
+): Promise<EventAttendeesResult> {
+  try {
+    const event = await getEventById(eventId);
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    const session = await auth.api.getSession({ headers: await headers() });
+    const viewerId = session?.user?.id ?? null;
+    const isParticipant = Boolean(viewerId && event.participants?.includes(viewerId));
+    const isManager = canManageEvent(event, viewerId);
+
+    // Un événement privé ne s'ouvre qu'à son créateur et à ses inscrits.
+    if (!event.lairId && !isParticipant && !isManager) {
+      return { success: false, error: "Accès non autorisé" };
+    }
+    if (!canSeeAttendees(event.participantsVisibility, { isManager, isParticipant })) {
+      return { success: false, error: "La liste des inscrits n'est pas publique" };
+    }
+
+    const confirmedIds = orderParticipants(event.participants, event.participantRegisteredAt).filter(
+      (userId) => (event.participantRegistrations?.[userId] ?? "REGISTERED") === "REGISTERED"
+    );
+    const users = await getUsersByIds(confirmedIds);
+    const usersById = new Map(users.map((user) => [user.id, user]));
+    const attendees: EventAttendee[] = confirmedIds.flatMap((userId) => {
+      const user = usersById.get(userId);
+      if (!user) return [];
+      return [{
+        id: user.id,
+        displayName: user.displayName || user.username || "?",
+        discriminator: user.discriminator,
+        profileImage: user.profileImage,
+      }];
+    });
+
+    const result = pageAttendees(attendees, {
+      query: query.slice(0, 100),
+      page,
+      pageSize: ATTENDEES_PAGE_SIZE,
+      text: (attendee) => [
+        attendee.displayName,
+        attendee.discriminator ? `${attendee.displayName}#${attendee.discriminator}` : "",
+      ],
+    });
+
+    return { success: true, ...result };
+  } catch (error) {
+    console.error("Erreur lors de la lecture des inscrits:", error);
+    return { success: false, error: "Erreur lors de la lecture des inscrits" };
   }
 }

@@ -329,11 +329,13 @@ export async function getEventParticipants(eventId: string) {
       return { success: false, error: "Événement non trouvé" };
     }
 
-    // Vérifier l'accès
-    const isCreator = event.creatorId === session.user.id;
+    // Vérifier l'accès : l'organisation (créateur et organisateurs du staff),
+    // ou un inscrit.
+    const isOrganizer = event.creatorId === session.user.id
+      || (event.staff?.some((s) => s.userId === session.user.id && s.role === "organizer") ?? false);
     const isParticipant = event.participants?.includes(session.user.id);
     
-    if (!isCreator && !isParticipant) {
+    if (!isOrganizer && !isParticipant) {
       return { success: false, error: "Accès non autorisé" };
     }
 

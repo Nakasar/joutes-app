@@ -407,7 +407,120 @@
         "self": "An event can't be linked to itself.",
         "unknown": "Something went wrong."
       }
-    }
+    },
+    "share": {
+      "label": "Share",
+      "copied": "Link copied",
+      "failed": "Couldn't copy the link"
+    },
+    "manage": {
+      "more": "More actions",
+      "qrCode": "Check-in code (QR)",
+      "cancel": "Cancel event",
+      "delete": "Delete event",
+      "edit": "Edit",
+      "addDescription": "Add a description: schedule, format, what to bring…",
+      "places": "Spots",
+      "allowJoin": "Registration open",
+      "allowJoinHelp": "Players can sign up",
+      "preRegistration": "Pre-registration",
+      "preRegistrationHelp": "You approve each sign-up"
+    },
+    "registrationCard": {
+      "join": "Sign up",
+      "requestJoin": "Request to join",
+      "requestJoinHelp": "The organizers approve each sign-up.",
+      "closed": "Registration is closed for now.",
+      "creator": "You're organizing this event.",
+      "registeredTitle": "You're signed up",
+      "registeredSince": "since {date}",
+      "pendingTitle": "Pre-registration pending",
+      "pendingDescription": "The organizers need to approve your sign-up.",
+      "excluded": "The organizers excluded you from this event.",
+      "addToCalendar": "Add to my calendar",
+      "leave": "Leave event",
+      "cancelRequest": "Cancel my request",
+      "leaveTitle": "Give up your spot?",
+      "cancelRequestTitle": "Cancel your request?",
+      "leaveDescription": "If the event is full, the first player on the waitlist will be notified. You can sign up again if there's room left.",
+      "stay": "Stay signed up",
+      "confirmLeave": "Leave"
+    },
+    "pagination": {
+      "label": "Pages",
+      "previous": "Previous page",
+      "next": "Next page",
+      "page": "Page {page}"
+    },
+    "attendees": {
+      "title": "Who's coming?",
+      "search": "Search attendees",
+      "searchPlaceholder": "Search a player",
+      "hiddenParticipants": "Only attendees can see who else is coming. Sign up to see the list.",
+      "hiddenOrganizers": "The organizers keep the attendee list private.",
+      "empty": "Nobody has signed up yet. Be the first!",
+      "you": "You",
+      "noResult": "No attendee matches “{query}”.",
+      "range": "{from}–{to} of {total}"
+    },
+    "participantsTable": {
+      "error": "Something went wrong",
+      "search": "Search attendees",
+      "searchPlaceholder": "Username, email…",
+      "filterLabel": "Filter by status",
+      "filters": {
+        "all": "All",
+        "REGISTERED": "Registered",
+        "PRE_REGISTERED": "Pre-registered",
+        "EXCLUDED": "Excluded"
+      },
+      "export": "Export",
+      "selection": "{count} selected",
+      "validate": "Approve",
+      "remove": "Remove",
+      "clearSelection": "Clear selection",
+      "selectPage": "Select page",
+      "select": "Select {name}",
+      "columns": {
+        "rank": "#",
+        "player": "Player",
+        "email": "Email",
+        "status": "Status",
+        "registeredAt": "Signed up",
+        "actions": "Actions"
+      },
+      "guest": "Guest (no account)",
+      "status": {
+        "REGISTERED": "Registered",
+        "PRE_REGISTERED": "Pre-registered",
+        "EXCLUDED": "Excluded",
+        "NOT_REGISTERED": "Not registered"
+      },
+      "actionsFor": "Actions for {name}",
+      "changeStatus": "Change status",
+      "removeOne": "Remove from event",
+      "empty": "Nobody has signed up yet.",
+      "noResult": "No attendee matches this search.",
+      "range": "{from}–{to} of {total}",
+      "perPage": "Per page",
+      "removeTitle": "{count, plural, one {Remove this attendee?} other {Remove # attendees?}}",
+      "removeDescription": "{count, plural, one {{name} will be removed from the event.} other {These # attendees will be removed from the event.}} Freed spots go to the waitlist."
+    },
+    "tabs": {
+      "label": "Event management",
+      "overview": "Overview",
+      "participants": "Attendees",
+      "waitlist": "Waitlist",
+      "interested": "Interested"
+    },
+    "banner": {
+      "alt": "Banner of {name}",
+      "change": "Change banner",
+      "add": "Add a banner"
+    },
+    "spotsLeft": "{count, plural, one {# spot left} other {# spots left}}",
+    "organizedBy": "Organized by",
+    "organizedWith": "with {name}"
   },
   "EventJoin": {
     "pending": "The Joutes goblins are validating your registration, please wait a moment!",
@@ -1259,11 +1372,42 @@
         },
         "maxParticipants": {
           "label": "Maximum number of participants (optional)",
-          "placeholder": "Unlimited"
+          "placeholder": "Unlimited",
+          "help": "Empty = unlimited. Beyond that, a waitlist opens."
         },
         "preRegistration": {
           "label": "Enable pre-registration",
           "help": "If enabled, participants who register will receive the \"Pre-registered\" status and will need to be validated by the organizer."
+        },
+        "banner": {
+          "label": "Banner",
+          "help": "Optional · JPG, PNG or WebP · 5 MB max · 1500 × 500 recommended",
+          "error": "The image upload failed",
+          "current": "Event banner",
+          "replace": "Replace",
+          "remove": "Remove",
+          "uploading": "Uploading…",
+          "drop": "Drop an image here or click to browse",
+          "fallback": "Without an image, the page shows a plain background.",
+          "fallbackGame": "Without an image, the page shows the game's banner."
+        },
+        "description": {
+          "label": "Description",
+          "write": "Write",
+          "preview": "Preview",
+          "placeholder": "Schedule, format, what to bring…",
+          "help": "Markdown supported: **bold**, lists, links.",
+          "empty": "Nothing to preview."
+        },
+        "visibility": {
+          "label": "Who can see the attendee list?",
+          "public": "Everyone",
+          "publicHelp": "usernames only, never emails",
+          "participants": "Attendees",
+          "organizers": "Organizers only"
+        },
+        "allowJoin": {
+          "label": "Open registration as soon as it's published"
         }
       },
       "actions": {
@@ -1273,7 +1417,25 @@
       },
       "errors": {
         "generic": "An error occurred",
-        "createFailed": "An error occurred while creating the event"
+        "createFailed": "An error occurred while creating the event",
+        "updateFailed": "Something went wrong while saving"
+      },
+      "hint": "You can change everything after creating it.",
+      "sections": {
+        "information": "Details",
+        "registration": "Registration"
+      },
+      "edit": {
+        "title": "Edit event",
+        "hint": "Attendees are notified if the schedule changes.",
+        "save": "Save",
+        "saving": "Saving…",
+        "scheduleNotice": "{count, plural, one {The attendee} other {The # attendees}} will be notified of the schedule change."
+      },
+      "preview": {
+        "title": "Calendar preview",
+        "help": "The banner shows at the top of the event page and in shared links.",
+        "unnamed": "Event name"
       }
     }
   },
