@@ -21,13 +21,22 @@ import { useRouter } from "@/i18n/navigation.ts";
 type DeleteEventButtonProps = {
   eventId: string;
   eventName: string;
+  /**
+   * Ouverture pilotée de l'extérieur (le menu « … » de l'organisation) : le
+   * bouton déclencheur n'est alors pas rendu.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export default function DeleteEventButton({ eventId, eventName }: DeleteEventButtonProps) {
+export default function DeleteEventButton({ eventId, eventName, open: controlledOpen, onOpenChange }: DeleteEventButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const controlled = controlledOpen !== undefined;
+  const open = controlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (value: boolean) => (controlled ? onOpenChange?.(value) : setUncontrolledOpen(value));
 
   const handleDelete = async () => {
     setLoading(true);
@@ -62,12 +71,14 @@ export default function DeleteEventButton({ eventId, eventName }: DeleteEventBut
       )}
 
       <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogTrigger asChild>
-          <Button variant="destructive" className="w-full">
-            <Trash2 className="h-4 w-4 mr-2" />
-            Supprimer l&apos;événement
-          </Button>
-        </AlertDialogTrigger>
+        {!controlled && (
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" className="w-full">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Supprimer l&apos;événement
+            </Button>
+          </AlertDialogTrigger>
+        )}
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer l&apos;événement</AlertDialogTitle>

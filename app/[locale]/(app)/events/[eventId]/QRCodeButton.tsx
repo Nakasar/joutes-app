@@ -9,10 +9,19 @@ import { useEffect } from "react";
 
 type QRCodeButtonProps = {
   eventId: string;
+  /**
+   * Ouverture pilotée de l'extérieur (le menu « … » de l'organisation) : le
+   * bouton déclencheur n'est alors pas rendu.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export default function QRCodeButton({ eventId }: QRCodeButtonProps) {
-  const [open, setOpen] = useState(false);
+export default function QRCodeButton({ eventId, open: controlledOpen, onOpenChange }: QRCodeButtonProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const controlled = controlledOpen !== undefined;
+  const open = controlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (value: boolean) => (controlled ? onOpenChange?.(value) : setUncontrolledOpen(value));
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
 
   useEffect(() => {
@@ -40,14 +49,16 @@ export default function QRCodeButton({ eventId }: QRCodeButtonProps) {
 
   return (
     <>
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={() => setOpen(true)}
-      >
-        <QrCode className="h-4 w-4 mr-2" />
-        Code de participation
-      </Button>
+      {!controlled && (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => setOpen(true)}
+        >
+          <QrCode className="h-4 w-4 mr-2" />
+          Code de participation
+        </Button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

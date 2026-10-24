@@ -49,6 +49,8 @@ type AddParticipantFormProps = {
   runningState?: 'not-started' | 'ongoing' | 'completed';
   preRegistration?: boolean;
   readOnly?: boolean;
+  /** Seulement le bouton d'ajout et sa fenêtre : la liste est affichée ailleurs. */
+  addOnly?: boolean;
 };
 
 export default function AddParticipantForm({
@@ -59,6 +61,7 @@ export default function AddParticipantForm({
   runningState = 'not-started',
   preRegistration = false,
   readOnly = false,
+  addOnly = false,
 }: AddParticipantFormProps) {
   const router = useRouter();
   const tWaitlist = useTranslations("EventDetail.waitlist");
@@ -199,9 +202,9 @@ export default function AddParticipantForm({
   };
 
   return (
-    <div className="space-y-4">
+    <div className={addOnly ? undefined : "space-y-4"}>
       {/* Liste des participants */}
-      {participants.length > 0 && (
+      {!addOnly && participants.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Participants ({participants.length})</h3>
           {participants.map((participant, index) => (
@@ -283,7 +286,7 @@ export default function AddParticipantForm({
 
       {/* Bouton d'ajout */}
       {runningState !== 'not-started' ? (
-        <Alert>
+        addOnly ? null : <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             Impossible d&apos;ajouter des participants : l&apos;événement est {runningState === 'ongoing' ? 'en cours' : 'terminé'}
@@ -292,9 +295,9 @@ export default function AddParticipantForm({
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" className="w-full">
+            <Button variant={addOnly ? "default" : "outline"} className={addOnly ? undefined : "w-full"}>
               <UserPlus className="h-4 w-4 mr-2" />
-              Ajouter un participant
+              {addOnly ? "Ajouter" : "Ajouter un participant"}
             </Button>
           </DialogTrigger>
         <DialogContent>

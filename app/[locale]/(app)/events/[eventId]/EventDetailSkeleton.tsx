@@ -17,18 +17,14 @@
 export function EventDetailSkeleton({ section }: { section: "header" | "body" }) {
   if (section === "header") {
     return (
-      <div className="flex animate-pulse flex-wrap items-start justify-between gap-2" aria-hidden>
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="h-9 w-72 max-w-full rounded bg-muted" />
-            <div className="h-6 w-24 rounded-full bg-muted/60" />
-          </div>
-          <div className="h-5 w-48 rounded bg-muted/60" />
+      <div className="animate-pulse space-y-3" aria-hidden>
+        <div className="aspect-[3/1] w-full rounded-2xl border bg-muted" />
+        <div className="-mt-12 flex items-end gap-4 px-3 sm:px-5">
+          <div className="h-[84px] w-[72px] rounded-xl border bg-card sm:w-[84px]" />
+          <div className="h-6 w-40 rounded-full bg-muted/60" />
         </div>
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-24 rounded-full bg-muted/60" />
-          <div className="h-8 w-8 rounded-md bg-muted/60" />
-        </div>
+        <div className="h-9 w-72 max-w-full rounded bg-muted" />
+        <div className="h-5 w-96 max-w-full rounded bg-muted/60" />
       </div>
     );
   }

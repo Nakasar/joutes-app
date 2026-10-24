@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button.tsx";
 import { Alert, AlertDescription } from "@/components/ui/alert.tsx";
-import { AlertCircle, Clock, Hourglass } from "lucide-react";
+import { AlertCircle, CalendarPlus, CheckCircle2, Clock, Hourglass } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { joinEventAction, joinEventWaitlistAction, leaveEventAction, leaveEventWaitlistAction } from "../actions.ts";
 import { useRouter } from "@/i18n/navigation.ts";
 import { RegistrationStatus } from "@/lib/types/Event.ts";
 import type { ViewerWaitlistStatus } from "@/lib/events/waitlist.ts";
+import { buildEventIcs } from "@/lib/events/ics.ts";
 
 type EventActionsProps = {
   eventId: string;
@@ -25,11 +26,22 @@ type EventActionsProps = {
   /** La file accepte-t-elle de nouveaux joueurs ? */
   waitlistOpen?: boolean;
   waitlistCount?: number;
+  /** Date d'inscription de la personne connectée (ISO), si connue. */
+  registeredAt?: string;
+  /** De quoi écrire le fichier d'agenda de l'événement. */
+  calendar: {
+    name: string;
+    startDateTime: string;
+    endDateTime: string;
+    location?: string;
+  };
 };
 
-export default function EventActions({ eventId, isParticipant, isCreator, isFull, allowJoin, runningState = 'not-started', registrationStatus, preRegistration, waitlist, waitlistOpen = false, waitlistCount = 0 }: EventActionsProps) {
+export default function EventActions({ eventId, isParticipant, isCreator, isFull, allowJoin, runningState = 'not-started', registrationStatus, preRegistration, waitlist, waitlistOpen = false, waitlistCount = 0, registeredAt, calendar }: EventActionsProps) {
   const router = useRouter();
   const t = useTranslations("EventDetail.waitlist");
+  const tReg = useTranslations("EventDetail.registrationCard");
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
   const locale = useLocale();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,10 +69,7 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
   };
 
   const handleLeave = async () => {
-    if (!confirm("Êtes-vous sûr de vouloir vous désinscrire de cet événement ?")) {
-      return;
-    }
-
+    setConfirmingLeave(false);
     setLoading(true);
     setError(null);
 
@@ -102,6 +111,22 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
     }
   };
 
+  // Le fichier est écrit sur place : pas de route à appeler, et l'agenda du
+  // joueur ramène les heures UTC à son fuseau.
+  const downloadIcs = () => {
+    const ics = buildEventIcs({
+      id: eventId,
+      ...calendar,
+      url: `${window.location.origin}/events/${eventId}`,
+    });
+    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${calendar.name.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "evenement"}.ics`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleLeaveWaitlist = () => {
     if (!confirm(t("leaveConfirm"))) {
       return;
@@ -111,11 +136,9 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
 
   if (isCreator) {
     return (
-      <Alert>
-        <AlertDescription>
-          Vous êtes le créateur de cet événement
-        </AlertDescription>
-      </Alert>
+      <p className="rounded-lg border bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
+        {tReg("creator")}
+      </p>
     );
   }
 
@@ -128,32 +151,66 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
         </Alert>
       )}
 
-      {isParticipant ? (
+      {isParticipant && confirmingLeave ? (
+        <div className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/5 p-3.5">
+          <p className="text-sm font-semibold">{tReg(registrationStatus === 'PRE_REGISTERED' ? "cancelRequestTitle" : "leaveTitle")}</p>
+          <p className="text-sm text-muted-foreground">{tReg("leaveDescription")}</p>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="sm" className="flex-1" onClick={() => setConfirmingLeave(false)} disabled={loading}>
+              {tReg("stay")}
+            </Button>
+            <Button type="button" variant="destructive" size="sm" className="flex-1" onClick={() => void handleLeave()} disabled={loading}>
+              {loading ? t("loading") : tReg("confirmLeave")}
+            </Button>
+          </div>
+        </div>
+      ) : isParticipant ? (
         <div className="space-y-2">
-          {registrationStatus === 'PRE_REGISTERED' && (
-            <Alert className="border-yellow-400 bg-yellow-50">
-              <Clock className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800">
-                Vous êtes pré-inscrit. L&apos;organisateur doit valider votre inscription.
-              </AlertDescription>
-            </Alert>
-          )}
-          {registrationStatus === 'EXCLUDED' && (
+          {registrationStatus === 'PRE_REGISTERED' ? (
+            <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+              <Clock className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold">{tReg("pendingTitle")}</p>
+                <p className="text-xs">{tReg("pendingDescription")}</p>
+              </div>
+            </div>
+          ) : registrationStatus === 'EXCLUDED' ? (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Vous avez été exclu de cet événement par l&apos;organisateur.
-              </AlertDescription>
+              <AlertDescription>{tReg("excluded")}</AlertDescription>
             </Alert>
+          ) : (
+            <div className="flex items-start gap-3 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold">{tReg("registeredTitle")}</p>
+                {registeredAt && (
+                  <p className="text-xs">
+                    {tReg("registeredSince", {
+                      date: DateTime.fromISO(registeredAt, { locale }).toLocaleString(DateTime.DATETIME_MED),
+                    })}
+                  </p>
+                )}
+              </div>
+            </div>
           )}
-          <Button
-            onClick={handleLeave}
-            disabled={loading}
-            variant="outline"
-            className="w-full"
-          >
-            {loading ? "Chargement..." : "Se désinscrire"}
-          </Button>
+          {registrationStatus !== 'EXCLUDED' && (
+            <Button type="button" variant="outline" className="w-full" onClick={downloadIcs}>
+              <CalendarPlus className="h-4 w-4 mr-2" />
+              {tReg("addToCalendar")}
+            </Button>
+          )}
+          {!isEventStartedOrCompleted && registrationStatus !== 'EXCLUDED' && (
+            <Button
+              type="button"
+              onClick={() => setConfirmingLeave(true)}
+              disabled={loading}
+              variant="ghost"
+              className="w-full text-destructive hover:text-destructive"
+            >
+              {tReg(registrationStatus === 'PRE_REGISTERED' ? "cancelRequest" : "leave")}
+            </Button>
+          )}
         </div>
       ) : waitlist ? (
         <div className="space-y-2">
@@ -195,13 +252,22 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
           </p>
         </div>
       ) : allowJoin && !isEventStartedOrCompleted ? (
-        <Button
-          onClick={handleJoin}
-          disabled={loading || isFull}
-          className="w-full"
-        >
-          {loading ? "Chargement..." : isFull ? "Événement complet" : preRegistration ? "Se pré-inscrire" : "S'inscrire"}
-        </Button>
+        <div className="space-y-1.5">
+          <Button
+            onClick={handleJoin}
+            disabled={loading || isFull}
+            className="h-11 w-full text-base font-semibold"
+          >
+            {loading ? t("loading") : isFull ? t("full") : preRegistration ? tReg("requestJoin") : tReg("join")}
+          </Button>
+          {preRegistration && !isFull && (
+            <p className="text-xs text-muted-foreground">{tReg("requestJoinHelp")}</p>
+          )}
+        </div>
+      ) : !allowJoin && !isEventStartedOrCompleted ? (
+        <p className="rounded-lg border bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
+          {tReg("closed")}
+        </p>
       ) : isEventStartedOrCompleted ? (
         <Alert>
           <AlertCircle className="h-4 w-4" />

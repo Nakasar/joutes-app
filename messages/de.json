@@ -407,7 +407,120 @@
         "self": "Eine Veranstaltung kann nicht mit sich selbst verknüpft werden.",
         "unknown": "Ein Fehler ist aufgetreten."
       }
-    }
+    },
+    "share": {
+      "label": "Teilen",
+      "copied": "Link kopiert",
+      "failed": "Link konnte nicht kopiert werden"
+    },
+    "manage": {
+      "more": "Weitere Aktionen",
+      "qrCode": "Teilnahmecode (QR)",
+      "cancel": "Event absagen",
+      "delete": "Event löschen",
+      "edit": "Bearbeiten",
+      "addDescription": "Füge eine Beschreibung hinzu: Ablauf, Format, was mitzubringen ist…",
+      "places": "Plätze",
+      "allowJoin": "Anmeldung offen",
+      "allowJoinHelp": "Spieler können sich anmelden",
+      "preRegistration": "Voranmeldung",
+      "preRegistrationHelp": "Du bestätigst jede Anmeldung"
+    },
+    "registrationCard": {
+      "join": "Anmelden",
+      "requestJoin": "Teilnahme anfragen",
+      "requestJoinHelp": "Die Organisation bestätigt jede Anmeldung.",
+      "closed": "Die Anmeldung ist derzeit geschlossen.",
+      "creator": "Du organisierst dieses Event.",
+      "registeredTitle": "Du bist angemeldet",
+      "registeredSince": "seit {date}",
+      "pendingTitle": "Voranmeldung ausstehend",
+      "pendingDescription": "Die Organisation muss deine Anmeldung bestätigen.",
+      "excluded": "Die Organisation hat dich von diesem Event ausgeschlossen.",
+      "addToCalendar": "Zu meinem Kalender hinzufügen",
+      "leave": "Abmelden",
+      "cancelRequest": "Anfrage zurückziehen",
+      "leaveTitle": "Platz freigeben?",
+      "cancelRequestTitle": "Anfrage zurückziehen?",
+      "leaveDescription": "Ist das Event voll, wird der erste Spieler auf der Warteliste benachrichtigt. Du kannst dich erneut anmelden, solange Plätze frei sind.",
+      "stay": "Angemeldet bleiben",
+      "confirmLeave": "Abmelden"
+    },
+    "pagination": {
+      "label": "Seiten",
+      "previous": "Vorherige Seite",
+      "next": "Nächste Seite",
+      "page": "Seite {page}"
+    },
+    "attendees": {
+      "title": "Wer kommt?",
+      "search": "Teilnehmer suchen",
+      "searchPlaceholder": "Spieler suchen",
+      "hiddenParticipants": "Nur Angemeldete sehen, wer noch kommt. Melde dich an, um die Liste zu sehen.",
+      "hiddenOrganizers": "Die Organisation hält die Teilnehmerliste privat.",
+      "empty": "Noch niemand angemeldet. Sei der Erste!",
+      "you": "Du",
+      "noResult": "Kein Teilnehmer passt zu „{query}“.",
+      "range": "{from}–{to} von {total}"
+    },
+    "participantsTable": {
+      "error": "Ein Fehler ist aufgetreten",
+      "search": "Teilnehmer suchen",
+      "searchPlaceholder": "Name, E-Mail…",
+      "filterLabel": "Nach Status filtern",
+      "filters": {
+        "all": "Alle",
+        "REGISTERED": "Angemeldet",
+        "PRE_REGISTERED": "Vorangemeldet",
+        "EXCLUDED": "Ausgeschlossen"
+      },
+      "export": "Exportieren",
+      "selection": "{count} ausgewählt",
+      "validate": "Bestätigen",
+      "remove": "Entfernen",
+      "clearSelection": "Auswahl aufheben",
+      "selectPage": "Seite auswählen",
+      "select": "{name} auswählen",
+      "columns": {
+        "rank": "#",
+        "player": "Spieler",
+        "email": "E-Mail",
+        "status": "Status",
+        "registeredAt": "Angemeldet am",
+        "actions": "Aktionen"
+      },
+      "guest": "Gast (ohne Konto)",
+      "status": {
+        "REGISTERED": "Angemeldet",
+        "PRE_REGISTERED": "Vorangemeldet",
+        "EXCLUDED": "Ausgeschlossen",
+        "NOT_REGISTERED": "Nicht angemeldet"
+      },
+      "actionsFor": "Aktionen für {name}",
+      "changeStatus": "Status ändern",
+      "removeOne": "Vom Event entfernen",
+      "empty": "Noch niemand angemeldet.",
+      "noResult": "Kein Teilnehmer passt zu dieser Suche.",
+      "range": "{from}–{to} von {total}",
+      "perPage": "Pro Seite",
+      "removeTitle": "{count, plural, one {Diesen Teilnehmer entfernen?} other {# Teilnehmer entfernen?}}",
+      "removeDescription": "{count, plural, one {{name} wird vom Event entfernt.} other {Diese # Teilnehmer werden vom Event entfernt.}} Freie Plätze gehen an die Warteliste."
+    },
+    "tabs": {
+      "label": "Event-Organisation",
+      "overview": "Übersicht",
+      "participants": "Teilnehmer",
+      "waitlist": "Warteliste",
+      "interested": "Interessiert"
+    },
+    "banner": {
+      "alt": "Banner von {name}",
+      "change": "Banner ändern",
+      "add": "Banner hinzufügen"
+    },
+    "spotsLeft": "{count, plural, one {# Platz frei} other {# Plätze frei}}",
+    "organizedBy": "Organisiert von",
+    "organizedWith": "mit {name}"
   },
   "EventJoin": {
     "pending": "Die Turnierwichtel prüfen gerade deine Anmeldung, bitte hab etwas Geduld!",
@@ -1259,11 +1372,42 @@
         },
         "maxParticipants": {
           "label": "Max. Anzahl an Teilnehmern (optional)",
-          "placeholder": "Unbegrenzt"
+          "placeholder": "Unbegrenzt",
+          "help": "Leer = unbegrenzt. Darüber hinaus öffnet sich eine Warteliste."
         },
         "preRegistration": {
           "label": "Vorregistrierung aktivieren",
           "help": "Wenn aktiviert, erhalten angemeldete Teilnehmer den Status \"Vorangemeldet\" und müssen vom Organisator bestätigt werden."
+        },
+        "banner": {
+          "label": "Banner",
+          "help": "Optional · JPG, PNG oder WebP · max. 5 MB · 1500 × 500 empfohlen",
+          "error": "Das Hochladen ist fehlgeschlagen",
+          "current": "Event-Banner",
+          "replace": "Ersetzen",
+          "remove": "Entfernen",
+          "uploading": "Wird hochgeladen…",
+          "drop": "Bild hierher ziehen oder klicken zum Auswählen",
+          "fallback": "Ohne Bild zeigt die Seite einen neutralen Hintergrund.",
+          "fallbackGame": "Ohne Bild zeigt die Seite das Banner des Spiels."
+        },
+        "description": {
+          "label": "Beschreibung",
+          "write": "Schreiben",
+          "preview": "Vorschau",
+          "placeholder": "Ablauf, Format, was mitzubringen ist…",
+          "help": "Markdown möglich: **fett**, Listen, Links.",
+          "empty": "Nichts zur Vorschau."
+        },
+        "visibility": {
+          "label": "Wer sieht die Teilnehmerliste?",
+          "public": "Alle",
+          "publicHelp": "nur Namen, nie E-Mails",
+          "participants": "Die Angemeldeten",
+          "organizers": "Nur die Organisation"
+        },
+        "allowJoin": {
+          "label": "Anmeldung ab Veröffentlichung öffnen"
         }
       },
       "actions": {
@@ -1273,7 +1417,25 @@
       },
       "errors": {
         "generic": "Ein Fehler ist aufgetreten",
-        "createFailed": "Beim Erstellen des Events ist ein Fehler aufgetreten"
+        "createFailed": "Beim Erstellen des Events ist ein Fehler aufgetreten",
+        "updateFailed": "Beim Speichern ist ein Fehler aufgetreten"
+      },
+      "hint": "Du kannst nach dem Erstellen alles ändern.",
+      "sections": {
+        "information": "Angaben",
+        "registration": "Anmeldung"
+      },
+      "edit": {
+        "title": "Event bearbeiten",
+        "hint": "Angemeldete werden bei Zeitänderungen benachrichtigt.",
+        "save": "Speichern",
+        "saving": "Wird gespeichert…",
+        "scheduleNotice": "{count, plural, one {Der Angemeldete wird} other {Die # Angemeldeten werden}} über die Zeitänderung benachrichtigt."
+      },
+      "preview": {
+        "title": "Vorschau im Kalender",
+        "help": "Das Banner erscheint oben auf der Event-Seite und in geteilten Links.",
+        "unnamed": "Name des Events"
       }
     }
   },
