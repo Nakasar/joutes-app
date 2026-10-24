@@ -9,6 +9,7 @@ import { Metadata } from "next/types";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getBooster } from "@/lib/db/boosters.ts";
 import { getBoosterTypeLabels, getBoosterTypes } from "@/lib/constants/booster-types.ts";
+import { hasPermission } from "@/lib/db/permissions";
 import BoosterEditor from "./BoosterEditor.tsx";
 
 export async function generateMetadata({
@@ -50,6 +51,8 @@ async function BoosterEditorPageContent({
     notFound();
   }
 
+  const canUseAiScan = await hasPermission("scanner:ai");
+
   return (
     <div className="container mx-auto p-4 sm:p-6">
       <BoosterEditor
@@ -58,6 +61,7 @@ async function BoosterEditorPageContent({
         boosterTypes={getBoosterTypes(game)}
         boosterTypeLabels={getBoosterTypeLabels(game)}
         initialBooster={booster}
+        canUseAiScan={canUseAiScan}
       />
     </div>
   );

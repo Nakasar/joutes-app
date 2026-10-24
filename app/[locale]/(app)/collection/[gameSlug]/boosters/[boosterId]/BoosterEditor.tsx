@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Coins,
   Layers,
+  ScanLine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -58,6 +59,8 @@ import {
 } from "@/lib/cards/search-filters.ts";
 import { CardSearchToolbar } from "@/components/cards/CardSearchToolbar.tsx";
 import { useBoosterTypeLabel } from "../useBoosterTypeLabel.ts";
+import BoosterScanner from "./BoosterScanner.tsx";
+import type { ScannerSetCard } from "@/lib/db/cards.ts";
 
 const LANG_LABELS: Record<string, string> = {
   en: "🇬🇧 EN", fr: "🇫🇷 FR", it: "🇮🇹 IT", de: "🇩🇪 DE",
@@ -117,6 +120,8 @@ type Props = {
   /** Libellés saisis dans l'administration, par clé. */
   boosterTypeLabels: Record<string, string>;
   initialBooster: Booster;
+  /** Identification des cartes par IA dans le scanner (droit `scanner:ai`). */
+  canUseAiScan?: boolean;
 };
 
 export default function BoosterEditor({
@@ -125,6 +130,7 @@ export default function BoosterEditor({
   boosterTypes,
   boosterTypeLabels,
   initialBooster,
+  canUseAiScan = false,
 }: Props) {
   const t = useTranslations("Collection");
   const locale = useLocale();
@@ -188,6 +194,9 @@ export default function BoosterEditor({
   const [domainFilter, setDomainFilter] = useState<string>(ALL);
   const [sortKey, setSortKey] = useState<SortKey>("default");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [scannerOpen, setScannerOpen] = useState(false);
+  // Le foil du scanner reste choisi d'une carte à l'autre, et d'un scan au suivant.
+  const [scanFoil, setScanFoil] = useState(false);
 
   // Possession hors de ce booster, par nom de carte. `known` retient les noms
   // dont la réponse est arrivée : sans lui, une carte encore inconnue passerait
@@ -383,7 +392,13 @@ export default function BoosterEditor({
     }
   };
 
-  const addCard = async (card: SearchCard, foil = false) => {
+  /**
+   * Ajoute la carte et renvoie l'identifiant de l'exemplaire créé, `null` si
+   * l'ajout a échoué. Depuis le scanner, la barre de recherche n'est pas
+   * touchée : elle est sous l'écran de scan, et lui donner le focus ouvrirait
+   * le clavier du téléphone.
+   */
+  const addCard = async (card: SearchCard, foil = false, { fromScan = false } = {}): Promise<string | null> => {
     setBusyAddId(card.id);
     const printing = resolvePrinting(card, printingByCardId[card.id] || undefined);
     const isFoil = printing.foil || foil;
@@ -403,8 +418,10 @@ export default function BoosterEditor({
     // Le nom cherché s'en va et la barre reprend le focus, prête pour la carte
     // suivante ; les filtres tapés restent, eux : ils décrivent le booster qu'on
     // est en train de saisir, pas la carte qu'on vient d'ajouter.
-    setRawQuery(keepFilterTokens(rawQuery, searchFields));
-    requestAnimationFrame(() => searchRef.current?.focus());
+    if (!fromScan) {
+      setRawQuery(keepFilterTokens(rawQuery, searchFields));
+      requestAnimationFrame(() => searchRef.current?.focus());
+    }
     const ticket = ++valueTicketRef.current;
     try {
       const res = await fetch(`/api/collection/boosters/${booster.id}/cards`, {
@@ -427,13 +444,16 @@ export default function BoosterEditor({
       if (res.ok) {
         // La carte est ajoutée : une réponse illisible ne doit pas la retirer
         // de l'écran, elle prive seulement la valeur de sa mise à jour.
-        applyValue(ticket, await res.json().then((data) => data.value, () => undefined));
+        const data = await res.json().catch(() => ({}));
+        applyValue(ticket, data.value);
         await refetchBooster();
-      } else {
-        setBoosterCards((prev) => prev.filter((c) => c.id !== tempId));
+        return typeof data.entryId === "string" ? data.entryId : null;
       }
+      setBoosterCards((prev) => prev.filter((c) => c.id !== tempId));
+      return null;
     } catch {
       setBoosterCards((prev) => prev.filter((c) => c.id !== tempId));
+      return null;
     } finally {
       setBusyAddId(null);
     }
@@ -1124,7 +1144,18 @@ export default function BoosterEditor({
 
         {/* Search & add */}
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground">{t("boosters.addCards")}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-semibold text-muted-foreground">{t("boosters.addCards")}</h2>
+            <Button
+              type="button"
+              className="ml-auto gap-2"
+              onClick={() => setScannerOpen(true)}
+              title={t("boosters.scanner.openHint")}
+            >
+              <ScanLine className="size-4" />
+              {t("boosters.scanner.open")}
+            </Button>
+          </div>
 
           <CardSearchToolbar
             query={rawQuery}
@@ -1293,6 +1324,26 @@ export default function BoosterEditor({
           ) : null}
         </section>
       </div>
+
+      {scannerOpen && (
+        <BoosterScanner
+          gameSlug={gameSlug}
+          setCode={booster.setCode}
+          lang={booster.lang}
+          canUseAiScan={canUseAiScan}
+          foil={scanFoil}
+          onFoilChange={setScanFoil}
+          boosterCardCount={boosterCards.length}
+          onAdd={(card: ScannerSetCard, foil) => addCard(card, foil, { fromScan: true })}
+          onUndo={removeCard}
+          onSearchByName={(name) => {
+            setScannerOpen(false);
+            setRawQuery(name);
+            requestAnimationFrame(() => searchRef.current?.focus());
+          }}
+          onClose={() => setScannerOpen(false)}
+        />
+      )}
     </div>
   );
 }
