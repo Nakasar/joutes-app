@@ -580,6 +580,8 @@ export type ScannerSetCard = {
   rarity?: string;
   domain?: string[];
   orientation?: CardOrientation;
+  /** Carte toujours imprimée en foil (épiques, rares et showcases de Riftbound). */
+  foil?: boolean;
 };
 
 /**
@@ -597,7 +599,7 @@ export async function getScannerCardsBySet(gameId: ObjectId, setCode: string, la
       {
         projection: {
           _id: 0, id: 1, name: 1, setCode: 1, collectorNumber: 1, image: 1, lang: 1,
-          printings: 1, type: 1, rarity: 1, domain: 1, orientation: 1,
+          printings: 1, type: 1, rarity: 1, domain: 1, orientation: 1, foil: 1,
         },
       }
     )
