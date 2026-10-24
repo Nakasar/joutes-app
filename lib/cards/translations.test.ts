@@ -7,6 +7,7 @@ import {
   prefillTranslatedText,
   publishedTranslation,
   readCardTranslations,
+  sharesTranslationWith,
   translateAttributeValue,
   type CardGlossaryEntry,
 } from "./translations";
@@ -124,5 +125,19 @@ describe("translateAttributeValue", () => {
 describe("bracketedKeywords", () => {
   it("relève les mots-clés et pas les marqueurs", () => {
     assert.deepEqual(bracketedKeywords("[Accelerate]\n[Assault 2]\n[Level 3][>] [Equip [1]:rb_rune_body:]"), ["Accelerate", "Assault", "Level", "Equip"]);
+  });
+});
+
+describe("sharesTranslationWith", () => {
+  const source = { text: "Deal 3 to a unit." };
+
+  it("traduit une réimpression au même texte, même déjà traduite", () => {
+    assert.equal(sharesTranslationWith(source, { text: "Deal 3 to a unit.", translation: { source: { name: "Vi", text: "Old" } } }), true);
+  });
+
+  it("traduit une carte du même nom au texte différent tant qu'elle n'a pas sa propre traduction", () => {
+    assert.equal(sharesTranslationWith(source, { text: "Deal 4 to a unit." }), true);
+    assert.equal(sharesTranslationWith(source, { text: "Deal 4 to a unit.", translation: { source: { name: "Vi", text: "Deal 3 to a unit." } } }), true);
+    assert.equal(sharesTranslationWith(source, { text: "Deal 4 to a unit.", translation: { source: { name: "Vi", text: "Deal 4 to a unit." } } }), false);
   });
 });

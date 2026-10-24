@@ -30,6 +30,8 @@ export type WorkbenchCard = {
   staleSource?: { name: string; text?: string };
   /** Symboles et mots-clés du texte, à insérer d'un clic. */
   inserts: string[];
+  /** Les autres cartes du même nom (réimpressions), cf. `sharesTranslationWith`. */
+  twins: { id: string; code: string; sameText: boolean; shared: boolean }[];
 };
 
 const STATE_LABELS: Record<CardTranslationState, string> = {
@@ -121,11 +123,14 @@ export default function TranslationWorkbench({
         return;
       }
       if (result.warning) toast.warning(result.warning);
+      const shared = result.shared
+        ? ` Aussi appliquée à ${result.shared} autre${result.shared > 1 ? "s" : ""} carte${result.shared > 1 ? "s" : ""} du même nom.`
+        : "";
       if (status === "done") {
-        toast.success(`« ${name || card.name} » enregistrée.`);
+        toast.success(`« ${name || card.name} » enregistrée.${shared}`);
         router.push(nextHref);
       } else {
-        toast.success("Brouillon enregistré.");
+        toast.success(`Brouillon enregistré.${shared}`);
         router.refresh();
       }
     });
@@ -359,6 +364,36 @@ export default function TranslationWorkbench({
                       <span className="text-muted-foreground">{attribute.key}</span>
                       <strong className="font-semibold">{attribute.translated}</strong>
                     </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {card.twins.length > 0 && (
+              <div className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium">
+                  Même nom <span className="font-normal text-muted-foreground">· la traduction s&apos;y applique aussi</span>
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {card.twins.map((twin) => (
+                    <Link
+                      key={twin.id}
+                      href={href({ cardId: twin.id })}
+                      title={
+                        !twin.shared
+                          ? "Texte anglais différent, déjà traduite pour elle-même : elle garde sa traduction."
+                          : twin.sameText
+                            ? "Même texte anglais : elle reçoit cette traduction."
+                            : "Texte anglais différent : elle reçoit cette traduction, à revoir."
+                      }
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-mono text-xs",
+                        twin.shared ? "border-border" : "border-dashed border-border text-muted-foreground line-through"
+                      )}
+                    >
+                      {twin.code}
+                      {twin.shared && !twin.sameText && <span className="font-sans text-amber-600 dark:text-amber-400">· à revoir</span>}
+                    </Link>
                   ))}
                 </div>
               </div>

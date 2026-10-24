@@ -130,6 +130,29 @@ export function searchableTranslations(
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
+/**
+ * Une carte réimprimée (autre extension, autre illustration) porte le même nom
+ * sous un autre identifiant. Sa traduction est la même : enregistrer l'une
+ * traduit les autres.
+ *
+ * Une réimpression au même texte anglais reçoit la traduction telle quelle.
+ * Une carte du même nom au texte différent (errata, nouvelle version) la
+ * reçoit aussi, et passe « à revoir » : son nom est traduit, son texte reste à
+ * vérifier. Seule exception : la traduction qu'on lui a faite pour elle-même,
+ * sur son propre texte, n'est pas écrasée.
+ */
+export function sharesTranslationWith(
+  source: { text?: string },
+  twin: { text?: string; translation?: Pick<CardTranslation, "source"> }
+): boolean {
+  const sourceText = source.text ?? "";
+  if ((twin.text ?? "") === sourceText || !twin.translation) {
+    return true;
+  }
+  // Reçue d'une carte au même texte que `source` : elle suit.
+  return (twin.translation.source.text ?? "") === sourceText;
+}
+
 // --- Glossaire ---------------------------------------------------------------
 
 /** La catégorie des mots-clés : les autres sont des attributs de carte (`type`, `domain`…). */
