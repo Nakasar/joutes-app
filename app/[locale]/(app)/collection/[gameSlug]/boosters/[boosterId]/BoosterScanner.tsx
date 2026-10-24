@@ -27,7 +27,7 @@ const FRAMES_BEFORE_DOUBT = 3;
 const FRAME = { cardAspect: CARD_ASPECT } as const;
 
 type Phase = "loading" | "scanning" | "doubt" | "ai" | "error";
-type Added = { entryId: string; card: ScannerSetCard };
+type Added = { entryId: string; card: ScannerSetCard; foil: boolean };
 
 type Props = {
   gameSlug: string;
@@ -245,7 +245,8 @@ export default function BoosterScanner({
         lastAddedNameRef.current = null;
         setNotice(t("errors.add"));
       } else if (entryId) {
-        setAdded((prev) => [...prev, { entryId, card }]);
+        // Une carte toujours foil l'est quel que soit le bouton (cf. `resolvePrinting`).
+        setAdded((prev) => [...prev, { entryId, card, foil: card.foil === true || foilRef.current }]);
       }
     },
     [t],
@@ -576,7 +577,7 @@ export default function BoosterScanner({
                   <p className="truncate text-sm font-semibold">{t("added", { name: last.card.name })}</p>
                   <p className="text-xs text-muted-foreground">
                     {t("addedDetail", {
-                      code: `${last.card.setCode}-${last.card.collectorNumber}`,
+                      code: `${last.card.setCode}-${last.card.collectorNumber}${last.foil ? ` · ${t("foil")}` : ""}`,
                       count: added.length,
                     })}
                   </p>
