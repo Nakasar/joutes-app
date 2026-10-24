@@ -12,6 +12,7 @@ import {
   readCardTranslations,
   type CardGlossaryEntry,
   type CardTranslation,
+  type CardTranslations,
   type CardTranslationState,
   type CardTranslationStatus,
 } from "@/lib/cards/translations";
@@ -49,12 +50,18 @@ function translationPath(lang: string): string {
 }
 
 /**
- * Les cartes à traduire d'un jeu vers une langue : celles qui ne sont pas déjà
- * dans cette langue au catalogue (un jeu importé en français n'a rien à
- * traduire vers le français).
+ * Les cartes qui se traduisent : la ligne anglaise de chaque carte (ou celle
+ * qui ne dit pas sa langue, comme les plus anciens imports).
+ *
+ * `cards.id` n'est pas unique : un jeu importé en plusieurs langues porte une
+ * ligne par langue sous le même identifiant. Ne viser que la ligne source
+ * évite de lister deux fois une carte, et de ranger une traduction sur une
+ * ligne que la file ne relit pas. Un jeu importé dans une autre langue que
+ * l'anglais n'a donc rien à traduire ici.
  */
 function baseFilter(gameId: ObjectId, lang: string): Filter<Document> {
-  return { gameId, id: { $type: "string" }, lang: { $ne: lang } };
+  translationPath(lang);
+  return { gameId, id: { $type: "string" }, lang: { $in: ["en", null] } };
 }
 
 /** La traduction a-t-elle été faite sur le nom et le texte anglais actuels ? */
@@ -94,13 +101,42 @@ function searchFilter(lang: string, search: string | undefined): Filter<Document
   return { $or: [{ name: regex }, { id: regex }, { [`${translationPath(lang)}.name`]: regex }] };
 }
 
+/**
+ * Les effectifs de chaque file, en une seule passe sur les cartes du jeu : les
+ * états « traduite » et « à revoir » comparent deux champs du document, ce
+ * qu'aucun index ne sert, et cinq décomptes séparés relisaient le catalogue
+ * cinq fois.
+ */
 export async function countTranslationStates(gameId: ObjectId, lang: string): Promise<TranslationCounts> {
-  const cards = db.collection("cards");
-  const states: TranslationQueueFilter[] = ["todo", "stale", "draft", "done", "all"];
-  const counts = await Promise.all(
-    states.map((state) => cards.countDocuments({ ...baseFilter(gameId, lang), ...stateFilter(lang, state) }))
-  );
-  return Object.fromEntries(states.map((state, index) => [state, counts[index]])) as TranslationCounts;
+  const path = translationPath(lang);
+  const rows = await db
+    .collection("cards")
+    .aggregate<{ _id: CardTranslationState; count: number }>([
+      { $match: baseFilter(gameId, lang) },
+      {
+        $group: {
+          _id: {
+            $switch: {
+              branches: [
+                { case: { $eq: [{ $type: `$${path}` }, "missing"] }, then: "todo" },
+                { case: { $eq: [`$${path}.status`, "draft"] }, then: "draft" },
+                { case: sourceIsCurrent(path), then: "done" },
+              ],
+              default: "stale",
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ])
+    .toArray();
+
+  const counts: TranslationCounts = { todo: 0, stale: 0, draft: 0, done: 0, all: 0 };
+  for (const row of rows) {
+    counts[row._id] = row.count;
+    counts.all += row.count;
+  }
+  return counts;
 }
 
 /** Extensions du jeu, pour traduire une extension d'un bout à l'autre. */
@@ -207,19 +243,19 @@ export async function saveCardTranslation(
 ): Promise<boolean> {
   const path = translationPath(lang);
   const cards = db.collection("cards");
-  const card = await cards.findOne({ ...baseFilter(gameId, lang), id: cardId }, { projection: { _id: 0, name: 1, text: 1 } });
+  const card = await cards.findOne({ ...baseFilter(gameId, lang), id: cardId }, { projection: { _id: 1, name: 1, text: 1 } });
   if (!card) return false;
 
   const name = input.name?.trim() || undefined;
   const text = input.text?.replace(/\r\n/g, "\n").trim() || undefined;
 
   if (!name && !text) {
-    await cards.updateOne({ gameId, id: cardId }, { $unset: { [path]: "" } });
+    await cards.updateOne({ _id: card._id }, { $unset: { [path]: "" } });
     return true;
   }
 
   await cards.updateOne(
-    { gameId, id: cardId },
+    { _id: card._id },
     {
       $set: {
         [path]: {
@@ -276,11 +312,29 @@ export async function saveCardGlossaryField(
     return value || reminder ? [{ field, en: entry.en, value, ...(reminder ? { reminder } : {}) }] : [];
   });
 
-  const others = (await getCardGlossary(gameId, lang)).filter((entry) => entry.field !== field);
-
+  // Une seule écriture, qui retire la catégorie et remet ses termes : deux
+  // catégories enregistrées en même temps ne s'écrasent pas l'une l'autre.
   await db.collection<GlossaryDocument>(GLOSSARY_COLLECTION).updateOne(
     { gameId, lang },
-    { $set: { entries: [...others, ...kept], updatedAt: new Date(), updatedBy: userId } },
+    [
+      {
+        $set: {
+          entries: {
+            $concatArrays: [
+              {
+                $filter: {
+                  input: { $ifNull: ["$entries", []] },
+                  cond: { $ne: ["$$this.field", field] },
+                },
+              },
+              { $literal: kept },
+            ],
+          },
+          updatedAt: "$$NOW",
+          updatedBy: { $literal: userId },
+        },
+      },
+    ],
     { upsert: true }
   );
 }
@@ -325,4 +379,25 @@ export async function getKeywordGlossaryTerms(gameId: ObjectId): Promise<Glossar
   return [...counts.entries()]
     .map(([en, count]) => ({ en, count }))
     .sort((a, b) => b.count - a.count || a.en.localeCompare(b.en));
+}
+
+/**
+ * Les traductions déjà saisies pour les cartes d'un jeu, par identifiant.
+ *
+ * Pour les scripts d'import : ils réécrivent les documents de recherche en
+ * entier, et doivent y remettre les noms traduits, que la source ignore (cf.
+ * `importedCardSearchDocument`). Seules les cartes traduites sont lues.
+ */
+export async function getStoredCardTranslations(gameId: ObjectId): Promise<Map<string, CardTranslations>> {
+  const docs = await db
+    .collection("cards")
+    .find({ gameId, translations: { $exists: true } }, { projection: { _id: 0, id: 1, translations: 1 } })
+    .toArray();
+
+  return new Map(
+    docs.flatMap((doc) => {
+      const translations = readCardTranslations(doc.translations);
+      return typeof doc.id === "string" && translations ? [[doc.id, translations] as const] : [];
+    })
+  );
 }

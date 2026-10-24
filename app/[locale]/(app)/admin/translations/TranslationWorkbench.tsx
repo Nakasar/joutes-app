@@ -331,7 +331,7 @@ export default function TranslationWorkbench({
                 placeholder={card.text ? "Traduisez le texte de la carte…" : "Pas de texte"}
                 className="min-h-40 font-mono text-sm leading-relaxed"
               />
-              {card.prefilledKeywords > 0 && !card.translatedName && (
+              {card.prefilledKeywords > 0 && (
                 <p className="rounded-md bg-emerald-50 px-2.5 py-1.5 text-xs text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
                   {card.prefilledKeywords} mot{card.prefilledKeywords > 1 ? "s" : ""}-clé{card.prefilledKeywords > 1 ? "s" : ""} traduit
                   {card.prefilledKeywords > 1 ? "s" : ""} depuis le glossaire. Les phrases restées en anglais sont à réécrire.

@@ -87,6 +87,7 @@ import db from "../../../lib/mongodb.ts";
 import meilisearch, { cardIndexSettings, ensureCardIndex, indexes } from "../../../lib/meilisearch.ts";
 import { getGameCardFilterFacets } from "../../../lib/db/cards.ts";
 import { importedCardSearchDocument } from "../../../lib/cards/import-search.ts";
+import { getStoredCardTranslations } from "../../../lib/db/card-translations.ts";
 import { buildCardId } from "../../../lib/constants/card-ids.ts";
 import type { CardOrientation, CardPrinting } from "../../../lib/types/card.ts";
 
@@ -533,6 +534,11 @@ async function writeSearchIndex(cards: NeuroScapeCard[], gameId: ObjectId): Prom
     console.info(`${storedPrintings.size} cartes portent des variantes saisies à la main, elles sont conservées.`);
   }
 
+  const translations = await getStoredCardTranslations(gameId);
+  if (translations.size > 0) {
+    console.info(`${translations.size} cartes portent des traductions saisies à la main, elles sont conservées.`);
+  }
+
   const index = meilisearch.index(indexConfig.name);
   for (let offset = 0; offset < cards.length; offset += 1000) {
     const last = Math.min(offset + 1000, cards.length);
@@ -541,7 +547,7 @@ async function writeSearchIndex(cards: NeuroScapeCard[], gameId: ObjectId): Prom
       index.addDocuments(
         cards
           .slice(offset, offset + 1000)
-          .map((card) => importedCardSearchDocument(card, storedPrintings.get(card.id)))
+          .map((card) => importedCardSearchDocument(card, storedPrintings.get(card.id), translations.get(card.id)))
       ),
       `Envoi des cartes ${offset + 1} à ${last}`
     );

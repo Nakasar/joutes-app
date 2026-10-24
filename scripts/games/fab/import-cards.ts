@@ -47,6 +47,8 @@ import { ObjectId } from "mongodb";
 import db from "../../../lib/mongodb.ts";
 import meilisearch, { indexes } from "../../../lib/meilisearch.ts";
 import { withUniquePrintingIds } from "../../../lib/constants/card-ids.ts";
+import { getStoredCardTranslations } from "../../../lib/db/card-translations.ts";
+import { searchableTranslations, type CardTranslations } from "../../../lib/cards/translations.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -607,10 +609,12 @@ async function resolveGameId(): Promise<ObjectId> {
   return game._id;
 }
 
-function searchDocument(card: FabCard): Record<string, unknown> {
+function searchDocument(card: FabCard, translations?: CardTranslations): Record<string, unknown> {
   // `*` n'est pas accepté dans un identifiant Meilisearch, comme pour les
-  // autres jeux ; `cardId` garde l'identifiant réel de la carte.
-  return { ...card, id: card.id.replaceAll("*", "s"), cardId: card.id };
+  // autres jeux ; `cardId` garde l'identifiant réel de la carte. Les
+  // traductions saisies dans l'administration sont remises, comme ailleurs.
+  const searchable = searchableTranslations(translations);
+  return { ...card, id: card.id.replaceAll("*", "s"), cardId: card.id, ...(searchable ? { translations: searchable } : {}) };
 }
 
 async function writeCards(cards: FabCard[]): Promise<void> {
@@ -646,9 +650,10 @@ async function writeCards(cards: FabCard[]): Promise<void> {
     console.info(`Base : ${Math.min(index + BATCH, cards.length)}/${cards.length}`);
   }
 
+  const translations = await getStoredCardTranslations(gameId);
   const index = meilisearch.index(indexes.fab.name);
   for (let offset = 0; offset < cards.length; offset += 1000) {
-    await index.addDocuments(cards.slice(offset, offset + 1000).map(searchDocument));
+    await index.addDocuments(cards.slice(offset, offset + 1000).map((card) => searchDocument(card, translations.get(card.id))));
     console.info(`Index : ${Math.min(offset + 1000, cards.length)}/${cards.length}`);
   }
 }

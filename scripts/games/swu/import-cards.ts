@@ -3,6 +3,7 @@ import path from "node:path";
 import {ObjectId} from "mongodb";
 import db from "../../../lib/mongodb.ts";
 import meilisearch, {indexes} from "../../../lib/meilisearch.ts";
+import {readCardTranslations, searchableTranslations, type CardTranslations} from "../../../lib/cards/translations.ts";
 
 export type Card = {
   id: string;
@@ -56,6 +57,23 @@ export async function importCardDatabase() {
   await cardsIndex.deleteAllDocuments();
 
 
+  // L'import repart d'une base vide : les traductions saisies dans
+  // l'administration (`/admin/translations`) sont mises de côté avant, puis
+  // remises sur la même carte dans la même langue.
+  const storedTranslations = new Map<string, CardTranslations>();
+  for (const doc of await db.collection('cards').find(
+    { gameId: new ObjectId('68f108675fdfb9c53ba3387d'), translations: { $exists: true } },
+    { projection: { _id: 0, id: 1, lang: 1, translations: 1 } }
+  ).toArray()) {
+    const translations = readCardTranslations(doc.translations);
+    if (translations) storedTranslations.set(`${doc.id}:${doc.lang}`, translations);
+  }
+  const withTranslations = <T extends { id: string; lang?: string }>(card: T, searchable: boolean) => {
+    const translations = storedTranslations.get(`${card.id}:${card.lang}`);
+    const value = searchable ? searchableTranslations(translations) : translations;
+    return value ? { ...card, translations: value } : card;
+  };
+
   await db.collection('cards').deleteMany({
     gameId: new ObjectId('68f108675fdfb9c53ba3387d'),
   });
@@ -100,9 +118,9 @@ export async function importCardDatabase() {
     });
 
     if (cards.length >= batchSize) {
-      await cardsIndex.addDocuments(cards);
+      await cardsIndex.addDocuments(cards.map((c) => withTranslations(c, true)));
       await db.collection('cards').insertMany(cards.map(c => ({
-        ...c,
+        ...withTranslations(c, false),
         gameId: new ObjectId('68f108675fdfb9c53ba3387d'),
       })));
       cards = [];
@@ -112,9 +130,9 @@ export async function importCardDatabase() {
   }
 
   if (cards.length > 0) {
-    await cardsIndex.addDocuments(cards);
+    await cardsIndex.addDocuments(cards.map((c) => withTranslations(c, true)));
     await db.collection('cards').insertMany(cards.map(c => ({
-      ...c,
+      ...withTranslations(c, false),
       gameId: new ObjectId('68f108675fdfb9c53ba3387d'),
     })));
   }

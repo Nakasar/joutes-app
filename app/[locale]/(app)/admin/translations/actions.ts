@@ -20,6 +20,7 @@ export type TranslationActionResult = {
 };
 
 const languageSchema = z.string().refine(isCardLanguage, "Langue inconnue");
+const cardIdSchema = z.string().trim().min(1).max(200);
 
 const translationSchema = z.object({
   name: z.string().max(200, "Le nom est trop long").optional(),
@@ -42,6 +43,7 @@ export async function saveTranslation(
     const validatedGameId = gameIdSchema.parse(gameId);
     const validatedLang = languageSchema.parse(lang);
     const data = translationSchema.parse(input);
+    cardId = cardIdSchema.parse(cardId);
 
     const game = await getGameById(validatedGameId);
     if (!game) {

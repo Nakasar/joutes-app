@@ -63,7 +63,9 @@ export default async function AdminTranslationsPage({
   let workbenchCard: WorkbenchCard | undefined;
   if (card) {
     const lookup = glossaryLookup(glossary);
-    const prefill = card.translation?.text ? undefined : prefillTranslatedText(card.text, glossary);
+    // Seulement pour une carte jamais traduite : un brouillon dont on a vidé le
+    // texte exprès ne doit pas revenir rempli d'anglais.
+    const prefill = card.translation ? undefined : prefillTranslatedText(card.text, glossary);
     const keywordValues = glossary
       .filter((entry) => entry.field === KEYWORD_GLOSSARY_FIELD && entry.value && card.text?.includes(`[${entry.en}`))
       .map((entry) => `[${entry.value}]`);
