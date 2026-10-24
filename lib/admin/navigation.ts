@@ -15,6 +15,7 @@ export type AdminNavIcon =
   | "inbox"
   | "dice"
   | "card"
+  | "languages"
   | "box"
   | "trophy"
   | "users"
@@ -59,6 +60,7 @@ export const ADMIN_NAVIGATION: AdminNavGroup[] = [
     items: [
       { href: "/admin/games", label: "Jeux", icon: "dice" },
       { href: "/admin/cards", label: "Cartes", icon: "card", keywords: ["variantes", "impressions"] },
+      { href: "/admin/translations", label: "Traductions", icon: "languages", keywords: ["français", "glossaire", "langues"] },
       { href: "/admin/products", label: "Produits", icon: "box", keywords: ["boîtes", "figurines"] },
       { href: "/admin/achievements", label: "Succès", icon: "trophy", keywords: ["trophées", "badges"] },
     ],

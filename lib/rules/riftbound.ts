@@ -95,6 +95,26 @@ export function getAllKeywordEntries(): KeywordEntry[] {
   return result;
 }
 
+/**
+ * Les mots-clés du glossaire des règles, anglais → autre langue, appariés par
+ * identifiant de règle (stable d'une langue à l'autre) : `Reaction` →
+ * `Réaction`. Le glossaire de traduction des cartes s'en sert pour proposer le
+ * nom officiel d'un mot-clé plutôt que de le faire ressaisir.
+ */
+export function getKeywordTranslations(lang: RuleLang): { id: string; en: string; translated: string }[] {
+  const translatedById = new Map<string, string>();
+  for (const entry of getRawEntries('CR', lang)) {
+    if (isKeywordEntry(entry, 'CR')) translatedById.set(entry.id, entry.content.replaceAll('**', ''));
+  }
+
+  return getRawEntries('CR', 'en').flatMap((entry) => {
+    const translated = translatedById.get(entry.id);
+    return isKeywordEntry(entry, 'CR') && translated
+      ? [{ id: entry.id, en: entry.content.replaceAll('**', ''), translated }]
+      : [];
+  });
+}
+
 function getDepth(id: string): number {
   return id.split('.').length;
 }

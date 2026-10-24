@@ -22,6 +22,8 @@ import { parseCardIdList } from "@/lib/cards/bulk-printings.ts";
 // Même correspondance d'identifiant que les scripts d'import : les deux
 // chemins écrivent dans le même index.
 import { searchDocumentId } from "@/lib/cards/import-search.ts";
+import { type CardTranslations } from "@/lib/cards/translations.ts";
+import { toSearchDocument } from "@/lib/cards/search-document.ts";
 import { getGameById } from "@/lib/db/games.ts";
 import { cardPrintingFieldsSchema, cardSchema, refinePrintingIdentity } from "@/lib/schemas/card.schema.ts";
 import { gameIdSchema } from "@/lib/schemas/game.schema.ts";
@@ -30,7 +32,6 @@ import meilisearch, {
   cardIndexFor,
   cardIndexSettings,
   ensureCardIndex,
-  type CardIndexConfig,
 } from "@/lib/meilisearch.ts";
 
 export type SaveCardResult = {
@@ -83,51 +84,6 @@ function toCoreCardFields(card: z.infer<typeof cardSchema>) {
 }
 
 /**
- * Le minimum dont on a besoin pour construire un document de recherche. Aussi
- * bien une carte validée par le formulaire qu'une carte relue en base s'y
- * conforment : les deux chemins produisent donc exactement le même document.
- */
-type SearchableCard = {
-  id: string;
-  name: string;
-  setCode?: string;
-  collectorNumber?: string;
-  lang?: string;
-  image?: string;
-  text?: string;
-  foil?: boolean;
-  printings?: { id?: string; name: string; foil?: boolean; image?: string; setCode?: string; collectorNumber?: string }[];
-  attributes?: Record<string, CardAttributeValue>;
-};
-
-function toSearchDocument(
-  indexConfig: CardIndexConfig,
-  card: SearchableCard
-): Record<string, unknown> {
-  return {
-    ...card.attributes,
-    id: searchDocumentId(card.id),
-    cardId: card.id,
-    name: card.name,
-    lang: card.lang,
-    image: card.image || undefined,
-    text: card.text || undefined,
-    foil: card.foil || undefined,
-    // Les variantes ne sont saisies que par ce formulaire, qui réindexe la
-    // carte : la recherche est donc une source fiable pour les écrans qui
-    // ajoutent un exemplaire depuis un résultat de recherche.
-    printings: card.printings?.length ? withUniquePrintingIds(card.printings) : undefined,
-    // Écrits seulement s'ils sont renseignés : l'index peut les porter sous un
-    // autre nom que la base (`set` chez Magic), qui est alors relu comme un
-    // attribut de jeu — le mapper à `undefined` l'effacerait du document.
-    ...(card.setCode !== undefined && { [indexConfig.keys.set]: card.setCode }),
-    ...(card.collectorNumber !== undefined && {
-      [indexConfig.keys.collectorNumber]: card.collectorNumber,
-    }),
-  };
-}
-
-/**
  * Indexe la carte pour la recherche. La base fait foi : un échec n'annule pas
  * l'écriture, il est seulement signalé. `previousCardId` permet de retirer
  * l'ancien document quand l'identifiant a changé.
@@ -135,7 +91,9 @@ function toSearchDocument(
 async function indexCard(
   gameSlug: string | undefined,
   card: z.infer<typeof cardSchema>,
-  previousCardId?: string
+  previousCardId?: string,
+  /** Le formulaire ne les porte pas : relues en base, pour ne pas les retirer de l'index. */
+  translations?: CardTranslations
 ): Promise<string | undefined> {
   const indexConfig = cardIndexFor(gameSlug);
   if (!indexConfig) {
@@ -152,7 +110,7 @@ async function indexCard(
     if (previousCardId && previousCardId !== card.id) {
       await index.deleteDocument(searchDocumentId(previousCardId));
     }
-    await index.addDocuments([toSearchDocument(indexConfig, card)]);
+    await index.addDocuments([toSearchDocument(indexConfig, { ...card, translations })]);
     return undefined;
   } catch (error) {
     console.error("Erreur lors de l'indexation de la carte:", error);
@@ -351,7 +309,7 @@ export async function updateGameCard(
       { removedAttributes, editedBy: session.user.id }
     );
 
-    const warning = await indexCard(game.slug, card, currentCardId);
+    const warning = await indexCard(game.slug, card, currentCardId, existing.translations);
     revalidateCard(game.slug ?? game.id, card.id, currentCardId);
 
     return { success: true, warning, cardId: card.id };

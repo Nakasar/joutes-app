@@ -49,6 +49,8 @@ import {chosenPriceSource, referenceCardPrice} from "@/lib/prices/preference.ts"
 import {viewerPricePreference, viewerPriceSources} from "@/lib/prices/viewer.ts";
 import { UserLabel } from "@/components/UserLabel.tsx";
 import { BackLink } from "@/components/navigation/BackLink.tsx";
+import {getCardGlossary} from "@/lib/db/card-translations.ts";
+import {glossaryLookup, publishedTranslation, readCardTranslations, translateAttributeValue} from "@/lib/cards/translations.ts";
 
 function hasNegativeVoteRatio(errata: Errata): boolean {
   return errata.votes.negative > errata.votes.positive;
@@ -157,6 +159,18 @@ async function CardDetail({
     );
   }
 
+  // La carte dans la langue du visiteur, quand l'administration l'a traduite
+  // (`/admin/translations`) : nom et texte propres à la carte, propriétés par
+  // le glossaire du jeu. Une carte du catalogue déjà dans cette langue n'a rien
+  // à traduire.
+  const translatable = card.lang !== locale;
+  const translation = translatable
+    ? publishedTranslation(readCardTranslations((card as unknown as {translations?: unknown}).translations), locale)
+    : undefined;
+  const glossary = translatable ? glossaryLookup(await getCardGlossary(new ObjectId(game.id), locale)) : glossaryLookup([]);
+  const displayName = translation?.name ?? card.name;
+  const displayText = translation?.text ?? card.text;
+
   // Cœur rouge si la carte est déjà dans une wishlist de l'utilisateur
   // (requête ciblée sur cette seule carte).
   const cardInWishlist = userId
@@ -231,7 +245,7 @@ async function CardDetail({
   // jusqu'ici indexé pour la recherche sans jamais être montré sur la fiche.
   // Les clés restent celles de la base : aucun jeu n'est codé en dur.
   const attributeChips = CARD_ATTRIBUTE_KEYS.flatMap((key) => {
-    const value = (card as unknown as Record<string, unknown>)[key];
+    const value = translateAttributeValue(glossary, key, (card as unknown as Record<string, unknown>)[key]);
     const text = Array.isArray(value) ? value.filter(Boolean).join(", ") : value === undefined || value === null ? "" : String(value);
     if (!text) {
       return [];
@@ -481,7 +495,7 @@ async function CardDetail({
     <div className="flex min-w-0 flex-col gap-6">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-bold tracking-tight">{card.name}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{displayName}</h1>
           <span className="font-mono text-sm text-muted-foreground">
             #{card.setCode}-{card.collectorNumber}
           </span>
@@ -502,6 +516,15 @@ async function CardDetail({
           )}
         </div>
 
+        {translation && (
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            {translation.name && translation.name !== card.name && <span>{card.name}</span>}
+            <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-900 dark:bg-violet-950 dark:text-violet-200">
+              {t("cards.detail.communityTranslation")}
+            </span>
+          </div>
+        )}
+
         {attributeChips.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {attributeChips.map((chip) => (
@@ -517,25 +540,37 @@ async function CardDetail({
         )}
       </div>
 
-      {card.text && (
+      {displayText && (
         <div className="flex flex-col gap-2 rounded-xl border bg-muted/30 p-4">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {t("cards.detail.cardTextTitle")}
             </span>
             <CopyCardTextButton
-              text={card.text}
+              text={displayText}
               label={t("cards.detail.copyCardText")}
               copiedLabel={t("cards.detail.copyCardTextCopied")}
             />
           </div>
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <GameMarkdown
-              markdown={annotateCardText(card.text)}
+              markdown={annotateCardText(displayText)}
               gameSlug={game.slug ?? gameSlugOrId}
               ruleLang={ruleLang}
             />
           </div>
+          {translation?.text && card.text && (
+            <details className="text-sm">
+              <summary className="cursor-pointer text-muted-foreground">{t("cards.detail.originalText")}</summary>
+              <div className="prose prose-sm dark:prose-invert mt-2 max-w-none">
+                <GameMarkdown
+                  markdown={annotateCardText(card.text)}
+                  gameSlug={game.slug ?? gameSlugOrId}
+                  ruleLang={ruleLang}
+                />
+              </div>
+            </details>
+          )}
         </div>
       )}
 

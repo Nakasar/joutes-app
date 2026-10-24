@@ -8,6 +8,7 @@ import type { CardFilterFacet } from "@/lib/cards/search-filters";
 import { planPrintingAddition, type BulkPrinting } from "@/lib/cards/bulk-printings";
 import { getGameLanguages } from "@/lib/constants/card-languages";
 import type { Game } from "@/lib/types/Game";
+import { readCardTranslations, type CardTranslations } from "@/lib/cards/translations";
 
 export type CardNameMatch = {
   id: string;
@@ -250,6 +251,7 @@ export type GameCardDetail = GameCardSummary & {
   text?: string;
   foil?: boolean;
   printings?: CardPrinting[];
+  translations?: CardTranslations;
   attributes: Record<string, CardAttributeValue>;
 };
 
@@ -339,6 +341,7 @@ function toCoreCard(doc: Record<string, unknown>) {
     text: doc.text as string | undefined,
     foil: doc.foil === true ? true : undefined,
     printings: Array.isArray(doc.printings) ? (doc.printings as CardPrinting[]) : undefined,
+    translations: readCardTranslations(doc.translations),
   };
 }
 

@@ -1,4 +1,5 @@
 import type { CardPrinting } from "@/lib/types/card";
+import { searchableTranslations, type CardTranslations } from "@/lib/cards/translations";
 
 /**
  * Document de recherche d'une carte importée.
@@ -31,15 +32,22 @@ export function searchDocumentId(cardId: string): string {
  * exemplaire depuis un résultat de recherche lisent les variantes du document
  * d'index, pas de la base : un import les ferait disparaître de la galerie de
  * cartes, des boosters et des listes de souhaits.
+ *
+ * Les traductions (`/admin/translations`) sont dans le même cas : saisies à la
+ * main, gardées en base, à remettre dans le document pour que la recherche et
+ * le scanner trouvent encore la carte par son nom traduit.
  */
 export function importedCardSearchDocument<T extends { id: string }>(
   card: T,
-  storedPrintings?: CardPrinting[]
-): T & { id: string; cardId: string; printings?: CardPrinting[] } {
+  storedPrintings?: CardPrinting[],
+  storedTranslations?: CardTranslations
+): T & { id: string; cardId: string; printings?: CardPrinting[]; translations?: Record<string, { name?: string; text?: string }> } {
+  const translations = searchableTranslations(storedTranslations);
   return {
     ...card,
     id: searchDocumentId(card.id),
     cardId: card.id,
     ...(storedPrintings?.length ? { printings: storedPrintings } : {}),
+    ...(translations ? { translations } : {}),
   };
 }
