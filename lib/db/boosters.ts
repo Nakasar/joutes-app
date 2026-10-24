@@ -461,7 +461,14 @@ export async function deleteBooster(boosterId: string): Promise<void> {
  * change, le total qui en découle aussi. Le recalcul est fait ici plutôt que
  * dans la route pour que la valeur suive le contenu quel que soit l'appelant.
  */
-export async function addCardToBooster(boosterId: string, card: Omit<BoosterCard, 'id'>): Promise<BoosterValue | null> {
+/**
+ * Ajoute une carte au booster. Renvoie l'identifiant de l'exemplaire — ce qui
+ * permet d'annuler l'ajout sans relire le booster — et la nouvelle valeur.
+ */
+export async function addCardToBooster(
+  boosterId: string,
+  card: Omit<BoosterCard, 'id'>,
+): Promise<{ entryId: string; value: BoosterValue | null }> {
   const booster = await db.collection<BoosterDb>('boosters').findOne({
     _id: new ObjectId(boosterId),
   }, {projection: {_id: 1, userId: 1}});
@@ -469,13 +476,13 @@ export async function addCardToBooster(boosterId: string, card: Omit<BoosterCard
     throw new Error('Booster not found');
   }
 
-  await db.collection<BoosterCardDb>('booster-cards').insertOne({
+  const { insertedId } = await db.collection<BoosterCardDb>('booster-cards').insertOne({
     ...card,
     boosterId: booster._id,
     userId: booster.userId,
   });
 
-  return computeBoosterValue(boosterId);
+  return { entryId: insertedId.toString(), value: await computeBoosterValue(boosterId) };
 }
 
 export async function addBoosterToCollection(userId: string, boosterId: string): Promise<number> {

@@ -17,6 +17,13 @@ import { annotateCardText } from "@/lib/card-text-markdown.ts";
 import type { CardNameMatch } from "@/lib/db/cards.ts";
 import type { Locale } from "@/i18n/config.ts";
 import { CameraOff, ExternalLink, Loader2, ScanLine, Sparkles } from "lucide-react";
+import {
+  NAME_BAND_HEIGHT_RATIO,
+  NAME_BAND_SIDE_MARGIN_RATIO,
+  NAME_BAND_TOP_MARGIN_RATIO,
+  captureCardImageDataUrl as captureCardImage,
+  drawNameBand,
+} from "@/lib/scanner-frame.ts";
 
 type CardMatch = { id: string; name: string; score: number };
 type CardNameEntry = { id: string; name: string };
@@ -68,19 +75,6 @@ const MATCH_SCORE_THRESHOLD = 0.4;
 // After this many consecutive match-request failures, stop scanning instead
 // of retrying forever every SCAN_INTERVAL_MS against a backend that's down.
 const MAX_CONSECUTIVE_MATCH_ERRORS = 3;
-// Fraction of the captured frame kept, centered — matches the on-screen guide
-// box so the card crop only sees the card, not whatever background surrounds it.
-const CROP_RATIO = 0.82;
-// The name is printed in a horizontal band near the top on virtually every
-// trading card layout. OCR-ing (and matching against) only that band —
-// instead of the whole card — is what keeps rules text, flavor text, and
-// artwork noise from ever being fuzzy-matched against the card-name index.
-const NAME_BAND_TOP_MARGIN_RATIO = 0.03;
-const NAME_BAND_HEIGHT_RATIO = 0.2;
-const NAME_BAND_SIDE_MARGIN_RATIO = 0.06;
-// Simple contrast boost applied after grayscale conversion; text edges on
-// busy card art come through much cleaner for Tesseract with this than raw color.
-const CONTRAST = 1.5;
 
 export default function ScannerClient({
   gameSlug,
@@ -258,52 +252,12 @@ export default function ScannerClient({
     [gameSlug, t]
   );
 
-  // Crops to the name band within the centered guide-box region (see
-  // NAME_BAND_* constants) and converts to high-contrast grayscale in
-  // place — both steps measurably improve Tesseract's accuracy and keep it
-  // from ever reading rules text, flavor text, or artwork noise.
-  const prepareCapture = useCallback((video: HTMLVideoElement, canvas: HTMLCanvasElement): boolean => {
-    const videoWidth = video.videoWidth;
-    const videoHeight = video.videoHeight;
-    if (!videoWidth || !videoHeight) return false;
-
-    const cardWidth = Math.round(videoWidth * CROP_RATIO);
-    const cardHeight = Math.round(videoHeight * CROP_RATIO);
-    const cardX = Math.round((videoWidth - cardWidth) / 2);
-    const cardY = Math.round((videoHeight - cardHeight) / 2);
-
-    const bandWidth = Math.round(cardWidth * (1 - 2 * NAME_BAND_SIDE_MARGIN_RATIO));
-    const bandHeight = Math.round(cardHeight * NAME_BAND_HEIGHT_RATIO);
-    const bandX = cardX + Math.round(cardWidth * NAME_BAND_SIDE_MARGIN_RATIO);
-    const bandY = cardY + Math.round(cardHeight * NAME_BAND_TOP_MARGIN_RATIO);
-
-    canvas.width = bandWidth;
-    canvas.height = bandHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return false;
-
-    ctx.drawImage(video, bandX, bandY, bandWidth, bandHeight, 0, 0, bandWidth, bandHeight);
-
-    const imageData = ctx.getImageData(0, 0, bandWidth, bandHeight);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-      const adjusted = Math.min(255, Math.max(0, (gray - 128) * CONTRAST + 128));
-      data[i] = adjusted;
-      data[i + 1] = adjusted;
-      data[i + 2] = adjusted;
-    }
-    ctx.putImageData(imageData, 0, 0);
-
-    return true;
-  }, []);
-
   const captureAndRecognize = useCallback(async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const worker = workerRef.current;
     if (!video || !canvas || !worker || video.readyState < 2) return;
-    if (!prepareCapture(video, canvas)) return;
+    if (!drawNameBand(video, canvas)) return;
 
     try {
       const result = await worker.recognize(canvas);
@@ -334,7 +288,7 @@ export default function ScannerClient({
         setPhase("error");
       }
     }
-  }, [prepareCapture, matchCardText, fetchCardDetails, stopCamera, t]);
+  }, [matchCardText, fetchCardDetails, stopCamera, t]);
 
   const scanLoop = useCallback(async () => {
     while (!stopRef.current) {
@@ -431,27 +385,9 @@ export default function ScannerClient({
   const startScanning = useCallback(() => startCapture("ocr"), [startCapture]);
   const startAiScan = useCallback(() => startCapture("ai"), [startCapture]);
 
-  // Captures the full-color card crop (not the grayscale, name-band-only
-  // crop used for OCR) — the AI model benefits from seeing the whole card,
-  // not just its name.
   const captureCardImageDataUrl = useCallback((): string | null => {
     const video = videoRef.current;
-    if (!video || !video.videoWidth || !video.videoHeight) return null;
-
-    const cardWidth = Math.round(video.videoWidth * CROP_RATIO);
-    const cardHeight = Math.round(video.videoHeight * CROP_RATIO);
-    const cardX = Math.round((video.videoWidth - cardWidth) / 2);
-    const cardY = Math.round((video.videoHeight - cardHeight) / 2);
-
-    const canvas = document.createElement("canvas");
-    canvas.width = cardWidth;
-    canvas.height = cardHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-
-    ctx.drawImage(video, cardX, cardY, cardWidth, cardHeight, 0, 0, cardWidth, cardHeight);
-
-    return canvas.toDataURL("image/jpeg", 0.85);
+    return video ? captureCardImage(video) : null;
   }, []);
 
   const handleCaptureAiPhoto = useCallback(async () => {

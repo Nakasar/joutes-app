@@ -567,6 +567,53 @@ export async function getCardNamesBySet(
     .toArray();
 }
 
+/** Carte d'une extension telle que le scanner d'un booster l'ajoute. */
+export type ScannerSetCard = {
+  id: string;
+  name: string;
+  setCode: string;
+  collectorNumber: string;
+  image: string;
+  lang?: string;
+  printings?: CardPrinting[];
+  type?: string;
+  rarity?: string;
+  domain?: string[];
+  orientation?: CardOrientation;
+};
+
+/**
+ * Toutes les cartes d'une extension, une par numéro de collection, pour le
+ * scanner d'un booster : il départage les variantes d'une même carte par leur
+ * numéro, il lui faut donc chacune. La langue du booster passe avant
+ * l'anglais, que le catalogue de bien des jeux est seul à avoir.
+ */
+export async function getScannerCardsBySet(gameId: ObjectId, setCode: string, lang?: string): Promise<ScannerSetCard[]> {
+  const langs = [...new Set([lang, "en"].filter((l): l is string => Boolean(l)))];
+  const docs = await db
+    .collection("cards")
+    .find(
+      { gameId, setCode, lang: { $in: langs } },
+      {
+        projection: {
+          _id: 0, id: 1, name: 1, setCode: 1, collectorNumber: 1, image: 1, lang: 1,
+          printings: 1, type: 1, rarity: 1, domain: 1, orientation: 1,
+        },
+      }
+    )
+    .toArray();
+
+  const byNumber = new Map<string, ScannerSetCard>();
+  for (const doc of docs as unknown as ScannerSetCard[]) {
+    const key = String(doc.collectorNumber ?? doc.id);
+    const kept = byNumber.get(key);
+    if (!kept || (kept.lang !== lang && doc.lang === lang)) {
+      byNumber.set(key, { ...doc, collectorNumber: String(doc.collectorNumber ?? ""), image: doc.image ?? "" });
+    }
+  }
+  return [...byNumber.values()];
+}
+
 /**
  * Looks up a card from an AI vision identification, most precise tier
  * first: a set + collector number alone pins down a single printing
