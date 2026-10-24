@@ -3468,6 +3468,7 @@
               "cameraAccess": "Couldn't access the camera. Check the browser permission.",
               "cards": "Couldn't load the set's cards.",
               "add": "Adding the card failed, it will be read again.",
+              "undo": "Undo failed: the card is still in the booster.",
               "generic": "Something went wrong."
             }
           },

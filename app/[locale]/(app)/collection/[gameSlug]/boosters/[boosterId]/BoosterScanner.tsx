@@ -7,7 +7,7 @@ import { CameraOff, Flashlight, FlashlightOff, Loader2, Plus, Sparkles, Star, X 
 import { Button } from "@/components/ui/button.tsx";
 import CardImage from "@/components/cards/CardImage.tsx";
 import { CARD_ASPECT, captureCardImageDataUrl, cardGuide, drawCard } from "@/lib/scanner-frame.ts";
-import { createNameMatcher, pickScannedCard, readCollectorNumbers } from "@/lib/scanner-booster.ts";
+import { createNameMatcher, normalizeCollectorNumber, pickScannedCard, readCollectorNumbers } from "@/lib/scanner-booster.ts";
 import type { ScannerSetCard } from "@/lib/db/cards.ts";
 
 const SCAN_INTERVAL_MS = 500;
@@ -15,8 +15,12 @@ const SCAN_INTERVAL_MS = 500;
 const OCR_MAX_WIDTH = 900;
 // Images sans nom reconnu avant de considérer que la carte a quitté le cadre :
 // la même carte peut alors être ajoutée à nouveau (deux exemplaires d'une
-// commune dans le même booster).
-const FRAMES_BEFORE_CARD_LEFT = 2;
+// commune dans le même booster). Un reflet ou un flou fait rater une image ou
+// deux sans que la carte ait bougé.
+const FRAMES_BEFORE_CARD_LEFT = 3;
+// Lectures consécutives du même nom avant d'ajouter la carte : une lecture qui
+// hésite entre deux noms sur la même carte n'ajoute ni l'un ni l'autre.
+const FRAMES_TO_CONFIRM = 2;
 // Lectures du même nom sans numéro départageant ses variantes avant de
 // demander au joueur de choisir.
 const FRAMES_BEFORE_DOUBT = 3;
@@ -34,9 +38,13 @@ type Props = {
   foil: boolean;
   onFoilChange: (foil: boolean) => void;
   boosterCardCount: number;
-  /** Ajoute la carte au booster et renvoie l'identifiant de l'exemplaire, `null` en cas d'échec. */
-  onAdd: (card: ScannerSetCard, foil: boolean) => Promise<string | null>;
-  onUndo: (entryId: string) => Promise<void>;
+  /**
+   * Ajoute la carte au booster. `entryId` permet de l'annuler ; il peut manquer
+   * alors que l'ajout a réussi.
+   */
+  onAdd: (card: ScannerSetCard, foil: boolean) => Promise<{ ok: boolean; entryId?: string }>;
+  /** Retire l'exemplaire du booster ; `false` s'il y est resté. */
+  onUndo: (entryId: string) => Promise<boolean>;
   onSearchByName: (name: string) => void;
   onClose: () => void;
 };
@@ -92,6 +100,7 @@ export default function BoosterScanner({
   // État de la boucle de lecture, hors React : elle tourne entre deux rendus.
   const lastAddedNameRef = useRef<string | null>(null);
   const missesRef = useRef(0);
+  const stableRef = useRef<{ name: string; count: number }>({ name: "", count: 0 });
   const doubtRef = useRef<{ name: string; count: number }>({ name: "", count: 0 });
 
   const byName = useMemo(() => {
@@ -231,12 +240,12 @@ export default function BoosterScanner({
       lastAddedNameRef.current = card.name.toLowerCase();
       doubtRef.current = { name: "", count: 0 };
       setNotice(null);
-      const entryId = await onAddRef.current(card, foilRef.current);
-      if (entryId) {
-        setAdded((prev) => [...prev, { entryId, card }]);
-      } else {
+      const { ok, entryId } = await onAddRef.current(card, foilRef.current);
+      if (!ok) {
         lastAddedNameRef.current = null;
         setNotice(t("errors.add"));
+      } else if (entryId) {
+        setAdded((prev) => [...prev, { entryId, card }]);
       }
     },
     [t],
@@ -248,6 +257,7 @@ export default function BoosterScanner({
       if (!hit) {
         missesRef.current += 1;
         if (missesRef.current >= FRAMES_BEFORE_CARD_LEFT) lastAddedNameRef.current = null;
+        stableRef.current = { name: "", count: 0 };
         setLastRead("");
         return;
       }
@@ -255,7 +265,9 @@ export default function BoosterScanner({
       setLastRead(hit.name);
 
       const key = hit.name.toLowerCase();
-      if (key === lastAddedNameRef.current) return;
+      const stable = stableRef.current.name === key ? stableRef.current.count + 1 : 1;
+      stableRef.current = { name: key, count: stable };
+      if (stable < FRAMES_TO_CONFIRM || key === lastAddedNameRef.current) return;
 
       const candidates = byName.get(key) ?? [];
       const card = pickScannedCard(candidates, readCollectorNumbers(text, setCode));
@@ -330,11 +342,27 @@ export default function BoosterScanner({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error?.message);
-      const card = (cards ?? []).find((c) => c.id === data.match?.id);
+      // L'IA peut renvoyer la carte dans une autre langue que celle gardée
+      // pour l'extension : faute d'identifiant identique, son nom et son
+      // numéro la retrouvent.
+      const name = typeof data.match?.name === "string" ? data.match.name : "";
+      const sameName = byName.get(name.toLowerCase()) ?? [];
+      const number = data.identification?.collectorNumber;
+      const card =
+        (cards ?? []).find((c) => c.id === data.match?.id) ??
+        pickScannedCard(
+          sameName,
+          typeof number === "string" ? [...readCollectorNumbers(number, setCode), normalizeCollectorNumber(number)] : [],
+        );
       if (card) {
         setDoubt(null);
         setPhase("scanning");
         await addCard(card);
+        return;
+      }
+      if (sameName.length > 1) {
+        setDoubt({ name, candidates: sameName });
+        setPhase("doubt");
         return;
       }
       setNotice(t("aiNoMatch"));
@@ -350,8 +378,11 @@ export default function BoosterScanner({
     if (!last) return;
     setUndoing(true);
     try {
-      await onUndo(last.entryId);
-      setAdded((prev) => prev.filter((entry) => entry.entryId !== last.entryId));
+      if (await onUndo(last.entryId)) {
+        setAdded((prev) => prev.filter((entry) => entry.entryId !== last.entryId));
+      } else {
+        setNotice(t("errors.undo"));
+      }
     } finally {
       setUndoing(false);
     }
@@ -436,6 +467,10 @@ export default function BoosterScanner({
               muted
               playsInline
               onLoadedMetadata={(e) =>
+                setVideoSize({ width: e.currentTarget.videoWidth, height: e.currentTarget.videoHeight })
+              }
+              // Le téléphone qu'on tourne échange largeur et hauteur de l'image.
+              onResize={(e) =>
                 setVideoSize({ width: e.currentTarget.videoWidth, height: e.currentTarget.videoHeight })
               }
             />

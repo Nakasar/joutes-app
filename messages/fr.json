@@ -3468,6 +3468,7 @@
               "cameraAccess": "Impossible d'accéder à la caméra. Vérifiez l'autorisation du navigateur.",
               "cards": "Impossible de charger les cartes de l'extension.",
               "add": "L'ajout de la carte a échoué, elle sera relue.",
+              "undo": "L'annulation a échoué : la carte est toujours dans le booster.",
               "generic": "Une erreur est survenue."
             }
           },

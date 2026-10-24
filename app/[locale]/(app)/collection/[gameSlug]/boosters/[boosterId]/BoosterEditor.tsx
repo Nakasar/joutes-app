@@ -393,12 +393,17 @@ export default function BoosterEditor({
   };
 
   /**
-   * Ajoute la carte et renvoie l'identifiant de l'exemplaire créé, `null` si
-   * l'ajout a échoué. Depuis le scanner, la barre de recherche n'est pas
-   * touchée : elle est sous l'écran de scan, et lui donner le focus ouvrirait
-   * le clavier du téléphone.
+   * Ajoute la carte. `entryId` est l'identifiant de l'exemplaire créé, quand
+   * la réponse le donne. Depuis le scanner, la barre de recherche n'est pas
+   * touchée — elle est sous l'écran de scan, et lui donner le focus ouvrirait
+   * le clavier du téléphone — et le contenu est relu sans l'attendre : le
+   * scan passe à la carte suivante dès que le serveur a répondu.
    */
-  const addCard = async (card: SearchCard, foil = false, { fromScan = false } = {}): Promise<string | null> => {
+  const addCard = async (
+    card: SearchCard,
+    foil = false,
+    { fromScan = false } = {},
+  ): Promise<{ ok: boolean; entryId?: string }> => {
     setBusyAddId(card.id);
     const printing = resolvePrinting(card, printingByCardId[card.id] || undefined);
     const isFoil = printing.foil || foil;
@@ -445,34 +450,49 @@ export default function BoosterEditor({
         // La carte est ajoutée : une réponse illisible ne doit pas la retirer
         // de l'écran, elle prive seulement la valeur de sa mise à jour.
         const data = await res.json().catch(() => ({}));
+        const entryId = typeof data.entryId === "string" ? data.entryId : undefined;
         applyValue(ticket, data.value);
-        await refetchBooster();
-        return typeof data.entryId === "string" ? data.entryId : null;
+        if (entryId) setBoosterCards((prev) => prev.map((c) => (c.id === tempId ? { ...c, id: entryId } : c)));
+        // La carte est sur le serveur : une relecture qui échoue n'y change rien.
+        const refresh = refetchBooster().catch(() => undefined);
+        if (!fromScan) await refresh;
+        return { ok: true, entryId };
       }
       setBoosterCards((prev) => prev.filter((c) => c.id !== tempId));
-      return null;
+      return { ok: false };
     } catch {
       setBoosterCards((prev) => prev.filter((c) => c.id !== tempId));
-      return null;
+      return { ok: false };
     } finally {
       setBusyAddId(null);
     }
   };
 
-  const removeCard = async (entryId: string) => {
+  /** Retire l'exemplaire ; `false` s'il est resté dans le booster. */
+  const removeCard = async (entryId: string): Promise<boolean> => {
     setBusyRemoveId(entryId);
-    const snapshot = boosterCards;
+    const removed = boosterCards.find((c) => c.id === entryId);
     setBoosterCards((prev) => prev.filter((c) => c.id !== entryId));
+    // Seule la carte retirée revient en cas d'échec : le scanner a pu en
+    // ajouter d'autres pendant la requête.
+    const restore = () => {
+      if (removed) setBoosterCards((prev) => (prev.some((c) => c.id === entryId) ? prev : [...prev, removed]));
+    };
     const ticket = ++valueTicketRef.current;
     try {
       const res = await fetch(
         `/api/collection/boosters/${booster.id}/cards?entryId=${encodeURIComponent(entryId)}`,
         { method: "DELETE" }
       );
-      if (res.ok) applyValue(ticket, await res.json().then((data) => data.value, () => undefined));
-      else setBoosterCards(snapshot);
+      if (!res.ok) {
+        restore();
+        return false;
+      }
+      applyValue(ticket, await res.json().then((data) => data.value, () => undefined));
+      return true;
     } catch {
-      setBoosterCards(snapshot);
+      restore();
+      return false;
     } finally {
       setBusyRemoveId(null);
     }

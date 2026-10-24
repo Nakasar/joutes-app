@@ -2910,6 +2910,7 @@
               "cameraAccess": "Kein Zugriff auf die Kamera. Prüfe die Browserberechtigung.",
               "cards": "Die Karten der Erweiterung konnten nicht geladen werden.",
               "add": "Hinzufügen fehlgeschlagen, die Karte wird erneut gelesen.",
+              "undo": "Rückgängig fehlgeschlagen: die Karte ist noch im Booster.",
               "generic": "Ein Fehler ist aufgetreten."
             }
           },

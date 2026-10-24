@@ -37,6 +37,15 @@ describe("readCollectorNumbers", () => {
   it("se passe du code de l'extension quand le total suit le numéro", () => {
     assert.deepEqual(readCollectorNumbers("118/298"), ["118"]);
   });
+
+  it("préfère le numéro collé au code de l'extension à un compteur du texte", () => {
+    assert.deepEqual(readCollectorNumbers("Gain 12/30 points.\nOGN-307/298", "OGN"), ["307"]);
+  });
+
+  it("lit le nombre entier, pas sa fin", () => {
+    assert.deepEqual(readCollectorNumbers("12307/298"), []);
+    assert.deepEqual(readCollectorNumbers("1307/298"), ["1307"]);
+  });
 });
 
 describe("pickScannedCard", () => {

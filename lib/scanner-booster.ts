@@ -29,20 +29,20 @@ const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\
  * Numéros de collection lus sur la carte, dans l'ordre de lecture. La lecture
  * porte sur toute la carte, où traînent coût, puissance et autres chiffres :
  * seul compte un numéro collé au code de l'extension (`OGN-202a`) ou suivi du
- * total de l'extension (`202a/298`).
+ * total de l'extension (`202a/298`). Le premier, plus sûr, l'emporte : un
+ * compteur `12/30` dans le texte de règles ne passe alors pas pour un numéro.
  */
 export function readCollectorNumbers(text: string, setCode?: string): string[] {
-  const number = "(\\d{1,4})([a-z*](?![a-z]))?";
-  const patterns = [`${number}\\s*\\/\\s*\\d{2,4}`];
-  if (setCode) patterns.push(`${escapeRegExp(setCode)}\\s*[-–·.]?\\s*${number}`);
+  // Pas de chiffre juste avant : `1307/298` ne se lit pas `307`.
+  const number = "(?<![\\d/])(\\d{1,4})([a-z*](?![a-z]))?";
+  const read = (pattern: string) =>
+    [...text.matchAll(new RegExp(pattern, "gi"))].map((match) =>
+      normalizeCollectorNumber(`${match[1]}${match[2] ?? ""}`),
+    );
 
-  const found: { index: number; value: string }[] = [];
-  for (const pattern of patterns) {
-    for (const match of text.matchAll(new RegExp(pattern, "gi"))) {
-      found.push({ index: match.index ?? 0, value: normalizeCollectorNumber(`${match[1]}${match[2] ?? ""}`) });
-    }
-  }
-  return [...new Set(found.sort((a, b) => a.index - b.index).map((entry) => entry.value))];
+  const withSetCode = setCode ? read(`${escapeRegExp(setCode)}\\s*[-–·.]?\\s*${number}`) : [];
+  const found = withSetCode.length > 0 ? withSetCode : read(`${number}\\s*\\/\\s*\\d{2,4}`);
+  return [...new Set(found)];
 }
 
 /**

@@ -3468,6 +3468,7 @@
               "cameraAccess": "Impossibile accedere alla fotocamera. Controlla l'autorizzazione del browser.",
               "cards": "Impossibile caricare le carte dell'espansione.",
               "add": "Aggiunta non riuscita, la carta verrà riletta.",
+              "undo": "Annullamento non riuscito: la carta è ancora nella busta.",
               "generic": "Si è verificato un errore."
             }
           },
