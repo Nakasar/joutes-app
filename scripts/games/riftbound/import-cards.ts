@@ -7,6 +7,7 @@ import {fileURLToPath} from 'url';
 import meilisearch, {indexes} from "../../../lib/meilisearch.ts";
 import {importedCardSearchDocument} from "../../../lib/cards/import-search.ts";
 import type {CardPrinting} from "../../../lib/types/card.ts";
+import {riftboundCardName} from "../../../lib/cards/riftbound-name.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -18,6 +19,8 @@ type WebSiteValues = { label: string; values?: { id: string; label: string }[] }
 type WebSiteCard = {
   publicCode: string;
   name: string;
+  /** Titre d'une unité championne, champion lié d'une carte signature… voir `riftboundCardName`. */
+  subtitle?: string | null;
   text?: { label: string; richText: { type: string; body: string } };
   cardType: { label: string; superType: { id: string; label: string }[]; type: { id: string; label: string }[] }
   cardImage: { url: string };
@@ -122,13 +125,11 @@ async function main() {
       throw new Error(`Invalid card code: ${card.publicCode}`);
     }
 
-    const isLegend = card.cardType.type?.[0]?.label === 'Legend';
-    const tag = card.tags?.tags?.[0];
     const types = card.cardType.type?.map((type) => type.label).filter(Boolean);
 
     return {
       id: `${match.groups?.set}${match.groups?.cn}`,
-      name: (isLegend && tag) ? `${tag}, ${card.name}` : card.name,
+      name: riftboundCardName(card),
       type: card.cardType.type[0]?.label,
       types,
       orientation: orientationOf(types ?? []),
