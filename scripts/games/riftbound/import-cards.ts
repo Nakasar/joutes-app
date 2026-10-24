@@ -6,6 +6,7 @@ import {dirname} from 'path';
 import {fileURLToPath} from 'url';
 import meilisearch, {indexes} from "../../../lib/meilisearch.ts";
 import {importedCardSearchDocument} from "../../../lib/cards/import-search.ts";
+import {readCardTranslations, type CardTranslations} from "../../../lib/cards/translations.ts";
 import type {CardPrinting} from "../../../lib/types/card.ts";
 import {riftboundCardName} from "../../../lib/cards/riftbound-name.ts";
 
@@ -92,24 +93,25 @@ async function getCardsFromJson(): Promise<WebSiteCard[]> {
 }
 
 /**
- * Variantes d'impression déjà enregistrées pour ces cartes, par identifiant.
+ * Ce que l'administration a saisi pour ces cartes, par identifiant : variantes
+ * d'impression et traductions.
  *
- * Elles sont saisies depuis l'administration et n'existent nulle part chez la
- * source : la base les garde d'un import à l'autre (on n'y écrit que les champs
- * importés), il faut les relire pour les remettre dans le document de recherche,
- * qui est réécrit en entier.
+ * Rien de cela n'existe chez la source : la base le garde d'un import à
+ * l'autre (on n'y écrit que les champs importés), il faut le relire pour le
+ * remettre dans le document de recherche, qui est réécrit en entier.
  */
-async function readStoredPrintings(ids: string[]): Promise<Map<string, CardPrinting[]>> {
+async function readStoredExtras(ids: string[]): Promise<Map<string, { printings?: CardPrinting[]; translations?: CardTranslations }>> {
   const docs = await db.collection('cards')
-    .find({ gameId: RIFTBOUND_GAME_ID, id: { $in: ids } }, { projection: { _id: 0, id: 1, printings: 1 } })
+    .find({ gameId: RIFTBOUND_GAME_ID, id: { $in: ids } }, { projection: { _id: 0, id: 1, printings: 1, translations: 1 } })
     .toArray();
 
   return new Map(
-    docs.flatMap((doc) =>
-      typeof doc.id === 'string' && Array.isArray(doc.printings) && doc.printings.length > 0
-        ? [[doc.id, doc.printings as CardPrinting[]] as const]
-        : []
-    )
+    docs.flatMap((doc) => {
+      if (typeof doc.id !== 'string') return [];
+      const printings = Array.isArray(doc.printings) && doc.printings.length > 0 ? doc.printings as CardPrinting[] : undefined;
+      const translations = readCardTranslations(doc.translations);
+      return printings || translations ? [[doc.id, { printings, translations }] as const] : [];
+    })
   );
 }
 
@@ -170,7 +172,7 @@ async function main() {
     }, { upsert: true });
   }
 
-  const storedPrintings = await readStoredPrintings(cards.map((card) => card.id));
+  const stored = await readStoredExtras(cards.map((card) => card.id));
 
   // L'index n'est **pas** vidé : il porte aussi les cartes ajoutées à la main
   // depuis l'administration, que la source ne republiera jamais. Chaque carte
@@ -178,7 +180,7 @@ async function main() {
   // place.
   const cardsIndex = meilisearch.index(indexes.riftbound.name);
   await cardsIndex.addDocuments(
-    cards.map((card) => importedCardSearchDocument(card, storedPrintings.get(card.id)))
+    cards.map((card) => importedCardSearchDocument(card, stored.get(card.id)?.printings, stored.get(card.id)?.translations))
   );
 }
 

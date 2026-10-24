@@ -802,6 +802,8 @@
         "printingsTitle": "Print variants",
         "printingsBaseImage": "Card artwork",
         "cardTextTitle": "Card text",
+        "communityTranslation": "Joutes translation, unofficial",
+        "originalText": "Original text",
         "copyCardText": "Copy text",
         "copyCardTextCopied": "Copied!",
         "social": {

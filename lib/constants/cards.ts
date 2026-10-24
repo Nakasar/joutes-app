@@ -33,8 +33,11 @@ export const CARD_PROVENANCE_KEYS = [
   "manuallyEditedBy",
 ] as const;
 
-/** Champs pilotés par d'autres écrans (le bannissement a son propre bouton sur la fiche). */
-export const CARD_MANAGED_KEYS = ["banned"] as const;
+/**
+ * Champs pilotés par d'autres écrans : le bannissement a son propre bouton sur
+ * la fiche, les traductions leur écran (`/admin/translations`).
+ */
+export const CARD_MANAGED_KEYS = ["banned", "translations"] as const;
 
 /** Champs qu'un attribut de jeu ne peut ni porter ni écraser. */
 export const RESERVED_CARD_KEYS: readonly string[] = [

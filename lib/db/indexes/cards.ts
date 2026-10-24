@@ -92,6 +92,12 @@ export const CARD_INDEXES: IndexDefinition[] = [
   },
 
   {
+    collection: "card-glossaries",
+    keys: { gameId: 1, lang: 1 },
+    why: "Le glossaire de traduction d'un jeu dans une langue (fiche carte, écran de traduction)",
+  },
+
+  {
     collection: "card-prices",
     keys: { gameId: 1, cardId: 1, source: 1 },
     options: { unique: true, name: "gameId_cardId_source_unique" },

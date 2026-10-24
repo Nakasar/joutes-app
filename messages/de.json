@@ -802,6 +802,8 @@
         "printingsTitle": "Druckvarianten",
         "printingsBaseImage": "Kartenillustration",
         "cardTextTitle": "Kartentext",
+        "communityTranslation": "Joutes-Übersetzung, inoffiziell",
+        "originalText": "Originaltext",
         "copyCardText": "Text kopieren",
         "copyCardTextCopied": "Kopiert!",
         "social": {
