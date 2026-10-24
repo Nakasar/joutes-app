@@ -25,20 +25,43 @@ import {
 } from "@/lib/db/play-groups";
 import {
     addPlayerByIdentifier,
+    advanceToNextPhase,
     assertCanManage,
     assertCanReadTournament,
+    canManageTournament,
+    buildMatchActor,
+    createAnnouncement,
+    createNextRound,
     createTournament,
+    forfeitMatch,
+    getMatchById,
+    getPhaseById,
     getStandings,
     getTournamentByJoinCode,
     getTournamentById,
+    listMatchesByRound,
     listPhases,
     listPlayerTournamentsForUser,
     listPlayers,
+    listPuzzleSeats,
+    listRounds,
     listTournamentsForUser,
+    pauseTimer,
+    recordActivity,
+    reportMatchResult,
+    resumeTimer,
     sanitizePlayer,
+    startTimer,
+    stopTimer,
     TournamentError,
+    updatePlayer,
     updateTournament,
 } from "@/lib/db/tournaments";
+import {
+    notifyAnnouncement,
+    notifyRoundCompleteIfDone,
+    notifyRoundPaired,
+} from "@/lib/tournaments/notifications";
 import { getUserByEmail, getUserByTagOrId, getUsersByIds } from "@/lib/db/users";
 import { formatDuration } from "@/lib/tournament-timer";
 import { removeSellListItemByCollectionEntryId } from "@/lib/db/sell-lists";
@@ -59,6 +82,16 @@ import { anyUserHasPermission } from "@/lib/db/permissions";
 import { createErrataSchema } from "@/lib/schemas/errata.schema";
 import { locales } from "@/i18n/config";
 import { linkLine, mcpLinks } from "@/lib/mcp/links";
+import {
+    describeRound,
+    describeRoundMatches,
+    describeTournamentStatus,
+    findTournamentPlayer,
+    playerLabel,
+    plannedRoundsLabel,
+} from "@/lib/mcp/tournament-status";
+import { resolveCurrentRound, resolveDisplayPhase } from "@/lib/tournaments/current-round";
+import type { Tournament, TournamentGameResult, TournamentMatch } from "@/lib/types/Tournament";
 import type { ErrataDb, ErrataType } from "@/lib/types/errata";
 import { registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import type { DeckViewCard, DeckViewList } from "@/components/decks/DeckCheckView";
@@ -627,6 +660,21 @@ async function handleListTournaments(_args: Record<string, never>, extra: ToolEx
     );
 }
 
+/** Un tournoi par son id, sinon par son code de participation. */
+async function findTournament(idOrJoinCode: string): Promise<Tournament | null> {
+    const value = idOrJoinCode.trim();
+    return ObjectId.isValid(value)
+        ? getTournamentById(value)
+        : getTournamentByJoinCode(value);
+}
+
+/** Le staff gère le tournoi depuis le portail organisateur, les joueurs depuis le leur. */
+function tournamentLink(tournament: Tournament, userId: string): string {
+    return canManageTournament(tournament, userId)
+        ? mcpLinks.tournament(tournament.id)
+        : mcpLinks.tournamentPlayer(tournament.id);
+}
+
 async function handleGetTournament(
     args: { tournamentIdOrJoinCode: string },
     extra: ToolExtra
@@ -634,18 +682,19 @@ async function handleGetTournament(
     const userId = userIdFrom(extra);
     if (!userId) return AUTH_REQUIRED;
 
-    const tournament = ObjectId.isValid(args.tournamentIdOrJoinCode)
-        ? await getTournamentById(args.tournamentIdOrJoinCode)
-        : await getTournamentByJoinCode(args.tournamentIdOrJoinCode);
+    const tournament = await findTournament(args.tournamentIdOrJoinCode);
     if (!tournament) return errorResult("Tournoi non trouvé.");
 
     await assertCanReadTournament(tournament, userId);
 
-    const [players, phases, standings] = await Promise.all([
+    const [players, phases, standings, rounds] = await Promise.all([
         listPlayers(tournament.id),
         listPhases(tournament.id),
         getStandings(tournament.id),
+        listRounds(tournament.id),
     ]);
+    const activePhase = resolveDisplayPhase(phases, tournament.currentPhaseId);
+    const currentRound = resolveCurrentRound(rounds, activePhase?.id);
 
     const phasesText = phases.map(p => {
         // Le rythme d'une phase change complètement la lecture du tournoi : en
@@ -657,11 +706,11 @@ async function handleGetTournament(
                 ? `, intervalles de ${Math.round(p.intervalHours / 24)} j`
                 : `, intervalles de ${p.intervalHours} h`
             : "";
-        return `- ${p.name} (${p.type}, ${p.status}${pacing})`;
+        return `- ${p.name} (${p.type}, ${p.status}${pacing}) — ${plannedRoundsLabel(p)}`;
     }).join("\n");
     const playersText = players.map(p => {
         const sanitized = sanitizePlayer(p);
-        return `- ${sanitized.displayName}${sanitized.discriminator ? `#${sanitized.discriminator}` : ""} (${sanitized.status})`;
+        return `- ${playerLabel(sanitized)} (${sanitized.status})`;
     }).join("\n");
     const standingsText = standings.slice(0, 20).map((s, index) => {
         // Une phase puzzle se classe au temps : les points et le bilan y sont
@@ -673,10 +722,370 @@ async function handleGetTournament(
     }).join("\n");
 
     return textResult(
-        `**${tournament.name}** (ID: ${tournament.id}) — ${TOURNAMENT_STATUS_LABELS[tournament.status] ?? tournament.status}${tournament.joinCode ? `, code de participation : ${tournament.joinCode}` : ""}\n\n` +
+        `**${tournament.name}** (ID: ${tournament.id}) — ${TOURNAMENT_STATUS_LABELS[tournament.status] ?? tournament.status}${tournament.joinCode ? `, code de participation : ${tournament.joinCode}` : ""}\n` +
+        `${describeRound(activePhase, currentRound)}\n\n` +
         `Phases (${phases.length}) :\n${phasesText || "Aucune phase."}\n\n` +
         `Joueurs (${players.length}) :\n${playersText || "Aucun joueur."}\n\n` +
-        `Classement :\n${standingsText || "Aucun classement."}`
+        `Classement :\n${standingsText || "Aucun classement."}` +
+        linkLine(tournamentLink(tournament, userId))
+    );
+}
+
+/**
+ * Le tournoi dont parle l'utilisateur quand il n'en nomme aucun : celui qu'il
+ * joue en ce moment. S'il en joue plusieurs à la fois, on ne choisit pas à sa
+ * place — mauvaise table, mauvais adversaire —, on les liste.
+ */
+async function resolveCurrentTournament(userId: string): Promise<{ tournament: Tournament } | { result: ToolResult }> {
+    const playing = (await listPlayerTournamentsForUser(userId))
+        .filter(({ tournament, player }) => tournament.status === "in-progress" && player.status !== "dropped");
+    if (playing.length === 1) return { tournament: playing[0].tournament };
+    if (playing.length > 1) {
+        const list = playing
+            .map(({ tournament }) => `- **${tournament.name}** (ID: ${tournament.id})`)
+            .join("\n");
+        return { result: textResult(`Vous jouez plusieurs tournois en cours. Précisez lequel (tournamentIdOrJoinCode) :\n${list}`) };
+    }
+
+    const managed = (await listTournamentsForUser(userId)).filter(t => t.status === "in-progress");
+    if (managed.length === 1) return { tournament: managed[0] };
+    if (managed.length > 1) {
+        const list = managed.map(t => `- **${t.name}** (ID: ${t.id})`).join("\n");
+        return { result: textResult(`Vous gérez plusieurs tournois en cours. Précisez lequel (tournamentIdOrJoinCode) :\n${list}`) };
+    }
+    return {
+        result: textResult("Aucun tournoi en cours où vous êtes inscrit. `list_tournaments` liste vos tournois, passés et à venir."),
+    };
+}
+
+async function handleGetMyTournamentStatus(
+    args: { tournamentIdOrJoinCode?: string },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    let tournament: Tournament | null;
+    if (args.tournamentIdOrJoinCode?.trim()) {
+        tournament = await findTournament(args.tournamentIdOrJoinCode);
+        if (!tournament) return errorResult("Tournoi non trouvé.");
+    } else {
+        const resolved = await resolveCurrentTournament(userId);
+        if ("result" in resolved) return resolved.result;
+        tournament = resolved.tournament;
+    }
+
+    await assertCanReadTournament(tournament, userId);
+
+    const [players, phases, rounds, standings] = await Promise.all([
+        listPlayers(tournament.id),
+        listPhases(tournament.id),
+        listRounds(tournament.id),
+        getStandings(tournament.id),
+    ]);
+    // Un compte ne s'inscrit qu'une fois, mais un ancien retrait ne doit pas
+    // masquer une inscription active.
+    const mine = players.filter(p => p.userId === userId);
+    const me = mine.find(p => p.status !== "dropped") ?? mine[0] ?? null;
+
+    // Mêmes repères que le portail joueur : la phase affichée et sa ronde.
+    const activePhase = resolveDisplayPhase(phases, tournament.currentPhaseId);
+    const currentRound = resolveCurrentRound(rounds, activePhase?.id);
+    const [roundMatches, puzzleSeats] = await Promise.all([
+        currentRound ? listMatchesByRound(tournament.id, currentRound.id) : Promise.resolve([]),
+        me && activePhase?.type === "time-race" ? listPuzzleSeats(tournament.id, activePhase.id) : Promise.resolve([]),
+    ]);
+
+    return textResult(
+        describeTournamentStatus({
+            tournament,
+            phases,
+            activePhase,
+            currentRound,
+            roundMatches,
+            players,
+            standings,
+            me,
+            puzzleSeat: me ? puzzleSeats.find(seat => seat.playerId === me.id) ?? null : null,
+        }) +
+        `\n\nID du tournoi : ${tournament.id}` +
+        linkLine(me ? mcpLinks.tournamentPlayer(tournament.id) : tournamentLink(tournament, userId))
+    );
+}
+
+// --- Tournois : outils de l'organisation ---
+//
+// Mêmes opérations que le portail organisateur, et mêmes suites : journal
+// d'activité et notifications aux joueurs, comme les routes de l'API.
+
+/** Le tournoi, à condition que l'utilisateur en soit organisateur ou arbitre. */
+async function requireManagedTournament(idOrJoinCode: string, userId: string): Promise<Tournament> {
+    const tournament = await findTournament(idOrJoinCode);
+    if (!tournament) throw new TournamentError("not-found", "Tournoi non trouvé.");
+    assertCanManage(tournament, userId);
+    return tournament;
+}
+
+/** La ronde demandée (par numéro, dans la phase affichée), sinon la ronde courante. */
+async function resolveRound(tournament: Tournament, roundNumber?: number) {
+    const [phases, rounds] = await Promise.all([listPhases(tournament.id), listRounds(tournament.id)]);
+    const phase = resolveDisplayPhase(phases, tournament.currentPhaseId);
+    const round = roundNumber !== undefined
+        ? rounds.find(r => r.phaseId === phase?.id && r.number === roundNumber) ?? null
+        : resolveCurrentRound(rounds, phase?.id);
+    return { phase: round ? phases.find(p => p.id === round.phaseId) ?? phase : phase, round };
+}
+
+async function handleGetTournamentRound(
+    args: { tournamentIdOrJoinCode: string; roundNumber?: number },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const tournament = await requireManagedTournament(args.tournamentIdOrJoinCode, userId);
+    const { phase, round } = await resolveRound(tournament, args.roundNumber);
+    if (!round) {
+        return textResult(
+            args.roundNumber !== undefined
+                ? `Pas de ronde ${args.roundNumber} dans la phase ${phase?.name ?? "courante"}.`
+                : describeRound(phase, null)
+        );
+    }
+    const [matches, players] = await Promise.all([
+        listMatchesByRound(tournament.id, round.id),
+        listPlayers(tournament.id),
+    ]);
+    return textResult(
+        `**${tournament.name}** (ID: ${tournament.id})\n` +
+        describeRoundMatches(phase, round, matches, players) +
+        linkLine(mcpLinks.tournamentRound(tournament.id, round.id))
+    );
+}
+
+/** Le match visé : par son id, sinon par sa table dans la ronde courante. */
+async function resolveMatch(
+    tournament: Tournament,
+    ref: { matchId?: string; tableNumber?: number }
+): Promise<TournamentMatch> {
+    if (ref.matchId) {
+        const match = await getMatchById(tournament.id, ref.matchId);
+        if (!match) throw new TournamentError("not-found", "Match non trouvé.");
+        return match;
+    }
+    if (ref.tableNumber === undefined) {
+        throw new TournamentError("invalid", "Indiquez la table (tableNumber) ou l'id du match (matchId).");
+    }
+    const { round } = await resolveRound(tournament);
+    if (!round) throw new TournamentError("not-found", "Aucune ronde en cours.");
+    const match = (await listMatchesByRound(tournament.id, round.id)).find(m => m.tableNumber === ref.tableNumber);
+    if (!match) throw new TournamentError("not-found", `Pas de match à la table ${ref.tableNumber} dans la ronde ${round.number}.`);
+    return match;
+}
+
+async function handleReportTournamentMatchResult(
+    args: {
+        tournamentIdOrJoinCode: string;
+        tableNumber?: number;
+        matchId?: string;
+        outcome: "played" | "forfeit" | "double-loss";
+        results?: { player: string; gamesWon: number }[];
+        draws?: number;
+        winner?: string;
+    },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const tournament = await requireManagedTournament(args.tournamentIdOrJoinCode, userId);
+    const match = await resolveMatch(tournament, args);
+    const players = await listPlayers(tournament.id);
+    const inMatch = players.filter(p => match.players.some(mp => mp.playerId === p.id));
+    const actor = await buildMatchActor(tournament, { kind: "user", userId });
+
+    let updated: TournamentMatch;
+    if (args.outcome === "played") {
+        const phase = await getPhaseById(tournament.id, match.phaseId);
+        if (phase?.resultMode === "points") {
+            return errorResult("Cette phase se rapporte aux points par partie : saisissez le résultat depuis le site.");
+        }
+        if (!args.results?.length) {
+            return errorResult("Indiquez le nombre de parties gagnées par chaque joueur (results).");
+        }
+        // Une partie par manche gagnée, puis les nuls : l'ordre des parties ne
+        // change ni le vainqueur ni le score.
+        const games: TournamentGameResult[] = [];
+        for (const result of args.results) {
+            const lookup = findTournamentPlayer(inMatch, result.player);
+            if ("error" in lookup) return errorResult(`${lookup.error} (joueurs du match : ${inMatch.map(playerLabel).join(", ")})`);
+            for (let i = 0; i < result.gamesWon; i++) games.push({ winnerId: lookup.player.id });
+        }
+        for (let i = 0; i < (args.draws ?? 0); i++) games.push({ winnerId: null });
+        if (games.length === 0) return errorResult("Aucune partie à enregistrer.");
+
+        updated = await reportMatchResult(tournament, match.id, { games }, actor);
+        await recordActivity(tournament.id, "match-reported", { table: updated.tableNumber ?? 0 }, actor.label);
+    } else {
+        let winnerId: string | null = null;
+        if (args.outcome === "forfeit") {
+            if (!args.winner) return errorResult("Indiquez le vainqueur du forfait (winner).");
+            const lookup = findTournamentPlayer(inMatch, args.winner);
+            if ("error" in lookup) return errorResult(lookup.error);
+            winnerId = lookup.player.id;
+        }
+        updated = await forfeitMatch(tournament, match.id, { winnerId }, actor);
+        await recordActivity(
+            tournament.id,
+            "match-forfeited",
+            { table: updated.tableNumber ?? 0, doubleLoss: winnerId ? 0 : 1 },
+            actor.label
+        );
+    }
+    if (updated.status === "completed") await notifyRoundCompleteIfDone(tournament, updated.roundId);
+
+    const { phase, round } = await resolveRound(tournament);
+    const roundText = round && round.id === updated.roundId
+        ? describeRoundMatches(phase, round, await listMatchesByRound(tournament.id, round.id), players)
+        : "";
+    return textResult(
+        `Résultat enregistré${updated.tableNumber !== undefined ? ` à la table ${updated.tableNumber}` : ""}.` +
+        (roundText ? `\n\n${roundText}` : "") +
+        linkLine(mcpLinks.tournamentRound(tournament.id, updated.roundId))
+    );
+}
+
+async function handleStartNextRound(
+    args: { tournamentIdOrJoinCode: string; nextPhase?: boolean },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const tournament = await requireManagedTournament(args.tournamentIdOrJoinCode, userId);
+    let created: Awaited<ReturnType<typeof createNextRound>>;
+    if (args.nextPhase) {
+        created = await advanceToNextPhase(tournament.id, userId);
+        await recordActivity(tournament.id, "phase-advanced", { matches: created.matches.length });
+    } else {
+        const { phase } = await resolveRound(tournament);
+        if (!phase) return errorResult("Le tournoi n'a aucune phase : créez-en une depuis le site.");
+        try {
+            created = await createNextRound(tournament.id, phase.id, userId);
+        } catch (error) {
+            // La dernière ronde prévue est passée : la suite est la phase suivante.
+            if (error instanceof TournamentError && error.code === "conflict" && /Toutes les rondes|terminée/.test(error.message)) {
+                return errorResult(`${error.message}. Pour passer à la phase suivante, rappelez l'outil avec nextPhase: true.`);
+            }
+            throw error;
+        }
+        await recordActivity(tournament.id, "round-created", {
+            round: created.round.number,
+            matches: created.matches.length,
+        });
+    }
+
+    const players = await listPlayers(tournament.id);
+    // Comme la route de l'API : l'appariement se dit aux joueurs, sans bloquer.
+    try {
+        await notifyRoundPaired(tournament, created.round, created.matches, players);
+    } catch (error) {
+        console.error("[MCP] Notification d'appariement échouée", error);
+    }
+    const phase = await getPhaseById(tournament.id, created.round.phaseId);
+    return textResult(
+        `Ronde lancée.\n\n${describeRoundMatches(phase, created.round, created.matches, players)}` +
+        linkLine(mcpLinks.tournamentRound(tournament.id, created.round.id))
+    );
+}
+
+const PLAYER_ACTIONS = {
+    "drop": { updates: { status: "dropped" }, activity: "player-dropped", done: "retiré du tournoi" },
+    "reinstate": { updates: { status: "registered" }, activity: "player-reregistered", done: "réinscrit" },
+    "confirm": { updates: { status: "registered" }, activity: null, done: "inscription confirmée" },
+    "check-in": { updates: { checkedIn: true }, activity: "player-checked-in", done: "pointé présent" },
+    "undo-check-in": { updates: { checkedIn: false }, activity: null, done: "pointage annulé" },
+} as const;
+
+async function handleUpdateTournamentPlayer(
+    args: { tournamentIdOrJoinCode: string; player: string; action: keyof typeof PLAYER_ACTIONS },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const tournament = await requireManagedTournament(args.tournamentIdOrJoinCode, userId);
+    const lookup = findTournamentPlayer(await listPlayers(tournament.id), args.player);
+    if ("error" in lookup) return errorResult(lookup.error);
+
+    const action = PLAYER_ACTIONS[args.action];
+    if (args.action === "reinstate" && lookup.player.status !== "dropped") {
+        return errorResult(`${playerLabel(lookup.player)} n'est pas retiré du tournoi.`);
+    }
+    if (args.action === "confirm" && lookup.player.status !== "pre-registered") {
+        return errorResult(`${playerLabel(lookup.player)} n'est pas en pré-inscription.`);
+    }
+    const player = await updatePlayer(tournament.id, lookup.player.id, { ...action.updates });
+    if (action.activity) await recordActivity(tournament.id, action.activity, { player: player.displayName });
+
+    return textResult(
+        `${playerLabel(player)} : ${action.done}.` +
+        linkLine(mcpLinks.tournamentPlayerSheet(tournament.id, player.id))
+    );
+}
+
+async function handleControlTournamentTimer(
+    args: { tournamentIdOrJoinCode: string; action: "start" | "pause" | "resume" | "stop"; minutes?: number },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const tournament = await requireManagedTournament(args.tournamentIdOrJoinCode, userId);
+    let updated: Tournament;
+    switch (args.action) {
+        case "start":
+            if (!args.minutes) return errorResult("Indiquez la durée du minuteur en minutes (minutes).");
+            updated = await startTimer(tournament.id, Math.round(args.minutes * 60));
+            break;
+        case "pause":
+            updated = await pauseTimer(tournament.id);
+            break;
+        case "resume":
+            updated = await resumeTimer(tournament.id);
+            break;
+        case "stop":
+            updated = await stopTimer(tournament.id);
+            break;
+    }
+    const timer = updated.timer;
+    const state = !timer || (!timer.running && timer.remainingSeconds === undefined)
+        ? "Minuteur arrêté."
+        : timer.running && timer.endsAt
+            ? `Minuteur lancé, fin à ${timer.endsAt.toISOString()} (${formatDuration((timer.endsAt.getTime() - Date.now()) / 1000)} restantes).`
+            : `Minuteur en pause, ${formatDuration(timer.remainingSeconds ?? 0)} restantes.`;
+    return textResult(state + linkLine(mcpLinks.tournamentLive(tournament.id)));
+}
+
+async function handleSendTournamentAnnouncement(
+    args: { tournamentIdOrJoinCode: string; message: string; urgent?: boolean },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const tournament = await requireManagedTournament(args.tournamentIdOrJoinCode, userId);
+    const level = args.urgent ? "urgent" : "info";
+    const announcement = await createAnnouncement(tournament.id, { message: args.message, level, createdBy: userId });
+    await recordActivity(tournament.id, "announcement-sent", { level });
+    try {
+        await notifyAnnouncement(tournament, announcement, await listPlayers(tournament.id));
+    } catch (error) {
+        console.error("[MCP] Notification d'annonce échouée", error);
+    }
+    return textResult(
+        `Annonce${args.urgent ? " urgente" : ""} envoyée aux joueurs de « ${tournament.name} ».` +
+        linkLine(mcpLinks.tournamentLive(tournament.id))
     );
 }
 
@@ -1228,6 +1637,16 @@ export function registerJoutesDataTools(server: McpServer) {
             tournamentIdOrJoinCode: z.string(),
         },
     }, withToolLogging("get_tournament", handleGetTournament));
+    registerJoutesTool(server, "get_my_tournament_status", {
+        title: "Get my tournament status",
+        description:
+            "Où en est l'utilisateur dans un tournoi : sa table et son adversaire pour la ronde en cours (avec le résultat du match s'il est rapporté), " +
+            "son classement, ses points et son bilan, la ronde en cours et le nombre de rondes prévues par phase. " +
+            "Sans tournamentIdOrJoinCode, prend le tournoi en cours où l'utilisateur est inscrit. Lecture seule, réservé aux joueurs inscrits et au staff.",
+        inputSchema: {
+            tournamentIdOrJoinCode: z.string().optional().describe("Id ou code de participation du tournoi. Facultatif : par défaut, le tournoi en cours de l'utilisateur."),
+        },
+    }, withToolLogging("get_my_tournament_status", handleGetMyTournamentStatus));
     registerJoutesTool(server, "create_tournament", {
         title: "Create tournament",
         description: "Créer un tournoi (statut brouillon) dont l'utilisateur sera organisateur.",
@@ -1257,6 +1676,79 @@ export function registerJoutesDataTools(server: McpServer) {
             seed: z.number().int().min(1).optional(),
         },
     }, withToolLogging("add_tournament_player", handleAddTournamentPlayer));
+    registerJoutesTool(server, "get_tournament_round", {
+        title: "Get tournament round",
+        description:
+            "Organisation d'un tournoi : les tables de la ronde en cours (ou d'une ronde donnée de la phase en cours), avec les joueurs, " +
+            "l'état de chaque match (à jouer, rapporté, contesté, résultat) et le nombre de résultats rentrés. Réservé aux organisateurs et arbitres.",
+        inputSchema: {
+            tournamentIdOrJoinCode: z.string(),
+            roundNumber: z.number().int().min(1).optional().describe("Numéro de ronde dans la phase en cours. Par défaut, la ronde en cours."),
+        },
+    }, withToolLogging("get_tournament_round", handleGetTournamentRound));
+    registerJoutesTool(server, "report_tournament_match_result", {
+        title: "Report tournament match result",
+        description:
+            "Organisation d'un tournoi : saisir ou corriger le résultat d'un match, désigné par sa table dans la ronde en cours (ou son id). " +
+            "outcome \"played\" : parties gagnées par joueur (results) et parties nulles (draws). \"forfeit\" : victoire par forfait de winner. " +
+            "\"double-loss\" : double défaite. Le résultat est définitif (pas de confirmation des joueurs). Réservé aux organisateurs et arbitres.",
+        inputSchema: {
+            tournamentIdOrJoinCode: z.string(),
+            tableNumber: z.number().int().min(0).optional(),
+            matchId: z.string().optional(),
+            outcome: z.enum(["played", "forfeit", "double-loss"]).default("played"),
+            results: z.array(z.object({
+                player: z.string().describe("Pseudo, Pseudo#1234 ou id du joueur de tournoi"),
+                gamesWon: z.number().int().min(0),
+            })).optional(),
+            draws: z.number().int().min(0).optional(),
+            winner: z.string().optional().describe("Vainqueur d'un forfait (pseudo, Pseudo#1234 ou id)."),
+        },
+    }, withToolLogging("report_tournament_match_result", handleReportTournamentMatchResult));
+    registerJoutesTool(server, "start_next_round", {
+        title: "Start next round",
+        description:
+            "Organisation d'un tournoi : lancer la ronde suivante de la phase en cours (appariements générés, joueurs notifiés). " +
+            "Tous les matchs de la ronde précédente doivent être terminés. Avec nextPhase: true, clôt la phase en cours, applique le top cut " +
+            "(les non-qualifiés sont retirés) et lance la première ronde de la phase suivante. Réservé aux organisateurs et arbitres.",
+        inputSchema: {
+            tournamentIdOrJoinCode: z.string(),
+            nextPhase: z.boolean().optional(),
+        },
+    }, withToolLogging("start_next_round", handleStartNextRound));
+    registerJoutesTool(server, "update_tournament_player", {
+        title: "Update tournament player",
+        description:
+            "Organisation d'un tournoi : retirer un joueur (drop), le réinscrire (reinstate), confirmer une pré-inscription (confirm), " +
+            "le pointer présent (check-in) ou annuler son pointage (undo-check-in). Réservé aux organisateurs et arbitres.",
+        inputSchema: {
+            tournamentIdOrJoinCode: z.string(),
+            player: z.string().describe("Pseudo, Pseudo#1234 ou id du joueur de tournoi"),
+            action: z.enum(["drop", "reinstate", "confirm", "check-in", "undo-check-in"]),
+        },
+    }, withToolLogging("update_tournament_player", handleUpdateTournamentPlayer));
+    registerJoutesTool(server, "control_tournament_timer", {
+        title: "Control tournament timer",
+        description:
+            "Organisation d'un tournoi : lancer le minuteur de ronde (start, avec minutes), le mettre en pause, le reprendre ou l'arrêter. " +
+            "Réservé aux organisateurs et arbitres.",
+        inputSchema: {
+            tournamentIdOrJoinCode: z.string(),
+            action: z.enum(["start", "pause", "resume", "stop"]),
+            minutes: z.number().positive().max(1440).optional(),
+        },
+    }, withToolLogging("control_tournament_timer", handleControlTournamentTimer));
+    registerJoutesTool(server, "send_tournament_announcement", {
+        title: "Send tournament announcement",
+        description:
+            "Organisation d'un tournoi : publier une annonce sur l'écran du tournoi et la notifier à tous les joueurs inscrits. " +
+            "Réservé aux organisateurs et arbitres.",
+        inputSchema: {
+            tournamentIdOrJoinCode: z.string(),
+            message: z.string().min(1).max(500),
+            urgent: z.boolean().optional(),
+        },
+    }, withToolLogging("send_tournament_announcement", handleSendTournamentAnnouncement));
     registerJoutesTool(server, "create_errata", {
         title: "Create errata",
         description: "Proposer un errata, une clarification ou un ruling sur une ou plusieurs cartes d'un jeu. Cartes données par nom (cardNames) et/ou identifiant (cardIds). Ouvert à tout utilisateur connecté ; la communauté arbitre par les votes.",

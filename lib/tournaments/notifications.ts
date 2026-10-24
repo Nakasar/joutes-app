@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { notifyUser } from "@/lib/services/notifications";
+import { claimRoundCompleteNotice, getRoundById, listMatchesByRound } from "@/lib/db/tournaments";
 import {
   announcementMessage,
   formatDeadline,
@@ -247,4 +248,34 @@ export async function notifyTournamentStatus(
       .filter(isReachable)
       .map((player) => notifyUser(player.userId, title, description, { link }))
   );
+}
+
+/**
+ * Prévient l'organisation quand le dernier résultat d'une ronde vient d'être
+ * confirmé.
+ *
+ * C'est le moment où elle cesse d'avoir à surveiller son écran : le classement
+ * peut être validé et la suite lancée. On ne le dit qu'une fois — au passage du
+ * dernier match, pas à chacun —, et jamais de façon bloquante : une
+ * confirmation de résultat doit aboutir même si l'envoi échoue.
+ */
+export async function notifyRoundCompleteIfDone(tournament: Tournament, roundId: string): Promise<void> {
+  try {
+    const matches = await listMatchesByRound(tournament.id, roundId);
+    if (matches.length === 0) return;
+    if (matches.some((match) => match.status !== "completed")) return;
+
+    const round = await getRoundById(tournament.id, roundId);
+    if (!round) return;
+
+    // Les deux derniers résultats d'une ronde peuvent être confirmés par deux
+    // requêtes qui se croisent : chacune constaterait que tout est rentré. Le
+    // verrou est posé en base, où MongoDB départage — le perdant repart sans
+    // rien envoyer.
+    if (!(await claimRoundCompleteNotice(tournament.id, roundId))) return;
+
+    await notifyRoundComplete(tournament, round);
+  } catch (error) {
+    console.error("Notification de ronde complète échouée", error);
+  }
 }

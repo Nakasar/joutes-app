@@ -31,6 +31,13 @@ export const mcpLinks = {
     wishlist: (wishlistId: string, env?: Env) => joutesUrl(`/wishlists/${segment(wishlistId)}`, env),
     playGroup: (playGroupId: string, env?: Env) => joutesUrl(`/play-groups/${segment(playGroupId)}`, env),
     tournament: (tournamentId: string, env?: Env) => joutesUrl(`/tournaments/${segment(tournamentId)}/organizer`, env),
+    /** Le portail joueur : sa table, son adversaire, son classement. */
+    tournamentPlayer: (tournamentId: string, env?: Env) => joutesUrl(`/tournaments/${segment(tournamentId)}/player`, env),
+    tournamentRound: (tournamentId: string, roundId: string, env?: Env) =>
+        joutesUrl(`/tournaments/${segment(tournamentId)}/organizer/rounds/${segment(roundId)}/matches`, env),
+    tournamentPlayerSheet: (tournamentId: string, playerId: string, env?: Env) =>
+        joutesUrl(`/tournaments/${segment(tournamentId)}/organizer/players/${segment(playerId)}`, env),
+    tournamentLive: (tournamentId: string, env?: Env) => joutesUrl(`/tournaments/${segment(tournamentId)}/organizer/live`, env),
     tournamentPlayers: (tournamentId: string, env?: Env) =>
         joutesUrl(`/tournaments/${segment(tournamentId)}/organizer/players`, env),
     /**
