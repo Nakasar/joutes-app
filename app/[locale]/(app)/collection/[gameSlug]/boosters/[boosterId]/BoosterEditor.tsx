@@ -1194,9 +1194,9 @@ export default function BoosterEditor({
                 e.preventDefault();
                 focusCardAt(0);
               } else if (e.key === "Enter") {
-                // Enter from the search bar validates the first card.
+                // Enter from the search bar validates the first card, Shift+Enter adds it as foil.
                 e.preventDefault();
-                void addCard(results[0]);
+                void addCard(results[0], e.shiftKey);
               }
             }}
           >

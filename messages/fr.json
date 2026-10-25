@@ -3515,7 +3515,7 @@
           "emptyBooster": "Ce booster est vide. Recherchez des cartes à ajouter.",
           "addCards": "Ajouter des cartes",
           "searchPlaceholder": "Rechercher une carte…",
-          "searchHint": "Astuce : « e:OGN » filtre l'extension, « cn:001 » le numéro, et les attributs du jeu s'écrivent « domain:fury », « energy<=3 ».",
+          "searchHint": "Astuce : « e:OGN » filtre l'extension, « cn:001 » le numéro, et les attributs du jeu s'écrivent « domain:fury », « energy<=3 ». Entrée ajoute la première carte, Maj + Entrée l'ajoute en foil ; dans la grille, F ajoute en foil la carte sélectionnée.",
           "noResults": "Aucune carte trouvée.",
           "addCard": "Ajouter {name}",
           "foil": "Foil",

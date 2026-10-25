@@ -2957,7 +2957,7 @@
           "emptyBooster": "Dieser Booster ist leer. Suche nach Karten zum Hinzufügen.",
           "addCards": "Karten hinzufügen",
           "searchPlaceholder": "Karte suchen…",
-          "searchHint": "Tipp: „e:OGN“ filtert die Edition, „cn:001“ die Nummer, und die Attribute des Spiels schreibt man „domain:fury“, „energy<=3“.",
+          "searchHint": "Tipp: „e:OGN“ filtert die Edition, „cn:001“ die Nummer, und die Attribute des Spiels schreibt man „domain:fury“, „energy<=3“. Enter fügt die erste Karte hinzu, Umschalt + Enter als Foil; im Raster fügt F die ausgewählte Karte als Foil hinzu.",
           "noResults": "Keine Karten gefunden.",
           "addCard": "{name} hinzufügen",
           "foil": "Foil",

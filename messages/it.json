@@ -3515,7 +3515,7 @@
           "emptyBooster": "Questa bustina è vuota. Cerca delle carte da aggiungere.",
           "addCards": "Aggiungi carte",
           "searchPlaceholder": "Cerca una carta…",
-          "searchHint": "Suggerimento: “e:OGN” filtra l'espansione, “cn:001” il numero, e gli attributi del gioco si scrivono “domain:fury”, “energy<=3”.",
+          "searchHint": "Suggerimento: “e:OGN” filtra l'espansione, “cn:001” il numero, e gli attributi del gioco si scrivono “domain:fury”, “energy<=3”. Invio aggiunge la prima carta, Maiusc + Invio la aggiunge foil; nella griglia, F aggiunge foil la carta selezionata.",
           "noResults": "Nessuna carta trovata.",
           "addCard": "Aggiungi {name}",
           "foil": "Foil",

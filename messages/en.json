@@ -3515,7 +3515,7 @@
           "emptyBooster": "This booster is empty. Search for cards to add.",
           "addCards": "Add cards",
           "searchPlaceholder": "Search for a card…",
-          "searchHint": "Tip: “e:OGN” filters the set, “cn:001” the number, and the game's attributes are written “domain:fury”, “energy<=3”.",
+          "searchHint": "Tip: “e:OGN” filters the set, “cn:001” the number, and the game's attributes are written “domain:fury”, “energy<=3”. Enter adds the first card, Shift + Enter adds it as foil; in the grid, F adds the selected card as foil.",
           "noResults": "No cards found.",
           "addCard": "Add {name}",
           "foil": "Foil",
