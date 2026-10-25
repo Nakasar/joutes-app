@@ -82,6 +82,9 @@ type SortDirection = "asc" | "desc";
 
 const SORT_KEYS: SortKey[] = ["default", "name", "collectorNumber", "type"];
 
+/** Ordre du booster : la plus récente en premier ; les autres critères vont croissant. */
+const defaultSortDirection = (key: SortKey): SortDirection => (key === "default" ? "desc" : "asc");
+
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
 /** Une requête de possession par écran de résultats : inutile de les découper plus fin. */
@@ -193,7 +196,8 @@ export default function BoosterEditor({
   const [typeFilter, setTypeFilter] = useState<string>(ALL);
   const [domainFilter, setDomainFilter] = useState<string>(ALL);
   const [sortKey, setSortKey] = useState<SortKey>("default");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  // L'ordre du booster montre d'abord la dernière carte ajoutée.
+  const [sortDirection, setSortDirection] = useState<SortDirection>(defaultSortDirection("default"));
   const [scannerOpen, setScannerOpen] = useState(false);
   // Le foil du scanner reste choisi d'une carte à l'autre, et d'un scan au suivant.
   const [scanFoil, setScanFoil] = useState(false);
@@ -1040,7 +1044,13 @@ export default function BoosterEditor({
                   </SelectContent>
                 </Select>
               ) : null}
-              <Select value={sortKey} onValueChange={(value) => setSortKey(value as SortKey)}>
+              <Select
+                value={sortKey}
+                onValueChange={(value) => {
+                  setSortKey(value as SortKey);
+                  setSortDirection(defaultSortDirection(value as SortKey));
+                }}
+              >
                 <SelectTrigger className="w-auto min-w-[150px]" aria-label={t("boosters.sortBy")}>
                   <SelectValue />
                 </SelectTrigger>
@@ -1194,9 +1204,9 @@ export default function BoosterEditor({
                 e.preventDefault();
                 focusCardAt(0);
               } else if (e.key === "Enter") {
-                // Enter from the search bar validates the first card.
+                // Enter from the search bar validates the first card, Shift+Enter adds it as foil.
                 e.preventDefault();
-                void addCard(results[0]);
+                void addCard(results[0], e.shiftKey);
               }
             }}
           >
