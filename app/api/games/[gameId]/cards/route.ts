@@ -4,7 +4,7 @@ import meilisearch, {cardIndexFor, isUndeclaredCriteriaError} from "@/lib/meilis
 import db from "@/lib/mongodb";
 import {Game} from "@/lib/types/Game";
 import {getGameCardFilterFacets} from "@/lib/db/cards";
-import {getGameLanguages} from "@/lib/constants/card-languages";
+import {catalogLanguagesForSearch, getGameLanguages} from "@/lib/constants/card-languages";
 import {withMarketPrices} from "@/lib/db/card-prices";
 import {
   buildFacetFilters,
@@ -19,7 +19,7 @@ import {
   parseSearchSyntax,
 } from "@/lib/cards/search-syntax";
 
-type CardFilterValues = { setCodes: string[]; types: string[]; languages: string[] };
+type CardFilterValues = { setCodes: string[]; types: string[]; languages: string[]; catalogLanguages: string[] };
 
 type SearchCard = BoosterCard & {
   type?: string;
@@ -32,7 +32,7 @@ type SearchCard = BoosterCard & {
 async function getFilterValues(gameSlug: string): Promise<CardFilterValues> {
   const game = await db.collection<Game>("games").findOne({ slug: gameSlug });
   if (!game) {
-    return { setCodes: [], types: [], languages: [] };
+    return { setCodes: [], types: [], languages: [], catalogLanguages: [] };
   }
 
   const cardsCollection = db.collection<{ setCode?: string; type?: string; lang?: string }>("cards");
@@ -42,14 +42,13 @@ async function getFilterValues(gameSlug: string): Promise<CardFilterValues> {
   const types = (await cardsCollection.distinct("type", { gameId: game._id }))
     .filter((value): value is string => typeof value === "string" && value.length > 0)
     .sort();
+  const catalogLanguages = (await cardsCollection.distinct("lang", { gameId: game._id }))
+    .filter((value): value is string => typeof value === "string" && value.length > 0);
   // Les langues réglées dans l'administration, sinon celles du catalogue : un
   // jeu peut proposer une langue dont aucune carte n'est encore importée.
-  const languages = getGameLanguages(
-    game,
-    game.languages === undefined ? await cardsCollection.distinct("lang", { gameId: game._id }) : [],
-  );
+  const languages = getGameLanguages(game, catalogLanguages);
 
-  return { setCodes, types, languages };
+  return { setCodes, types, languages, catalogLanguages };
 }
 
 async function search({ gameId, searchQuery, lang, setCode, type, limit, offset, criteriaParams, facets, filterValues }: { gameId: string; searchQuery: string; lang: string; setCode: string; type?: string; limit?: number; offset?: number; criteriaParams: URLSearchParams; facets: CardFilterFacet[]; filterValues: CardFilterValues }): Promise<{
@@ -81,18 +80,12 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
   const queryOptions: { filter: string[]; limit?: number; offset?: number } = { filter: [] };
   let queryString = "";
 
-  // La langue vient d'un paramètre d'URL : elle est échappée comme n'importe
-  // quelle valeur qui entre dans une expression de filtre.
-  if (effectiveLang === 'all') {
-    // no language filter
-  } else if (effectiveLang !== 'en') {
-    queryOptions.filter.push(
-      `lang IN ["en", ${quoteFilterValue(effectiveLang)}]`,
-    );
-  } else {
-    queryOptions.filter.push(
-      `lang IN ["en"]`,
-    );
+  // La langue demandée est celle des cartes physiques : elle retombe sur les
+  // fiches que le catalogue possède (cf. `catalogLanguagesForSearch`). Elle
+  // vient d'un paramètre d'URL et est échappée comme toute valeur de filtre.
+  const acceptedLanguages = catalogLanguagesForSearch(effectiveLang, filterValues.catalogLanguages);
+  if (acceptedLanguages) {
+    queryOptions.filter.push(`lang IN [${acceptedLanguages.map((value) => quoteFilterValue(value)).join(", ")}]`);
   }
 
   const setRegex = /(?: e|^e|^set| set):(?<set>[\w*]+)/gm;

@@ -634,14 +634,15 @@ export async function findCardByAiIdentification(
     name?: string | null;
     setCode?: string | null;
     collectorNumber?: string | null;
-    lang?: string | null;
+    /** Valeurs de `lang` acceptées (cf. `catalogLanguagesForSearch`) ; `null` pour toutes. */
+    languages?: string[] | null;
   }
 ): Promise<{ id: string; name: string } | null> {
-  const { name, setCode, collectorNumber, lang } = identification;
+  const { name, setCode, collectorNumber, languages } = identification;
 
   const baseFilter: Record<string, unknown> = { gameId };
-  if (lang) {
-    baseFilter.lang = lang;
+  if (languages) {
+    baseFilter.lang = { $in: languages };
   }
 
   const collection = db.collection<{ id: string; name: string }>("cards");

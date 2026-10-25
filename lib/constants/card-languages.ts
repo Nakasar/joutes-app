@@ -13,7 +13,7 @@ import { collectionLanguage, type CollectionLanguage } from "@/lib/schemas/colle
  *
  * Une langue déclarée n'a pas besoin d'exister au catalogue : un jeu dont on
  * n'a importé que l'anglais peut proposer le français, et la recherche retombe
- * alors sur les cartes anglaises (cf. `app/api/games/[gameId]/cards`).
+ * alors sur les cartes anglaises (cf. `catalogLanguagesForSearch`).
  */
 export const CARD_LANGUAGES = collectionLanguage.options.map(
   (code) => code.toLowerCase() as Lowercase<CollectionLanguage>,
@@ -56,4 +56,30 @@ export function getGameLanguages(game: LanguagesSource, catalogLanguages: readon
   ].sort();
 
   return fromCatalog.length > 0 ? fromCatalog : [...FALLBACK_LANGUAGES];
+}
+
+/**
+ * Les valeurs de `lang` du catalogue qui servent une recherche dans la langue
+ * `requested` (celle d'un booster, d'une carte scannée…), ou `null` pour ne pas
+ * filtrer.
+ *
+ * La langue demandée est celle des cartes physiques, pas celle des fiches : une
+ * fiche du catalogue vaut pour toutes les impressions de la carte, et
+ * l'exemplaire ajouté à la collection porte la langue demandée. On prend donc
+ * la langue demandée et l'anglais, langue de référence de la plupart des
+ * imports ; si aucune des deux n'existe au catalogue (un jeu importé en
+ * français seulement, où l'on cherche une carte anglaise), toutes ses langues
+ * conviennent.
+ */
+export function catalogLanguagesForSearch(requested: string, catalogLanguages: readonly unknown[]): string[] | null {
+  if (!requested || requested === "all") {
+    return null;
+  }
+
+  const accepted = requested === "en" ? ["en"] : ["en", requested];
+  const catalog = catalogLanguages.filter((value): value is string => typeof value === "string" && value.length > 0);
+  if (catalog.length === 0 || accepted.some((lang) => catalog.includes(lang))) {
+    return accepted;
+  }
+  return null;
 }
