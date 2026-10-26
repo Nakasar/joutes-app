@@ -37,9 +37,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ gam
     return NextResponse.json({ match: null });
   }
 
+  const requestedLang = typeof lang === "string" && lang.trim() ? lang.trim() : undefined;
   const match = await matchCardNameInMeilisearch(game.slug, trimmedText, {
-    lang: typeof lang === "string" && lang.trim() ? lang.trim() : undefined,
-    catalogLanguages: await getCatalogLanguages(game.id),
+    lang: requestedLang,
+    catalogLanguages: requestedLang ? await getCatalogLanguages(game.id) : [],
   });
 
   return NextResponse.json({ match });

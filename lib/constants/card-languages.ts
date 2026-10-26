@@ -67,9 +67,10 @@ export function getGameLanguages(game: LanguagesSource, catalogLanguages: readon
  * fiche du catalogue vaut pour toutes les impressions de la carte, et
  * l'exemplaire ajouté à la collection porte la langue demandée. On prend donc
  * la langue demandée et l'anglais, langue de référence de la plupart des
- * imports ; si aucune des deux n'existe au catalogue (un jeu importé en
- * français seulement, où l'on cherche une carte anglaise), toutes ses langues
- * conviennent.
+ * imports. Si aucune des deux n'existe au catalogue (un jeu importé en
+ * français seulement, où l'on cherche une carte anglaise), on retombe sur une
+ * seule de ses langues, la première dans l'ordre alphabétique : une carte
+ * importée en plusieurs langues n'apparaît ainsi qu'une fois.
  */
 export function catalogLanguagesForSearch(requested: string, catalogLanguages: readonly unknown[]): string[] | null {
   if (!requested || requested === "all") {
@@ -77,9 +78,11 @@ export function catalogLanguagesForSearch(requested: string, catalogLanguages: r
   }
 
   const accepted = requested === "en" ? ["en"] : ["en", requested];
-  const catalog = catalogLanguages.filter((value): value is string => typeof value === "string" && value.length > 0);
+  const catalog = catalogLanguages
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .sort();
   if (catalog.length === 0 || accepted.some((lang) => catalog.includes(lang))) {
     return accepted;
   }
-  return null;
+  return [catalog[0]];
 }

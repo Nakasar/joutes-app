@@ -57,8 +57,12 @@ describe("catalogLanguagesForSearch", () => {
   });
 
   it("garde les fiches françaises pour une carte anglaise d'un jeu importé en français seulement", () => {
-    assert.equal(catalogLanguagesForSearch("en", ["fr"]), null);
-    assert.equal(catalogLanguagesForSearch("de", ["fr"]), null);
+    assert.deepEqual(catalogLanguagesForSearch("en", ["fr"]), ["fr"]);
+    assert.deepEqual(catalogLanguagesForSearch("de", ["fr"]), ["fr"]);
+  });
+
+  it("ne retombe que sur une langue du catalogue, pour ne pas doubler les cartes", () => {
+    assert.deepEqual(catalogLanguagesForSearch("en", ["ja", "fr"]), ["fr"]);
   });
 
   it("garde le filtre tant que le catalogue est inconnu", () => {

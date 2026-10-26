@@ -44,11 +44,12 @@ async function resolveMatch(
 ): Promise<ScannerMatch | null> {
   // La langue lue sur la carte est celle de l'impression : elle retombe sur les
   // fiches que le catalogue possède, comme la recherche de cartes.
-  const catalogLanguages = await getCatalogLanguages(gameObjectId.toHexString());
+  const catalogLanguages = identification.lang ? await getCatalogLanguages(gameObjectId.toHexString()) : [];
   const exactMatch = await findCardByAiIdentification(gameObjectId, {
     name: identification.cardName,
     setCode: identification.setCode,
     collectorNumber: identification.collectorNumber,
+    lang: identification.lang,
     languages: identification.lang ? catalogLanguagesForSearch(identification.lang, catalogLanguages) : null,
   });
   if (exactMatch) {
