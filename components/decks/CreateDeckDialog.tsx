@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Game } from "@/lib/types/Game.ts";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -22,6 +22,12 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils.ts";
+import { toDeckCardInfo, type RawCard } from "@/lib/decks/card-info.ts";
+import { deckLegality, deckSize, type DeckCardInfo, type DeckCards } from "@/lib/decks/contents.ts";
+import { routeCardToZone } from "@/lib/decks/routing.ts";
+import { applyDeckText, normalizeCardName, parseDeckText } from "@/lib/decks/text.ts";
+import { defaultDeckZone, getDeckZones, zoneCounterLabel } from "@/lib/decks/zones.ts";
 import { DECK_VISIBILITIES, DECK_VISIBILITY_LABELS, type Deck, type DeckVisibility } from "@/lib/types/Deck.ts";
 import { toast } from "sonner";
 
@@ -38,6 +44,82 @@ type CreateDeckDialogProps = {
    */
   lockedGameId?: string;
 };
+
+/** Le temps de finir de coller ou de taper avant d'interroger le catalogue. */
+const IMPORT_DEBOUNCE_MS = 500;
+/** Au-delà, les suggestions de remplacement coûtent plus qu'elles n'aident. */
+const MAX_SUGGESTIONS = 10;
+
+type ImportPreview = {
+  cards: DeckCards;
+  unmatched: string[];
+  /** Nom du catalogue proposé pour une ligne non reconnue. */
+  suggestions: Record<string, string>;
+};
+
+/**
+ * Lecture de la liste collée, au fil de la saisie : la même que celle de
+ * l'onglet « Texte » de l'éditeur — mêmes en-têtes, même appariement par nom,
+ * même rangement par type pour les lignes sans section.
+ */
+async function previewDeckText(gameSlug: string, text: string, zones: ReturnType<typeof getDeckZones>, signal: AbortSignal): Promise<ImportPreview | null> {
+  const parsed = parseDeckText(text, zones);
+  if (parsed.lines.length === 0) return null;
+
+  const names = [...new Set(parsed.lines.map((line) => line.name))];
+  const response = await fetch(`/api/games/${gameSlug}/deck-cards`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ names }),
+    signal,
+  });
+  if (!response.ok) return null;
+
+  const data: { matches?: Record<string, RawCard> } = await response.json();
+  const byName = new Map<string, DeckCardInfo>();
+  for (const [name, raw] of Object.entries(data.matches ?? {})) {
+    byName.set(normalizeCardName(name), toDeckCardInfo(raw));
+  }
+  const byId = new Map([...byName.values()].map((card) => [card.id, card]));
+
+  const applied = applyDeckText(
+    parsed,
+    (name) => byName.get(normalizeCardName(name))?.id,
+    (cardId, cards) => {
+      const card = byId.get(cardId);
+      return card ? routeCardToZone(card, zones, cards) : defaultDeckZone(zones);
+    }
+  );
+
+  // Une faute de frappe ne doit pas coûter la ligne : la recherche, tolérante
+  // aux fautes, propose le nom le plus proche.
+  const suggestions: Record<string, string> = {};
+  await Promise.all(
+    applied.unmatched.slice(0, MAX_SUGGESTIONS).map(async (name) => {
+      const params = new URLSearchParams({ searchQuery: name, limit: "1" });
+      const found = await fetch(`/api/games/${gameSlug}/cards?${params.toString()}`, { signal })
+        .then((res) => (res.ok ? res.json() : null))
+        .catch(() => null);
+      const suggestion = found?.cards?.[0]?.name;
+      if (typeof suggestion === "string" && normalizeCardName(suggestion) !== normalizeCardName(name)) {
+        suggestions[name] = suggestion;
+      }
+    })
+  );
+
+  return { cards: applied.cards, unmatched: applied.unmatched, suggestions };
+}
+
+/** Remplace un nom de carte dans la liste collée, sur les lignes qui le portent. */
+function replaceCardName(text: string, from: string, to: string): string {
+  return text
+    .split(/\r?\n/)
+    .map((line) => {
+      const trimmed = line.trimEnd();
+      return trimmed.endsWith(from) ? trimmed.slice(0, trimmed.length - from.length) + to : line;
+    })
+    .join("\n");
+}
 
 export default function CreateDeckDialog({
   games,
@@ -56,6 +138,42 @@ export default function CreateDeckDialog({
     visibility: "private" as DeckVisibility,
   };
   const [formData, setFormData] = useState(emptyForm);
+  const [preview, setPreview] = useState<ImportPreview | null>(null);
+  const [reading, setReading] = useState(false);
+
+  const game = games.find((entry) => entry.id === formData.gameId);
+  const gameSlug = game?.slug ?? game?.id;
+  const zones = useMemo(() => getDeckZones(game), [game]);
+
+  useEffect(() => {
+    if (!gameSlug || !formData.decklist.trim()) {
+      setPreview(null);
+      setReading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setReading(true);
+    const timer = window.setTimeout(() => {
+      previewDeckText(gameSlug, formData.decklist, zones, controller.signal)
+        .then((result) => {
+          if (!controller.signal.aborted) setPreview(result);
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setPreview(null);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setReading(false);
+        });
+    }, IMPORT_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [formData.decklist, gameSlug, zones]);
+
+  const importedCount = preview ? deckSize(preview.cards, zones) : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +183,9 @@ export default function CreateDeckDialog({
       const response = await fetch("/api/decks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        // La liste appariée part avec le deck : il s'ouvre déjà rempli dans
+        // l'éditeur. Le texte brut suit aussi, pour les lignes non reconnues.
+        body: JSON.stringify({ ...formData, ...(preview && importedCount > 0 ? { cards: preview.cards } : {}) }),
       });
 
       if (response.ok) {
@@ -74,6 +194,7 @@ export default function CreateDeckDialog({
           description: "Votre deck a été créé avec succès.",
         });
         setFormData(emptyForm);
+        setPreview(null);
         onSuccess(deck);
       } else {
         const data = await response.json();
@@ -101,7 +222,7 @@ export default function CreateDeckDialog({
           <DialogHeader>
             <DialogTitle>Créer un nouveau deck</DialogTitle>
             <DialogDescription>
-              Ajoutez un nouveau deck à votre collection.
+              Partez de zéro, ou collez une liste : elle remplit le deck dès sa création.
             </DialogDescription>
           </DialogHeader>
 
@@ -183,19 +304,87 @@ export default function CreateDeckDialog({
 
             {/* Decklist */}
             <div className="space-y-2">
-              <Label htmlFor="decklist">Liste de cartes (optionnel)</Label>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <Label htmlFor="decklist">
+                  Importer une liste <span className="font-normal text-muted-foreground">(optionnel)</span>
+                </Label>
+                <span className="text-xs text-muted-foreground">texte ou export Piltover / TCG Arena</span>
+              </div>
               <Textarea
                 id="decklist"
                 value={formData.decklist}
                 onChange={(e) => setFormData({ ...formData, decklist: e.target.value })}
-                placeholder="3x Carte A&#10;2x Carte B&#10;1x Carte C..."
-                rows={10}
+                placeholder={"Legend:\n1 Loose Cannon\nMainDeck:\n3 Get Excited!\n…"}
+                rows={8}
                 disabled={isLoading}
                 className="field-sizing-fixed font-mono text-sm"
               />
-              <p className="text-xs text-muted-foreground">
-                Notez la composition complète de votre deck
-              </p>
+              {formData.decklist.trim() && (
+                <div className="space-y-2.5 rounded-lg border bg-muted/30 p-3" aria-live="polite">
+                  <div className="flex items-center justify-between gap-2 text-sm">
+                    <span className="font-medium">Lecture de la liste</span>
+                    {reading && <Loader2 className="size-4 animate-spin text-muted-foreground" aria-label="Lecture en cours" />}
+                  </div>
+                  {!formData.gameId ? (
+                    <p className="text-xs text-muted-foreground">Choisissez le jeu pour lire la liste.</p>
+                  ) : preview ? (
+                    <>
+                      <div className="flex flex-wrap gap-1.5">
+                        {deckLegality(preview.cards, zones)
+                          .filter((row) => row.count > 0 || row.zone.min !== undefined)
+                          .map((row) => (
+                            <span
+                              key={row.zone.key}
+                              className={cn(
+                                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs",
+                                row.compliant
+                                  ? "bg-muted text-foreground"
+                                  : "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                              )}
+                            >
+                              {row.zone.short}
+                              <strong className="font-mono">{zoneCounterLabel(row.zone, row.count, row.contributed)}</strong>
+                            </span>
+                          ))}
+                      </div>
+                      {preview.unmatched.length > 0 && (
+                        <div className="space-y-1.5 border-t pt-2">
+                          <p className="text-xs text-amber-700 dark:text-amber-400">
+                            {preview.unmatched.length} ligne{preview.unmatched.length > 1 ? "s" : ""} non reconnue
+                            {preview.unmatched.length > 1 ? "s" : ""}, elle{preview.unmatched.length > 1 ? "s" : ""} ne
+                            {preview.unmatched.length > 1 ? " seront" : " sera"} pas ajoutée{preview.unmatched.length > 1 ? "s" : ""}
+                          </p>
+                          {preview.unmatched.map((name) => (
+                            <div key={name} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                              <span className="font-mono text-xs">{name}</span>
+                              {preview.suggestions[name] && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    setFormData({
+                                      ...formData,
+                                      decklist: replaceCardName(formData.decklist, name, preview.suggestions[name]),
+                                    })
+                                  }
+                                >
+                                  Remplacer par « {preview.suggestions[name]} »
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    !reading && <p className="text-xs text-muted-foreground">Aucune carte reconnue pour l&apos;instant.</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Sans en-têtes de section, chaque carte est rangée selon son type, comme dans l&apos;éditeur.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Visibility */}
@@ -231,9 +420,14 @@ export default function CreateDeckDialog({
             >
               Annuler
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            {importedCount > 0 && (
+              <span className="mr-auto self-center text-sm text-muted-foreground">
+                {importedCount} carte{importedCount > 1 ? "s" : ""} seront ajoutée{importedCount > 1 ? "s" : ""}
+              </span>
+            )}
+            <Button type="submit" disabled={isLoading || reading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Créer le deck
+              Créer et ouvrir l&apos;éditeur
             </Button>
           </DialogFooter>
         </form>

@@ -21,6 +21,8 @@ const ZONE_ALIASES: Record<string, DeckZoneKey> = {
   "légendes": "legend",
   champion: "champions",
   champions: "champions",
+  "chosen champion": "champions",
+  "champion choisi": "champions",
   deck: "maindeck",
   main: "maindeck",
   maindeck: "maindeck",
@@ -49,6 +51,11 @@ export type ParsedDeckLine = {
   zone: DeckZoneKey;
   name: string;
   quantity: number;
+  /**
+   * Vrai quand aucun en-tête ne précédait la ligne : sa zone est celle par
+   * défaut, faute de mieux, et le rangement par type peut la corriger.
+   */
+  inferred?: boolean;
 };
 
 export type ParsedDeckText = {
@@ -82,6 +89,7 @@ export function parseDeckText(text: string, zones: DeckZone[]): ParsedDeckText {
   const sections: DeckZoneKey[] = [];
   const ignored: string[] = [];
   let current = defaultDeckZone(zones);
+  let headed = false;
 
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim();
@@ -92,6 +100,7 @@ export function parseDeckText(text: string, zones: DeckZone[]): ParsedDeckText {
       const zone = known.get(normalizeHeader(headerMatch[1]));
       if (zone) {
         current = zone;
+        headed = true;
         if (!sections.includes(zone)) {
           sections.push(zone);
         }
@@ -116,7 +125,7 @@ export function parseDeckText(text: string, zones: DeckZone[]): ParsedDeckText {
     if (existing) {
       existing.quantity += quantity;
     } else {
-      lines.push({ zone: current, name, quantity });
+      lines.push({ zone: current, name, quantity, ...(headed ? {} : { inferred: true }) });
     }
   }
 
@@ -168,7 +177,13 @@ export type DeckTextApplication = {
  */
 export function applyDeckText(
   parsed: ParsedDeckText,
-  resolve: (name: string) => string | undefined
+  resolve: (name: string) => string | undefined,
+  /**
+   * Zone d'une ligne sans en-tête, d'après la carte appariée et ce qui est
+   * déjà rangé : une liste collée sans sections met sa légende et ses runes
+   * à leur place plutôt que dans le deck principal.
+   */
+  route?: (cardId: string, cards: DeckCards) => DeckZoneKey
 ): DeckTextApplication {
   const cards: DeckCards = {};
   const unmatched: string[] = [];
@@ -183,15 +198,29 @@ export function applyDeckText(
     }
 
     matched += 1;
-    const entries: DeckCardEntry[] = cards[line.zone] ?? [];
-    const existing = entries.find((entry) => entry.cardId === cardId);
-    if (existing) {
-      existing.quantity += line.quantity;
+
+    const add = (zone: DeckZoneKey, quantity: number) => {
+      const entries: DeckCardEntry[] = cards[zone] ?? [];
+      const existing = entries.find((entry) => entry.cardId === cardId);
+      if (existing) {
+        existing.quantity += quantity;
+      } else {
+        entries.push({ cardId, quantity });
+      }
+      cards[zone] = entries;
+      return Boolean(existing);
+    };
+
+    if (line.inferred && route) {
+      // Exemplaire par exemplaire : « 3 Jinx » sans en-tête donne un champion
+      // choisi et deux cartes du deck principal, pas trois champions choisis.
+      if (add(route(cardId, cards), 1)) merged += 1;
+      for (let copy = 1; copy < line.quantity; copy += 1) {
+        add(route(cardId, cards), 1);
+      }
+    } else if (add(line.zone, line.quantity)) {
       merged += 1;
-    } else {
-      entries.push({ cardId, quantity: line.quantity });
     }
-    cards[line.zone] = entries;
   }
 
   return { cards, matched, unmatched, merged };

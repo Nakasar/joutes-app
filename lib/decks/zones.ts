@@ -50,6 +50,14 @@ export type DeckZoneBounds = {
   max?: number;
   /** La zone compte dans la courbe de coûts (le deck principal, en pratique). */
   curve?: boolean;
+  /**
+   * Zone dont le plancher et le plafond comptent aussi les cartes de celle-ci.
+   *
+   * Le champion choisi de Riftbound est mis de côté, mais il fait partie des
+   * 40 cartes du deck principal : un deck de 39 cartes plus son champion est
+   * conforme. Sans ce lien, l'éditeur réclamerait une 41e carte.
+   */
+  countsTowards?: DeckZoneKey;
 };
 
 /**
@@ -111,7 +119,7 @@ function toDeckZone(zone: DeckZoneBounds): DeckZone {
  */
 const RIFTBOUND_ZONES: DeckZoneBounds[] = [
   { key: "legend", label: "Légende", short: "Légende", min: 1, max: 1 },
-  { key: "champions", label: "Champions", short: "Champions", min: 1, max: 3 },
+  { key: "champions", label: "Champion choisi", short: "Champion", min: 1, max: 1, countsTowards: "maindeck" },
   { key: "maindeck", label: "Deck principal", short: "Principal", min: 40, curve: true },
   { key: "runes", label: "Runes", short: "Runes", min: 12, max: 12 },
   { key: "battlefields", label: "Battlefields", short: "Battlefields", min: 3, max: 3 },
@@ -155,17 +163,30 @@ export function getDeckZones(
   game?: { slug?: string; deckBuilder?: GameDeckBuilder } | null
 ): DeckZone[] {
   const configured = game?.deckBuilder?.zones;
+  const bounds = configured && configured.length > 0 ? configured : shippedDeckZones(game?.slug);
 
-  if (configured && configured.length > 0) {
-    return configured.map(toDeckZone);
-  }
-
-  return shippedDeckZones(game?.slug).map(toDeckZone);
+  return bounds.map((zone) => {
+    const deckZone = toDeckZone(zone);
+    const contributing = contributingZones(bounds, zone);
+    // La règle dit ce qu'elle compte : « 40 minimum » seul laisserait croire
+    // qu'il faut 40 cartes en plus du champion.
+    return contributing.length > 0
+      ? { ...deckZone, rule: `${deckZone.rule}, ${contributing.map((other) => other.label.toLowerCase()).join(" et ")} inclus` }
+      : deckZone;
+  });
 }
 
 /** La zone visée par défaut à l'ouverture de l'éditeur : celle où va le gros du deck. */
 export function defaultDeckZone(zones: DeckZone[]): DeckZoneKey {
   return zones.find((zone) => zone.curve)?.key ?? zones[0]?.key ?? "maindeck";
+}
+
+/**
+ * Les zones dont les cartes s'ajoutent au compte de `zone` pour juger de sa
+ * taille — le champion choisi, pour le deck principal de Riftbound.
+ */
+export function contributingZones(zones: DeckZoneBounds[], zone: DeckZoneBounds): DeckZoneBounds[] {
+  return zones.filter((other) => other.countsTowards === zone.key && other.key !== zone.key);
 }
 
 export function findDeckZone(zones: DeckZone[], key: string): DeckZone | undefined {
@@ -194,10 +215,15 @@ export function isZoneCompliant(zone: DeckZoneBounds, count: number): boolean {
  * cible à atteindre ou à ne pas dépasser, le seul nombre sinon — un plancher se
  * lit mal en fraction, un deck de 58 cartes sur 40 n'est pas « 58 / 40 ».
  */
-export function zoneCounterLabel(zone: DeckZoneBounds, count: number): string {
+export function zoneCounterLabel(zone: DeckZoneBounds, count: number, contributed = 0): string {
+  // « 39 + 1 » : le compte de la zone, puis ce que les zones liées y ajoutent.
+  // Le total jugé est la somme ; l'afficher seul cacherait d'où vient la carte
+  // qui manque à la zone elle-même.
+  const own = contributed > 0 ? `${count - contributed} + ${contributed}` : String(count);
+
   if (zone.max !== undefined) {
-    return `${count} / ${zone.max}`;
+    return `${own} / ${zone.max}`;
   }
 
-  return String(count);
+  return contributed > 0 ? `${own} = ${count}` : own;
 }

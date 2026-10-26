@@ -22,6 +22,8 @@ const DECK_CARD_PROJECTION = {
   collectorNumber: 1,
   domain: 1,
   orientation: 1,
+  types: 1,
+  superType: 1,
   ...Object.fromEntries(CARD_COST_KEYS.map((key) => [key, 1])),
 } as const;
 

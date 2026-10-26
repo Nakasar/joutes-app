@@ -8,6 +8,7 @@ import {
   stringifyDeckText,
 } from "@/lib/decks/text";
 import { getDeckZones } from "@/lib/decks/zones";
+import type { DeckCards } from "@/lib/decks/contents";
 
 const riftbound = getDeckZones({ slug: "riftbound" });
 
@@ -30,15 +31,15 @@ describe("lecture d'une liste collée", () => {
     const parsed = parseDeckText("3x Éclat de Faille\n- Marcheur des Dunes", riftbound);
 
     assert.deepEqual(parsed.lines, [
-      { zone: "maindeck", name: "Éclat de Faille", quantity: 3 },
-      { zone: "maindeck", name: "Marcheur des Dunes", quantity: 1 },
+      { zone: "maindeck", name: "Éclat de Faille", quantity: 3, inferred: true },
+      { zone: "maindeck", name: "Marcheur des Dunes", quantity: 1, inferred: true },
     ]);
   });
 
   it("fusionne deux lignes qui nomment la même carte", () => {
     const parsed = parseDeckText("2 Éclat de Faille\n1 Éclat de Faille", riftbound);
 
-    assert.deepEqual(parsed.lines, [{ zone: "maindeck", name: "Éclat de Faille", quantity: 3 }]);
+    assert.deepEqual(parsed.lines, [{ zone: "maindeck", name: "Éclat de Faille", quantity: 3, inferred: true }]);
   });
 
   it("garde comme carte un en-tête inconnu du jeu", () => {
@@ -64,6 +65,21 @@ describe("appariement au catalogue", () => {
     assert.deepEqual(applied.unmatched, []);
     assert.deepEqual(applied.cards.legend, [{ cardId: "l1", quantity: 1 }]);
     assert.deepEqual(applied.cards.maindeck, [{ cardId: "m1", quantity: 3 }]);
+  });
+
+  it("range par type les lignes sans en-tête, exemplaire par exemplaire", () => {
+    const parsed = parseDeckText("1 Loose Cannon\n3 Jinx\nRunes:\n12 Fury Rune", riftbound);
+    const ids: Record<string, string> = { "Loose Cannon": "l1", Jinx: "c1", "Fury Rune": "r1" };
+    const route = (cardId: string, cards: DeckCards) =>
+      cardId === "l1" ? "legend" : cardId === "c1" && !cards.champions?.length ? "champions" : "maindeck";
+
+    const applied = applyDeckText(parsed, (name) => ids[name], route);
+
+    assert.deepEqual(applied.cards.legend, [{ cardId: "l1", quantity: 1 }]);
+    assert.deepEqual(applied.cards.champions, [{ cardId: "c1", quantity: 1 }]);
+    assert.deepEqual(applied.cards.maindeck, [{ cardId: "c1", quantity: 2 }]);
+    // Une ligne sous un en-tête reste où la liste la met.
+    assert.deepEqual(applied.cards.runes, [{ cardId: "r1", quantity: 12 }]);
   });
 
   it("signale les noms qu'aucune carte ne porte", () => {

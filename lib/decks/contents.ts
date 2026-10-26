@@ -1,4 +1,5 @@
 import {
+  contributingZones,
   DECK_ZONE_KEYS,
   isZoneCompliant,
   type DeckZone,
@@ -34,6 +35,10 @@ export type DeckCardInfo = {
   cost?: number;
   domain?: string[];
   orientation?: "portrait" | "landscape";
+  /** Tous les types de la carte, quand elle en a plusieurs (`type` est le premier). */
+  types?: string[];
+  /** Surtype : « Champion », « Signature »… Range les champions de Riftbound. */
+  superType?: string;
 };
 
 export function zoneEntries(cards: DeckCards | undefined, zone: DeckZoneKey): DeckCardEntry[] {
@@ -94,6 +99,27 @@ export function setCardQuantity(
   return { ...cards, [zone]: entries };
 }
 
+/**
+ * Déplace des exemplaires d'une carte d'une zone à une autre — tous, ou
+ * `quantity` au plus. Rien ne bouge si la carte n'est pas dans la zone de
+ * départ ou si les deux zones sont la même.
+ */
+export function moveCard(
+  cards: DeckCards,
+  from: DeckZoneKey,
+  to: DeckZoneKey,
+  cardId: string,
+  quantity?: number
+): DeckCards {
+  if (from === to) return cards;
+
+  const held = zoneEntries(cards, from).find((entry) => entry.cardId === cardId)?.quantity ?? 0;
+  const moved = Math.min(held, quantity ?? held);
+  if (moved <= 0) return cards;
+
+  return changeCardQuantity(changeCardQuantity(cards, from, cardId, -moved), to, cardId, moved);
+}
+
 /** Tous les identifiants de carte du deck, sans doublon — de quoi charger le catalogue en une requête. */
 export function deckCardIds(cards: DeckCards | undefined): string[] {
   const ids = new Set<string>();
@@ -109,9 +135,29 @@ export function deckCardIds(cards: DeckCards | undefined): string[] {
 
 export type DeckZoneLegality = {
   zone: DeckZone;
+  /** Compte jugé : la zone, plus les zones qui comptent dans la sienne. */
   count: number;
+  /** Part de `count` venue des zones liées (le champion choisi). */
+  contributed: number;
   compliant: boolean;
 };
+
+/**
+ * Compte d'une zone tel que sa règle le juge : ses cartes, plus celles des
+ * zones qui comptent dans la sienne (`countsTowards`).
+ */
+export function zoneRuleCount(
+  cards: DeckCards | undefined,
+  zones: DeckZone[],
+  zone: DeckZone
+): { count: number; contributed: number } {
+  const contributed = contributingZones(zones, zone).reduce(
+    (total, other) => total + zoneCount(cards, other.key),
+    0
+  );
+
+  return { count: zoneCount(cards, zone.key) + contributed, contributed };
+}
 
 /**
  * État de chaque zone au regard de sa contrainte de taille.
@@ -122,8 +168,8 @@ export type DeckZoneLegality = {
  */
 export function deckLegality(cards: DeckCards | undefined, zones: DeckZone[]): DeckZoneLegality[] {
   return zones.map((zone) => {
-    const count = zoneCount(cards, zone.key);
-    return { zone, count, compliant: isZoneCompliant(zone, count) };
+    const { count, contributed } = zoneRuleCount(cards, zones, zone);
+    return { zone, count, contributed, compliant: isZoneCompliant(zone, count) };
   });
 }
 

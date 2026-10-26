@@ -267,23 +267,36 @@ export async function createDeck(deckData: Omit<Deck, "id" | "createdAt" | "upda
 
   const now = new Date();
 
-  // Une création qui porte déjà une couverture porte aussi sa valeur dérivée.
-  // Sans elle, les listes n'afficheraient rien de ce deck jusqu'à son premier
-  // enregistrement — et l'écran de création, lui, n'en pose aucune : seuls un
-  // appel d'API et la copie d'un deck en portent une, et la copie apporte la
-  // sienne toute faite.
+  // Une création qui porte déjà son contenu — la liste importée depuis la
+  // fenêtre de création — en déduit ce que l'enregistrement en déduirait :
+  // les domaines pour la librairie, la légende pour les listes et la
+  // couverture. Une copie de deck apporte les siens tout faits.
+  const derived: Pick<Deck, "domains" | "legendCardId" | "legendName"> = {};
+  if (deckData.cards && !deckData.domains) {
+    derived.domains = await deriveDeckDomains(deckData.gameId, deckData.cards);
+  }
+  const legendCardId = deckData.legendCardId ?? (deckData.cards ? deriveLegendCardId(deckData.cards) : undefined);
+  if (legendCardId && !deckData.legendName) {
+    const [legend] = await getDeckCardInfos(deckData.gameId, [legendCardId]);
+    derived.legendCardId = legendCardId;
+    derived.legendName = legend?.name;
+  }
+
+  // Une création qui porte déjà une couverture, ou une légende pour en tenir
+  // lieu, porte aussi sa valeur dérivée. Sans elle, les listes n'afficheraient
+  // rien de ce deck jusqu'à son premier enregistrement.
   const cover =
-    deckData.coverImage || !(deckData.coverCardId || deckData.coverImageUrl)
+    deckData.coverImage || !(deckData.coverCardId || deckData.coverImageUrl || legendCardId)
       ? undefined
       : await deriveDeckCover(deckData.gameId, {
           coverCardId: deckData.coverCardId,
           coverImageUrl: deckData.coverImageUrl,
-          legendCardId: deckData.legendCardId,
+          legendCardId,
           cards: deckData.cards,
         });
 
   const document = {
-    ...toDocument({ ...deckData, ...cover }),
+    ...toDocument({ ...deckData, ...derived, ...cover }),
     createdAt: now,
     updatedAt: now,
   };
@@ -293,6 +306,7 @@ export async function createDeck(deckData: Omit<Deck, "id" | "createdAt" | "upda
   return {
     id: result.insertedId.toString(),
     ...deckData,
+    ...derived,
     ...cover,
     createdAt: now,
     updatedAt: now,

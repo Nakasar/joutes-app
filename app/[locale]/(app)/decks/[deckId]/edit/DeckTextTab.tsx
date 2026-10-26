@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea.tsx";
 import { toDeckCardInfo, type RawCard } from "@/lib/decks/card-info.ts";
 import type { DeckCardInfo, DeckCards } from "@/lib/decks/contents.ts";
 import { applyDeckText, normalizeCardName, parseDeckText } from "@/lib/decks/text.ts";
-import type { DeckZone } from "@/lib/decks/zones.ts";
+import { routeCardToZone } from "@/lib/decks/routing.ts";
+import { defaultDeckZone, type DeckZone } from "@/lib/decks/zones.ts";
 
 /**
  * Onglet « Texte » : coller une liste plutôt que de la construire carte à carte.
@@ -68,7 +69,17 @@ export function DeckTextTab({
         byNormalizedName.set(normalizeCardName(name), toDeckCardInfo(raw));
       }
 
-      const applied = applyDeckText(parsed, (name) => byNormalizedName.get(normalizeCardName(name))?.id);
+      const infoById = new Map([...byNormalizedName.values()].map((card) => [card.id, card]));
+      const applied = applyDeckText(
+        parsed,
+        (name) => byNormalizedName.get(normalizeCardName(name))?.id,
+        // Une liste sans sections range ses cartes par type, comme l'ajout
+        // depuis le catalogue.
+        (cardId, cards) => {
+          const card = infoById.get(cardId);
+          return card ? routeCardToZone(card, zones, cards) : defaultDeckZone(zones);
+        }
+      );
       setReport({ matched: applied.matched, merged: applied.merged, unmatched: applied.unmatched });
 
       onApplyAction(applied.cards, [...byNormalizedName.values()]);

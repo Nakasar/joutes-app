@@ -124,8 +124,16 @@ export const deckZoneBoundsSchema = z
     min: z.number().int().min(0).max(999).optional(),
     max: z.number().int().min(0).max(999).optional(),
     curve: z.boolean().optional(),
+    countsTowards: z.enum(DECK_ZONE_KEYS).optional(),
   })
   .superRefine((zone, ctx) => {
+    if (zone.countsTowards === zone.key) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `« ${zone.label} » ne peut pas compter dans elle-même`,
+        path: ["countsTowards"],
+      });
+    }
     if (zone.min !== undefined && zone.max !== undefined && zone.min > zone.max) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

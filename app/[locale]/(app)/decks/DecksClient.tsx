@@ -244,9 +244,15 @@ export default function DecksClient({ initialData, games, currentUserId, initial
         games={games}
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onSuccess={() => {
+        onSuccess={(deck) => {
           setCreateOpen(false);
-          refresh();
+          // On vient de déclarer vouloir construire ce deck : son éditeur, pas
+          // la liste, est l'étape suivante.
+          if (deck) {
+            router.push(`/decks/${deck.id}/edit`);
+          } else {
+            refresh();
+          }
         }}
       />
 

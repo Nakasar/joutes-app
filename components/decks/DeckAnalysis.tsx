@@ -124,7 +124,7 @@ export function LegalityList({
               row.compliant ? "text-foreground" : "text-destructive"
             )}
           >
-            {zoneCounterLabel(row.zone, row.count)} {row.compliant ? "✓" : "✕"}
+            {zoneCounterLabel(row.zone, row.count, row.contributed)} {row.compliant ? "✓" : "✕"}
           </span>
         </div>
       ))}

@@ -207,6 +207,8 @@ type CollectionOverviewProps = {
   subtitle?: string;
   emptyTitle?: string;
   emptyDescription?: string;
+  /** Liens vers les autres écrans de la collection (decks, wishlists…), sous le titre. */
+  shortcuts?: React.ReactNode;
 };
 
 export default function CollectionOverview({
@@ -218,6 +220,7 @@ export default function CollectionOverview({
   subtitle,
   emptyTitle,
   emptyDescription,
+  shortcuts,
 }: CollectionOverviewProps) {
   const t = useTranslations("Collection");
   const [overview, setOverview] = useState(initialOverview);
@@ -279,6 +282,8 @@ export default function CollectionOverview({
         <h1 className="text-3xl font-bold tracking-tight">{title ?? t("title")}</h1>
         <p className="text-muted-foreground">{subtitle ?? t("subtitle")}</p>
       </div>
+
+      {shortcuts}
 
       {!hasAnyItems && !includeEmpty ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-center">
