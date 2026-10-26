@@ -22,6 +22,8 @@ export type RawCard = {
   collectorNumber?: string;
   domain?: string[] | string;
   orientation?: CardOrientation;
+  types?: unknown;
+  superType?: unknown;
   [key: string]: unknown;
 };
 
@@ -62,5 +64,9 @@ export function toDeckCardInfo(card: RawCard): DeckCardInfo {
     cost: cardCost(card),
     domain: cardDomains(card),
     orientation: card.orientation,
+    types: Array.isArray(card.types)
+      ? card.types.filter((type): type is string => typeof type === "string")
+      : undefined,
+    superType: typeof card.superType === "string" ? card.superType : undefined,
   };
 }

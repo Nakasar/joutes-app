@@ -1,15 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, Sparkles } from "lucide-react";
 
 import { Input } from "@/components/ui/input.tsx";
 import { FacetChip, FilterSection } from "@/components/cards/CardFacetFilters.tsx";
 import { cardReference, DeckCardThumb } from "@/components/decks/DeckCardThumb.tsx";
+import { OwnedBadge } from "@/components/decks/OwnedBadge.tsx";
 import { toDeckCardInfo, type RawCard } from "@/lib/decks/card-info.ts";
 import type { CardFilterFacet } from "@/lib/cards/search-filters.ts";
 import type { DeckCardInfo } from "@/lib/decks/contents.ts";
-import type { DeckZone, DeckZoneKey } from "@/lib/decks/zones.ts";
+import { AUTO_ZONE, type DeckTargetZone } from "@/lib/decks/routing.ts";
+import type { DeckZone } from "@/lib/decks/zones.ts";
+import type { DeckDrag } from "./DeckZonesEditor.tsx";
 
 /** Assez de résultats pour choisir, assez peu pour que la colonne reste lisible. */
 const CATALOG_PAGE_SIZE = 24;
@@ -19,10 +22,14 @@ const SEARCH_DEBOUNCE_MS = 300;
 /**
  * Catalogue du jeu, à gauche de l'éditeur.
  *
- * Un clic ajoute un exemplaire dans la zone visée, Alt-clic en retire un : le
- * geste le plus fréquent de la construction d'un deck ne mérite pas un
- * formulaire. La zone visée est explicite — une carte ajoutée doit atterrir là
- * où on l'attend, pas là où un algorithme l'aurait devinée.
+ * Un clic ajoute un exemplaire, Alt-clic en retire un : le geste le plus
+ * fréquent de la construction d'un deck ne mérite pas un formulaire. Par
+ * défaut, la zone suit le type de la carte (« Auto ») ; une zone choisie à la
+ * main passe devant, et glisser la carte vers une zone la met là où on la
+ * dépose.
+ *
+ * Chaque résultat porte le nombre d'exemplaires possédés, que l'éditeur
+ * charge pour les cartes affichées (`onResultsAction`).
  */
 export function DeckCatalog({
   gameSlug,
@@ -31,13 +38,22 @@ export function DeckCatalog({
   onZoneChangeAction,
   onAddAction,
   onPreviewAction,
+  ownedOf,
+  onResultsAction,
+  onDragStartAction,
+  onDragEndAction,
 }: {
   gameSlug: string;
   zones: DeckZone[];
-  zone: DeckZoneKey;
-  onZoneChangeAction: (zone: DeckZoneKey) => void;
+  zone: DeckTargetZone;
+  onZoneChangeAction: (zone: DeckTargetZone) => void;
   onAddAction: (card: DeckCardInfo, delta: number) => void;
   onPreviewAction?: (card: DeckCardInfo) => void;
+  /** Exemplaires possédés d'une carte ; `undefined` tant qu'ils ne sont pas connus. */
+  ownedOf?: (card: DeckCardInfo) => number | undefined;
+  onResultsAction?: (cards: DeckCardInfo[]) => void;
+  onDragStartAction?: (drag: DeckDrag) => void;
+  onDragEndAction?: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [domains, setDomains] = useState<string[]>([]);
@@ -59,7 +75,10 @@ export function DeckCatalog({
       try {
         const params = new URLSearchParams();
         if (search.trim()) params.set("searchQuery", search.trim());
-        for (const domain of selectedDomains) params.append("domain", domain);
+        // Les facettes de valeur se lisent sous `in_<clé>` : un paramètre
+        // `domain` nu n'est pas un critère connu de la route, qui l'ignorait
+        // et rendait le catalogue entier quel que soit le domaine coché.
+        if (selectedDomains.length > 0) params.set("in_domain", selectedDomains.join(","));
         params.set("limit", String(CATALOG_PAGE_SIZE));
 
         const response = await fetch(`/api/games/${gameSlug}/cards?${params.toString()}`, {
@@ -71,7 +90,9 @@ export function DeckCatalog({
           await response.json();
         if (controller.signal.aborted) return;
 
-        setCards((data.cards ?? []).map(toDeckCardInfo));
+        const results = (data.cards ?? []).map(toDeckCardInfo);
+        setCards(results);
+        onResultsAction?.(results);
         setTotal(data.total ?? 0);
 
         // Les valeurs de domaine sortent des facettes du jeu : les écrire ici
@@ -92,7 +113,7 @@ export function DeckCatalog({
         }
       }
     },
-    [gameSlug]
+    [gameSlug, onResultsAction]
   );
 
   useEffect(() => {
@@ -146,6 +167,10 @@ export function DeckCatalog({
 
       <FilterSection title="Zone d'ajout">
         <div className="flex flex-wrap gap-1.5">
+          <FacetChip active={zone === AUTO_ZONE} onClick={() => onZoneChangeAction(AUTO_ZONE)}>
+            <Sparkles className="mr-1 inline size-3" aria-hidden />
+            Auto
+          </FacetChip>
           {zones.map((entry) => (
             <FacetChip key={entry.key} active={entry.key === zone} onClick={() => onZoneChangeAction(entry.key)}>
               {entry.short}
@@ -153,7 +178,9 @@ export function DeckCatalog({
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          Les cartes ajoutées vont dans «&nbsp;{activeZone?.label ?? "?"}&nbsp;».
+          {zone === AUTO_ZONE
+            ? "Chaque carte va dans sa zone selon son type, le deck principal sinon."
+            : <>Les cartes ajoutées vont dans «&nbsp;{activeZone?.label ?? "?"}&nbsp;».</>}
         </p>
       </FilterSection>
 
@@ -166,36 +193,50 @@ export function DeckCatalog({
         <p className="py-6 text-sm text-muted-foreground">Aucune carte ne correspond à cette recherche.</p>
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2.5">
-          {cards.map((card) => (
-            <li key={card.id}>
-              <button
-                type="button"
-                onClick={(event) => onAddAction(card, event.altKey ? -1 : 1)}
-                onMouseEnter={() => onPreviewAction?.(card)}
-                onFocus={() => onPreviewAction?.(card)}
-                title={`${card.name} — clic pour ajouter, Alt-clic pour retirer`}
-                className="flex w-full flex-col overflow-hidden rounded-xl border bg-card text-left transition-colors hover:bg-muted"
-              >
-                <DeckCardThumb card={card} className="rounded-none border-0" />
-                <span className="flex flex-col gap-px px-2 py-1.5">
-                  <span className="truncate text-xs font-semibold">{card.name}</span>
-                  {cardReference(card) && (
-                    <span className="font-mono text-[10px] text-muted-foreground">{cardReference(card)}</span>
-                  )}
-                  <span className="truncate text-[11px] text-muted-foreground">
-                    {[card.type, card.cost !== undefined ? `coût ${card.cost}` : undefined]
-                      .filter(Boolean)
-                      .join(" · ")}
+          {cards.map((card) => {
+            const owned = ownedOf?.(card);
+
+            return (
+              <li key={card.id}>
+                <button
+                  type="button"
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = "copy";
+                    event.dataTransfer.setData("text/plain", card.name);
+                    onDragStartAction?.({ cardId: card.id, card });
+                  }}
+                  onDragEnd={() => onDragEndAction?.()}
+                  onClick={(event) => onAddAction(card, event.altKey ? -1 : 1)}
+                  onMouseEnter={() => onPreviewAction?.(card)}
+                  onFocus={() => onPreviewAction?.(card)}
+                  title={`${card.name} — clic pour ajouter, Alt-clic pour retirer, ou glisser vers une zone`}
+                  className="flex w-full cursor-grab flex-col overflow-hidden rounded-xl border bg-card text-left transition-colors hover:bg-muted active:cursor-grabbing"
+                >
+                  <span className="relative block">
+                    <DeckCardThumb card={card} className="rounded-none border-0" />
+                    {owned !== undefined && <OwnedBadge owned={owned} className="absolute left-1.5 top-1.5" />}
                   </span>
-                </span>
-              </button>
-            </li>
-          ))}
+                  <span className="flex flex-col gap-px px-2 py-1.5">
+                    <span className="truncate text-xs font-semibold">{card.name}</span>
+                    {cardReference(card) && (
+                      <span className="font-mono text-[10px] text-muted-foreground">{cardReference(card)}</span>
+                    )}
+                    <span className="truncate text-[11px] text-muted-foreground">
+                      {[card.type, card.cost !== undefined ? `coût ${card.cost}` : undefined]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 
       <p className="text-xs text-muted-foreground">
-        Clic : +1 dans la zone choisie. Alt-clic : −1.
+        Clic : +1. Alt-clic : −1. Ou glisser la carte vers une zone. La pastille compte vos exemplaires.
       </p>
     </div>
   );

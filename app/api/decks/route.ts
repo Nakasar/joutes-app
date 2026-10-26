@@ -118,6 +118,9 @@ export async function POST(request: NextRequest) {
       // La liste collée à la création part avec le deck : la perdre obligerait
       // à la recoller dans l'éditeur juste après.
       decklist: deckData.decklist,
+      // Et son contenu structuré, quand la fenêtre a su apparier la liste au
+      // catalogue : le deck s'ouvre déjà rempli dans l'éditeur.
+      cards: deckData.cards,
       format: deckData.format,
       visibility: deckData.visibility,
     });

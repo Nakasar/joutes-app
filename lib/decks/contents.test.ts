@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   changeCardQuantity,
+  moveCard,
   collectionCoverage,
   costCurve,
   countNonCompliantZones,
@@ -87,7 +88,7 @@ describe("légalité", () => {
     const byZone = new Map(rows.map((row) => [row.zone.key, row]));
 
     assert.equal(byZone.get("legend")?.compliant, true, "1 légende exactement");
-    assert.equal(byZone.get("champions")?.compliant, true, "2 champions sur 3 au plus");
+    assert.equal(byZone.get("champions")?.compliant, false, "2 champions choisis pour 1 exactement");
     assert.equal(byZone.get("maindeck")?.compliant, false, "8 cartes sur 40 minimum");
     assert.equal(byZone.get("runes")?.compliant, true, "12 runes exactement");
     assert.equal(byZone.get("battlefields")?.compliant, false, "aucun battlefield sur 3");
@@ -95,15 +96,15 @@ describe("légalité", () => {
   });
 
   it("compte les zones à ajuster", () => {
-    assert.equal(countNonCompliantZones(DECK, riftbound), 2);
+    assert.equal(countNonCompliantZones(DECK, riftbound), 3);
     assert.equal(isDeckCompliant(DECK, riftbound), false);
   });
 
   it("reconnaît un deck conforme", () => {
     const complete: DeckCards = {
       legend: [{ cardId: "l1", quantity: 1 }],
-      champions: [{ cardId: "c1", quantity: 3 }],
-      maindeck: [{ cardId: "m1", quantity: 40 }],
+      champions: [{ cardId: "c1", quantity: 1 }],
+      maindeck: [{ cardId: "m1", quantity: 39 }],
       runes: [{ cardId: "r1", quantity: 12 }],
       battlefields: [{ cardId: "m2", quantity: 3 }],
     };
@@ -111,11 +112,53 @@ describe("légalité", () => {
     assert.equal(isDeckCompliant(complete, riftbound), true);
   });
 
+  it("compte le champion choisi dans les 40 du deck principal", () => {
+    const cards: DeckCards = {
+      champions: [{ cardId: "c1", quantity: 1 }],
+      maindeck: [{ cardId: "m1", quantity: 39 }],
+    };
+    const maindeck = deckLegality(cards, riftbound).find((row) => row.zone.key === "maindeck")!;
+
+    assert.equal(maindeck.count, 40);
+    assert.equal(maindeck.contributed, 1);
+    assert.equal(maindeck.compliant, true);
+    assert.equal(zoneCounterLabel(maindeck.zone, maindeck.count, maindeck.contributed), "39 + 1 = 40");
+    assert.match(maindeck.zone.rule, /champion choisi inclus/);
+
+    const short = deckLegality({ ...cards, maindeck: [{ cardId: "m1", quantity: 38 }] }, riftbound);
+    assert.equal(short.find((row) => row.zone.key === "maindeck")?.compliant, false);
+  });
+
   it("affiche une fraction pour les cibles, un nombre pour les planchers", () => {
     const zones = new Map(riftbound.map((zone) => [zone.key, zone]));
     assert.equal(zoneCounterLabel(zones.get("runes")!, 12), "12 / 12");
     assert.equal(zoneCounterLabel(zones.get("sideboard")!, 4), "4 / 10");
     assert.equal(zoneCounterLabel(zones.get("maindeck")!, 58), "58");
+  });
+});
+
+describe("déplacement entre zones", () => {
+  it("déplace tous les exemplaires, ou une partie", () => {
+    const all = moveCard(DECK, "maindeck", "sideboard", "m1");
+    assert.equal(all.maindeck?.some((entry) => entry.cardId === "m1"), false);
+    assert.deepEqual(all.sideboard, [{ cardId: "m1", quantity: 3 }]);
+
+    const one = moveCard(DECK, "maindeck", "sideboard", "m1", 1);
+    assert.equal(one.maindeck?.find((entry) => entry.cardId === "m1")?.quantity, 2);
+    assert.deepEqual(one.sideboard, [{ cardId: "m1", quantity: 1 }]);
+  });
+
+  it("ne déplace pas plus que la place restante à l'arrivée", () => {
+    const moved = moveCard(DECK, "maindeck", "sideboard", "m1", undefined, 1);
+
+    assert.equal(moved.maindeck?.find((entry) => entry.cardId === "m1")?.quantity, 2);
+    assert.deepEqual(moved.sideboard, [{ cardId: "m1", quantity: 1 }]);
+    assert.equal(moveCard(DECK, "maindeck", "sideboard", "m1", undefined, 0), DECK);
+  });
+
+  it("ne fait rien sans carte à déplacer", () => {
+    assert.equal(moveCard(DECK, "sideboard", "maindeck", "m1"), DECK);
+    assert.equal(moveCard(DECK, "maindeck", "maindeck", "m1"), DECK);
   });
 });
 

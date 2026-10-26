@@ -425,6 +425,12 @@ export default function Header() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
+                        <Link href="/decks" className="flex w-full cursor-pointer">
+                          <Hammer className="mr-2 h-4 w-4" />
+                          <span>{t('menu.MyDecks')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
                         <Link href="/wishlists" className="flex w-full cursor-pointer">
                           <Heart className="mr-2 h-4 w-4" />
                           <span>{t('menu.Wishlists')}</span>
@@ -580,6 +586,12 @@ export default function Header() {
                         <Link href="/collection" className="flex w-full cursor-pointer">
                           <Library className="mr-2 h-4 w-4" />
                           <span>{t('menu.Collection')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/decks" className="flex w-full cursor-pointer">
+                          <Hammer className="mr-2 h-4 w-4" />
+                          <span>{t('menu.MyDecks')}</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
@@ -818,6 +830,12 @@ export default function Header() {
                     <Link href="/collection" onClick={() => setMobileMenuOpen(false)}>
                       <Library className="mr-2 h-4 w-4" />
                       {t('menu.Collection')}
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" asChild className="w-full justify-start">
+                    <Link href="/decks" onClick={() => setMobileMenuOpen(false)}>
+                      <Hammer className="mr-2 h-4 w-4" />
+                      {t('menu.MyDecks')}
                     </Link>
                   </Button>
                   <Button variant="ghost" asChild className="w-full justify-start">

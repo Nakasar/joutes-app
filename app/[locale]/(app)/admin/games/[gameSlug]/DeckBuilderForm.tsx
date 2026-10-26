@@ -29,6 +29,8 @@ type ZoneDraft = {
   min: string;
   max: string;
   curve: boolean;
+  /** Clé de la section dans laquelle celle-ci compte, ou "" pour aucune. */
+  countsTowards: DeckZoneKey | "";
 };
 
 function toDraft(zone: DeckZoneBounds): ZoneDraft {
@@ -39,6 +41,7 @@ function toDraft(zone: DeckZoneBounds): ZoneDraft {
     min: zone.min === undefined ? "" : String(zone.min),
     max: zone.max === undefined ? "" : String(zone.max),
     curve: zone.curve === true,
+    countsTowards: zone.countsTowards ?? "",
   };
 }
 
@@ -62,13 +65,14 @@ function toBounds(draft: ZoneDraft): DeckZoneBounds {
     ...(min === undefined ? {} : { min }),
     ...(max === undefined ? {} : { max }),
     ...(draft.curve ? { curve: true } : {}),
+    ...(draft.countsTowards ? { countsTowards: draft.countsTowards } : {}),
   };
 }
 
 /** Libellés proposés à l'ajout d'une section encore absente. */
 const SUGGESTED: Record<DeckZoneKey, { label: string; short: string }> = {
   legend: { label: "Légende", short: "Légende" },
-  champions: { label: "Champions", short: "Champions" },
+  champions: { label: "Champion choisi", short: "Champion" },
   maindeck: { label: "Deck principal", short: "Principal" },
   runes: { label: "Runes", short: "Runes" },
   battlefields: { label: "Battlefields", short: "Battlefields" },
@@ -320,6 +324,32 @@ export function DeckBuilderForm({
                     />
                     <span className="text-xs text-muted-foreground">Courbe</span>
                   </label>
+
+                  <div className="col-span-2">
+                    <label
+                      htmlFor={`counts-${zone.key}`}
+                      className="block text-xs font-medium text-muted-foreground mb-1"
+                    >
+                      Compte dans
+                    </label>
+                    <select
+                      id={`counts-${zone.key}`}
+                      value={zone.countsTowards}
+                      onChange={(e) =>
+                        update(zone.key, { countsTowards: e.target.value as DeckZoneKey | "" })
+                      }
+                      className={FIELD_CLASS}
+                    >
+                      <option value="">Aucune autre section</option>
+                      {zones
+                        .filter((other) => other.key !== zone.key)
+                        .map((other) => (
+                          <option key={other.key} value={other.key}>
+                            {other.label}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
                 </div>
               </li>
             ))}
@@ -336,7 +366,7 @@ export function DeckBuilderForm({
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  setZones([...zones, { key, ...SUGGESTED[key], min: "", max: "", curve: false }])
+                  setZones([...zones, { key, ...SUGGESTED[key], min: "", max: "", curve: false, countsTowards: "" }])
                 }
               >
                 <Plus className="size-4" aria-hidden />

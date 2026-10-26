@@ -253,6 +253,26 @@ export async function getDeckById(deckId: string): Promise<Deck | null> {
   return toDeck(deck, getUserDisplayName(creator[0]));
 }
 
+/**
+ * Ce qui se déduit du contenu d'un deck : ses domaines, pour le filtre de la
+ * librairie, et sa légende, pour sa combobox et les listes. La légende
+ * choisie à la main l'emporte sur celle que porte la zone.
+ */
+async function deriveFromCards(
+  gameId: string,
+  cards: DeckCards,
+  chosenLegendCardId?: string
+): Promise<Pick<Deck, "domains" | "legendCardId" | "legendName">> {
+  const domains = await deriveDeckDomains(gameId, cards);
+  const legendCardId = chosenLegendCardId ?? deriveLegendCardId(cards);
+  if (!legendCardId) {
+    return { domains, legendCardId: undefined, legendName: undefined };
+  }
+
+  const [legend] = await getDeckCardInfos(gameId, [legendCardId]);
+  return { domains, legendCardId, legendName: legend?.name };
+}
+
 // Créer un nouveau deck
 export async function createDeck(deckData: Omit<Deck, "id" | "createdAt" | "updatedAt">): Promise<Deck> {
   // Vérifier l'unicité du nom pour ce joueur
@@ -267,23 +287,31 @@ export async function createDeck(deckData: Omit<Deck, "id" | "createdAt" | "upda
 
   const now = new Date();
 
-  // Une création qui porte déjà une couverture porte aussi sa valeur dérivée.
-  // Sans elle, les listes n'afficheraient rien de ce deck jusqu'à son premier
-  // enregistrement — et l'écran de création, lui, n'en pose aucune : seuls un
-  // appel d'API et la copie d'un deck en portent une, et la copie apporte la
-  // sienne toute faite.
+  // Une création qui porte déjà son contenu — la liste importée depuis la
+  // fenêtre de création — en déduit ce que l'enregistrement en déduirait :
+  // les domaines pour la librairie, la légende pour les listes et la
+  // couverture. Une copie de deck apporte les siens tout faits.
+  const derived: Pick<Deck, "domains" | "legendCardId" | "legendName"> =
+    deckData.cards && !deckData.domains
+      ? await deriveFromCards(deckData.gameId, deckData.cards, deckData.legendCardId)
+      : {};
+  const legendCardId = derived.legendCardId ?? deckData.legendCardId;
+
+  // Une création qui porte déjà une couverture, ou une légende pour en tenir
+  // lieu, porte aussi sa valeur dérivée. Sans elle, les listes n'afficheraient
+  // rien de ce deck jusqu'à son premier enregistrement.
   const cover =
-    deckData.coverImage || !(deckData.coverCardId || deckData.coverImageUrl)
+    deckData.coverImage || !(deckData.coverCardId || deckData.coverImageUrl || legendCardId)
       ? undefined
       : await deriveDeckCover(deckData.gameId, {
           coverCardId: deckData.coverCardId,
           coverImageUrl: deckData.coverImageUrl,
-          legendCardId: deckData.legendCardId,
+          legendCardId,
           cards: deckData.cards,
         });
 
   const document = {
-    ...toDocument({ ...deckData, ...cover }),
+    ...toDocument({ ...deckData, ...derived, ...cover }),
     createdAt: now,
     updatedAt: now,
   };
@@ -293,6 +321,7 @@ export async function createDeck(deckData: Omit<Deck, "id" | "createdAt" | "upda
   return {
     id: result.insertedId.toString(),
     ...deckData,
+    ...derived,
     ...cover,
     createdAt: now,
     updatedAt: now,
@@ -379,18 +408,7 @@ export async function updateDeck(
   // plutôt qu'à chaque lecture. Les domaines servent au filtre de la librairie,
   // le nom de la légende à sa combobox et aux listes.
   if (updates.cards) {
-    const gameId: string = existing.gameId;
-    set.domains = await deriveDeckDomains(gameId, updates.cards);
-
-    const legendCardId = updates.legendCardId ?? deriveLegendCardId(updates.cards);
-    if (legendCardId) {
-      const [legend] = await getDeckCardInfos(gameId, [legendCardId]);
-      set.legendCardId = legendCardId;
-      set.legendName = legend?.name;
-    } else {
-      set.legendCardId = undefined;
-      set.legendName = undefined;
-    }
+    Object.assign(set, await deriveFromCards(existing.gameId, updates.cards, updates.legendCardId));
   }
 
   // La couverture se réécrit quand l'auteur y touche — et quand le contenu

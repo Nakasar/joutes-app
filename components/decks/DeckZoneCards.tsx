@@ -1,6 +1,6 @@
 import { cardReference, DeckCardThumb } from "@/components/decks/DeckCardThumb.tsx";
 import { cn } from "@/lib/utils.ts";
-import { zoneCount, zoneEntries, type DeckCardInfo, type DeckCards } from "@/lib/decks/contents.ts";
+import { zoneCount, zoneEntries, zoneRuleCount, type DeckCardInfo, type DeckCards } from "@/lib/decks/contents.ts";
 import { zoneCounterLabel, type DeckZone } from "@/lib/decks/zones.ts";
 
 /**
@@ -41,7 +41,10 @@ export function DeckZoneCards({
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="text-[13px] font-semibold">{zone.label}</h3>
             <span className="font-mono text-xs text-muted-foreground">
-              {zoneCounterLabel(zone, zoneCount(cards, zone.key))}
+              {(() => {
+                const { count, contributed } = zoneRuleCount(cards, zones, zone);
+                return zoneCounterLabel(zone, count, contributed);
+              })()}
             </span>
           </div>
 

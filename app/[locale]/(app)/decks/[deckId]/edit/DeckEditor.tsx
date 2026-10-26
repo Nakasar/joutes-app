@@ -16,18 +16,24 @@ import { cn } from "@/lib/utils.ts";
 import {
   changeCardQuantity,
   deckSize,
+  moveCard,
+  zoneCount,
   type DeckCardInfo,
   type DeckCards,
 } from "@/lib/decks/contents.ts";
 import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import { stringifyDeckText } from "@/lib/decks/text.ts";
-import { defaultDeckZone, type DeckZone, type DeckZoneKey } from "@/lib/decks/zones.ts";
+import { AUTO_ZONE, routeCardToZone, zoneHoldingCard, type DeckTargetZone } from "@/lib/decks/routing.ts";
+import type { DeckZone, DeckZoneKey } from "@/lib/decks/zones.ts";
 import { DECK_VISIBILITIES, DECK_VISIBILITY_LABELS, type Deck, type DeckVisibility } from "@/lib/types/Deck.ts";
 import { DeckCatalog } from "./DeckCatalog.tsx";
 import { DeckPanels } from "./DeckPanels.tsx";
 import { DeckTextTab } from "./DeckTextTab.tsx";
-import { DeckZonesEditor } from "./DeckZonesEditor.tsx";
+import { DeckZonesEditor, type DeckDrag } from "./DeckZonesEditor.tsx";
 import DeleteDeckButton from "../DeleteDeckButton.tsx";
+
+/** Noms par requête d'exemplaires possédés : le plafond de la route `ownership`. */
+const OWNERSHIP_BATCH = 120;
 
 /**
  * Éditeur de deck : le catalogue à gauche, les zones au centre, l'analyse à
@@ -68,7 +74,8 @@ export function DeckEditor({
   const [cards, setCards] = useState<DeckCards>(deck.cards ?? {});
   const [notes, setNotes] = useState(deck.notes ?? "");
   const [visibility, setVisibility] = useState<DeckVisibility>(deck.visibility);
-  const [zone, setZone] = useState<DeckZoneKey>(defaultDeckZone(zones));
+  const [zone, setZone] = useState<DeckTargetZone>(AUTO_ZONE);
+  const [dragging, setDragging] = useState<DeckDrag | undefined>();
   const [tab, setTab] = useState<"visual" | "text">("visual");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [preview, setPreview] = useState<DeckCardInfo | undefined>();
@@ -102,10 +109,86 @@ export function DeckEditor({
     });
   }, []);
 
-  const ownedByCardId = useMemo(
-    () => (initialOwnedByCardId ? new Map(Object.entries(initialOwnedByCardId)) : undefined),
-    [initialOwnedByCardId]
+  /**
+   * Exemplaires possédés, par nom : la collection se compte toutes impressions
+   * confondues (`lib/decks/collection.ts`). Le serveur fournit ceux du deck à
+   * l'ouverture ; ceux des cartes que la recherche fait passer se chargent au
+   * fil de l'eau.
+   */
+  const [ownedByName, setOwnedByName] = useState<Map<string, number>>(() => {
+    const byName = new Map<string, number>();
+    for (const card of initialCatalog) {
+      const owned = initialOwnedByCardId?.[card.id];
+      if (owned !== undefined) byName.set(card.name, owned);
+    }
+    return byName;
+  });
+  const requestedNamesRef = useRef(new Set(ownedByName.keys()));
+  // Un booléen plutôt que l'objet : un `router.refresh()` en renvoie un neuf,
+  // qui relancerait sinon la recherche du catalogue.
+  const hasCollection = initialOwnedByCardId !== undefined;
+
+  const loadOwnership = useCallback(
+    async (cardsToCount: DeckCardInfo[]) => {
+      // Sans collection connue (visiteur, erreur au chargement), rien à compter.
+      if (!hasCollection) return;
+
+      const names = [...new Set(cardsToCount.map((card) => card.name))].filter(
+        (name) => name && !requestedNamesRef.current.has(name)
+      );
+      if (names.length === 0) return;
+      for (const name of names) requestedNamesRef.current.add(name);
+
+      // La route plafonne le nombre de noms par requête : une liste collée de
+      // cent cinquante cartes part en plusieurs fois.
+      const batches: string[][] = [];
+      for (let start = 0; start < names.length; start += OWNERSHIP_BATCH) {
+        batches.push(names.slice(start, start + OWNERSHIP_BATCH));
+      }
+
+      const results = await Promise.all(
+        batches.map(async (batch) => {
+          const params = new URLSearchParams();
+          for (const name of batch) params.append("names", name);
+
+          const response = await fetch(`/api/collection/games/${gameSlug}/ownership?${params.toString()}`).catch(
+            () => null
+          );
+          const data: { ownership?: Record<string, { total?: number }> } | null = response?.ok
+            ? await response.json().catch(() => null)
+            : null;
+          if (!data) {
+            // Une prochaine recherche retentera ces noms.
+            for (const name of batch) requestedNamesRef.current.delete(name);
+          }
+          return { batch, data };
+        })
+      );
+
+      setOwnedByName((current) => {
+        const next = new Map(current);
+        for (const { batch, data } of results) {
+          if (!data) continue;
+          for (const name of batch) next.set(name, data.ownership?.[name]?.total ?? 0);
+        }
+        return next;
+      });
+    },
+    [gameSlug, hasCollection]
   );
+
+  const ownedByCardId = useMemo(() => {
+    if (!hasCollection) return undefined;
+
+    const byId = new Map<string, number>();
+    for (const card of catalog.values()) {
+      const owned = ownedByName.get(card.name);
+      if (owned !== undefined) byId.set(card.id, owned);
+    }
+    return byId;
+  }, [catalog, hasCollection, ownedByName]);
+
+  const ownedOf = useCallback((card: DeckCardInfo) => ownedByName.get(card.name), [ownedByName]);
 
   const [textDraft, setTextDraft] = useState(() =>
     stringifyDeckText(deck.cards, zones, (id) => initialCatalog.find((card) => card.id === id)?.name)
@@ -131,9 +214,59 @@ export function DeckEditor({
   const addFromCatalog = useCallback(
     (card: DeckCardInfo, delta: number) => {
       learnCards([card]);
-      changeQuantity(zone, card.id, delta);
+      setCards((current) => {
+        // En « Auto », la zone se décide sur le deck tel qu'il est à cet
+        // instant : le premier champion devient le champion choisi, le
+        // suivant va au deck principal. Retirer vise la zone qui porte la
+        // carte, pas celle où un ajout la mettrait.
+        const target =
+          zone !== AUTO_ZONE
+            ? zone
+            : delta > 0
+              ? routeCardToZone(card, zones, current)
+              : zoneHoldingCard(card, zones, current);
+        return target ? changeCardQuantity(current, target, card.id, delta) : current;
+      });
+      setDirty(true);
     },
-    [changeQuantity, learnCards, zone]
+    [learnCards, zone, zones]
+  );
+
+  const moveBetweenZones = useCallback(
+    (from: DeckZoneKey, to: DeckZoneKey, cardId: string, quantity?: number) => {
+      // La place se lit sur le deck affiché : c'est lui que l'auteur voit plein.
+      const target = zones.find((candidate) => candidate.key === to);
+      const max = target?.max;
+      const room = max === undefined ? Infinity : Math.max(0, max - zoneCount(cards, to));
+      if (room === 0) {
+        toast.error("Zone pleine", {
+          description: `${target?.label ?? to} ne prend pas plus de ${max} carte${max !== undefined && max > 1 ? "s" : ""}.`,
+        });
+        return;
+      }
+
+      setCards((current) => moveCard(current, from, to, cardId, quantity, room));
+      setDirty(true);
+    },
+    [cards, zones]
+  );
+
+  const dropOnZone = useCallback(
+    (target: DeckZoneKey, single: boolean) => {
+      const drag = dragging;
+      setDragging(undefined);
+      if (!drag) return;
+
+      if (drag.from) {
+        moveBetweenZones(drag.from, target, drag.cardId, single ? 1 : undefined);
+        return;
+      }
+
+      // Depuis le catalogue : un exemplaire, là où on l'a déposé.
+      if (drag.card) learnCards([drag.card]);
+      changeQuantity(target, drag.cardId, 1);
+    },
+    [changeQuantity, dragging, learnCards, moveBetweenZones]
   );
 
   /**
@@ -212,7 +345,7 @@ export function DeckEditor({
   }, [dirty]);
 
   const total = deckSize(cards, zones);
-  const activeZone = zones.find((entry) => entry.key === zone);
+  const activeZone = zone === AUTO_ZONE ? undefined : zones.find((entry) => entry.key === zone);
   // La couverture suit ce qui est à l'écran : la carte que l'on vient de
   // désigner s'affiche sans attendre le rechargement de la page.
   const currentCover = resolveDeckCover({ ...cover, legendCardId: deck.legendCardId }, catalog);
@@ -329,6 +462,10 @@ export function DeckEditor({
             onZoneChangeAction={setZone}
             onAddAction={addFromCatalog}
             onPreviewAction={setPreview}
+            ownedOf={ownedByCardId ? ownedOf : undefined}
+            onResultsAction={loadOwnership}
+            onDragStartAction={setDragging}
+            onDragEndAction={() => setDragging(undefined)}
           />
         </div>
 
@@ -368,7 +505,12 @@ export function DeckEditor({
               cardsById={catalog}
               view={view}
               ownedByCardId={ownedByCardId}
+              dragging={dragging}
               onChangeAction={changeQuantity}
+              onMoveAction={moveBetweenZones}
+              onDragStartAction={setDragging}
+              onDragEndAction={() => setDragging(undefined)}
+              onDropAction={dropOnZone}
               onPreviewAction={setPreview}
             />
           ) : (
@@ -377,10 +519,11 @@ export function DeckEditor({
               onValueChangeAction={setTextDraft}
               zones={zones}
               gameSlug={gameSlug}
+              currentCards={cards}
               onApplyAction={(applied, learned) => {
                 learnCards(learned);
-                // Seules les zones nommées par la liste sont remplacées : coller
-                // une réserve ne doit pas effacer le deck principal.
+                void loadOwnership(learned);
+                // Les zones changées par la liste, déjà fusionnées avec le deck en cours.
                 setCards((current) => ({ ...current, ...applied }));
                 setDirty(true);
                 setTab("visual");
@@ -412,7 +555,7 @@ export function DeckEditor({
           à deux écrans de défilement de la carte que l'on vient d'ajouter. */}
       <div className="sticky bottom-0 z-40 -mx-4 flex items-center gap-2 border-t bg-muted/50 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-muted/70 xl:hidden">
         <span className={cn("min-w-0 flex-1 truncate text-xs text-muted-foreground")}>
-          {activeZone ? `Ajouts vers « ${activeZone.label} »` : ""}
+          {activeZone ? `Ajouts vers « ${activeZone.label} »` : "Ajouts rangés selon le type de carte"}
         </span>
         <Button type="button" className="h-11 shrink-0" onClick={save} disabled={saving || !dirty}>
           {saving && <Loader2 className="animate-spin" />}
