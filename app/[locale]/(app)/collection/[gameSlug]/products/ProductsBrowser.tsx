@@ -150,6 +150,13 @@ export default function ProductsBrowser({
     return () => clearTimeout(timeout);
   }, [search, filters, fetchPage, shown.search, shown.filters]);
 
+  const goToPage = (next: number) => {
+    void fetchPage({ search, filters, page: next });
+    // Les boutons sont sous la grille : sans cela, la nouvelle page s'affiche
+    // hors de vue et il faut remonter à la main pour la lire.
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const changeFilters = (next: Partial<ProductFilterState>) =>
     setFilters((current) => ({ ...current, ...next }));
 
@@ -391,7 +398,7 @@ export default function ProductsBrowser({
                 variant="outline"
                 size="sm"
                 disabled={page <= 1 || loading}
-                onClick={() => void fetchPage({ search, filters, page: page - 1 })}
+                onClick={() => goToPage(page - 1)}
               >
                 {t("filters.previous")}
               </Button>
@@ -402,7 +409,7 @@ export default function ProductsBrowser({
                 variant="outline"
                 size="sm"
                 disabled={page >= totalPages || loading}
-                onClick={() => void fetchPage({ search, filters, page: page + 1 })}
+                onClick={() => goToPage(page + 1)}
               >
                 {t("filters.next")}
               </Button>
