@@ -253,6 +253,26 @@ export async function getDeckById(deckId: string): Promise<Deck | null> {
   return toDeck(deck, getUserDisplayName(creator[0]));
 }
 
+/**
+ * Ce qui se déduit du contenu d'un deck : ses domaines, pour le filtre de la
+ * librairie, et sa légende, pour sa combobox et les listes. La légende
+ * choisie à la main l'emporte sur celle que porte la zone.
+ */
+async function deriveFromCards(
+  gameId: string,
+  cards: DeckCards,
+  chosenLegendCardId?: string
+): Promise<Pick<Deck, "domains" | "legendCardId" | "legendName">> {
+  const domains = await deriveDeckDomains(gameId, cards);
+  const legendCardId = chosenLegendCardId ?? deriveLegendCardId(cards);
+  if (!legendCardId) {
+    return { domains, legendCardId: undefined, legendName: undefined };
+  }
+
+  const [legend] = await getDeckCardInfos(gameId, [legendCardId]);
+  return { domains, legendCardId, legendName: legend?.name };
+}
+
 // Créer un nouveau deck
 export async function createDeck(deckData: Omit<Deck, "id" | "createdAt" | "updatedAt">): Promise<Deck> {
   // Vérifier l'unicité du nom pour ce joueur
@@ -271,16 +291,11 @@ export async function createDeck(deckData: Omit<Deck, "id" | "createdAt" | "upda
   // fenêtre de création — en déduit ce que l'enregistrement en déduirait :
   // les domaines pour la librairie, la légende pour les listes et la
   // couverture. Une copie de deck apporte les siens tout faits.
-  const derived: Pick<Deck, "domains" | "legendCardId" | "legendName"> = {};
-  if (deckData.cards && !deckData.domains) {
-    derived.domains = await deriveDeckDomains(deckData.gameId, deckData.cards);
-  }
-  const legendCardId = deckData.legendCardId ?? (deckData.cards ? deriveLegendCardId(deckData.cards) : undefined);
-  if (legendCardId && !deckData.legendName) {
-    const [legend] = await getDeckCardInfos(deckData.gameId, [legendCardId]);
-    derived.legendCardId = legendCardId;
-    derived.legendName = legend?.name;
-  }
+  const derived: Pick<Deck, "domains" | "legendCardId" | "legendName"> =
+    deckData.cards && !deckData.domains
+      ? await deriveFromCards(deckData.gameId, deckData.cards, deckData.legendCardId)
+      : {};
+  const legendCardId = derived.legendCardId ?? deckData.legendCardId;
 
   // Une création qui porte déjà une couverture, ou une légende pour en tenir
   // lieu, porte aussi sa valeur dérivée. Sans elle, les listes n'afficheraient
@@ -393,18 +408,7 @@ export async function updateDeck(
   // plutôt qu'à chaque lecture. Les domaines servent au filtre de la librairie,
   // le nom de la légende à sa combobox et aux listes.
   if (updates.cards) {
-    const gameId: string = existing.gameId;
-    set.domains = await deriveDeckDomains(gameId, updates.cards);
-
-    const legendCardId = updates.legendCardId ?? deriveLegendCardId(updates.cards);
-    if (legendCardId) {
-      const [legend] = await getDeckCardInfos(gameId, [legendCardId]);
-      set.legendCardId = legendCardId;
-      set.legendName = legend?.name;
-    } else {
-      set.legendCardId = undefined;
-      set.legendName = undefined;
-    }
+    Object.assign(set, await deriveFromCards(existing.gameId, updates.cards, updates.legendCardId));
   }
 
   // La couverture se réécrit quand l'auteur y touche — et quand le contenu

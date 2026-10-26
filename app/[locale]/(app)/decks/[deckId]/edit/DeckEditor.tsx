@@ -17,6 +17,7 @@ import {
   changeCardQuantity,
   deckSize,
   moveCard,
+  zoneCount,
   type DeckCardInfo,
   type DeckCards,
 } from "@/lib/decks/contents.ts";
@@ -30,6 +31,9 @@ import { DeckPanels } from "./DeckPanels.tsx";
 import { DeckTextTab } from "./DeckTextTab.tsx";
 import { DeckZonesEditor, type DeckDrag } from "./DeckZonesEditor.tsx";
 import DeleteDeckButton from "../DeleteDeckButton.tsx";
+
+/** Noms par requête d'exemplaires possédés : le plafond de la route `ownership`. */
+const OWNERSHIP_BATCH = 120;
 
 /**
  * Éditeur de deck : le catalogue à gauche, les zones au centre, l'analyse à
@@ -135,24 +139,38 @@ export function DeckEditor({
       if (names.length === 0) return;
       for (const name of names) requestedNamesRef.current.add(name);
 
-      const params = new URLSearchParams();
-      for (const name of names) params.append("names", name);
-
-      const response = await fetch(`/api/collection/games/${gameSlug}/ownership?${params.toString()}`).catch(
-        () => null
-      );
-      const data: { ownership?: Record<string, { total?: number }> } | null = response?.ok
-        ? await response.json().catch(() => null)
-        : null;
-      if (!data) {
-        // Une prochaine recherche retentera ces noms.
-        for (const name of names) requestedNamesRef.current.delete(name);
-        return;
+      // La route plafonne le nombre de noms par requête : une liste collée de
+      // cent cinquante cartes part en plusieurs fois.
+      const batches: string[][] = [];
+      for (let start = 0; start < names.length; start += OWNERSHIP_BATCH) {
+        batches.push(names.slice(start, start + OWNERSHIP_BATCH));
       }
+
+      const results = await Promise.all(
+        batches.map(async (batch) => {
+          const params = new URLSearchParams();
+          for (const name of batch) params.append("names", name);
+
+          const response = await fetch(`/api/collection/games/${gameSlug}/ownership?${params.toString()}`).catch(
+            () => null
+          );
+          const data: { ownership?: Record<string, { total?: number }> } | null = response?.ok
+            ? await response.json().catch(() => null)
+            : null;
+          if (!data) {
+            // Une prochaine recherche retentera ces noms.
+            for (const name of batch) requestedNamesRef.current.delete(name);
+          }
+          return { batch, data };
+        })
+      );
 
       setOwnedByName((current) => {
         const next = new Map(current);
-        for (const name of names) next.set(name, data.ownership?.[name]?.total ?? 0);
+        for (const { batch, data } of results) {
+          if (!data) continue;
+          for (const name of batch) next.set(name, data.ownership?.[name]?.total ?? 0);
+        }
         return next;
       });
     },
@@ -216,10 +234,21 @@ export function DeckEditor({
 
   const moveBetweenZones = useCallback(
     (from: DeckZoneKey, to: DeckZoneKey, cardId: string, quantity?: number) => {
-      setCards((current) => moveCard(current, from, to, cardId, quantity));
+      // La place se lit sur le deck affiché : c'est lui que l'auteur voit plein.
+      const target = zones.find((candidate) => candidate.key === to);
+      const max = target?.max;
+      const room = max === undefined ? Infinity : Math.max(0, max - zoneCount(cards, to));
+      if (room === 0) {
+        toast.error("Zone pleine", {
+          description: `${target?.label ?? to} ne prend pas plus de ${max} carte${max !== undefined && max > 1 ? "s" : ""}.`,
+        });
+        return;
+      }
+
+      setCards((current) => moveCard(current, from, to, cardId, quantity, room));
       setDirty(true);
     },
-    []
+    [cards, zones]
   );
 
   const dropOnZone = useCallback(
@@ -490,11 +519,11 @@ export function DeckEditor({
               onValueChangeAction={setTextDraft}
               zones={zones}
               gameSlug={gameSlug}
+              currentCards={cards}
               onApplyAction={(applied, learned) => {
                 learnCards(learned);
                 void loadOwnership(learned);
-                // Seules les zones nommées par la liste sont remplacées : coller
-                // une réserve ne doit pas effacer le deck principal.
+                // Les zones changées par la liste, déjà fusionnées avec le deck en cours.
                 setCards((current) => ({ ...current, ...applied }));
                 setDirty(true);
                 setTab("visual");

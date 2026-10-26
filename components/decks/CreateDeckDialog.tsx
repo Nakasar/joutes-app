@@ -23,11 +23,10 @@ import {
 } from "@/components/ui/select.tsx";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
-import { toDeckCardInfo, type RawCard } from "@/lib/decks/card-info.ts";
-import { deckLegality, deckSize, type DeckCardInfo, type DeckCards } from "@/lib/decks/contents.ts";
-import { routeCardToZone } from "@/lib/decks/routing.ts";
-import { applyDeckText, normalizeCardName, parseDeckText } from "@/lib/decks/text.ts";
-import { defaultDeckZone, getDeckZones, zoneCounterLabel } from "@/lib/decks/zones.ts";
+import { deckLegality, deckSize, type DeckCards } from "@/lib/decks/contents.ts";
+import { resolveDeckText } from "@/lib/decks/resolve-text.ts";
+import { normalizeCardName, parseDeckText, renameDeckTextCard } from "@/lib/decks/text.ts";
+import { getDeckZones, zoneCounterLabel } from "@/lib/decks/zones.ts";
 import { DECK_VISIBILITIES, DECK_VISIBILITY_LABELS, type Deck, type DeckVisibility } from "@/lib/types/Deck.ts";
 import { toast } from "sonner";
 
@@ -66,30 +65,9 @@ async function previewDeckText(gameSlug: string, text: string, zones: ReturnType
   const parsed = parseDeckText(text, zones);
   if (parsed.lines.length === 0) return null;
 
-  const names = [...new Set(parsed.lines.map((line) => line.name))];
-  const response = await fetch(`/api/games/${gameSlug}/deck-cards`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ names }),
-    signal,
-  });
-  if (!response.ok) return null;
-
-  const data: { matches?: Record<string, RawCard> } = await response.json();
-  const byName = new Map<string, DeckCardInfo>();
-  for (const [name, raw] of Object.entries(data.matches ?? {})) {
-    byName.set(normalizeCardName(name), toDeckCardInfo(raw));
-  }
-  const byId = new Map([...byName.values()].map((card) => [card.id, card]));
-
-  const applied = applyDeckText(
-    parsed,
-    (name) => byName.get(normalizeCardName(name))?.id,
-    (cardId, cards) => {
-      const card = byId.get(cardId);
-      return card ? routeCardToZone(card, zones, cards) : defaultDeckZone(zones);
-    }
-  );
+  const resolved = await resolveDeckText(gameSlug, parsed, zones, { signal });
+  if (!resolved) return null;
+  const { applied } = resolved;
 
   // Une faute de frappe ne doit pas coûter la ligne : la recherche, tolérante
   // aux fautes, propose le nom le plus proche.
@@ -108,17 +86,6 @@ async function previewDeckText(gameSlug: string, text: string, zones: ReturnType
   );
 
   return { cards: applied.cards, unmatched: applied.unmatched, suggestions };
-}
-
-/** Remplace un nom de carte dans la liste collée, sur les lignes qui le portent. */
-function replaceCardName(text: string, from: string, to: string): string {
-  return text
-    .split(/\r?\n/)
-    .map((line) => {
-      const trimmed = line.trimEnd();
-      return trimmed.endsWith(from) ? trimmed.slice(0, trimmed.length - from.length) + to : line;
-    })
-    .join("\n");
 }
 
 export default function CreateDeckDialog({
@@ -365,7 +332,7 @@ export default function CreateDeckDialog({
                                   onClick={() =>
                                     setFormData({
                                       ...formData,
-                                      decklist: replaceCardName(formData.decklist, name, preview.suggestions[name]),
+                                      decklist: renameDeckTextCard(formData.decklist, name, preview.suggestions[name]),
                                     })
                                   }
                                 >

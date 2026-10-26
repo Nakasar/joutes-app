@@ -72,5 +72,5 @@ export function zoneHoldingCard(
   if (holding.length === 0) return undefined;
 
   const routed = routeCardToZone(card, zones, cards);
-  return holding.find((zone) => zone.key === routed)?.key ?? holding[holding.length - 1].key;
+  return holding.find((zone) => zone.key === routed)?.key ?? holding[0].key;
 }

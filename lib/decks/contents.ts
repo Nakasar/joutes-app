@@ -101,20 +101,23 @@ export function setCardQuantity(
 
 /**
  * Déplace des exemplaires d'une carte d'une zone à une autre — tous, ou
- * `quantity` au plus. Rien ne bouge si la carte n'est pas dans la zone de
- * départ ou si les deux zones sont la même.
+ * `quantity` au plus, et jamais plus que la place restante (`room`) de la zone
+ * d'arrivée : glisser trois Jinx sur le champion choisi n'en pose qu'un. Rien
+ * ne bouge si la carte n'est pas dans la zone de départ, si l'arrivée est
+ * pleine ou si les deux zones sont la même.
  */
 export function moveCard(
   cards: DeckCards,
   from: DeckZoneKey,
   to: DeckZoneKey,
   cardId: string,
-  quantity?: number
+  quantity?: number,
+  room = Infinity
 ): DeckCards {
   if (from === to) return cards;
 
   const held = zoneEntries(cards, from).find((entry) => entry.cardId === cardId)?.quantity ?? 0;
-  const moved = Math.min(held, quantity ?? held);
+  const moved = Math.min(held, quantity ?? held, room);
   if (moved <= 0) return cards;
 
   return changeCardQuantity(changeCardQuantity(cards, from, cardId, -moved), to, cardId, moved);

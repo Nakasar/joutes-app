@@ -41,7 +41,10 @@ export function DeckZoneCards({
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="text-[13px] font-semibold">{zone.label}</h3>
             <span className="font-mono text-xs text-muted-foreground">
-              {zoneCounterLabel(zone, ...ruleCount(cards, zones, zone))}
+              {(() => {
+                const { count, contributed } = zoneRuleCount(cards, zones, zone);
+                return zoneCounterLabel(zone, count, contributed);
+              })()}
             </span>
           </div>
 
@@ -118,9 +121,4 @@ export function DeckZonesSummary({
       ))}
     </div>
   );
-}
-
-function ruleCount(cards: DeckCards | undefined, zones: DeckZone[], zone: DeckZone): [number, number] {
-  const { count, contributed } = zoneRuleCount(cards, zones, zone);
-  return [count, contributed];
 }

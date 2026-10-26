@@ -6,11 +6,10 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
-import { toDeckCardInfo, type RawCard } from "@/lib/decks/card-info.ts";
 import type { DeckCardInfo, DeckCards } from "@/lib/decks/contents.ts";
-import { applyDeckText, normalizeCardName, parseDeckText } from "@/lib/decks/text.ts";
-import { routeCardToZone } from "@/lib/decks/routing.ts";
-import { defaultDeckZone, type DeckZone } from "@/lib/decks/zones.ts";
+import { resolveDeckText } from "@/lib/decks/resolve-text.ts";
+import { keptDeckCards, mergeDeckText, parseDeckText } from "@/lib/decks/text.ts";
+import type { DeckZone } from "@/lib/decks/zones.ts";
 
 /**
  * Onglet « Texte » : coller une liste plutôt que de la construire carte à carte.
@@ -26,12 +25,15 @@ export function DeckTextTab({
   onValueChangeAction,
   zones,
   gameSlug,
+  currentCards,
   onApplyAction,
 }: {
   value: string;
   onValueChangeAction: (value: string) => void;
   zones: DeckZone[];
   gameSlug: string;
+  /** Le deck en cours : une liste sans sections le complète au lieu de l'écraser. */
+  currentCards: DeckCards;
   onApplyAction: (cards: DeckCards, catalog: DeckCardInfo[]) => void;
 }) {
   const [applying, setApplying] = useState(false);
@@ -51,38 +53,20 @@ export function DeckTextTab({
 
     setApplying(true);
     try {
-      const names = [...new Set(parsed.lines.map((line) => line.name))];
-      const response = await fetch(`/api/games/${gameSlug}/deck-cards`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names }),
+      // Le rangement voit ce qui restera du deck : un champion choisi déjà en
+      // place n'est pas une place libre, une zone que la liste remplace l'est.
+      const resolved = await resolveDeckText(gameSlug, parsed, zones, {
+        context: keptDeckCards(currentCards, parsed, zones),
       });
-
-      if (!response.ok) {
+      if (!resolved) {
         toast.error("Lecture impossible", { description: "Le catalogue n'a pas répondu." });
         return;
       }
 
-      const data: { matches?: Record<string, RawCard> } = await response.json();
-      const byNormalizedName = new Map<string, DeckCardInfo>();
-      for (const [name, raw] of Object.entries(data.matches ?? {})) {
-        byNormalizedName.set(normalizeCardName(name), toDeckCardInfo(raw));
-      }
-
-      const infoById = new Map([...byNormalizedName.values()].map((card) => [card.id, card]));
-      const applied = applyDeckText(
-        parsed,
-        (name) => byNormalizedName.get(normalizeCardName(name))?.id,
-        // Une liste sans sections range ses cartes par type, comme l'ajout
-        // depuis le catalogue.
-        (cardId, cards) => {
-          const card = infoById.get(cardId);
-          return card ? routeCardToZone(card, zones, cards) : defaultDeckZone(zones);
-        }
-      );
+      const { applied, catalog } = resolved;
       setReport({ matched: applied.matched, merged: applied.merged, unmatched: applied.unmatched });
 
-      onApplyAction(applied.cards, [...byNormalizedName.values()]);
+      onApplyAction(mergeDeckText(currentCards, applied.cards, parsed, zones), catalog);
       toast.success("Liste appliquée", {
         description: `${applied.matched} ligne${applied.matched > 1 ? "s" : ""} appariée${applied.matched > 1 ? "s" : ""}.`,
       });
@@ -133,7 +117,7 @@ export function DeckTextTab({
           Appliquer au deck
         </Button>
         <p className="text-xs text-muted-foreground">
-          Remplace le contenu des zones nommées dans la liste.
+          Remplace le contenu des zones nommées dans la liste ; sans en-tête, le deck principal.
         </p>
       </aside>
     </div>

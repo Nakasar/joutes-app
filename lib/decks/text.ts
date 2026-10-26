@@ -108,9 +108,7 @@ export function parseDeckText(text: string, zones: DeckZone[]): ParsedDeckText {
       }
     }
 
-    const quantityMatch = line.match(/^\s*[xX\-*]*?(\d+)\s*x?\s+(.+)$/);
-    const quantity = quantityMatch ? Number.parseInt(quantityMatch[1], 10) : 1;
-    const name = (quantityMatch ? quantityMatch[2] : line.replace(/^[-•]\s*/, "")).trim();
+    const { quantity, name } = readCardLine(line);
 
     if (!name || quantity <= 0) {
       ignored.push(line);
@@ -130,6 +128,34 @@ export function parseDeckText(text: string, zones: DeckZone[]): ParsedDeckText {
   }
 
   return { lines, sections, ignored };
+}
+
+/** Une ligne de carte : « 3x Carte », « - Carte »… Le préfixe est ce qui précède le nom. */
+function readCardLine(line: string): { quantity: number; name: string; prefix: string } {
+  const quantityMatch = line.match(/^(\s*[xX\-*]*?(\d+)\s*x?\s+)(.+)$/);
+  if (quantityMatch) {
+    return { quantity: Number.parseInt(quantityMatch[2], 10), name: quantityMatch[3].trim(), prefix: quantityMatch[1] };
+  }
+
+  const bullet = line.match(/^(\s*[-•]?\s*)(.*)$/);
+  return { quantity: 1, name: (bullet?.[2] ?? line).trim(), prefix: bullet?.[1] ?? "" };
+}
+
+/**
+ * Renomme une carte dans une liste collée : seules les lignes dont le nom
+ * **est** `from` changent, quantité et puce gardées. Comparer la fin de ligne
+ * réécrirait aussi « Thunder Strike » en corrigeant « Strike ».
+ */
+export function renameDeckTextCard(text: string, from: string, to: string): string {
+  const target = normalizeCardName(from);
+
+  return text
+    .split(/\r?\n/)
+    .map((line) => {
+      const { name, prefix } = readCardLine(line.trim());
+      return name && normalizeCardName(name) === target ? `${prefix}${to}` : line;
+    })
+    .join("\n");
 }
 
 /** Écrit le contenu d'un deck sous la forme lue par `parseDeckText`. */
@@ -193,7 +219,9 @@ export function applyDeckText(
   for (const line of parsed.lines) {
     const cardId = resolve(line.name);
     if (!cardId) {
-      unmatched.push(line.name);
+      // Une fois par nom : le même nom inconnu dans deux sections reste une
+      // seule faute à corriger.
+      if (!unmatched.includes(line.name)) unmatched.push(line.name);
       continue;
     }
 
@@ -234,4 +262,69 @@ export function normalizeCardName(name: string): string {
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/**
+ * Ce qu'une liste appliquée change dans le deck en cours, zone par zone.
+ *
+ * Une zone nommée par un en-tête est remplacée : c'est ce que dit la liste.
+ * La zone par défaut l'est aussi quand des lignes sans en-tête y tombent,
+ * comme avant le rangement par type. Une zone que seul le rangement atteint
+ * — une rune ou un champion égaré dans une liste sans sections — reçoit ces
+ * cartes **en plus** de ce qu'elle porte : coller trois sorts et une rune ne
+ * doit pas effacer les onze autres.
+ */
+export function mergeDeckText(
+  current: DeckCards,
+  applied: DeckCards,
+  parsed: ParsedDeckText,
+  zones: DeckZone[]
+): DeckCards {
+  const replaced = replacedDeckZones(parsed, zones);
+  const changes: DeckCards = {};
+  for (const [key, entries] of Object.entries(applied) as [DeckZoneKey, DeckCardEntry[]][]) {
+    changes[key] = replaced.has(key) ? entries : combineEntries(current[key] ?? [], entries);
+  }
+
+  return changes;
+}
+
+/** Les zones qu'une liste appliquée remplace, plutôt que de les compléter (voir `mergeDeckText`). */
+export function replacedDeckZones(parsed: ParsedDeckText, zones: DeckZone[]): Set<DeckZoneKey> {
+  const replaced = new Set<DeckZoneKey>(parsed.sections);
+  if (parsed.lines.some((line) => line.inferred)) {
+    replaced.add(defaultDeckZone(zones));
+  }
+  return replaced;
+}
+
+/** Ce qui reste du deck en cours une fois les zones remplacées vidées : le contexte du rangement. */
+export function keptDeckCards(current: DeckCards, parsed: ParsedDeckText, zones: DeckZone[]): DeckCards {
+  const replaced = replacedDeckZones(parsed, zones);
+  return Object.fromEntries(
+    Object.entries(current).filter(([key]) => !replaced.has(key as DeckZoneKey))
+  ) as DeckCards;
+}
+
+/** Les deux listes d'une même zone réunies, les quantités d'une même carte additionnées. */
+export function combineEntries(a: DeckCardEntry[], b: DeckCardEntry[]): DeckCardEntry[] {
+  const combined = a.map((entry) => ({ ...entry }));
+  for (const entry of b) {
+    const existing = combined.find((other) => other.cardId === entry.cardId);
+    if (existing) {
+      existing.quantity += entry.quantity;
+    } else {
+      combined.push({ ...entry });
+    }
+  }
+  return combined;
+}
+
+/** Deux contenus de deck réunis zone par zone. */
+export function combineDeckCards(a: DeckCards, b: DeckCards): DeckCards {
+  const combined: DeckCards = { ...a };
+  for (const [key, entries] of Object.entries(b) as [DeckZoneKey, DeckCardEntry[]][]) {
+    combined[key] = combineEntries(a[key] ?? [], entries);
+  }
+  return combined;
 }

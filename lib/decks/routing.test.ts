@@ -47,5 +47,13 @@ describe("rangement automatique", () => {
     assert.equal(zoneHoldingCard(jinx, riftbound, cards), "maindeck");
     assert.equal(zoneHoldingCard(jinx, riftbound, { champions: cards.champions }), "champions");
     assert.equal(zoneHoldingCard(spell, riftbound, cards), undefined);
+    // Hors de la zone du rangement, c'est la première zone qui la porte.
+    assert.equal(
+      zoneHoldingCard(spell, riftbound, {
+        runes: [{ cardId: spell.id, quantity: 1 }],
+        sideboard: [{ cardId: spell.id, quantity: 1 }],
+      }),
+      "runes"
+    );
   });
 });

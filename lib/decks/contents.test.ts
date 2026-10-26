@@ -148,6 +148,14 @@ describe("déplacement entre zones", () => {
     assert.deepEqual(one.sideboard, [{ cardId: "m1", quantity: 1 }]);
   });
 
+  it("ne déplace pas plus que la place restante à l'arrivée", () => {
+    const moved = moveCard(DECK, "maindeck", "sideboard", "m1", undefined, 1);
+
+    assert.equal(moved.maindeck?.find((entry) => entry.cardId === "m1")?.quantity, 2);
+    assert.deepEqual(moved.sideboard, [{ cardId: "m1", quantity: 1 }]);
+    assert.equal(moveCard(DECK, "maindeck", "sideboard", "m1", undefined, 0), DECK);
+  });
+
   it("ne fait rien sans carte à déplacer", () => {
     assert.equal(moveCard(DECK, "sideboard", "maindeck", "m1"), DECK);
     assert.equal(moveCard(DECK, "maindeck", "maindeck", "m1"), DECK);
