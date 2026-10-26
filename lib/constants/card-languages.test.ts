@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getGameLanguages, toCollectionLanguage } from "./card-languages";
+import { catalogLanguagesForSearch, getGameLanguages, toCollectionLanguage } from "./card-languages";
 import { gameLanguagesSchema } from "@/lib/schemas/game.schema";
 
 /**
@@ -40,5 +40,32 @@ describe("gameLanguagesSchema", () => {
   it("refuse une liste vide ou une langue inconnue", () => {
     assert.equal(gameLanguagesSchema.safeParse([]).success, false);
     assert.equal(gameLanguagesSchema.safeParse(["xx"]).success, false);
+  });
+});
+
+describe("catalogLanguagesForSearch", () => {
+  it("ne filtre pas quand toutes les langues sont demandées", () => {
+    assert.equal(catalogLanguagesForSearch("all", ["en"]), null);
+  });
+
+  it("cherche une carte française parmi les fiches françaises et anglaises", () => {
+    assert.deepEqual(catalogLanguagesForSearch("fr", ["en", "fr"]), ["en", "fr"]);
+  });
+
+  it("retombe sur les fiches anglaises d'un jeu importé en anglais seulement", () => {
+    assert.deepEqual(catalogLanguagesForSearch("fr", ["en"]), ["en", "fr"]);
+  });
+
+  it("garde les fiches françaises pour une carte anglaise d'un jeu importé en français seulement", () => {
+    assert.deepEqual(catalogLanguagesForSearch("en", ["fr"]), ["fr"]);
+    assert.deepEqual(catalogLanguagesForSearch("de", ["fr"]), ["fr"]);
+  });
+
+  it("ne retombe que sur une langue du catalogue, pour ne pas doubler les cartes", () => {
+    assert.deepEqual(catalogLanguagesForSearch("en", ["ja", "fr"]), ["fr"]);
+  });
+
+  it("garde le filtre tant que le catalogue est inconnu", () => {
+    assert.deepEqual(catalogLanguagesForSearch("en", []), ["en"]);
   });
 });

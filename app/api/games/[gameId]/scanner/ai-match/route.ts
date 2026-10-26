@@ -4,7 +4,8 @@ import { z } from "zod";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { getGameBySlugOrId } from "@/lib/db/games";
-import { findCardByAiIdentification } from "@/lib/db/cards";
+import { findCardByAiIdentification, getCatalogLanguages } from "@/lib/db/cards";
+import { catalogLanguagesForSearch } from "@/lib/constants/card-languages";
 import { hasPermission } from "@/lib/db/permissions";
 import { matchCardNameInMeilisearch, type ScannerMatch } from "@/lib/scanner";
 
@@ -41,11 +42,15 @@ async function resolveMatch(
   gameSlug: string | undefined,
   identification: z.infer<typeof identificationSchema>
 ): Promise<ScannerMatch | null> {
+  // La langue lue sur la carte est celle de l'impression : elle retombe sur les
+  // fiches que le catalogue possède, comme la recherche de cartes.
+  const catalogLanguages = identification.lang ? await getCatalogLanguages(gameObjectId.toHexString()) : [];
   const exactMatch = await findCardByAiIdentification(gameObjectId, {
     name: identification.cardName,
     setCode: identification.setCode,
     collectorNumber: identification.collectorNumber,
     lang: identification.lang,
+    languages: identification.lang ? catalogLanguagesForSearch(identification.lang, catalogLanguages) : null,
   });
   if (exactMatch) {
     return { id: exactMatch.id, name: exactMatch.name, score: 1 };
@@ -58,12 +63,13 @@ async function resolveMatch(
   const fuzzyMatch = await matchCardNameInMeilisearch(gameSlug, identification.cardName, {
     lang: identification.lang,
     setCode: identification.setCode,
+    catalogLanguages,
   });
   if (fuzzyMatch || !identification.setCode) {
     return fuzzyMatch;
   }
 
-  return matchCardNameInMeilisearch(gameSlug, identification.cardName, { lang: identification.lang });
+  return matchCardNameInMeilisearch(gameSlug, identification.cardName, { lang: identification.lang, catalogLanguages });
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ gameId: string }> }) {

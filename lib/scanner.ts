@@ -2,7 +2,7 @@ import "server-only";
 
 import { MeilisearchApiError } from "meilisearch";
 import meilisearch, { cardIndexFor } from "@/lib/meilisearch";
-import { CARD_LANGUAGES } from "@/lib/constants/card-languages";
+import { CARD_LANGUAGES, catalogLanguagesForSearch } from "@/lib/constants/card-languages";
 import { quoteFilterValue } from "@/lib/cards/search-filters";
 
 type CardNameHit = { id: string; name: string };
@@ -21,7 +21,7 @@ const RANKING_SCORE_THRESHOLD = 0.55;
 export async function matchCardNameInMeilisearch(
   gameSlug: string | undefined,
   query: string,
-  options: { lang?: string | null; setCode?: string | null } = {}
+  options: { lang?: string | null; setCode?: string | null; catalogLanguages?: readonly string[] } = {}
 ): Promise<ScannerMatch | null> {
   const indexConfig = cardIndexFor(gameSlug);
   if (!indexConfig) {
@@ -36,12 +36,11 @@ export async function matchCardNameInMeilisearch(
   const index = meilisearch.index<CardNameHit>(indexConfig.name);
 
   const filter: string[] = [];
-  if (options.lang) {
-    // Comme la recherche de cartes : une langue absente du catalogue retombe
-    // sur les cartes anglaises, qui portent alors leur nom traduit.
-    filter.push(
-      options.lang === "en" ? `lang = "en"` : `lang IN ["en", ${quoteFilterValue(options.lang)}]`
-    );
+  // Comme la recherche de cartes : la langue de la carte scannée retombe sur
+  // les fiches que le catalogue possède, qui portent alors leur nom traduit.
+  const languages = options.lang ? catalogLanguagesForSearch(options.lang, options.catalogLanguages ?? []) : null;
+  if (languages) {
+    filter.push(`lang IN [${languages.map((lang) => quoteFilterValue(lang)).join(", ")}]`);
   }
   if (options.setCode) {
     filter.push(`${indexConfig.keys.set} = ${options.setCode}`);

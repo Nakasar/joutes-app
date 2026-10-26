@@ -634,31 +634,41 @@ export async function findCardByAiIdentification(
     name?: string | null;
     setCode?: string | null;
     collectorNumber?: string | null;
+    /** Langue lue sur la carte : sa fiche passe avant celles des autres langues acceptées. */
     lang?: string | null;
+    /** Valeurs de `lang` acceptées (cf. `catalogLanguagesForSearch`) ; `null` pour toutes. */
+    languages?: string[] | null;
   }
 ): Promise<{ id: string; name: string } | null> {
-  const { name, setCode, collectorNumber, lang } = identification;
-
-  const baseFilter: Record<string, unknown> = { gameId };
-  if (lang) {
-    baseFilter.lang = lang;
-  }
+  const { name, setCode, collectorNumber, lang, languages } = identification;
 
   const collection = db.collection<{ id: string; name: string }>("cards");
   const findOptions = { projection: { _id: 0, id: 1, name: 1 }, collation: { locale: "en", strength: 2 } };
 
+  // Une même carte peut exister en plusieurs langues au catalogue : à chaque
+  // palier, la fiche dans la langue lue l'emporte sur les autres.
+  const preferred = lang && (!languages || languages.includes(lang)) ? lang : null;
+  const findInLanguages = async (filter: Record<string, unknown>) => {
+    if (preferred) {
+      const card = await collection.findOne({ ...filter, gameId, lang: preferred }, findOptions);
+      if (card) return card;
+    }
+    const langFilter = languages ? { lang: { $in: languages } } : {};
+    return collection.findOne({ ...filter, gameId, ...langFilter }, findOptions);
+  };
+
   if (setCode && collectorNumber) {
-    const card = await collection.findOne({ ...baseFilter, setCode, collectorNumber }, findOptions);
+    const card = await findInLanguages({ setCode, collectorNumber });
     if (card) return card;
   }
 
   if (name && setCode) {
-    const card = await collection.findOne({ ...baseFilter, name, setCode }, findOptions);
+    const card = await findInLanguages({ name, setCode });
     if (card) return card;
   }
 
   if (name) {
-    const card = await collection.findOne({ ...baseFilter, name }, findOptions);
+    const card = await findInLanguages({ name });
     if (card) return card;
   }
 
