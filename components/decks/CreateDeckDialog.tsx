@@ -422,7 +422,7 @@ export default function CreateDeckDialog({
             </Button>
             {importedCount > 0 && (
               <span className="mr-auto self-center text-sm text-muted-foreground">
-                {importedCount} carte{importedCount > 1 ? "s" : ""} seront ajoutée{importedCount > 1 ? "s" : ""}
+                {importedCount > 1 ? `${importedCount} cartes seront ajoutées` : "1 carte sera ajoutée"}
               </span>
             )}
             <Button type="submit" disabled={isLoading || reading}>
