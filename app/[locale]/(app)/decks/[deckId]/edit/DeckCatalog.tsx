@@ -59,7 +59,10 @@ export function DeckCatalog({
       try {
         const params = new URLSearchParams();
         if (search.trim()) params.set("searchQuery", search.trim());
-        for (const domain of selectedDomains) params.append("domain", domain);
+        // Les facettes de valeur se lisent sous `in_<clé>` : un paramètre
+        // `domain` nu n'est pas un critère connu de la route, qui l'ignorait
+        // et rendait le catalogue entier quel que soit le domaine coché.
+        if (selectedDomains.length > 0) params.set("in_domain", selectedDomains.join(","));
         params.set("limit", String(CATALOG_PAGE_SIZE));
 
         const response = await fetch(`/api/games/${gameSlug}/cards?${params.toString()}`, {
