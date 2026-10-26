@@ -244,6 +244,9 @@ export default function GameCollectionBrowser({
   const goToPage = (next: number) => {
     if (next < 1 || next > totalPages || loading) return;
     void fetchPage({ search, setCode, type, ownership, page: next });
+    // Les boutons sont sous la grille : sans cela, la nouvelle page s'affiche
+    // hors de vue et il faut remonter à la main pour la lire.
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const setQuantity = (cardId: string, quantity: number) => {
