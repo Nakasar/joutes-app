@@ -23,7 +23,7 @@ import LairProGrantCard from "./LairProGrantCard.tsx";
 import PrivateLairInvitationManager from "./PrivateLairInvitationManager.tsx";
 import PrivateLairFollowersManager from "./PrivateLairFollowersManager.tsx";
 import { getTranslations } from "next-intl/server";
-import { getUpcomingLairEvents } from "@/lib/db/events.ts";
+import { getUpcomingLairEvents, getUpcomingLairPicks } from "@/lib/db/events.ts";
 import { isPopular, registeredIds } from "@/lib/events/highlights.ts";
 import LairFeaturedPicks, { type FeaturedPickRow } from "./LairFeaturedPicks.tsx";
 import { isLairPro } from "@/lib/lairs/pro.ts";
@@ -168,20 +168,31 @@ async function ManageLairContent({
   const refreshReport = tab === "events" ? await getLairEventsRefreshReport(lairId) : null;
   const sourceRequest = tab === "events" ? await getLairEventsSourceRequest(lairId) : null;
 
-  // Les événements à venir, pour « Mettre en avant ».
-  const featuredPickRows: FeaturedPickRow[] =
-    tab === "events"
-      ? (await getUpcomingLairEvents(lairId)).map((event) => ({
-          id: event.id,
-          name: event.name,
-          startDateTime: event.startDateTime,
-          gameName: event.gameName,
-          featured: Boolean(event.featured),
-          popular: isPopular(event),
-          registered: registeredIds(event).length,
-          ...(event.maxParticipants ? { capacity: event.maxParticipants } : {}),
-        }))
-      : [];
+  // Les événements à venir, pour « Mettre en avant » : les trente plus
+  // proches, plus les choix déjà faits au-delà — sans eux, un choix lointain
+  // occuperait une place sans qu'on puisse le voir ni le retirer.
+  //
+  // L'ancien « À la une » (`featuredEventId`) apparaît comme choisi tant que
+  // le lieu n'a aucune mise en avant : c'est lui que la vitrine montre, et
+  // l'éteindre ici l'efface.
+  const featuredPickRows: FeaturedPickRow[] = [];
+  if (tab === "events") {
+    const [nearest, picks] = await Promise.all([getUpcomingLairEvents(lairId), getUpcomingLairPicks(lairId)]);
+    const byId = new Map([...nearest, ...picks].map((event) => [event.id, event]));
+    const legacyId = picks.length === 0 ? lair.options?.featuredEventId : undefined;
+    for (const event of [...byId.values()].sort((a, b) => a.startDateTime.localeCompare(b.startDateTime))) {
+      featuredPickRows.push({
+        id: event.id,
+        name: event.name,
+        startDateTime: event.startDateTime,
+        gameName: event.gameName,
+        featured: Boolean(event.featured) || event.id === legacyId,
+        popular: isPopular(event),
+        registered: registeredIds(event).length,
+        ...(event.maxParticipants ? { capacity: event.maxParticipants } : {}),
+      });
+    }
+  }
 
   // Le statut d'administrateur, pour la carte d'octroi réservée à l'équipe.
   // L'action serveur refait le contrôle : ceci ne décide que de l'affichage.

@@ -44,13 +44,21 @@ export default async function ANePasManquer({
 
   if (evenements.length === 0) return null;
 
+  // Le bloc couvre deux semaines, le calendrier un mois : « tout » s'ouvre sur
+  // le mois du plus proche des événements montrés, sans quoi, en fin de mois,
+  // ceux du mois suivant n'y seraient pas.
+  const premier = evenements
+    .map((evenement) => DateTime.fromISO(evenement.startDateTime).setZone("Europe/Paris"))
+    .reduce((a, b) => (b < a ? b : a));
+  const tout = `/events?highlighted=1&month=${premier.month}&year=${premier.year}`;
+
   return (
     <section>
       <EtiquetteSection
         icone={<Sparkles className="size-[18px]" aria-hidden />}
         action={
           <Link
-            href="/events?highlighted=1"
+            href={tout}
             className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm font-medium"
           >
             {t("tout")}

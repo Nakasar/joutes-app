@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { DateTime } from "luxon";
 import { auth } from "@/lib/auth";
 import { getUserById } from "@/lib/db/users";
 import { getAllGames } from "@/lib/db/games";
@@ -13,6 +14,7 @@ import {
   readHomeHighlights,
   readHomeLairs,
   readHomeLives,
+  readHomeWindow,
   readPosition,
 } from "@/lib/home/read";
 import type { Deck } from "@/lib/types/Deck";
@@ -64,10 +66,15 @@ export async function GET(request: NextRequest) {
 
     const gameIds = readGameScope(viewer, game);
 
+    // Les deux semaines à venir, lues une fois : l'agenda en garde sept jours,
+    // « À ne pas manquer » les quatorze.
+    const now = DateTime.now();
+    const window = await readHomeWindow(viewer, position, game, now);
+
     const [lairs, agenda, highlights, feed, decks] = await Promise.all([
       readHomeLairs(viewer, position),
-      readHomeAgenda(viewer, position, game),
-      readHomeHighlights(viewer, position, game),
+      readHomeAgenda(viewer, position, game, now, window),
+      readHomeHighlights(viewer, position, game, now, window),
       readHomeFeed(gameIds, lang, limit),
       readHomeDecks(viewer, game),
     ]);

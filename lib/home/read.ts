@@ -231,9 +231,30 @@ export async function readHomeAgenda(
   position: Position | null,
   game: Game | null,
   now: DateTime = DateTime.now(),
+  window?: HomeWindow,
 ): Promise<Event[]> {
-  const events = (await readAgendaWindow(viewer, position, game, now, JOURS_A_VENIR)).slice(0, MAX_EVENEMENTS);
+  const { events: upcoming } = window ?? (await readHomeWindow(viewer, position, game, now));
+  const endMs = now.plus({ days: JOURS_A_VENIR }).toMillis();
+  const events = upcoming
+    .filter((event) => DateTime.fromISO(event.startDateTime).toMillis() <= endMs)
+    .slice(0, MAX_EVENEMENTS);
   return withHighlights(events, viewer);
+}
+
+/**
+ * Les deux semaines à venir dans le périmètre de l'accueil, lues une fois :
+ * l'agenda en garde les sept premiers jours, « À ne pas manquer » les
+ * quatorze. Sans ce partage, chaque accueil lisait deux fois le même agenda.
+ */
+export type HomeWindow = { events: Event[] };
+
+export async function readHomeWindow(
+  viewer: User | null,
+  position: Position | null,
+  game: Game | null,
+  now: DateTime = DateTime.now(),
+): Promise<HomeWindow> {
+  return { events: await readAgendaWindow(viewer, position, game, now, HIGHLIGHT_WINDOW_DAYS) };
 }
 
 /**
@@ -248,12 +269,13 @@ export async function readHomeHighlights(
   position: Position | null,
   game: Game | null,
   now: DateTime = DateTime.now(),
+  window?: HomeWindow,
 ): Promise<Event[]> {
   const end = now.plus({ days: HIGHLIGHT_WINDOW_DAYS });
   const friendIds = viewer?.friends ?? [];
 
-  const [scope, withFriends] = await Promise.all([
-    readAgendaWindow(viewer, position, game, now, HIGHLIGHT_WINDOW_DAYS),
+  const [{ events: scope }, withFriends] = await Promise.all([
+    window ?? readHomeWindow(viewer, position, game, now),
     friendIds.length > 0
       ? getEventsWithUsers(friendIds, {
           afterDate: now.toISO() ?? "",
@@ -264,8 +286,9 @@ export async function readHomeHighlights(
   ]);
 
   // Plafonné : sans position ni compte, le périmètre est tout l'agenda de la
-  // quinzaine, et les marques se lisent par lots d'identifiants.
-  const candidates = [...withFriends, ...scope].slice(0, MAX_CANDIDATS_MIS_EN_AVANT);
+  // quinzaine, et les marques se lisent par lots d'identifiants. L'agenda
+  // d'abord : `pickHighlights` garde la première copie d'un événement.
+  const candidates = [...scope, ...withFriends].slice(0, MAX_CANDIDATS_MIS_EN_AVANT);
   return pickHighlights(await withHighlights(candidates, viewer), viewer?.id);
 }
 

@@ -34,7 +34,9 @@ import {
   readHomeHighlights,
   readHomeLairs,
   readHomeLives,
+  readHomeWindow,
   readPosition,
+  type HomeWindow,
   type Position as HomePosition,
 } from "@/lib/home/read.ts";
 
@@ -188,19 +190,25 @@ export const lireDirects = cache(async (position: Position | null): Promise<Dire
   }));
 });
 
+/** Les deux semaines à venir, lues une fois pour l'agenda et « À ne pas manquer » — voir `readHomeWindow`. */
+const lireFenetre = cache(async (position: Position | null, jeu: Game | null): Promise<HomeWindow> => {
+  const viewer = await lireViewer();
+  return readHomeWindow(viewer, versPosition(position), jeu);
+});
+
 /** Ce qui vient dans les sept prochains jours — voir `readHomeAgenda`. */
 export const lireAgenda = cache(
   async (position: Position | null, jeu: Game | null): Promise<Event[]> => {
-    const viewer = await lireViewer();
-    return readHomeAgenda(viewer, versPosition(position), jeu);
+    const [viewer, fenetre] = await Promise.all([lireViewer(), lireFenetre(position, jeu)]);
+    return readHomeAgenda(viewer, versPosition(position), jeu, undefined, fenetre);
   },
 );
 
 /** « À ne pas manquer » : les événements marqués des deux prochaines semaines — voir `readHomeHighlights`. */
 export const lireMisEnAvant = cache(
   async (position: Position | null, jeu: Game | null): Promise<Event[]> => {
-    const viewer = await lireViewer();
-    return readHomeHighlights(viewer, versPosition(position), jeu);
+    const [viewer, fenetre] = await Promise.all([lireViewer(), lireFenetre(position, jeu)]);
+    return readHomeHighlights(viewer, versPosition(position), jeu, undefined, fenetre);
   },
 );
 

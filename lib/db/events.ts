@@ -1088,6 +1088,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     name: event.name,
     description: event.description,
     banner: event.banner,
+    featured: event.featured,
     participantsVisibility: event.participantsVisibility,
     startDateTime: event.startDateTime,
     endDateTime: event.endDateTime,
@@ -1519,8 +1520,14 @@ export async function getHighlightSources(eventIds: string[]): Promise<Map<strin
 
 /**
  * Les événements à venir où des personnes sont inscrites ou intéressées —
- * celles d'une liste d'amis, pour le bloc « À ne pas manquer ». Les lieux
- * privés restent hors de portée, comme dans l'agenda public.
+ * celles d'une liste d'amis, pour le bloc « À ne pas manquer ». Seuls les
+ * événements d'un lieu public en sortent : un événement privé (sans lieu) ne
+ * se montre qu'à son créateur et à ses participants, un lieu privé qu'à ceux
+ * qui le suivent.
+ *
+ * Les champs de remplissage sont ceux des autres lecteurs d'agenda (même
+ * règle pour `registeredParticipantsCount`) : la fiche qui en sort affiche
+ * le même statut que celle de l'agenda.
  */
 export async function getEventsWithUsers(
   userIds: string[],
@@ -1531,6 +1538,7 @@ export async function getEventsWithUsers(
   const pipeline: Array<Record<string, unknown>> = [
     {
       $match: {
+        lairId: {$exists: true, $nin: [null, ""]},
         startDateTime: {$gte: afterDate, $lte: beforeDate},
         status: {$ne: "cancelled"},
         $or: [{participants: {$in: userIds}}, {favoritedBy: {$in: userIds}}],
@@ -1584,7 +1592,14 @@ export async function getEventsWithUsers(
     status: event.status,
     addedBy: event.addedBy,
     creatorId: event.creatorId,
+    staff: event.staff ?? [],
     participants: event.participants,
+    participantRegistrations: event.participantRegistrations,
+    registeredParticipantsCount: (event.participants ?? []).filter(
+      (userId: string) => (event.participantRegistrations?.[userId] ?? 'REGISTERED') === 'REGISTERED'
+    ).length,
+    preRegistration: event.preRegistration,
+    allowJoin: event.allowJoin,
     favoritedBy: event.favoritedBy,
     maxParticipants: event.maxParticipants,
     lair: event.lairDetails && event.lairDetails.length > 0

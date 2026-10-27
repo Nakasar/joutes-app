@@ -542,6 +542,10 @@ export async function setEventFeaturedAction(
     if (result === "not-found") return { success: false, error: "NOT_FOUND" };
     if (result === "limit") return { success: false, error: "LIMIT" };
 
+    // Les mises en avant remplacent l'ancien « À la une » : le premier usage
+    // de la carte l'efface, pour qu'il ne revienne pas en repli.
+    if (lair.options?.featuredEventId) await lairsDb.clearLegacyFeaturedEvent(validatedId);
+
     revalidatePath(`/lairs/${validatedId}`);
     revalidatePath(`/lairs/${validatedId}/manage`);
     revalidatePath(`/events/${parsedEventId.data}`);

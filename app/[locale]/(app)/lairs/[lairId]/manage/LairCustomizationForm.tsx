@@ -77,7 +77,6 @@ type FormState = {
   parking: string;
   organizers: LairOrganizer[];
   rhythm: { label: string; value: string }[];
-  featuredEventId: string;
 };
 
 const MAX_ORGANIZERS = 8;
@@ -114,7 +113,6 @@ function initialState(lair: Lair): FormState {
     parking: options.about?.parking ?? "",
     organizers: options.about?.organizers ?? [],
     rhythm: options.about?.rhythm ?? [],
-    featuredEventId: options.featuredEventId ?? "",
   };
 }
 
@@ -210,7 +208,6 @@ export default function LairCustomizationForm({
           organizers: cleaned.organizers,
           rhythm: cleaned.rhythm,
         },
-        featuredEventId: state.featuredEventId,
       });
 
       if (result.success) {
