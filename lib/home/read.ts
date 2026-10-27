@@ -3,7 +3,9 @@ import "server-only";
 import { DateTime } from "luxon";
 
 import { getLairIdsNearLocation, getLairsByIds } from "@/lib/db/lairs";
-import { getAllEvents, getEventsByLairIds, getEventsForUser } from "@/lib/db/events";
+import { getAllEvents, getEventsByLairIds, getEventsForUser, getEventsWithUsers } from "@/lib/db/events";
+import { HIGHLIGHT_WINDOW_DAYS, pickHighlights } from "@/lib/events/highlights";
+import { withHighlights } from "@/lib/events/highlights-service";
 import { getNews } from "@/lib/db/news";
 import { listRecentPublicContents } from "@/lib/db/user-contents";
 import { listRecentSocialPosts } from "@/lib/db/game-social-posts";
@@ -221,6 +223,8 @@ export async function readHomeLives(
  * général : un compte croise ses lieux suivis, ses inscriptions et ses
  * favoris sur les jeux qu'il suit ; un visiteur situé lit les lieux dans le
  * rayon ; un visiteur sans position lit tout ce qui se passe.
+ *
+ * Chaque événement porte ses marques (`highlights`) : les fiches les affichent.
  */
 export async function readHomeAgenda(
   viewer: User | null,
@@ -228,7 +232,59 @@ export async function readHomeAgenda(
   game: Game | null,
   now: DateTime = DateTime.now(),
 ): Promise<Event[]> {
-  const end = now.plus({ days: JOURS_A_VENIR });
+  const events = (await readAgendaWindow(viewer, position, game, now, JOURS_A_VENIR)).slice(0, MAX_EVENEMENTS);
+  return withHighlights(events, viewer);
+}
+
+/**
+ * « À ne pas manquer » : les événements des deux prochaines semaines qui
+ * portent une marque — des amis y vont, le lieu les a choisis, ils sont
+ * populaires —, pris dans le même périmètre que l'agenda, plus ceux où vont
+ * des amis. Ceux où la personne est déjà inscrite n'y figurent pas : ils sont
+ * déjà dans « Ce qui m'attend ».
+ */
+export async function readHomeHighlights(
+  viewer: User | null,
+  position: Position | null,
+  game: Game | null,
+  now: DateTime = DateTime.now(),
+): Promise<Event[]> {
+  const end = now.plus({ days: HIGHLIGHT_WINDOW_DAYS });
+  const friendIds = viewer?.friends ?? [];
+
+  const [scope, withFriends] = await Promise.all([
+    readAgendaWindow(viewer, position, game, now, HIGHLIGHT_WINDOW_DAYS),
+    friendIds.length > 0
+      ? getEventsWithUsers(friendIds, {
+          afterDate: now.toISO() ?? "",
+          beforeDate: end.toISO() ?? "",
+          gameIds: game ? [game.id] : undefined,
+        })
+      : Promise.resolve([] as Event[]),
+  ]);
+
+  // Plafonné : sans position ni compte, le périmètre est tout l'agenda de la
+  // quinzaine, et les marques se lisent par lots d'identifiants.
+  const candidates = [...withFriends, ...scope].slice(0, MAX_CANDIDATS_MIS_EN_AVANT);
+  return pickHighlights(await withHighlights(candidates, viewer), viewer?.id);
+}
+
+/** Ce que l'accueil regarde au plus pour composer « À ne pas manquer ». */
+const MAX_CANDIDATS_MIS_EN_AVANT = 400;
+
+/**
+ * Les événements à venir sur `days` jours, dans le périmètre de l'accueil,
+ * triés par date. `readHomeAgenda` en garde les premiers ; « À ne pas
+ * manquer » y cherche les événements marqués.
+ */
+async function readAgendaWindow(
+  viewer: User | null,
+  position: Position | null,
+  game: Game | null,
+  now: DateTime,
+  days: number,
+): Promise<Event[]> {
+  const end = now.plus({ days });
   const bounds = { afterDate: now.toISO() ?? undefined, beforeDate: end.toISO() ?? undefined };
 
   let events: Event[];
@@ -271,8 +327,7 @@ export async function readHomeAgenda(
       const start = DateTime.fromISO(event.startDateTime).toMillis();
       return start >= startMs && start <= endMs;
     })
-    .sort((a, b) => DateTime.fromISO(a.startDateTime).toMillis() - DateTime.fromISO(b.startDateTime).toMillis())
-    .slice(0, MAX_EVENEMENTS);
+    .sort((a, b) => DateTime.fromISO(a.startDateTime).toMillis() - DateTime.fromISO(b.startDateTime).toMillis());
 }
 
 /**

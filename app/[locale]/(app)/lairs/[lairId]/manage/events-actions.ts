@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
+import { z } from "zod";
 
 import { requireAdminOrOwner } from "@/lib/middleware/admin.ts";
 import {
@@ -13,6 +14,7 @@ import {
   webUrlSchema,
 } from "@/lib/schemas/lair.schema.ts";
 import * as lairsDb from "@/lib/db/lairs.ts";
+import { setEventFeatured } from "@/lib/db/events.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
 import { lairHasPro } from "@/lib/subscriptions/access.ts";
 import { findHobbynextOwner, findRiftboundOrganizer, previewEventSource, refreshEvents } from "@/lib/services/refresh-events.ts";
@@ -514,6 +516,39 @@ export async function requestEventSourceHelp(
     return { success: true, requestedAt };
   } catch (error) {
     console.error("Erreur à l'envoi d'une demande de connexion :", error);
+    return { success: false, error: "FAILED" };
+  }
+}
+
+/**
+ * Met en avant un événement à venir du lieu, ou l'en retire.
+ *
+ * Le plafond de `MAX_LAIR_PICKS` se vérifie en base, pas dans le formulaire :
+ * deux onglets ouverts ne doivent pas permettre d'en choisir quatre.
+ */
+export async function setEventFeaturedAction(
+  lairId: string,
+  eventId: string,
+  featured: boolean,
+): Promise<{ success: true } | { success: false; error: "INVALID" | "NOT_FOUND" | "LIMIT" | "FAILED" }> {
+  try {
+    const { lair, validatedId } = await guard(lairId);
+    if (!lair) return { success: false, error: "NOT_FOUND" };
+
+    const parsedEventId = z.string().min(1).max(64).safeParse(eventId);
+    if (!parsedEventId.success || typeof featured !== "boolean") return { success: false, error: "INVALID" };
+
+    const result = await setEventFeatured(parsedEventId.data, validatedId, featured);
+    if (result === "not-found") return { success: false, error: "NOT_FOUND" };
+    if (result === "limit") return { success: false, error: "LIMIT" };
+
+    revalidatePath(`/lairs/${validatedId}`);
+    revalidatePath(`/lairs/${validatedId}/manage`);
+    revalidatePath(`/events/${parsedEventId.data}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur à la mise en avant d'un événement :", error);
     return { success: false, error: "FAILED" };
   }
 }

@@ -7,4 +7,4 @@
  * du texte plutôt qu'à l'instant de la requête.
  */
 export const CGU_LAST_UPDATED = "2026-08-04";
-export const PRIVACY_LAST_UPDATED = "2026-08-04";
+export const PRIVACY_LAST_UPDATED = "2026-10-27";

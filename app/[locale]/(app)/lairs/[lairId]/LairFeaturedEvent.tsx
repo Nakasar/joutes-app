@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { DateTime } from "luxon";
-import { Gamepad2 } from "lucide-react";
+import { Award, Gamepad2 } from "lucide-react";
 
 import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -55,7 +55,8 @@ export default async function LairFeaturedEvent({ event }: { event: Event }) {
 
         <div className="flex min-w-0 flex-1 flex-col gap-3 p-6">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-[var(--lair-accent-18)] px-2 py-0.5 font-mono text-[11px] text-[var(--lair-accent-text)]">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--lair-accent-18)] px-2 py-0.5 font-mono text-[11px] text-[var(--lair-accent-text)]">
+              {event.highlights?.lairPick && <Award className="size-3 shrink-0" aria-hidden />}
               {t("badge")}
             </span>
             <span className="text-xs text-muted-foreground">{event.gameName}</span>

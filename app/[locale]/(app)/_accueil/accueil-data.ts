@@ -31,6 +31,7 @@ import {
   readGameScope,
   readHomeAgenda,
   readHomeFeed,
+  readHomeHighlights,
   readHomeLairs,
   readHomeLives,
   readPosition,
@@ -192,6 +193,14 @@ export const lireAgenda = cache(
   async (position: Position | null, jeu: Game | null): Promise<Event[]> => {
     const viewer = await lireViewer();
     return readHomeAgenda(viewer, versPosition(position), jeu);
+  },
+);
+
+/** « À ne pas manquer » : les événements marqués des deux prochaines semaines — voir `readHomeHighlights`. */
+export const lireMisEnAvant = cache(
+  async (position: Position | null, jeu: Game | null): Promise<Event[]> => {
+    const viewer = await lireViewer();
+    return readHomeHighlights(viewer, versPosition(position), jeu);
   },
 );
 

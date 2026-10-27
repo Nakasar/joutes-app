@@ -5,7 +5,8 @@ import { Game } from "@/lib/types/Game";
 import EventsCalendar from "@/app/[locale]/(app)/events/EventsCalendar";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { useState, useEffect, useCallback, useTransition, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useTransition, useRef } from "react";
+import { hasHighlight } from "@/lib/events/highlights";
 
 type EventsCalendarClientProps = {
   initialEvents?: Event[];
@@ -176,6 +177,21 @@ export default function EventsCalendarClient({
     updateURL(params.month, params.year, params.gameId, null);
   }, [params.month, params.year, params.gameId, updateURL]);
 
+  // « Mis en avant » filtre ce qui est déjà chargé : les marques arrivent avec
+  // les événements, il n'y a rien à redemander au serveur.
+  const highlightedOnly = searchParams.get("highlighted") === "1";
+  const visibleEvents = useMemo(
+    () => (highlightedOnly ? events.filter((event) => hasHighlight(event.highlights)) : events),
+    [events, highlightedOnly],
+  );
+
+  const handleHighlightedChange = useCallback((on: boolean) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    if (on) newParams.set("highlighted", "1");
+    else newParams.delete("highlighted");
+    router.push(`${basePath}?${newParams.toString()}`, { scroll: false });
+  }, [router, basePath, searchParams]);
+
   // Effet pour synchroniser avec l'URL (source de vérité unique)
   useEffect(() => {
     fetchEvents(params.month, params.year, params.gameId, params.locParams);
@@ -185,7 +201,7 @@ export default function EventsCalendarClient({
     <div className="container mx-auto">
       <div className="space-y-6">
         <EventsCalendar
-          events={events}
+          events={visibleEvents}
           isLoading={isLoading || isPending}
           showViewToggle={true}
           currentMonth={params.month}
@@ -198,6 +214,8 @@ export default function EventsCalendarClient({
           onResetLocation={handleResetLocation}
           isLocationMode={isLocationMode}
           userLocation={userLocation}
+          highlightedOnly={highlightedOnly}
+          onHighlightedChange={handleHighlightedChange}
         />
       </div>
     </div>

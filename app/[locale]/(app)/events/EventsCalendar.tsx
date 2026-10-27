@@ -21,6 +21,9 @@ import { updateUserLocation } from "../account/actions.ts";
 import LocationSearchInput from "@/components/LocationSearchInput.tsx";
 import { toPlaceRef, type Place, type PlaceRef } from "@/lib/geo/places.ts";
 import {useTranslations, useLocale} from "next-intl";
+import { Award, Flame, Sparkles } from "lucide-react";
+import EventHighlightBadges from "@/components/events/EventHighlightBadges.tsx";
+import { compareByHighlight, hasHighlight } from "@/lib/events/highlights.ts";
 
 type EventsCalendarProps = {
   events: Event[];
@@ -35,6 +38,9 @@ type EventsCalendarProps = {
   onLocationSearch?: (latitude: number, longitude: number, distance: number) => void;
   onResetLocation?: () => void;
   isLocationMode?: boolean;
+  /** Ne montrer que les événements mis en avant (populaires, amis, choix du lieu). */
+  highlightedOnly?: boolean;
+  onHighlightedChange?: (highlightedOnly: boolean) => void;
   userLocation?: {
     latitude: number;
     longitude: number;
@@ -77,10 +83,13 @@ export default function EventsCalendar({
   onLocationSearch,
   onResetLocation,
   isLocationMode = false,
+  highlightedOnly = false,
+  onHighlightedChange,
   userLocation,
 }: EventsCalendarProps) {
   const locale = useLocale();
   const t = useTranslations('EventsCalendar');
+  const tHighlights = useTranslations('EventHighlights');
 
   const today = DateTime.now();
   const [internalMonth, setInternalMonth] = useState<number>(today.month);
@@ -507,6 +516,9 @@ export default function EventsCalendar({
       }
       map.get(day)?.push(event);
     });
+    // Dans une case, les événements marqués passent devant : ce sont eux qui
+    // restent visibles avant « +N autres ».
+    map.forEach((dayEvents) => dayEvents.sort(compareByHighlight));
     return map;
   }, [eventsInMonth]);
 
@@ -593,14 +605,21 @@ export default function EventsCalendar({
       isFavorited
     );
 
+    const highlights = event.highlights;
     const inner = (
       <div
         className={cn(
           "group/pill relative flex items-center gap-1.5 overflow-hidden rounded-md border border-l-[3px] bg-card py-1 pl-1.5 pr-1.5 text-xs shadow-sm transition-all hover:bg-accent hover:shadow",
           getStatusBorderClass(event.status),
+          highlights?.lairPick && "bg-primary/10",
           isUserEvent && "ring-1 ring-amber-400/60",
         )}
-        title={`${startTime} · ${event.name}`}
+        title={[
+          `${startTime} · ${event.name}`,
+          highlights?.lairPick ? tHighlights('lairPick') : null,
+          highlights?.popular ? tHighlights('popular') : null,
+          ...(highlights?.friends ?? []).slice(0, 3).map((friend) => friend.displayName),
+        ].filter(Boolean).join(' · ')}
       >
         {event.game?.icon ? (
           <img
@@ -624,6 +643,22 @@ export default function EventsCalendar({
         >
           {event.name}
         </span>
+
+        {/* Les marques : choix du lieu, populaire, un ami. Le nom du survol (`title`) les dit en toutes lettres. */}
+        {highlights?.lairPick && (
+          <Award className="text-primary h-3 w-3 shrink-0" aria-label={tHighlights('lairPick')} />
+        )}
+        {highlights?.popular && (
+          <Flame className="h-3 w-3 shrink-0 text-orange-500" aria-label={tHighlights('popular')} />
+        )}
+        {highlights && highlights.friends.length > 0 && (
+          <span
+            className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-violet-600 text-[8px] font-semibold text-white"
+            aria-label={tHighlights('legendFriends')}
+          >
+            {highlights.friends[0].displayName.slice(0, 1).toUpperCase()}
+          </span>
+        )}
 
         {/* Favori révélé au survol, pour les connectés */}
         {session.data?.user && (
@@ -807,6 +842,20 @@ export default function EventsCalendar({
                   >
                     <Navigation className="mr-2 h-4 w-4" />
                     {t('filters.nearMe')}
+                  </Button>
+                )}
+
+                {/* Ne garder que les événements mis en avant */}
+                {onHighlightedChange && (
+                  <Button
+                    variant={highlightedOnly ? "default" : "outline"}
+                    onClick={() => onHighlightedChange(!highlightedOnly)}
+                    aria-pressed={highlightedOnly}
+                    title={tHighlights('filterHint')}
+                    className={cn("w-full sm:w-auto", !highlightedOnly && "border-dashed border-primary text-primary")}
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {tHighlights('filter')}
                   </Button>
                 )}
 
@@ -1052,6 +1101,26 @@ export default function EventsCalendar({
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* La légende des marques, quand le mois en porte. */}
+          {viewMode === "calendar" && eventsInMonth.some((event) => hasHighlight(event.highlights)) && (
+            <div className="flex flex-wrap items-center justify-center gap-x-5 pt-1 gap-y-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Award className="text-primary h-3.5 w-3.5" aria-hidden />
+                {tHighlights('lairPick')}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Flame className="h-3.5 w-3.5 text-orange-500" aria-hidden />
+                {tHighlights('popular')}
+              </span>
+              {session.data?.user && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span aria-hidden className="h-3 w-3 rounded-full bg-violet-600" />
+                  {tHighlights('legendFriends')}
+                </span>
+              )}
+            </div>
           )}
 
           {/* Vue liste */}
@@ -1359,6 +1428,12 @@ function ListView({
                               {t('event.registered')}
                             </Badge>
                           )}
+                        </div>
+                      )}
+
+                      {hasHighlight(event.highlights) && (
+                        <div className="flex flex-wrap gap-1.5">
+                          <EventHighlightBadges highlights={event.highlights} />
                         </div>
                       )}
 

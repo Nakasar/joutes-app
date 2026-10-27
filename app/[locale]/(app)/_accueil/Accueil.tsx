@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 
 import Agenda from "./Agenda.tsx";
+import ANePasManquer from "./ANePasManquer.tsx";
 import BandeauDirects from "./BandeauDirects.tsx";
 import Fil from "./Fil.tsx";
 import OngletsJeux from "./OngletsJeux.tsx";
@@ -96,6 +97,14 @@ export default async function Accueil({
 
       <Suspense fallback={<SqueletteAgenda />}>
         <Agenda position={position} jeu={jeu} />
+      </Suspense>
+
+      {/*
+        Pas de squelette non plus : sans événement marqué, le bloc ne rend
+        rien, et une plaque grise promettrait des fiches qui ne viendront pas.
+      */}
+      <Suspense fallback={null}>
+        <ANePasManquer position={position} jeu={jeu} />
       </Suspense>
 
       <div className="grid items-start gap-11 lg:grid-cols-[minmax(0,1fr)_348px]">

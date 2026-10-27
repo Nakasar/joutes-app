@@ -10,6 +10,7 @@ import {
   readHomeDecks,
   readHomeFeed,
   readHomeGames,
+  readHomeHighlights,
   readHomeLairs,
   readHomeLives,
   readPosition,
@@ -21,7 +22,7 @@ const LANGS = new Set(["fr", "en", "de", "it"]);
 /**
  * L'accueil, en une réponse — ce que le site compose en six tuiles, servi à
  * l'application mobile telle quelle : les jeux de la barre, les directs, les
- * sept prochains jours, le fil, les lieux et les decks.
+ * sept prochains jours, « À ne pas manquer », le fil, les lieux et les decks.
  *
  * Une seule route plutôt que six : un téléphone paie chaque aller-retour, et
  * toutes les tuiles partagent la même session, la même position et le même
@@ -63,9 +64,10 @@ export async function GET(request: NextRequest) {
 
     const gameIds = readGameScope(viewer, game);
 
-    const [lairs, agenda, feed, decks] = await Promise.all([
+    const [lairs, agenda, highlights, feed, decks] = await Promise.all([
       readHomeLairs(viewer, position),
       readHomeAgenda(viewer, position, game),
+      readHomeHighlights(viewer, position, game),
       readHomeFeed(gameIds, lang, limit),
       readHomeDecks(viewer, game),
     ]);
@@ -79,6 +81,7 @@ export async function GET(request: NextRequest) {
         : null,
       lives,
       agenda,
+      highlights,
       feed,
       lairs,
       decks: { source: decks.source, decks: decks.decks.map((deck) => withoutNotes(deck, viewer?.id)) },

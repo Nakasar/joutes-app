@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getEventById } from "@/lib/db/events";
 import { canJoinDirectly, isWaitlistOpen, viewerWaitlistStatus } from "@/lib/events/waitlist";
+import { getUserById } from "@/lib/db/users";
+import { withHighlights } from "@/lib/events/highlights-service";
 
 type Params = { params: Promise<{ eventId: string }> };
 
@@ -42,11 +44,17 @@ export async function GET(request: NextRequest, { params }: Params) {
     // La file ne sort pas telle quelle : qui attend ne regarde que
     // l'organisation. Le client reçoit sa taille, et la place de la personne
     // connectée — rang et offre en cours.
+    // Ses marques pour la personne qui regarde : choix du lieu, popularité,
+    // amis inscrits ou intéressés.
+    const viewer = session?.user?.id ? await getUserById(session.user.id) : null;
+    const [{ highlights }] = await withHighlights([event], viewer);
+
     const { waitlist, participantRegisteredAt: _registeredAt, ...publicEvent } = event;
     const now = new Date();
 
     return NextResponse.json({
       ...publicEvent,
+      highlights,
       waitlistCount: waitlist?.length ?? 0,
       waitlistOpen: isWaitlistOpen(event, now),
       canJoinDirectly: canJoinDirectly(event, now),

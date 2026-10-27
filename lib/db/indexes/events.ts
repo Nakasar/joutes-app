@@ -50,6 +50,12 @@ export const EVENT_INDEXES: IndexDefinition[] = [
   },
   {
     collection: "events",
+    keys: { lairId: 1, featured: 1, startDateTime: 1 },
+    options: { partialFilterExpression: { featured: true } },
+    why: "Les événements qu'un lieu met en avant : son plafond de trois, « À la une » de la vitrine",
+  },
+  {
+    collection: "events",
     keys: { boardsNeedsUpdate: 1 },
     options: { partialFilterExpression: { boardsNeedsUpdate: true } },
     why: "Le cron des tableaux Discord, qui ne veut que les événements marqués",

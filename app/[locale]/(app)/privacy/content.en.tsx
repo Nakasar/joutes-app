@@ -261,7 +261,10 @@ export const privacyEn: LegalDocumentContent = {
             <li>
               <strong>Visible to a limited circle:</strong> your friends, the members of your play
               groups and private venues, and the participants and organisers of the events you sign
-              up for.
+              up for. Your friends can also see the events you have favourited, and the ones you are
+              registered for when the attendee list is visible to them: Joutes points them out
+              (&quot;Léa is going&quot;, &quot;Tom favourited it&quot;) on the home page and in the
+              calendars.
             </li>
             <li>
               <strong>Private by default:</strong> your email address, your saved position, your

@@ -4,6 +4,7 @@ import { DateTime } from "luxon";
 
 import { Link } from "@/i18n/navigation.ts";
 import { Badge } from "@/components/ui/badge.tsx";
+import EventHighlightBadges from "@/components/events/EventHighlightBadges.tsx";
 import { cn } from "@/lib/utils.ts";
 import type { Event } from "@/lib/types/Event";
 import type { User } from "@/lib/types/User";
@@ -145,6 +146,7 @@ function Annonce({
         <Badge variant={statut.variante} className={statut.classe}>
           {t(`statut.${statut.cle}`, { count: statut.places ?? 0 })}
         </Badge>
+        <EventHighlightBadges highlights={evenement.highlights} />
       </span>
     </Fiche>
   );
@@ -157,7 +159,7 @@ function Annonce({
  * seule information que je ne peux pas déduire du reste de la fiche. Sinon,
  * l'événement se décrit lui-même : places restantes, complet, ouvert.
  */
-function lireStatut(
+export function lireStatut(
   evenement: Event,
   viewer: User | null,
 ): {

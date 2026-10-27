@@ -11,6 +11,7 @@ import {
   type SourceEvent,
   type SourceEventPatch,
 } from "@/lib/events/source-events";
+import {MAX_LAIR_PICKS, type HighlightSource} from "@/lib/events/highlights";
 
 const COLLECTION_NAME = "events";
 
@@ -1479,4 +1480,188 @@ export async function unlinkEvents(eventId: string, otherEventId: string): Promi
     collection.updateOne({id: eventId}, {$pull: {linkedEventIds: otherEventId}}),
     collection.updateOne({id: otherEventId}, {$pull: {linkedEventIds: eventId}}),
   ]);
+}
+
+/**
+ * Ce dont les marques d'un événement ont besoin (`lib/events/highlights.ts`),
+ * lu à part : les lecteurs d'agenda ne projettent pas tous les mêmes champs,
+ * et les marques doivent être les mêmes partout où l'événement s'affiche.
+ */
+export async function getHighlightSources(eventIds: string[]): Promise<Map<string, HighlightSource & { id: string }>> {
+  if (eventIds.length === 0) return new Map();
+
+  const docs = await db
+    .collection<EventDocument>(COLLECTION_NAME)
+    .find(
+      {id: {$in: eventIds}},
+      {
+        projection: {
+          _id: 0,
+          id: 1,
+          lairId: 1,
+          status: 1,
+          participants: 1,
+          participantRegistrations: 1,
+          favoritedBy: 1,
+          maxParticipants: 1,
+          waitlist: 1,
+          featured: 1,
+          participantsVisibility: 1,
+          creatorId: 1,
+          staff: 1,
+        },
+      },
+    )
+    .toArray();
+
+  return new Map(docs.map((doc) => [doc.id, doc as HighlightSource & { id: string }]));
+}
+
+/**
+ * Les événements à venir où des personnes sont inscrites ou intéressées —
+ * celles d'une liste d'amis, pour le bloc « À ne pas manquer ». Les lieux
+ * privés restent hors de portée, comme dans l'agenda public.
+ */
+export async function getEventsWithUsers(
+  userIds: string[],
+  {afterDate, beforeDate, gameIds}: {afterDate: string; beforeDate: string; gameIds?: string[]},
+): Promise<Event[]> {
+  if (userIds.length === 0) return [];
+
+  const pipeline: Array<Record<string, unknown>> = [
+    {
+      $match: {
+        startDateTime: {$gte: afterDate, $lte: beforeDate},
+        status: {$ne: "cancelled"},
+        $or: [{participants: {$in: userIds}}, {favoritedBy: {$in: userIds}}],
+      },
+    },
+    {
+      $lookup: {
+        from: "lairs",
+        let: {lairId: {$toObjectId: "$lairId"}},
+        pipeline: [
+          {$match: {$expr: {$eq: ["$_id", "$$lairId"]}}},
+          {$project: {_id: 1, name: 1, isPrivate: 1}},
+        ],
+        as: "lairDetails",
+      },
+    },
+    {$match: {"lairDetails.isPrivate": {$ne: true}}},
+    {
+      $lookup: {
+        from: "games",
+        localField: "gameName",
+        foreignField: "name",
+        pipeline: [{$project: {_id: 1, name: 1, icon: 1, banner: 1, slug: 1, type: 1}}],
+        as: "game",
+      },
+    },
+    {$unwind: {path: "$game", preserveNullAndEmptyArrays: true}},
+  ];
+
+  if (gameIds) {
+    pipeline.push({$match: {"game._id": {$in: gameIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id))}}});
+  }
+
+  pipeline.push({$sort: {startDateTime: 1}}, {$limit: 200});
+
+  const events = await db.collection<EventDocument>(COLLECTION_NAME).aggregate(pipeline).toArray();
+
+  return events.map((event) => ({
+    id: event.id,
+    lairId: event.lairId,
+    name: event.name,
+    banner: event.banner,
+    startDateTime: event.startDateTime,
+    endDateTime: event.endDateTime,
+    gameName: event.gameName,
+    game: event.game
+      ? {name: event.game.name, icon: event.game.icon, banner: event.game.banner, type: event.game.type, slug: event.game.slug}
+      : undefined,
+    url: event.url,
+    price: event.price,
+    status: event.status,
+    addedBy: event.addedBy,
+    creatorId: event.creatorId,
+    participants: event.participants,
+    favoritedBy: event.favoritedBy,
+    maxParticipants: event.maxParticipants,
+    lair: event.lairDetails && event.lairDetails.length > 0
+      ? {id: event.lairDetails[0]._id.toString(), name: event.lairDetails[0].name}
+      : undefined,
+  }));
+}
+
+/**
+ * Les événements à venir d'un lieu que ses propriétaires ont mis en avant, du
+ * plus proche au plus lointain. Le premier passe « À la une » de la vitrine,
+ * et leur nombre borne ce que le lieu peut encore choisir.
+ */
+export async function getUpcomingLairPicks(lairId: string, now: string = new Date().toISOString()): Promise<Event[]> {
+  const docs = await db
+    .collection<EventDocument>(COLLECTION_NAME)
+    .find({lairId, featured: true, startDateTime: {$gte: now}, status: {$ne: "cancelled"}}, {projection: {_id: 0}})
+    .sort({startDateTime: 1})
+    .limit(MAX_LAIR_PICKS * 2)
+    .toArray();
+  return docs as Event[];
+}
+
+/** Les événements à venir d'un lieu, pour choisir lesquels mettre en avant. */
+export async function getUpcomingLairEvents(
+  lairId: string,
+  {now = new Date().toISOString(), limit = 30}: {now?: string; limit?: number} = {},
+): Promise<Event[]> {
+  const docs = await db
+    .collection<EventDocument>(COLLECTION_NAME)
+    .find(
+      {lairId, startDateTime: {$gte: now}, status: {$ne: "cancelled"}},
+      {
+        projection: {
+          _id: 0, id: 1, lairId: 1, name: 1, startDateTime: 1, endDateTime: 1, gameName: 1, price: 1, status: 1,
+          participants: 1, participantRegistrations: 1, favoritedBy: 1, maxParticipants: 1, waitlist: 1, featured: 1,
+          addedBy: 1,
+        },
+      },
+    )
+    .sort({startDateTime: 1})
+    .limit(limit)
+    .toArray();
+  return docs as Event[];
+}
+
+/**
+ * Met en avant un événement de son lieu, ou l'en retire.
+ *
+ * Le plafond (`MAX_LAIR_PICKS` événements à venir) est compté juste avant
+ * l'écriture. Deux propriétaires qui cliqueraient au même instant pourraient
+ * le dépasser d'un : ce n'est qu'un affichage, on l'accepte plutôt qu'une
+ * transaction.
+ */
+export async function setEventFeatured(
+  eventId: string,
+  lairId: string,
+  featured: boolean,
+  now: string = new Date().toISOString(),
+): Promise<"ok" | "limit" | "not-found"> {
+  const collection = db.collection<EventDocument>(COLLECTION_NAME);
+
+  if (!featured) {
+    const result = await collection.updateOne({id: eventId, lairId}, {$unset: {featured: "", featuredAt: ""}});
+    return result.matchedCount > 0 ? "ok" : "not-found";
+  }
+
+  const event = await collection.findOne(
+    {id: eventId, lairId, startDateTime: {$gte: now}, status: {$ne: "cancelled"}},
+    {projection: {_id: 0, id: 1, featured: 1}},
+  );
+  if (!event) return "not-found";
+  if (event.featured) return "ok";
+
+  const current = await collection.countDocuments({lairId, featured: true, startDateTime: {$gte: now}, status: {$ne: "cancelled"}});
+  if (current >= MAX_LAIR_PICKS) return "limit";
+
+  await collection.updateOne({id: eventId, lairId}, {$set: {featured: true, featuredAt: now}});
+  return "ok";
 }

@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { cn } from "@/lib/utils.ts";
+import { Link } from "@/i18n/navigation.ts";
 import { LAIR_ACCENT_PALETTE } from "@/lib/lairs/theme.ts";
 import type { LairAccentColor } from "@/lib/lairs/theme.ts";
 import { readLairSections, type LairSection } from "@/lib/lairs/sections.ts";
@@ -132,11 +133,9 @@ function initialState(lair: Lair): FormState {
 export default function LairCustomizationForm({
   lair,
   isPro,
-  upcomingEvents,
 }: {
   lair: Lair;
   isPro: boolean;
-  upcomingEvents: { id: string; name: string; startDateTime: string }[];
 }) {
   const t = useTranslations("Lairs.manage.customization");
   // Les deux libellés que le dépôt d'image affiche lui-même : il ne connaît
@@ -665,24 +664,17 @@ export default function LairCustomizationForm({
             )}
           </div>
 
+          {/* Les mises en avant se règlent dans l'onglet « Événements » : le
+              plus proche des choix passe à la une, l'ancien réglage ne sert
+              plus que de repli et reste enregistré tel quel. */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="lair-featured">{t("featured.title")}</Label>
-            <Select
-              value={state.featuredEventId || "none"}
-              onValueChange={(value) => set("featuredEventId", value === "none" ? "" : value)}
-            >
-              <SelectTrigger id="lair-featured">
-                <SelectValue placeholder={t("featured.none")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">{t("featured.none")}</SelectItem>
-                {upcomingEvents.map((event) => (
-                  <SelectItem key={event.id} value={event.id}>
-                    {event.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>{t("featured.title")}</Label>
+            <p className="text-xs text-muted-foreground">
+              {t("featured.moved")}{" "}
+              <Link href={`/lairs/${lair.id}/manage?tab=events`} className="text-primary hover:underline">
+                {t("featured.go")}
+              </Link>
+            </p>
           </div>
         </div>
 
