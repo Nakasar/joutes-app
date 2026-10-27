@@ -220,8 +220,14 @@ async function LairNewsTab({ lairId, scope }: { lairId: string; scope?: string }
   // affiche périmée en tête de page. Il reste dans la liste en dessous, à sa
   // date et marqué de l'accent : la liste dit *quand* on peut venir, et y
   // creuser un trou au jour du plus gros tournoi serait un contresens.
-  const featuredId = lair.options?.featuredEventId;
-  const featured = featuredId ? upcoming.find((event) => event.id === featuredId) : undefined;
+  //
+  // Le plus proche des choix du lieu passe devant ; l'ancien réglage
+  // `featuredEventId` ne sert plus que de repli.
+  const legacyFeaturedId = lair.options?.featuredEventId;
+  const featured =
+    upcoming.find((event) => event.highlights?.lairPick) ??
+    (legacyFeaturedId ? upcoming.find((event) => event.id === legacyFeaturedId) : undefined);
+  const featuredId = featured?.id;
 
   // Les événements portent le nom de leur jeu, jamais son identifiant : les
   // jeux suivis par le visiteur doivent donc être traduits en noms, et seuls

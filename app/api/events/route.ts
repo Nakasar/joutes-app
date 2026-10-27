@@ -5,6 +5,9 @@ import { getEventsByLairId, getEventsForUser, getEventsByLairIds } from "@/lib/d
 import { Event } from "@/lib/types/Event";
 import { getLairIdsNearLocation } from "@/lib/db/lairs";
 import { findVisibleLair } from "@/lib/api/lairs";
+import { getUserById } from "@/lib/db/users";
+import { hasHighlight } from "@/lib/events/highlights";
+import { withHighlights } from "@/lib/events/highlights-service";
 
 /**
  * Marge de la requête sur les bornes `afterDate` / `beforeDate`.
@@ -190,6 +193,14 @@ export async function GET(request: NextRequest) {
           beforeDate,
         );
       }
+    }
+
+    // Les marques (populaire, amis, choix du lieu) se lisent pour la personne
+    // qui regarde ; `highlighted=1` ne garde que les événements qui en portent.
+    const viewer = session?.user?.id ? await getUserById(session.user.id) : null;
+    events = await withHighlights(events, viewer);
+    if (searchParams.get("highlighted") === "1") {
+      events = events.filter((event) => hasHighlight(event.highlights));
     }
 
     return NextResponse.json({ events });

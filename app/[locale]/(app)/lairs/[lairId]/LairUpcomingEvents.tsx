@@ -9,6 +9,8 @@ import { Calendar, Filter } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { cn } from "@/lib/utils.ts";
+import EventHighlightBadges from "@/components/events/EventHighlightBadges.tsx";
+import { hasHighlight } from "@/lib/events/highlights.ts";
 import type { Event } from "@/lib/types/Event";
 
 export type UpcomingEventsScope = "mine" | "all";
@@ -209,6 +211,11 @@ function EventRow({
           {event.name}
         </Link>
         <p className="text-xs text-muted-foreground">{meta.join(" · ")}</p>
+        {hasHighlight(event.highlights) && (
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            <EventHighlightBadges highlights={event.highlights} />
+          </div>
+        )}
       </div>
 
       {seats && <span className="text-xs text-muted-foreground">{seats}</span>}

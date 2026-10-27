@@ -8,6 +8,8 @@ import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Users, Star, Extern
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { useState, useMemo } from 'react';
 import { useSession } from '@/lib/auth-client.ts';
+import EventHighlightBadges from '@/components/events/EventHighlightBadges.tsx';
+import { hasHighlight } from '@/lib/events/highlights.ts';
 import { Link } from '@/i18n/navigation.ts';
 import { toggleEventFavoriteAction } from '@/app/[locale]/(app)/events/actions.ts';
 
@@ -258,6 +260,11 @@ export default function EventsConferenceView({ events }: EventsConferenceViewPro
                                 <Gamepad2 className="h-3 w-3 flex-shrink-0" />
                                 <span className="truncate">{event.gameName}</span>
                               </div>
+                              {hasHighlight(event.highlights) && (
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  <EventHighlightBadges highlights={event.highlights} />
+                                </div>
+                              )}
                             </div>
                             <Badge
                               variant={

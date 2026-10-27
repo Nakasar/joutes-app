@@ -976,3 +976,37 @@ export async function updateUserShowcase(
 
   return result.matchedCount > 0;
 }
+
+/**
+ * Le pseudo et l'avatar de quelques comptes, en une lecture projetée : ce
+ * qu'une marque « des amis y vont » affiche, sans charger les documents
+ * entiers. L'avatar suit l'ordre de `getUserDisplayAvatar`.
+ */
+export async function getUserCardsByIds(
+  userIds: string[],
+): Promise<Map<string, { id: string; displayName: string; avatar?: string }>> {
+  const validIds = [...new Set(userIds)].filter((id) => ObjectId.isValid(id));
+  if (validIds.length === 0) return new Map();
+
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find(
+      { _id: { $in: validIds.map((id) => ObjectId.createFromHexString(id)) } },
+      { projection: { displayName: 1, username: 1, name: 1, profileImage: 1, image: 1, avatar: 1 } },
+    )
+    .toArray();
+
+  return new Map(
+    docs.map((doc) => {
+      const id = doc._id.toString();
+      return [
+        id,
+        {
+          id,
+          displayName: doc.displayName || doc.username || doc.name || "?",
+          avatar: doc.profileImage || doc.image || doc.avatar || undefined,
+        },
+      ];
+    }),
+  );
+}

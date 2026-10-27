@@ -27,6 +27,29 @@ export type WaitlistEntry = {
   offerExpiresAt?: string;
 };
 
+/**
+ * Un ami de la personne qui regarde, sur un événement : inscrit, ou qui l'a
+ * mis en favori (« intéressé »). Voir `lib/events/highlights.ts`.
+ */
+export type HighlightFriend = {
+  id: string;
+  displayName: string;
+  avatar?: string;
+  kind: 'registered' | 'interested';
+};
+
+/**
+ * Ce qui fait remarquer un événement, calculé à la lecture pour la personne
+ * qui regarde (`withHighlights`) : jamais stocké.
+ */
+export type EventHighlights = {
+  popular: boolean;
+  /** Inscrits et intéressés, chacun compté une fois : ce que « Populaire » mesure d'abord. */
+  interest: number;
+  lairPick: boolean;
+  friends: HighlightFriend[];
+};
+
 export type Event = {
   id: string;
   lairId?: string;
@@ -107,6 +130,15 @@ export type Event = {
    * s'affiche sur les deux pages. Voir `lib/events/related-events.ts`.
    */
   linkedEventIds?: string[];
+  /**
+   * Mis en avant par le lieu (« Choix du lieu ») : posé par ses propriétaires
+   * depuis la gestion du lieu, trois événements à venir au plus. Voir
+   * `lib/events/highlights.ts`.
+   */
+  featured?: boolean;
+  featuredAt?: string;
+  /** Les marques de l'événement pour qui regarde ; absentes tant qu'on ne les a pas lues. */
+  highlights?: EventHighlights;
   discordBoards?: { channelId: string; messageId: string }[];
   boardsNeedsUpdate?: boolean;
 };

@@ -2758,6 +2758,15 @@
             "schema": {
               "type": "number"
             }
+          },
+          {
+            "name": "highlighted",
+            "in": "query",
+            "description": "`1` keeps only events with at least one highlight (popular, lair pick, friends).",
+            "schema": {
+              "type": "string",
+              "enum": ["1"]
+            }
           }
         ],
         "responses": {
@@ -12332,6 +12341,35 @@
           }
         }
       },
+      "EventHighlights": {
+        "type": "object",
+        "description": "Why an event stands out, computed for the viewer. Friends are only listed for a signed-in viewer; a registered friend only when the event's attendee list is visible to the viewer.",
+        "properties": {
+          "popular": {
+            "type": "boolean",
+            "description": "Registered + interested (each counted once) >= 12, or capacity >= 75% full with >= 6 registered, or a non-empty waitlist."
+          },
+          "interest": {
+            "type": "integer",
+            "description": "Registered and interested people, each counted once."
+          },
+          "lairPick": {
+            "type": "boolean"
+          },
+          "friends": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "displayName": { "type": "string" },
+                "avatar": { "type": "string" },
+                "kind": { "type": "string", "enum": ["registered", "interested"] }
+              }
+            }
+          }
+        }
+      },
       "Event": {
         "type": "object",
         "properties": {
@@ -12511,6 +12549,13 @@
                 }
               }
             }
+          },
+          "featured": {
+            "type": "boolean",
+            "description": "Picked by the lair's owners (\"Lair pick\"), at most 3 upcoming events per lair."
+          },
+          "highlights": {
+            "$ref": "#/components/schemas/EventHighlights"
           },
           "boardsNeedsUpdate": {
             "type": "boolean"

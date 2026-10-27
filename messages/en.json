@@ -59,6 +59,11 @@
     }
   },
   "Home": {
+    "misEnAvant": {
+      "titre": "Don't miss",
+      "sous": "the next two weeks",
+      "tout": "Everything featured"
+    },
     "title": "Event calendar",
     "createEvent": "Create an Event",
     "salutation": "Hello, {nom}",
@@ -2010,6 +2015,22 @@
           }
         },
       "events": {
+        "featured": {
+          "title": "Feature events",
+          "description": "Pick up to {max} upcoming events. They're marked \"Venue's pick\" in the Joutes calendar, can appear in \"Don't miss\" on the home page of players who follow you or play nearby, and the next one is shown \"In the spotlight\" on your page.",
+          "count": "{count} of {max}",
+          "on": "Featured",
+          "off": "Feature",
+          "toggle": "Feature {name}",
+          "limit": "All {max} spots are taken: remove one first.",
+          "hint": "A featured event drops off by itself once it's over.",
+          "empty": "No upcoming events yet.",
+          "error": "Couldn't save this change.",
+          "une": "In the spotlight on your page",
+          "alreadyPopular": "Already popular",
+          "seats": "{registered} / {capacity} registered",
+          "registered": "{count, plural, =0 {No one registered} one {# registered} other {# registered}}"
+        },
         "private": "A private venue cannot connect a website: its events are created by hand from its page.",
         "team": {
           "title": "Your events are read by the Joutes team",
@@ -2353,6 +2374,8 @@
           "parkingPlaceholder": "Free parking 100 m away"
         },
         "featured": {
+          "moved": "Featured events are now picked in the Events tab: the nearest one becomes the headline.",
+          "go": "Open the Events tab",
           "title": "Featured event",
           "none": "None"
         },
@@ -6416,5 +6439,18 @@
   },
   "Navigation": {
     "back": "Back"
+  },
+  "EventHighlights": {
+    "lairPick": "Venue's pick",
+    "popular": "Popular",
+    "going": "{names} {count, plural, one {is going} other {are going}}",
+    "interested": "{names} {count, plural, one {saved it} other {saved it}}",
+    "others": "{count, plural, one {# other} other {# others}}",
+    "byLair": "Featured by {lair}",
+    "popularCount": "Popular · {count} registered or interested",
+    "popularFilling": "Popular · filling up fast",
+    "filter": "Featured",
+    "filterHint": "Only show featured events",
+    "legendFriends": "A friend registered or interested"
   }
 }

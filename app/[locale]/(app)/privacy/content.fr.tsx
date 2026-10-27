@@ -276,7 +276,10 @@ export const privacyFr: LegalDocumentContent = {
             <li>
               <strong>Visible d&apos;un cercle restreint :</strong> vos amis, les membres de vos
               groupes de jeu et de vos lieux privés, ainsi que les participants et organisateurs
-              des événements auxquels vous vous inscrivez.
+              des événements auxquels vous vous inscrivez. Vos amis voient aussi les événements
+              que vous avez mis en favori, et ceux auxquels vous êtes inscrit lorsque la liste des
+              inscrits leur est visible : Joutes les leur signale (« Léa y va », « Tom l&apos;a en
+              favori ») dans l&apos;accueil et les calendriers.
             </li>
             <li>
               <strong>Privé par défaut :</strong> votre adresse email, votre position enregistrée,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { DateTime } from "luxon";
 import { auth } from "@/lib/auth";
 import { getUserById } from "@/lib/db/users";
 import { getAllGames } from "@/lib/db/games";
@@ -10,8 +11,10 @@ import {
   readHomeDecks,
   readHomeFeed,
   readHomeGames,
+  readHomeHighlights,
   readHomeLairs,
   readHomeLives,
+  readHomeWindow,
   readPosition,
 } from "@/lib/home/read";
 import type { Deck } from "@/lib/types/Deck";
@@ -21,7 +24,7 @@ const LANGS = new Set(["fr", "en", "de", "it"]);
 /**
  * L'accueil, en une réponse — ce que le site compose en six tuiles, servi à
  * l'application mobile telle quelle : les jeux de la barre, les directs, les
- * sept prochains jours, le fil, les lieux et les decks.
+ * sept prochains jours, « À ne pas manquer », le fil, les lieux et les decks.
  *
  * Une seule route plutôt que six : un téléphone paie chaque aller-retour, et
  * toutes les tuiles partagent la même session, la même position et le même
@@ -63,9 +66,15 @@ export async function GET(request: NextRequest) {
 
     const gameIds = readGameScope(viewer, game);
 
-    const [lairs, agenda, feed, decks] = await Promise.all([
+    // Les deux semaines à venir, lues une fois : l'agenda en garde sept jours,
+    // « À ne pas manquer » les quatorze.
+    const now = DateTime.now();
+    const window = await readHomeWindow(viewer, position, game, now);
+
+    const [lairs, agenda, highlights, feed, decks] = await Promise.all([
       readHomeLairs(viewer, position),
-      readHomeAgenda(viewer, position, game),
+      readHomeAgenda(viewer, position, game, now, window),
+      readHomeHighlights(viewer, position, game, now, window),
       readHomeFeed(gameIds, lang, limit),
       readHomeDecks(viewer, game),
     ]);
@@ -79,6 +88,7 @@ export async function GET(request: NextRequest) {
         : null,
       lives,
       agenda,
+      highlights,
       feed,
       lairs,
       decks: { source: decks.source, decks: decks.decks.map((deck) => withoutNotes(deck, viewer?.id)) },

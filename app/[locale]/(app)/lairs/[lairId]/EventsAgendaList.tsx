@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Link } from "@/i18n/navigation.ts";
 import { useState } from 'react';
 import { useSession } from '@/lib/auth-client.ts';
+import EventHighlightBadges from '@/components/events/EventHighlightBadges.tsx';
+import { hasHighlight } from '@/lib/events/highlights.ts';
 import { toggleEventFavoriteAction } from '@/app/[locale]/(app)/events/actions.ts';
 import { useTranslations } from 'next-intl';
 
@@ -165,6 +167,11 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                                   : t('agenda.status.cancelled')}
                               </Badge>
                             </div>
+                            {hasHighlight(event.highlights) && (
+                              <div className="mb-2 flex flex-wrap gap-1.5">
+                                <EventHighlightBadges highlights={event.highlights} />
+                              </div>
+                            )}
                             <div className="flex items-center gap-2 text-muted-foreground">
                               <Gamepad2 className="h-4 w-4" />
                               <span className="text-sm font-medium">{event.gameName}</span>

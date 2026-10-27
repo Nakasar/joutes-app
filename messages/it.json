@@ -67,6 +67,11 @@
     "de": "Deutsch"
   },
   "Home": {
+    "misEnAvant": {
+      "titre": "Da non perdere",
+      "sous": "le prossime due settimane",
+      "tout": "Tutto ciò che è in evidenza"
+    },
     "title": "Calendario degli Eventi",
     "createEvent": "Crea un Evento",
     "salutation": "Ciao, {nom}",
@@ -2010,6 +2015,22 @@
           }
         },
       "events": {
+        "featured": {
+          "title": "Metti in evidenza",
+          "description": "Scegli fino a {max} eventi in arrivo. Nel calendario di Joutes portano la dicitura «Scelta del locale», possono comparire in «Da non perdere» nella home dei giocatori che ti seguono o giocano vicino a te, e il più vicino va «In primo piano» sulla tua pagina.",
+          "count": "{count} su {max}",
+          "on": "In evidenza",
+          "off": "Metti in evidenza",
+          "toggle": "Metti in evidenza {name}",
+          "limit": "I {max} posti sono occupati: togli prima un evento in evidenza.",
+          "hint": "Un evento in evidenza decade da solo quando è passato.",
+          "empty": "Ancora nessun evento in arrivo.",
+          "error": "Impossibile salvare la modifica.",
+          "une": "In primo piano sulla tua pagina",
+          "alreadyPopular": "Già popolare",
+          "seats": "{registered} / {capacity} iscritti",
+          "registered": "{count, plural, =0 {Nessun iscritto} one {# iscritto} other {# iscritti}}"
+        },
         "private": "Un luogo privato non può collegare un sito: i suoi eventi si creano a mano dalla sua pagina.",
         "team": {
           "title": "I tuoi eventi sono letti dal team Joutes",
@@ -2353,6 +2374,8 @@
           "parkingPlaceholder": "Parcheggio gratuito a 100 m"
         },
         "featured": {
+          "moved": "Gli eventi in evidenza ora si scelgono nella scheda Eventi: il più vicino va in prima pagina.",
+          "go": "Apri la scheda Eventi",
           "title": "Evento in evidenza",
           "none": "Nessuno"
         },
@@ -6416,5 +6439,18 @@
   },
   "Navigation": {
     "back": "Indietro"
+  },
+  "EventHighlights": {
+    "lairPick": "Scelta del locale",
+    "popular": "Popolare",
+    "going": "{names} {count, plural, one {ci va} other {ci vanno}}",
+    "interested": "{names} {count, plural, one {l'ha tra i preferiti} other {l'hanno tra i preferiti}}",
+    "others": "{count, plural, one {# altro} other {# altri}}",
+    "byLair": "In evidenza da {lair}",
+    "popularCount": "Popolare · {count} iscritti e interessati",
+    "popularFilling": "Popolare · i posti vanno a ruba",
+    "filter": "In evidenza",
+    "filterHint": "Mostra solo gli eventi in evidenza",
+    "legendFriends": "Un amico iscritto o interessato"
   }
 }

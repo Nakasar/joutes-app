@@ -10,6 +10,7 @@ import { auth } from "@/lib/auth.ts";
 import { checkAdminOrOwner } from "@/lib/middleware/admin.ts";
 import { getLairById } from "@/lib/db/lairs.ts";
 import { getEventsByLairId } from "@/lib/db/events.ts";
+import { withHighlights } from "@/lib/events/highlights-service.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { countUsersFollowingLair, getUserById } from "@/lib/db/users.ts";
 import { lairNotificationPreference } from "@/lib/lairs/notification-prefs.ts";
@@ -70,6 +71,8 @@ export const readViewer = cache(async (lairId: string) => {
   return {
     session,
     userId: user?.id ?? null,
+    /** Ses amis : les marques des événements disent lesquels y vont. */
+    friends: user?.friends ?? [],
     /** Les jeux suivis par le visiteur — la bascule « Mes jeux » s'en sert. */
     followedGameIds: user?.games ?? [],
     isFollowing: user?.lairs?.includes(lairId) ?? false,
@@ -98,16 +101,19 @@ export const readLairGames = cache(async (lairId: string): Promise<Game[]> => {
  *
  * Une seule lecture pour trois usages — l'événement à la une, la liste des
  * prochains événements et le calendrier — plutôt qu'une par section : le
- * cadrage au mois se fait ensuite, en mémoire.
+ * cadrage au mois se fait ensuite, en mémoire. Chacun porte ses marques
+ * (choix du lieu, populaire, amis) pour la personne qui regarde.
  */
 export const readLairEvents = cache(async (lairId: string): Promise<Event[]> => {
-  const { session } = await readViewer(lairId);
+  const { session, userId, friends } = await readViewer(lairId);
 
-  return getEventsByLairId(lairId, {
+  const events = await getEventsByLairId(lairId, {
     year: new Date().getFullYear(),
     userId: session?.user?.id,
     gameId: "all",
   });
+
+  return withHighlights(events, userId ? { id: userId, friends } : null);
 });
 
 /** Les événements encore à venir, du plus proche au plus lointain. */

@@ -67,6 +67,11 @@
     "de": "Deutsch"
   },
   "Home": {
+    "misEnAvant": {
+      "titre": "À ne pas manquer",
+      "sous": "les deux prochaines semaines",
+      "tout": "Tout ce qui est mis en avant"
+    },
     "title": "Calendrier des Événements",
     "createEvent": "Créer un Événement",
     "salutation": "Bonjour, {nom}",
@@ -2010,6 +2015,22 @@
           }
         },
       "events": {
+        "featured": {
+          "title": "Mettre en avant",
+          "description": "Choisissez jusqu'à {max} événements à venir. Ils portent la mention « Choix du lieu » dans l'agenda de Joutes, peuvent apparaître dans « À ne pas manquer » sur l'accueil des joueurs qui vous suivent ou jouent près de chez vous, et le plus proche passe « À la une » de votre vitrine.",
+          "count": "{count} sur {max}",
+          "on": "Mis en avant",
+          "off": "Mettre en avant",
+          "toggle": "Mettre en avant {name}",
+          "limit": "Les {max} places sont prises : retirez d'abord une mise en avant.",
+          "hint": "Une mise en avant tombe d'elle-même une fois l'événement passé.",
+          "empty": "Aucun événement à venir pour l'instant.",
+          "error": "La mise en avant n'a pas pu être enregistrée.",
+          "une": "À la une de la vitrine",
+          "alreadyPopular": "Déjà populaire",
+          "seats": "{registered} / {capacity} inscrits",
+          "registered": "{count, plural, =0 {Aucun inscrit} one {# inscrit} other {# inscrits}}"
+        },
         "private": "Un lieu privé ne peut pas connecter de site : ses événements se créent à la main depuis sa vitrine.",
         "team": {
           "title": "Vos événements sont lus par l'équipe Joutes",
@@ -2353,6 +2374,8 @@
           "parkingPlaceholder": "Parking gratuit à 100 m"
         },
         "featured": {
+          "moved": "Les événements mis en avant se choisissent désormais dans l'onglet Événements : le plus proche passe à la une.",
+          "go": "Ouvrir l'onglet Événements",
           "title": "Événement à la une",
           "none": "Aucun"
         },
@@ -6416,5 +6439,18 @@
   },
   "Navigation": {
     "back": "Retour"
+  },
+  "EventHighlights": {
+    "lairPick": "Choix du lieu",
+    "popular": "Populaire",
+    "going": "{names} {count, plural, one {y va} other {y vont}}",
+    "interested": "{names} {count, plural, one {l'a en favori} other {l'ont en favori}}",
+    "others": "{count, plural, one {# autre} other {# autres}}",
+    "byLair": "Mis en avant par {lair}",
+    "popularCount": "Populaire · {count} inscrits et intéressés",
+    "popularFilling": "Populaire · les places partent vite",
+    "filter": "Mis en avant",
+    "filterHint": "N'afficher que les événements mis en avant",
+    "legendFriends": "Un ami inscrit ou intéressé"
   }
 }

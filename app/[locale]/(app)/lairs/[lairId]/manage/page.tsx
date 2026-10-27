@@ -23,7 +23,9 @@ import LairProGrantCard from "./LairProGrantCard.tsx";
 import PrivateLairInvitationManager from "./PrivateLairInvitationManager.tsx";
 import PrivateLairFollowersManager from "./PrivateLairFollowersManager.tsx";
 import { getTranslations } from "next-intl/server";
-import { getEventsByLairId } from "@/lib/db/events.ts";
+import { getUpcomingLairEvents, getUpcomingLairPicks } from "@/lib/db/events.ts";
+import { isPopular, registeredIds } from "@/lib/events/highlights.ts";
+import LairFeaturedPicks, { type FeaturedPickRow } from "./LairFeaturedPicks.tsx";
 import { isLairPro } from "@/lib/lairs/pro.ts";
 import ManageTabsBar, { readManageTab } from "./ManageTabsBar.tsx";
 import LairCustomizationForm from "./LairCustomizationForm.tsx";
@@ -157,22 +159,6 @@ async function ManageLairContent({
     })(),
   };
 
-  // Les événements à venir, pour le choix de « À la une ». Lus seulement quand
-  // l'onglet les demande : c'est une requête de plus sur une page qui en fait
-  // déjà cinq, et quatre onglets sur cinq n'en ont aucun usage.
-  // `getEventsByLairId` n'applique sa fenêtre de dates que si `month` **et**
-  // `year` sont fournis : passer l'année seule ne filtrait rien, et le select
-  // listait tout l'historique du lieu, sans ordre. Le tri et la coupe se font
-  // donc ici.
-  const upcomingEvents =
-    tab === "customization"
-      ? (await getEventsByLairId(lairId, { gameId: "all" }))
-          .filter((event) => event.startDateTime >= new Date().toISOString())
-          .sort((a, b) => a.startDateTime.localeCompare(b.startDateTime))
-          .slice(0, 50)
-          .map((event) => ({ id: event.id, name: event.name, startDateTime: event.startDateTime }))
-      : [];
-
   // La connexion du site du lieu : sa source, le dernier rapport et sa
   // demande d'aide, lus seulement pour l'onglet qui les montre — le rapport et
   // la demande sont hors du lieu à dessein (voir `getLairEventsRefreshReport`).
@@ -181,6 +167,32 @@ async function ManageLairContent({
     tab === "events" ? (lair.eventsSourceUrls ?? []).filter((source) => source.managedBy !== "owner").length : 0;
   const refreshReport = tab === "events" ? await getLairEventsRefreshReport(lairId) : null;
   const sourceRequest = tab === "events" ? await getLairEventsSourceRequest(lairId) : null;
+
+  // Les événements à venir, pour « Mettre en avant » : les trente plus
+  // proches, plus les choix déjà faits au-delà — sans eux, un choix lointain
+  // occuperait une place sans qu'on puisse le voir ni le retirer.
+  //
+  // L'ancien « À la une » (`featuredEventId`) apparaît comme choisi tant que
+  // le lieu n'a aucune mise en avant : c'est lui que la vitrine montre, et
+  // l'éteindre ici l'efface.
+  const featuredPickRows: FeaturedPickRow[] = [];
+  if (tab === "events") {
+    const [nearest, picks] = await Promise.all([getUpcomingLairEvents(lairId), getUpcomingLairPicks(lairId)]);
+    const byId = new Map([...nearest, ...picks].map((event) => [event.id, event]));
+    const legacyId = picks.length === 0 ? lair.options?.featuredEventId : undefined;
+    for (const event of [...byId.values()].sort((a, b) => a.startDateTime.localeCompare(b.startDateTime))) {
+      featuredPickRows.push({
+        id: event.id,
+        name: event.name,
+        startDateTime: event.startDateTime,
+        gameName: event.gameName,
+        featured: Boolean(event.featured) || event.id === legacyId,
+        popular: isPopular(event),
+        registered: registeredIds(event).length,
+        ...(event.maxParticipants ? { capacity: event.maxParticipants } : {}),
+      });
+    }
+  }
 
   // Le statut d'administrateur, pour la carte d'octroi réservée à l'équipe.
   // L'action serveur refait le contrôle : ceci ne décide que de l'affichage.
@@ -221,7 +233,6 @@ async function ManageLairContent({
           <LairCustomizationForm
             lair={lair}
             isPro={proState.isPro}
-            upcomingEvents={upcomingEvents}
           />
           <LairCustomizationSidebar lair={lair} isPro={proState.isPro} />
         </div>
@@ -240,6 +251,8 @@ async function ManageLairContent({
       )}
 
       {tab === "events" && (
+        <div className="space-y-6">
+        <LairFeaturedPicks lairId={lairId} events={featuredPickRows} />
         <LairEventsConnect
           lairId={lairId}
           address={lair.address}
@@ -257,6 +270,7 @@ async function ManageLairContent({
               : null
           }
         />
+        </div>
       )}
 
       {tab === "poster" && (

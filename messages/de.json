@@ -67,6 +67,11 @@
     "de": "Deutsch"
   },
   "Home": {
+    "misEnAvant": {
+      "titre": "Nicht verpassen",
+      "sous": "die nächsten zwei Wochen",
+      "tout": "Alles Hervorgehobene"
+    },
     "title": "Eventkalender",
     "createEvent": "Event erstellen",
     "salutation": "Hallo, {nom}",
@@ -2010,6 +2015,22 @@
           }
         },
       "events": {
+        "featured": {
+          "title": "Hervorheben",
+          "description": "Wähle bis zu {max} kommende Events. Sie tragen im Joutes-Kalender den Hinweis „Tipp des Ladens“, können bei Spielern, die dir folgen oder in der Nähe spielen, unter „Nicht verpassen“ erscheinen, und das nächste steht auf deiner Seite im Rampenlicht.",
+          "count": "{count} von {max}",
+          "on": "Hervorgehoben",
+          "off": "Hervorheben",
+          "toggle": "{name} hervorheben",
+          "limit": "Alle {max} Plätze sind belegt: entferne zuerst eine Hervorhebung.",
+          "hint": "Eine Hervorhebung endet von selbst, sobald das Event vorbei ist.",
+          "empty": "Noch keine kommenden Events.",
+          "error": "Die Änderung konnte nicht gespeichert werden.",
+          "une": "Im Rampenlicht auf deiner Seite",
+          "alreadyPopular": "Schon beliebt",
+          "seats": "{registered} / {capacity} angemeldet",
+          "registered": "{count, plural, =0 {Keine Anmeldungen} one {# angemeldet} other {# angemeldet}}"
+        },
         "private": "Ein privater Ort kann keine Website verbinden: seine Veranstaltungen werden von Hand auf seiner Seite angelegt.",
         "team": {
           "title": "Deine Veranstaltungen werden vom Joutes-Team gelesen",
@@ -2353,6 +2374,8 @@
           "parkingPlaceholder": "Kostenloser Parkplatz 100 m entfernt"
         },
         "featured": {
+          "moved": "Hervorgehobene Events wählst du jetzt im Tab „Events“: Das nächste wird zum Aufmacher.",
+          "go": "Tab „Events“ öffnen",
           "title": "Hervorgehobene Veranstaltung",
           "none": "Keine"
         },
@@ -6416,5 +6439,18 @@
   },
   "Navigation": {
     "back": "Zurück"
+  },
+  "EventHighlights": {
+    "lairPick": "Tipp des Ladens",
+    "popular": "Beliebt",
+    "going": "{names} {count, plural, one {geht hin} other {gehen hin}}",
+    "interested": "{names} {count, plural, one {hat es gemerkt} other {haben es gemerkt}}",
+    "others": "{count, plural, one {# weitere Person} other {# weitere}}",
+    "byLair": "Empfohlen von {lair}",
+    "popularCount": "Beliebt · {count} Anmeldungen und Interessierte",
+    "popularFilling": "Beliebt · die Plätze gehen schnell weg",
+    "filter": "Hervorgehoben",
+    "filterHint": "Nur hervorgehobene Events anzeigen",
+    "legendFriends": "Ein Freund angemeldet oder interessiert"
   }
 }

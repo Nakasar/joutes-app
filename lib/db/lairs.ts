@@ -732,3 +732,31 @@ export async function regenerateInvitationCode(lairId: string, newCode: string):
   
   return result ? toLair(result) : null;
 }
+
+/**
+ * Les propriétaires de plusieurs lieux, et rien d'autre. Un identifiant qui
+ * n'est pas un ObjectId est ignoré : un `lairId` moissonné de travers ne doit
+ * pas faire tomber la lecture de tout un calendrier.
+ */
+export async function getLairOwnersByIds(ids: string[]): Promise<Map<string, string[]>> {
+  const objectIds = [...new Set(ids)].filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (objectIds.length === 0) return new Map();
+
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find({ _id: { $in: objectIds } }, { projection: { owners: 1 } })
+    .toArray();
+  return new Map(docs.map((doc) => [doc._id.toString(), (doc.owners as string[] | undefined) ?? []]));
+}
+
+/**
+ * Efface l'ancien « À la une » (`options.featuredEventId`). Les mises en avant
+ * le remplacent : dès qu'un lieu s'en sert, l'ancien choix ne doit plus
+ * revenir par la bande, ni rester sans moyen de le retirer.
+ */
+export async function clearLegacyFeaturedEvent(lairId: string): Promise<void> {
+  if (!ObjectId.isValid(lairId)) return;
+  await db
+    .collection(COLLECTION_NAME)
+    .updateOne({ _id: new ObjectId(lairId) }, { $unset: { "options.featuredEventId": "" } });
+}

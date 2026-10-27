@@ -98,7 +98,9 @@ export async function updateLairCustomization(
         contact: data.contact,
         openingHours: data.openingHours,
         about,
-        featuredEventId: data.featuredEventId,
+        // Ne s'édite plus ici : les mises en avant (onglet Événements) l'ont
+        // remplacé, et c'est elles qui l'effacent.
+        featuredEventId: previous.featuredEventId,
       },
     });
 
