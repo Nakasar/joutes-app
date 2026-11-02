@@ -28,6 +28,9 @@ export const mcpLinks = {
                 : `/collection/${segment(gameSlugOrId)}`,
             env,
         ),
+    boosters: (gameSlugOrId: string, env?: Env) => joutesUrl(`/collection/${segment(gameSlugOrId)}/boosters`, env),
+    booster: (gameSlugOrId: string, boosterId: string, env?: Env) =>
+        joutesUrl(`/collection/${segment(gameSlugOrId)}/boosters/${segment(boosterId)}`, env),
     wishlist: (wishlistId: string, env?: Env) => joutesUrl(`/wishlists/${segment(wishlistId)}`, env),
     playGroup: (playGroupId: string, env?: Env) => joutesUrl(`/play-groups/${segment(playGroupId)}`, env),
     tournament: (tournamentId: string, env?: Env) => joutesUrl(`/tournaments/${segment(tournamentId)}/organizer`, env),
