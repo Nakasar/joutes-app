@@ -80,6 +80,18 @@ export const TOOL_POLICIES = {
     add_card_to_collection: { access: "account", effect: "create" },
     remove_card_from_collection: { access: "account", effect: "delete" },
 
+    // Boosters de la collection
+    list_boosters: { access: "account", effect: "read" },
+    get_booster: { access: "account", effect: "read" },
+    create_booster: { access: "account", effect: "create" },
+    update_booster: { access: "account", effect: "update" },
+    add_cards_to_booster: { access: "account", effect: "create" },
+    update_booster_card: { access: "account", effect: "update" },
+    remove_cards_from_booster: { access: "account", effect: "delete" },
+    add_booster_to_collection: { access: "account", effect: "create" },
+    remove_booster_from_collection: { access: "account", effect: "delete" },
+    delete_booster: { access: "account", effect: "delete" },
+
     // Wishlists
     list_wishlists: { access: "account", effect: "read" },
     get_wishlist: { access: "optional", effect: "read" },

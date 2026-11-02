@@ -75,6 +75,37 @@ import {
     validateDeckList,
 } from "@/app/[locale]/(app)/games/riftbound/deck-checker/action";
 import type { Game } from "@/lib/types/Game";
+import {
+    addBoosterToCollection,
+    addCardsToBooster,
+    BoosterCardFilter,
+    countBoosters,
+    createBooster,
+    deleteBooster,
+    getBooster,
+    getBoosters,
+    removeBoosterFromCollection,
+    removeCardsFromBooster,
+    setBoosterCardFoil,
+    setBoosterCardsPrinting,
+    updateBooster,
+} from "@/lib/db/boosters";
+import {
+    boosterEditions,
+    COLLECTION_NOT_SYNCED_NOTE,
+    describeBooster,
+    describeBoosterCard,
+    describeBoosterLine,
+    findCardPrinting,
+    findEdition,
+    formatBoosterValue,
+} from "@/lib/mcp/boosters";
+import { printingEdition, resolvePrinting } from "@/lib/cards/printings";
+import { getBoosterTypeLabels, getBoosterTypes, isBoosterType, normalizeBoosterType } from "@/lib/constants/booster-types";
+import { getGameLanguages } from "@/lib/constants/card-languages";
+import { BOOSTER_NOTE_MAX_LENGTH } from "@/lib/constants/boosters";
+import type { Booster, BoosterCard } from "@/lib/types/booster";
+import type { CardPrinting } from "@/lib/types/card";
 import type { Wishlist } from "@/lib/types/Wishlist";
 import { revalidatePath } from "next/cache";
 import { createErrata, ErrataInputError, updateErrataById } from "@/lib/db/erratas";
@@ -169,6 +200,10 @@ type CatalogCard = {
     setCode: string;
     collectorNumber: string | number;
     image?: string;
+    lang?: string;
+    subtitle?: string;
+    foil?: boolean;
+    printings?: CardPrinting[];
 };
 
 /**
@@ -180,7 +215,9 @@ async function resolveCard(
     gameId: ObjectId,
     cardName: string,
     setCode?: string,
-    collectorNumber?: string
+    collectorNumber?: string,
+    /** Langue préférée parmi les fiches d'une même impression (celle d'un booster). */
+    preferLang?: string
 ): Promise<{ card: CatalogCard } | { error: ToolResult }> {
     const match: Record<string, unknown> = {
         gameId,
@@ -197,7 +234,7 @@ async function resolveCard(
 
     const candidates = await db
         .collection<CatalogCard & { _id: ObjectId }>("cards")
-        .find(match, { projection: { id: 1, name: 1, setCode: 1, collectorNumber: 1, image: 1 } })
+        .find(match, { projection: { id: 1, name: 1, setCode: 1, collectorNumber: 1, image: 1, lang: 1, subtitle: 1, foil: 1, printings: 1 } })
         .sort({ setCode: 1, collectorNumber: 1 })
         .limit(25)
         .toArray();
@@ -210,7 +247,10 @@ async function resolveCard(
     const byPrinting = new Map<string, CatalogCard>();
     for (const candidate of candidates) {
         const key = `${candidate.setCode}|${candidate.collectorNumber}`;
-        if (!byPrinting.has(key)) byPrinting.set(key, candidate);
+        const kept = byPrinting.get(key);
+        if (!kept || (preferLang && candidate.lang === preferLang && kept.lang !== preferLang)) {
+            byPrinting.set(key, candidate);
+        }
     }
     const printings = [...byPrinting.values()];
 
@@ -1517,6 +1557,510 @@ async function handleUpdateErrata(
     );
 }
 
+// --- Boosters ---
+
+/** Une carte demandée pour un booster, telle que l'assistant la décrit. */
+type BoosterCardInput = {
+    cardName: string;
+    setCode?: string;
+    collectorNumber?: string;
+    quantity?: number;
+    foil?: boolean;
+    printing?: string;
+};
+
+const boosterCardInput = z.object({
+    cardName: z.string().describe("Nom de la carte"),
+    setCode: z.string().optional().describe("Extension ; défaut : celle du booster, puis toutes"),
+    collectorNumber: z.string().optional().describe("Numéro de collection, pour départager les impressions"),
+    quantity: z.number().int().min(1).max(30).optional().describe("Nombre d'exemplaires (défaut 1)"),
+    foil: z.boolean().optional(),
+    printing: z.string().optional().describe("Variante d'impression (nom de la variante ou de son édition, ex. « Showcase ») ; omise = version de base"),
+});
+
+type BoosterGame = Game & { _id: ObjectId };
+
+function boosterTypeLabel(game: Pick<Game, "slug" | "boosterTypes">, type: string): string {
+    const normalized = normalizeBoosterType(type);
+    return getBoosterTypeLabels(game)[normalized] ?? normalized;
+}
+
+function boosterTypesText(game: Pick<Game, "slug" | "boosterTypes">): string {
+    return getBoosterTypes(game).join(", ");
+}
+
+/** Le booster, s'il appartient à l'utilisateur, avec son jeu. */
+async function resolveOwnedBooster(
+    userId: string,
+    boosterId: string
+): Promise<{ booster: Booster; game: BoosterGame } | { error: ToolResult }> {
+    const booster = await getBooster(boosterId);
+    if (!booster || booster.userId !== userId) {
+        return { error: errorResult(`Booster "${boosterId}" introuvable dans votre collection.`) };
+    }
+    const game = await db.collection<BoosterGame>("games").findOne({ _id: new ObjectId(booster.gameId) });
+    if (!game) return { error: errorResult("Le jeu de ce booster n'existe plus.") };
+    return { booster, game };
+}
+
+const gameSlugOf = (game: BoosterGame) => game.slug ?? game._id.toString();
+
+/**
+ * Résout les cartes demandées pour un booster. Une carte est d'abord cherchée
+ * dans l'extension du booster, puis partout si elle n'y est pas (carte promo,
+ * jeton) ; la fiche gardée est celle de la langue du booster quand elle existe.
+ * Les cartes introuvables ou ambiguës sont renvoyées à part, sans bloquer les
+ * autres.
+ */
+async function resolveBoosterCards(
+    game: BoosterGame,
+    booster: Pick<Booster, "setCode" | "lang">,
+    inputs: BoosterCardInput[]
+): Promise<{ entries: Omit<BoosterCard, "id">[]; added: string[]; errors: string[] }> {
+    const entries: Omit<BoosterCard, "id">[] = [];
+    const added: string[] = [];
+    const errors: string[] = [];
+
+    for (const input of inputs) {
+        let result = await resolveCard(game._id, input.cardName, input.setCode ?? booster.setCode, input.collectorNumber, booster.lang);
+        if ("error" in result && !input.setCode && booster.setCode) {
+            const anywhere = await resolveCard(game._id, input.cardName, undefined, input.collectorNumber, booster.lang);
+            // L'erreur « plusieurs impressions » hors de l'extension est plus utile que « introuvable dans l'extension ».
+            result = anywhere;
+        }
+        if ("error" in result) {
+            const text = result.error.content.map((item) => (item.type === "text" ? item.text : "")).join(" ");
+            errors.push(`${input.cardName} : ${text}`);
+            continue;
+        }
+        const card = result.card;
+
+        let printingId: string | undefined;
+        if (input.printing) {
+            const printing = findCardPrinting({ collectorNumber: String(card.collectorNumber), printings: card.printings }, input.printing);
+            if (printing === undefined) {
+                const known = (card.printings ?? []).map((item) => item.name);
+                errors.push(`${card.name} : pas de variante « ${input.printing} »${known.length > 0 ? ` (variantes : ${known.join(", ")})` : " (cette carte n'a pas de variante)"}.`);
+                continue;
+            }
+            printingId = printing?.id;
+        }
+        const choice = resolvePrinting({ foil: card.foil, image: card.image, printings: card.printings }, printingId);
+        const foil = choice.foil || input.foil === true;
+
+        const quantity = Math.min(Math.max(input.quantity ?? 1, 1), 30);
+        for (let i = 0; i < quantity; i++) {
+            entries.push({
+                cardId: card.id,
+                name: card.name,
+                ...(card.subtitle ? { subtitle: card.subtitle } : {}),
+                setCode: card.setCode,
+                collectorNumber: String(card.collectorNumber ?? ""),
+                image: choice.image ?? card.image ?? "",
+                ...(card.lang ? { lang: card.lang } : {}),
+                ...(foil ? { foil: true } : {}),
+                ...(choice.printingId ? { printingId: choice.printingId, ...(choice.printingName ? { printingName: choice.printingName } : {}) } : {}),
+            });
+        }
+        const tags = [foil ? "foil" : undefined, choice.printingName].filter(Boolean);
+        added.push(`${quantity > 1 ? `${quantity}× ` : ""}${card.name} (${card.setCode} #${card.collectorNumber})${tags.length > 0 ? ` [${tags.join(", ")}]` : ""}`);
+    }
+
+    return { entries, added, errors };
+}
+
+function addedCardsText(added: string[], errors: string[]): string {
+    const parts: string[] = [];
+    if (added.length > 0) parts.push(`Ajouté :\n${added.map((line) => `- ${line}`).join("\n")}`);
+    if (errors.length > 0) parts.push(`Non ajouté :\n${errors.map((line) => `- ${line}`).join("\n")}`);
+    return parts.length > 0 ? `\n\n${parts.join("\n\n")}` : "";
+}
+
+async function handleListBoosters(
+    args: { gameName?: string; type?: string; cardName?: string; setCode?: string; collectorNumber?: string; sort?: "newest" | "oldest"; page?: number },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    let game: BoosterGame | null = null;
+    if (args.gameName) {
+        game = await resolveGame(args.gameName);
+        if (!game) return errorResult(`Jeu "${args.gameName}" non trouvé.`);
+    } else if (args.cardName || args.type) {
+        return errorResult("Précisez le jeu (gameName) pour filtrer par carte ou par type.");
+    }
+
+    let type: string | undefined;
+    if (args.type && game) {
+        type = normalizeBoosterType(args.type);
+        if (!isBoosterType(game, type)) {
+            return errorResult(`Type de booster "${args.type}" inconnu pour ${game.name}. Types : ${boosterTypesText(game)}.`);
+        }
+    }
+
+    let cards: BoosterCardFilter[] | undefined;
+    if (args.cardName && game) {
+        const cardResult = await resolveCard(game._id, args.cardName, args.setCode, args.collectorNumber);
+        if ("error" in cardResult) return cardResult.error;
+        const card = cardResult.card;
+        cards = [{ cardId: card.id, setCode: card.setCode, collectorNumber: String(card.collectorNumber ?? "") }];
+    }
+
+    const limit = 20;
+    const page = Math.max(1, args.page ?? 1);
+    const filters = { userId, gameId: game?._id.toString(), type, cards };
+    const [boosters, total] = await Promise.all([
+        getBoosters({ ...filters, page: page - 1, limit, sort: args.sort ?? "newest" }),
+        countBoosters(filters),
+    ]);
+
+    const games = game
+        ? new Map([[game._id.toString(), game]])
+        : new Map((await db.collection<BoosterGame>("games")
+            .find({ _id: { $in: [...new Set(boosters.map((b) => b.gameId))].map((id) => new ObjectId(id)) } })
+            .toArray()).map((g) => [g._id.toString(), g]));
+
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const lines = boosters.map((booster) => {
+        const boosterGame = games.get(booster.gameId);
+        return describeBoosterLine(
+            booster,
+            boosterGame ? boosterTypeLabel(boosterGame, booster.type) : normalizeBoosterType(booster.type),
+            game ? undefined : boosterGame?.name
+        );
+    });
+
+    const scope = game ? ` ${game.name}` : "";
+    const filtersText = [type ? `type ${boosterTypeLabel(game!, type)}` : undefined, args.cardName ? `contenant ${args.cardName}` : undefined]
+        .filter(Boolean).join(", ");
+    return textResult(
+        `Boosters${scope}${filtersText ? ` (${filtersText})` : ""} — page ${page}/${totalPages}, ${total} booster(s).\n\n` +
+        (lines.join("\n") || "Aucun booster.") +
+        (game ? linkLine(mcpLinks.boosters(gameSlugOf(game))) : "")
+    );
+}
+
+async function handleGetBooster(args: { boosterId: string }, extra: ToolExtra): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const resolved = await resolveOwnedBooster(userId, args.boosterId);
+    if ("error" in resolved) return resolved.error;
+    const { booster, game } = resolved;
+
+    return textResult(
+        describeBooster(booster, boosterTypeLabel(game, booster.type), game.name) +
+        linkLine(mcpLinks.booster(gameSlugOf(game), booster.id))
+    );
+}
+
+async function handleCreateBooster(
+    args: { gameName: string; setCode: string; lang?: string; type?: string; note?: string; cards?: BoosterCardInput[] },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const game = await resolveGame(args.gameName);
+    if (!game) return errorResult(`Jeu "${args.gameName}" non trouvé.`);
+
+    const type = normalizeBoosterType(args.type);
+    if (!isBoosterType(game, type)) {
+        return errorResult(`Type de booster "${args.type}" inconnu pour ${game.name}. Types : ${boosterTypesText(game)}.`);
+    }
+
+    const languages = getGameLanguages(game, await db.collection("cards").distinct("lang", { gameId: game._id }));
+    const lang = args.lang?.trim().toLowerCase() || languages[0];
+    if (game.languages !== undefined && !game.languages.includes(lang)) {
+        return errorResult(`Langue "${lang}" non proposée pour ${game.name}. Langues : ${game.languages.join(", ")}.`);
+    }
+
+    const setCode = args.setCode.trim().toUpperCase();
+    if (!setCode) return errorResult("Précisez l'extension du booster (setCode).");
+
+    const note = args.note?.trim() || undefined;
+    const booster = await createBooster({
+        gameId: game._id.toString(),
+        userId,
+        setCode,
+        lang,
+        type,
+        note,
+        cards: [],
+        archived: false,
+    });
+
+    let cardsText = "";
+    if (args.cards && args.cards.length > 0) {
+        const { entries, added, errors } = await resolveBoosterCards(game, { setCode, lang }, args.cards);
+        if (entries.length > 0) await addCardsToBooster(booster.id, entries);
+        cardsText = addedCardsText(added, errors);
+    }
+
+    return textResult(
+        `Booster **${booster.id}** créé : ${game.name}, ${boosterTypeLabel(game, type)}, ${setCode} (${lang.toUpperCase()}).` +
+        cardsText +
+        linkLine(mcpLinks.booster(gameSlugOf(game), booster.id))
+    );
+}
+
+async function handleUpdateBooster(
+    args: { boosterId: string; type?: string; note?: string; edition?: string },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    if (args.type === undefined && args.note === undefined && args.edition === undefined) {
+        return errorResult("Rien à modifier : précisez type, note ou edition.");
+    }
+
+    const resolved = await resolveOwnedBooster(userId, args.boosterId);
+    if ("error" in resolved) return resolved.error;
+    const { booster, game } = resolved;
+
+    let type: string | undefined;
+    if (args.type !== undefined) {
+        type = normalizeBoosterType(args.type);
+        if (!isBoosterType(game, type)) {
+            return errorResult(`Type de booster "${args.type}" inconnu pour ${game.name}. Types : ${boosterTypesText(game)}.`);
+        }
+    }
+
+    let editionKey: string | undefined;
+    let editionName = "version de base";
+    if (args.edition !== undefined) {
+        const editions = boosterEditions(booster.cards);
+        const edition = findEdition(editions, args.edition);
+        if (edition === undefined) {
+            return errorResult(
+                `Aucune carte du booster n'existe en « ${args.edition} ».` +
+                (editions.length > 0 ? ` Variantes possibles : ${editions.map((e) => e.name).join(", ")}, ou « base ».` : " Ses cartes n'ont pas de variante.")
+            );
+        }
+        editionKey = edition?.key;
+        if (edition) editionName = edition.name;
+    }
+
+    const changes: string[] = [];
+    if (type !== undefined || args.note !== undefined) {
+        const note = args.note === undefined ? undefined : (args.note.trim() || null);
+        await updateBooster(booster.id, { type, note });
+        if (type !== undefined) changes.push(`type : ${boosterTypeLabel(game, type)}`);
+        if (note !== undefined) changes.push(note ? `note : « ${note} »` : "note effacée");
+    }
+    if (args.edition !== undefined) {
+        const result = await setBoosterCardsPrinting(booster.id, editionKey);
+        changes.push(
+            `${result.updated} carte(s) passée(s) en ${editionName}` +
+            (result.unavailable > 0 ? `, ${result.unavailable} laissée(s) telle(s) quelle(s) (pas tirée(s) dans cette édition)` : "")
+        );
+    }
+
+    return textResult(
+        `Booster **${booster.id}** modifié — ${changes.join(" ; ")}.` +
+        (args.edition !== undefined && booster.addedToCollection ? COLLECTION_NOT_SYNCED_NOTE : "") +
+        linkLine(mcpLinks.booster(gameSlugOf(game), booster.id))
+    );
+}
+
+async function handleAddCardsToBooster(
+    args: { boosterId: string; cards: BoosterCardInput[] },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const resolved = await resolveOwnedBooster(userId, args.boosterId);
+    if ("error" in resolved) return resolved.error;
+    const { booster, game } = resolved;
+
+    const { entries, added, errors } = await resolveBoosterCards(game, booster, args.cards);
+    if (entries.length === 0) {
+        return errorResult(`Aucune carte ajoutée au booster.${addedCardsText([], errors)}`);
+    }
+    const { value } = await addCardsToBooster(booster.id, entries);
+
+    return textResult(
+        `${entries.length} carte(s) ajoutée(s) au booster **${booster.id}** (${booster.cards.length + entries.length} au total, valeur ${formatBoosterValue(value ?? undefined)}).` +
+        addedCardsText(added, errors) +
+        (booster.addedToCollection ? COLLECTION_NOT_SYNCED_NOTE : "") +
+        linkLine(mcpLinks.booster(gameSlugOf(game), booster.id))
+    );
+}
+
+async function handleUpdateBoosterCard(
+    args: { boosterId: string; entryId: string; foil?: boolean; printing?: string },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    if (args.foil === undefined && args.printing === undefined) {
+        return errorResult("Rien à modifier : précisez foil ou printing.");
+    }
+
+    const resolved = await resolveOwnedBooster(userId, args.boosterId);
+    if ("error" in resolved) return resolved.error;
+    const { booster, game } = resolved;
+
+    const card = booster.cards.find((item) => item.id === args.entryId);
+    if (!card) {
+        return errorResult(`Exemplaire "${args.entryId}" absent du booster ; get_booster donne l'identifiant de chaque exemplaire.`);
+    }
+
+    let forcedFoil = false;
+    if (args.printing !== undefined) {
+        const printing = findCardPrinting(card, args.printing);
+        if (printing === undefined) {
+            const known = (card.printings ?? []).map((item) => item.name);
+            return errorResult(`${card.name} n'existe pas en « ${args.printing} »${known.length > 0 ? ` (variantes : ${known.join(", ")}, ou « base »)` : " : cette carte n'a pas de variante"}.`);
+        }
+        forcedFoil = printing?.foil === true;
+        if (forcedFoil && args.foil === false) {
+            return errorResult(`La variante ${printing!.name} est imprimée en foil : l'exemplaire ne peut pas être non foil.`);
+        }
+        const result = await setBoosterCardsPrinting(booster.id, printing ? printingEdition(printing).key : undefined, [card.id]);
+        if (result.unavailable > 0) {
+            return errorResult(`${card.name} n'a pas pu passer en « ${args.printing} ».`);
+        }
+    }
+    if (args.foil !== undefined && !forcedFoil) {
+        await setBoosterCardFoil(booster.id, card.id, args.foil);
+    }
+
+    const updated = (await getBooster(booster.id))?.cards.find((item) => item.id === card.id) ?? card;
+    return textResult(
+        `Exemplaire modifié :\n${describeBoosterCard(updated)}` +
+        (booster.addedToCollection ? COLLECTION_NOT_SYNCED_NOTE : "") +
+        linkLine(mcpLinks.booster(gameSlugOf(game), booster.id))
+    );
+}
+
+async function handleRemoveCardsFromBooster(
+    args: { boosterId: string; entryIds?: string[]; cardName?: string; setCode?: string; collectorNumber?: string; foil?: boolean; quantity?: number },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    if (!args.entryIds?.length && !args.cardName) {
+        return errorResult("Précisez les exemplaires à retirer (entryIds) ou le nom de la carte (cardName).");
+    }
+
+    const resolved = await resolveOwnedBooster(userId, args.boosterId);
+    if ("error" in resolved) return resolved.error;
+    const { booster, game } = resolved;
+
+    let targets: BoosterCard[];
+    if (args.entryIds?.length) {
+        const wanted = new Set(args.entryIds);
+        targets = booster.cards.filter((card) => wanted.has(card.id));
+        const missing = args.entryIds.filter((id) => !targets.some((card) => card.id === id));
+        if (missing.length > 0) {
+            return errorResult(`Exemplaire(s) absent(s) du booster : ${missing.join(", ")}.`);
+        }
+    } else {
+        const name = args.cardName!.trim().toLowerCase();
+        const matches = booster.cards.filter((card) =>
+            card.name.toLowerCase() === name &&
+            (!args.setCode || card.setCode.toUpperCase() === args.setCode.toUpperCase()) &&
+            (!args.collectorNumber || card.collectorNumber === args.collectorNumber) &&
+            (args.foil === undefined || (card.foil === true) === args.foil)
+        );
+        if (matches.length === 0) {
+            return errorResult(`Aucun exemplaire de "${args.cardName}" dans ce booster.`);
+        }
+        const prints = new Set(matches.map((card) => `${card.setCode}#${card.collectorNumber}`));
+        if (prints.size > 1) {
+            return errorResult(
+                `Plusieurs impressions de "${args.cardName}" dans ce booster. Précisez setCode et collectorNumber, ou les exemplaires :\n` +
+                matches.map(describeBoosterCard).join("\n")
+            );
+        }
+        targets = matches.slice(0, Math.min(Math.max(args.quantity ?? 1, 1), matches.length));
+    }
+
+    const { removed, value } = await removeCardsFromBooster(booster.id, targets.map((card) => card.id));
+    return textResult(
+        `${removed} carte(s) retirée(s) du booster **${booster.id}** (valeur ${formatBoosterValue(value ?? undefined)}) :\n` +
+        targets.map(describeBoosterCard).join("\n") +
+        (booster.addedToCollection ? COLLECTION_NOT_SYNCED_NOTE : "") +
+        linkLine(mcpLinks.booster(gameSlugOf(game), booster.id))
+    );
+}
+
+async function handleAddBoosterToCollection(args: { boosterId: string }, extra: ToolExtra): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const resolved = await resolveOwnedBooster(userId, args.boosterId);
+    if ("error" in resolved) return resolved.error;
+    const { booster, game } = resolved;
+
+    // Le verser une deuxième fois doublerait ses cartes dans la collection.
+    if (booster.addedToCollection) {
+        return errorResult("Ce booster est déjà dans la collection.");
+    }
+    if (booster.cards.length === 0) {
+        return errorResult("Ce booster est vide : ajoutez-lui des cartes d'abord.");
+    }
+
+    const added = await addBoosterToCollection(userId, booster.id);
+    return textResult(
+        `${added} carte(s) du booster **${booster.id}** ajoutée(s) à la collection ${game.name}.` +
+        linkLine(mcpLinks.collection(gameSlugOf(game)))
+    );
+}
+
+async function handleRemoveBoosterFromCollection(args: { boosterId: string }, extra: ToolExtra): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const resolved = await resolveOwnedBooster(userId, args.boosterId);
+    if ("error" in resolved) return resolved.error;
+    const { booster, game } = resolved;
+
+    if (!booster.addedToCollection) {
+        return errorResult("Ce booster n'est pas dans la collection.");
+    }
+
+    await removeBoosterFromCollection(userId, booster.id);
+    return textResult(
+        `Les cartes du booster **${booster.id}** ont été retirées de la collection ${game.name} (le booster est conservé).` +
+        linkLine(mcpLinks.booster(gameSlugOf(game), booster.id))
+    );
+}
+
+async function handleDeleteBooster(
+    args: { boosterId: string; removeFromCollection?: boolean },
+    extra: ToolExtra
+): Promise<ToolResult> {
+    const userId = userIdFrom(extra);
+    if (!userId) return AUTH_REQUIRED;
+
+    const resolved = await resolveOwnedBooster(userId, args.boosterId);
+    if ("error" in resolved) return resolved.error;
+    const { booster, game } = resolved;
+
+    let collectionText = "";
+    if (booster.addedToCollection) {
+        if (args.removeFromCollection) {
+            await removeBoosterFromCollection(userId, booster.id);
+            collectionText = " Ses cartes ont aussi été retirées de la collection.";
+        } else {
+            collectionText = " Ses cartes restent dans la collection.";
+        }
+    }
+
+    await deleteBooster(booster.id);
+    return textResult(
+        `Booster **${booster.id}** (${boosterTypeLabel(game, booster.type)}, ${booster.setCode}, ${booster.cards.length} carte(s)) supprimé.${collectionText}` +
+        linkLine(mcpLinks.boosters(gameSlugOf(game)))
+    );
+}
+
 // --- Enregistrement des outils ---
 
 export function registerJoutesDataTools(server: McpServer) {
@@ -1558,6 +2102,101 @@ export function registerJoutesDataTools(server: McpServer) {
             playGroupId: z.string().optional(),
         },
     }, withToolLogging("remove_card_from_collection", handleRemoveCardFromCollection));
+    registerJoutesTool(server, "list_boosters", {
+        title: "List boosters",
+        description: "Lister les boosters ouverts par l'utilisateur (date, type, extension, nombre de cartes, valeur, versé ou non dans la collection), du plus récent au plus ancien. Filtres : jeu, type, carte contenue (« dans quel booster ai-je eu telle carte ? »).",
+        inputSchema: {
+            gameName: z.string().optional().describe("Nom ou slug du jeu ; omis = tous les jeux"),
+            type: z.string().optional().describe("Type de booster (clé, ex. booster, collector, other) ; demande gameName"),
+            cardName: z.string().optional().describe("Ne garder que les boosters contenant cette carte ; demande gameName"),
+            setCode: z.string().optional().describe("Extension de la carte cherchée, si plusieurs impressions"),
+            collectorNumber: z.string().optional(),
+            sort: z.enum(["newest", "oldest"]).optional(),
+            page: z.number().int().min(1).optional(),
+        },
+    }, withToolLogging("list_boosters", handleListBoosters));
+    registerJoutesTool(server, "get_booster", {
+        title: "Get booster",
+        description: "Consulter un booster : type, extension, langue, note, valeur, et chaque carte avec l'identifiant d'exemplaire qui sert à la modifier ou la retirer, plus les variantes d'impression possibles.",
+        inputSchema: {
+            boosterId: z.string(),
+        },
+    }, withToolLogging("get_booster", handleGetBooster));
+    registerJoutesTool(server, "create_booster", {
+        title: "Create booster",
+        description: "Enregistrer un booster ouvert, avec ses cartes si on les connaît. Les cartes sont cherchées par nom dans l'extension du booster (puis partout) ; une carte introuvable ou ambiguë est signalée sans bloquer les autres. Le booster n'est pas versé dans la collection : voir add_booster_to_collection.",
+        inputSchema: {
+            gameName: z.string().describe("Nom ou slug du jeu"),
+            setCode: z.string().describe("Code de l'extension du booster (ex. OGN)"),
+            lang: z.string().optional().describe("Langue des cartes imprimées (ex. fr, en) ; défaut : la première langue du jeu"),
+            type: z.string().optional().describe("Type de booster (clé propre au jeu, ex. booster, collector) ; défaut : other"),
+            note: z.string().max(BOOSTER_NOTE_MAX_LENGTH).optional(),
+            cards: z.array(boosterCardInput).max(30).optional(),
+        },
+    }, withToolLogging("create_booster", handleCreateBooster));
+    registerJoutesTool(server, "update_booster", {
+        title: "Update booster",
+        description: "Modifier un booster : son type, sa note (chaîne vide = effacer), ou passer toutes ses cartes dans une variante d'impression (edition, ex. « Showcase », ou « base » pour revenir à la version de base ; une carte qui n'existe pas dans cette variante reste telle quelle).",
+        inputSchema: {
+            boosterId: z.string(),
+            type: z.string().optional(),
+            note: z.string().max(BOOSTER_NOTE_MAX_LENGTH).optional(),
+            edition: z.string().optional(),
+        },
+    }, withToolLogging("update_booster", handleUpdateBooster));
+    registerJoutesTool(server, "add_cards_to_booster", {
+        title: "Add cards to booster",
+        description: "Ajouter des cartes à un booster existant (par nom, comme create_booster).",
+        inputSchema: {
+            boosterId: z.string(),
+            cards: z.array(boosterCardInput).min(1).max(30),
+        },
+    }, withToolLogging("add_cards_to_booster", handleAddCardsToBooster));
+    registerJoutesTool(server, "update_booster_card", {
+        title: "Update booster card",
+        description: "Modifier un exemplaire d'un booster : foil ou non, et variante d'impression (« base » pour la version de base). L'identifiant d'exemplaire est donné par get_booster.",
+        inputSchema: {
+            boosterId: z.string(),
+            entryId: z.string().describe("Identifiant de l'exemplaire (get_booster)"),
+            foil: z.boolean().optional(),
+            printing: z.string().optional().describe("Variante ou édition (ex. « Showcase »), ou « base »"),
+        },
+    }, withToolLogging("update_booster_card", handleUpdateBoosterCard));
+    registerJoutesTool(server, "remove_cards_from_booster", {
+        title: "Remove cards from booster",
+        description: "Retirer des cartes d'un booster, par identifiants d'exemplaires (get_booster) ou par nom de carte (avec quantité, et foil pour choisir entre exemplaires foil et normaux).",
+        inputSchema: {
+            boosterId: z.string(),
+            entryIds: z.array(z.string()).max(50).optional(),
+            cardName: z.string().optional(),
+            setCode: z.string().optional(),
+            collectorNumber: z.string().optional(),
+            foil: z.boolean().optional(),
+            quantity: z.number().int().min(1).max(30).optional().describe("Avec cardName : nombre d'exemplaires à retirer (défaut 1)"),
+        },
+    }, withToolLogging("remove_cards_from_booster", handleRemoveCardsFromBooster));
+    registerJoutesTool(server, "add_booster_to_collection", {
+        title: "Add booster to collection",
+        description: "Verser les cartes d'un booster dans la collection personnelle (dans la langue du booster, avec foil et variantes). Refusé si le booster y est déjà.",
+        inputSchema: {
+            boosterId: z.string(),
+        },
+    }, withToolLogging("add_booster_to_collection", handleAddBoosterToCollection));
+    registerJoutesTool(server, "remove_booster_from_collection", {
+        title: "Remove booster from collection",
+        description: "Retirer de la collection les cartes qui y avaient été versées depuis ce booster ; le booster est conservé.",
+        inputSchema: {
+            boosterId: z.string(),
+        },
+    }, withToolLogging("remove_booster_from_collection", handleRemoveBoosterFromCollection));
+    registerJoutesTool(server, "delete_booster", {
+        title: "Delete booster",
+        description: "Supprimer définitivement un booster et son contenu. Les cartes déjà versées dans la collection y restent, sauf avec removeFromCollection.",
+        inputSchema: {
+            boosterId: z.string(),
+            removeFromCollection: z.boolean().optional().describe("Retirer aussi ses cartes de la collection"),
+        },
+    }, withToolLogging("delete_booster", handleDeleteBooster));
     registerJoutesTool(server, "list_wishlists", {
         title: "List wishlists",
         description: "Lister les wishlists de l'utilisateur (personnelles et celles de ses groupes de jeu).",

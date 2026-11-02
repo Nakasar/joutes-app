@@ -128,6 +128,7 @@ export async function createBooster(booster: Omit<Booster, 'id' | 'createdAt'>):
     setCode: booster.setCode,
     lang: booster.lang,
     type: booster.type,
+    ...(booster.note ? {note: booster.note} : {}),
     price: booster.value,
     archived: booster.archived,
     createdAt: new Date(),
@@ -485,6 +486,50 @@ export async function addCardToBooster(
   return { entryId: insertedId.toString(), value: await computeBoosterValue(boosterId) };
 }
 
+/**
+ * Ajoute plusieurs cartes d'un coup (outils MCP) : une seule écriture, et la
+ * valeur n'est recalculée qu'une fois, au lieu d'une fois par carte comme le
+ * ferait une suite d'appels à `addCardToBooster`.
+ */
+export async function addCardsToBooster(
+  boosterId: string,
+  cards: Omit<BoosterCard, 'id'>[],
+): Promise<{ entryIds: string[]; value: BoosterValue | null }> {
+  const booster = await db.collection<BoosterDb>('boosters').findOne({
+    _id: new ObjectId(boosterId),
+  }, {projection: {_id: 1, userId: 1}});
+  if (!booster) {
+    throw new Error('Booster not found');
+  }
+  if (cards.length === 0) {
+    return {entryIds: [], value: await computeBoosterValue(boosterId)};
+  }
+
+  const {insertedIds} = await db.collection<BoosterCardDb>('booster-cards').insertMany(cards.map((card) => ({
+    ...card,
+    boosterId: booster._id,
+    userId: booster.userId,
+  })));
+
+  return {
+    entryIds: Object.values(insertedIds).map((id) => id.toString()),
+    value: await computeBoosterValue(boosterId),
+  };
+}
+
+/** Retire plusieurs exemplaires du booster ; renvoie combien l'ont été et la nouvelle valeur. */
+export async function removeCardsFromBooster(
+  boosterId: string,
+  entryIds: string[],
+): Promise<{ removed: number; value: BoosterValue | null }> {
+  const ids = entryIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  const {deletedCount} = ids.length === 0 ? {deletedCount: 0} : await db.collection<BoosterCardDb>('booster-cards').deleteMany({
+    boosterId: new ObjectId(boosterId),
+    _id: {$in: ids},
+  });
+  return {removed: deletedCount, value: await computeBoosterValue(boosterId)};
+}
+
 export async function addBoosterToCollection(userId: string, boosterId: string): Promise<number> {
   const _id = new ObjectId(boosterId);
   const uid = new ObjectId(userId);
@@ -553,11 +598,15 @@ export type BoosterPrintingChange = {
  * Beta d'une carte Cyberpunk) n'a pas le prix de sa carte (cf.
  * docs/CARD_PRICES.md).
  */
-export async function setBoosterCardsPrinting(boosterId: string, edition?: string): Promise<BoosterPrintingChange> {
-  const booster = await getBooster(boosterId);
-  if (!booster) {
+export async function setBoosterCardsPrinting(boosterId: string, edition?: string, entryIds?: string[]): Promise<BoosterPrintingChange> {
+  const fullBooster = await getBooster(boosterId);
+  if (!fullBooster) {
     throw new Error('Booster not found');
   }
+  // `entryIds` restreint le changement à quelques exemplaires (outil MCP sur
+  // une seule carte) ; sans lui, tout le booster change d'édition.
+  const only = entryIds ? new Set(entryIds) : undefined;
+  const booster = only ? {...fullBooster, cards: fullBooster.cards.filter((card) => only.has(card.id))} : fullBooster;
 
   // `getBooster` a déjà relu les variantes du catalogue sur chaque carte ; il ne
   // manque que son illustration et son foil de base, relus ici.

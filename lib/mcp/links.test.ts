@@ -28,6 +28,11 @@ describe("liens des outils MCP", () => {
         );
     });
 
+    it("mène à la liste des boosters d'un jeu et à un booster", () => {
+        assert.equal(mcpLinks.boosters("riftbound", env), "https://joutes.test/collection/riftbound/boosters");
+        assert.equal(mcpLinks.booster("riftbound", "b1", env), "https://joutes.test/collection/riftbound/boosters/b1");
+    });
+
     it("échappe les identifiants", () => {
         assert.equal(mcpLinks.wishlist("a b/c", env), "https://joutes.test/wishlists/a%20b%2Fc");
     });
