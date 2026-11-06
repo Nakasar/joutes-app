@@ -146,6 +146,10 @@ export default function TradeEditor({
   const isCreator = trade.createdBy === currentUserId;
   const myValidated = !!mySide.validatedAt;
   const partnerValidated = !!otherSide.validatedAt;
+  // Toutes les validations sont acquises mais l'échange est resté ouvert : il
+  // reste à l'appliquer. C'est le cas des échanges validés avant que la pose du
+  // verrou ne soit corrigée, ou d'une application interrompue.
+  const awaitingFinalization = isOpen && myValidated && (!partner || partnerValidated);
 
   /**
    * Reprend l'état serveur. Les brouillons d'une face en cours d'édition ne sont
@@ -683,7 +687,12 @@ export default function TradeEditor({
         <div className="sticky bottom-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/95 p-4 shadow-lg backdrop-blur">
           <div className="text-sm text-muted-foreground">
             <p>{t("summary", { offered: myCopies, received: receivedCopies })}</p>
-            {partner ? (
+            {awaitingFinalization ? (
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs">
+                <Clock className="size-3.5" />
+                {t("validation.pendingFinalization")}
+              </p>
+            ) : partner ? (
               <p className="mt-0.5 flex items-center gap-1.5 text-xs">
                 <Clock className="size-3.5" />
                 {myValidated
@@ -698,10 +707,18 @@ export default function TradeEditor({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {myValidated ? (
-              <Button variant="outline" className="gap-2" disabled={busy} onClick={() => void revokeValidation()}>
-                {busy ? <Loader2 className="size-4 animate-spin" /> : <Ban className="size-4" />}
-                {t("validation.revoke")}
-              </Button>
+              <>
+                <Button variant="outline" className="gap-2" disabled={busy} onClick={() => void revokeValidation()}>
+                  {busy ? <Loader2 className="size-4 animate-spin" /> : <Ban className="size-4" />}
+                  {t("validation.revoke")}
+                </Button>
+                {awaitingFinalization ? (
+                  <Button className="gap-2" disabled={busy} onClick={() => void validate()}>
+                    {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowLeftRight className="size-4" />}
+                    {t("validation.finalize")}
+                  </Button>
+                ) : null}
+              </>
             ) : (
               <Button className="gap-2" disabled={!canValidate} onClick={() => setConfirmOpen(true)}>
                 <ArrowLeftRight className="size-4" />

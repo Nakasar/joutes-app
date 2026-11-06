@@ -5272,7 +5272,9 @@
       "hint": "Lo scambio si applica quando entrambi i giocatori hanno confermato la propria offerta.",
       "waitingPartner": "In attesa della conferma di {name}.",
       "partnerReady": "{name} ha confermato: conferma a tua volta per finalizzare.",
-      "finalizing": "Finalizzazione dello scambio…"
+      "finalizing": "Finalizzazione dello scambio…",
+      "finalize": "Completa lo scambio",
+      "pendingFinalization": "Tutte le offerte sono convalidate: completa lo scambio per aggiornare le collezioni."
     },
     "partner": {
       "remove": "Rimuovi il partner",

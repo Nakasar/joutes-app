@@ -5272,7 +5272,9 @@
       "hint": "L'échange s'applique quand les deux joueurs ont validé leur offre.",
       "waitingPartner": "En attente de la validation de {name}.",
       "partnerReady": "{name} a validé : validez à votre tour pour finaliser.",
-      "finalizing": "Finalisation de l'échange…"
+      "finalizing": "Finalisation de l'échange…",
+      "finalize": "Finaliser l'échange",
+      "pendingFinalization": "Toutes les validations sont là : finalisez l'échange pour mettre à jour les collections."
     },
     "partner": {
       "remove": "Retirer le partenaire",
