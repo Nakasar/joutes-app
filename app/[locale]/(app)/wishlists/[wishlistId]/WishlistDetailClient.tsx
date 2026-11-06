@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@/i18n/navigation.ts";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -67,6 +67,10 @@ import type { Game } from "@/lib/types/Game.ts";
 import type { BoosterCard } from "@/lib/types/booster.ts";
 import { UserBadges } from "@/components/UserBadges.tsx";
 import { BackLink } from "@/components/navigation/BackLink.tsx";
+import { CardSearchInput } from "@/components/cards/CardSearchInput.tsx";
+import { SearchTokenChips } from "@/components/cards/SearchTokenChips.tsx";
+import { buildSearchFields, parseSearchSyntax } from "@/lib/cards/search-syntax.ts";
+import { OWNED_FIELD } from "@/lib/collection/query.ts";
 
 /** Le palier mis en avant : le moins cher qui ouvre la gestion avancée. */
 const UNLOCKING_PLAN_LABEL = SUBSCRIPTION_PLANS.expert.label;
@@ -115,10 +119,19 @@ export default function WishlistDetailClient({
   const [totalPages, setTotalPages] = useState(initialItems.totalPages);
   const [gamesFacet, setGamesFacet] = useState(initialItems.games);
   const [typesFacet, setTypesFacet] = useState(initialItems.types);
+  // Une liste mêle plusieurs jeux : seuls les champs communs s'y appliquent,
+  // le type et le nombre d'exemplaires possédés.
+  const searchFields = useMemo(
+    () => buildSearchFields([], { types: typesFacet }, isLoggedIn ? [{ key: OWNED_FIELD, kind: "number", min: 0, max: 4 }] : []),
+    [typesFacet, isLoggedIn]
+  );
+  const searchFieldsRef = useRef(searchFields);
+  searchFieldsRef.current = searchFields;
 
   const [search, setSearch] = useState("");
   const [gameFilter, setGameFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
+  // Le type ne se choisit plus dans une liste : c'est un token de la saisie.
+  const typeFilter = "all";
   const [ownedOnly, setOwnedOnly] = useState(false);
   const [minOwned, setMinOwned] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -153,11 +166,17 @@ export default function WishlistDetailClient({
     }) => {
       setLoading(true);
       try {
+        // La saisie suit la syntaxe commune des barres de cartes : `type:Unit`
+        // et `owned>=2` y valent les filtres de la liste, le reste est le nom.
+        const parsed = parseSearchSyntax(opts.search, searchFieldsRef.current);
+        const ownedMin = parsed.criteria.ranges[OWNED_FIELD]?.min;
         const params = new URLSearchParams({ page: String(opts.page), limit: "48" });
-        if (opts.search.trim()) params.set("search", opts.search.trim());
+        if (parsed.text.trim()) params.set("search", parsed.text.trim());
         if (opts.gameId !== "all") params.set("gameId", opts.gameId);
-        if (opts.type !== "all") params.set("type", opts.type);
-        if (opts.ownedOnly) params.set("minOwned", String(opts.minOwned));
+        if (parsed.type) params.set("type", parsed.type);
+        else if (opts.type !== "all") params.set("type", opts.type);
+        if (ownedMin !== undefined && ownedMin > 0) params.set("minOwned", String(ownedMin));
+        else if (opts.ownedOnly) params.set("minOwned", String(opts.minOwned));
 
         const res = await fetch(`/api/wishlists/${wishlist.id}/items?${params.toString()}`);
         if (!res.ok) return;
@@ -310,12 +329,13 @@ export default function WishlistDetailClient({
       {/* Filters */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <CardSearchInput
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={setSearch}
+            fields={searchFields}
             placeholder={t("detail.searchPlaceholder")}
-            className="pl-9"
+            openOnFocus={false}
+            className="h-9 w-full pl-9"
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -329,21 +349,6 @@ export default function WishlistDetailClient({
                 {gamesFacet.map((g) => (
                   <SelectItem key={g.gameId} value={g.gameId}>
                     {g.gameName ?? g.gameId}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          {typesFacet.length > 0 && (
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder={t("detail.allTypes")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("detail.allTypes")}</SelectItem>
-                {typesFacet.map((ty) => (
-                  <SelectItem key={ty} value={ty}>
-                    {ty}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -381,6 +386,7 @@ export default function WishlistDetailClient({
           )}
         </div>
       </div>
+      <SearchTokenChips value={search} onChange={setSearch} fields={searchFields} />
 
       <div className="flex min-h-5 items-center justify-between text-sm text-muted-foreground">
         <span>{t("detail.results", { count: total })}</span>

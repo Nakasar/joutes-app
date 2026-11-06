@@ -143,7 +143,9 @@ export const piltoverFormat: CollectionFormat = {
           label: [name, row["Variant Number"]].filter(Boolean).join(" · ") || undefined,
           message:
             byName.length > 1
-              ? `Plusieurs cartes portent le nom « ${name} » : le numéro de variante « ${row["Variant Number"]} » n'a pas été reconnu.`
+              ? row["Variant Number"]
+                ? `Plusieurs cartes portent le nom « ${name} » : le numéro de variante « ${row["Variant Number"]} » n'a pas été reconnu.`
+                : `Plusieurs cartes portent le nom « ${name} » et la ligne n'a pas de numéro de variante.`
               : `Carte introuvable dans le catalogue : « ${name || row["Variant Number"] || "?"} ».`,
           ...(ambiguous
             ? {
