@@ -1479,15 +1479,19 @@ export async function validateTradeSide({
   // toutes les faces concernées sont encore validées : une révocation glissée
   // entre la lecture ci-dessus et la pose du verrou ne change pas la révision,
   // et appliquerait sinon un échange qui ne l'est plus.
-  const claimFilter: Record<string, unknown> = {
+  //
+  // La condition s'écrit « aucune face occupée n'est sans validation », et non
+  // `sides.<i>.validatedAt: { $ne: null }` : sur un tableau de documents,
+  // MongoDB lit aussi `<i>` comme un nom de champ de chaque élément, absent,
+  // donc nul, et `$ne: null` n'était alors jamais satisfait. Le verrou n'était
+  // jamais posé et aucun échange ne s'appliquait.
+  const claimFilter = {
     _id: doc._id,
-    status: "open",
+    status: "open" as const,
     revision,
     applying: { $ne: true },
+    sides: { $not: { $elemMatch: { userId: { $exists: true, $ne: null }, validatedAt: null } } },
   };
-  for (const side of sidesRequiringValidation(validated)) {
-    claimFilter[`sides.${validated.sides.indexOf(side)}.validatedAt`] = { $ne: null };
-  }
 
   const claimed = await db.collection<TradeDocument>(TRADES_COLLECTION).findOneAndUpdate(
     claimFilter,

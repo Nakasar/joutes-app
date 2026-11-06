@@ -5272,7 +5272,9 @@
       "hint": "The trade applies once both players have validated their offer.",
       "waitingPartner": "Waiting for {name} to validate.",
       "partnerReady": "{name} validated: validate in turn to complete the trade.",
-      "finalizing": "Completing the trade…"
+      "finalizing": "Completing the trade…",
+      "finalize": "Complete the trade",
+      "pendingFinalization": "Every offer is validated: complete the trade to update the collections."
     },
     "partner": {
       "remove": "Remove partner",

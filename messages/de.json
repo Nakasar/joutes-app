@@ -5272,7 +5272,9 @@
       "hint": "Der Tausch wird ausgeführt, sobald beide Spieler ihr Angebot bestätigt haben.",
       "waitingPartner": "Warten auf die Bestätigung von {name}.",
       "partnerReady": "{name} hat bestätigt: Bestätige nun deinerseits, um abzuschließen.",
-      "finalizing": "Tausch wird abgeschlossen…"
+      "finalizing": "Tausch wird abgeschlossen…",
+      "finalize": "Tausch abschließen",
+      "pendingFinalization": "Alle Angebote sind bestätigt: Schließe den Tausch ab, um die Sammlungen zu aktualisieren."
     },
     "partner": {
       "remove": "Partner entfernen",
