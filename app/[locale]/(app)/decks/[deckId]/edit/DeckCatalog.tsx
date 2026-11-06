@@ -141,6 +141,7 @@ export function DeckCatalog({
           onChange={setQuery}
           fields={searchFields}
           placeholder={"domain:fury energy<=3"}
+          ariaLabel="Rechercher une carte"
           className="h-10 w-full pl-9"
         />
       </div>

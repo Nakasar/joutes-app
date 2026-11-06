@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { collectionQueryFromParams, getCollectionSearchSetup } from "@/lib/db/collection-search";
 import { collectionDoubles, DEFAULT_KEPT_COPIES } from "@/lib/collection/doubles";
+import { filterGroupsByOwned } from "@/lib/collection/query";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getGameBySlugOrId } from "@/lib/db/games";
@@ -67,7 +68,7 @@ export async function GET(
     const groups =
       scope === "doubles"
         ? collectionDoubles(allGroups, Number.isFinite(keep) && keep >= 0 ? keep : DEFAULT_KEPT_COPIES)
-        : allGroups;
+        : filterGroupsByOwned(allGroups, query?.owned);
 
     const csv = format.toCsv(groups, context);
     const fileName = collectionExportFileName(slug, format, new Date());

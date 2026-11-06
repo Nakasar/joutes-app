@@ -90,6 +90,7 @@ export default function AddSetDialog({
         setSetCode((current) => (data.sets.some((set) => set.setCode === current) ? current : ""));
       })
       .catch(() => !cancelled && setSetsError(true));
+    setSetsError(false);
     return () => {
       cancelled = true;
     };
@@ -138,6 +139,7 @@ export default function AddSetDialog({
     return () => {
       window.clearTimeout(timer);
       controller.abort();
+      setPlanning(false);
     };
   }, [open, request, gameSlug]);
 
@@ -375,7 +377,7 @@ export default function AddSetDialog({
                 {planning ? <Loader2 className="ml-auto size-4 animate-spin text-muted-foreground" /> : null}
               </div>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-wrap justify-end gap-2">
                 <Button variant="outline" onClick={() => setOpen(false)}>
                   {t("cancel")}
                 </Button>

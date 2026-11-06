@@ -112,6 +112,8 @@ export default function CollectionTransfer({
   const fileInput = useRef<HTMLInputElement>(null);
 
   const hasSearch = Boolean(searchParams && searchText?.trim());
+  // La recherche a pu être vidée après le choix : on n'exporte alors pas « tout » en douce sous l'étiquette « recherche ».
+  const scope = exportScope === "search" && !hasSearch ? "all" : exportScope;
 
   const resetImport = () => {
     setFile(null);
@@ -130,12 +132,12 @@ export default function CollectionTransfer({
   const handleExport = async () => {
     setBusy(true);
     try {
-      const params = new URLSearchParams(exportScope === "search" && searchParams ? searchParams : "");
+      const params = new URLSearchParams(scope === "search" && searchParams ? searchParams : "");
       params.delete("page");
       params.delete("limit");
       params.delete("owned");
       params.set("format", exportFormat);
-      params.set("scope", exportScope);
+      params.set("scope", scope);
       const response = await fetch(`/api/collection/games/${gameSlug}/export?${params.toString()}`);
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -313,7 +315,7 @@ export default function CollectionTransfer({
               {formatSelect(exportFormat, setExportFormat, "collection-export-format")}
               <fieldset className="flex flex-col gap-2">
                 <legend className="mb-2 text-sm font-medium">{t("export.scope")}</legend>
-                {option("export-scope", "all", exportScope === "all", () => setExportScope("all"), t("export.all"))}
+                {option("export-scope", "all", scope === "all", () => setExportScope("all"), t("export.all"))}
                 {hasSearch
                   ? option(
                       "export-scope",

@@ -178,5 +178,23 @@ export function ownershipRange(owned: boolean | undefined): OwnedRange | undefin
 
 /** Filtre Mongo sur le nombre d'exemplaires comptés, ou `null` sans borne. */
 export function ownedQuantityMatch(range: OwnedRange | undefined): Record<string, number> | null {
-  return range ? rangeMatch(range) : null;
+  if (!range) return null;
+  // `owned>=0` ne retire aucune carte : inutile de payer le comptage pour rien.
+  const effective: OwnedRange = { ...(range.min !== undefined && range.min > 0 ? { min: range.min } : {}), ...(range.max !== undefined ? { max: range.max } : {}) };
+  return effective.min === undefined && effective.max === undefined ? null : rangeMatch(effective);
+}
+
+/**
+ * Applique la borne `owned` à des lots d'export : une carte est gardée si la
+ * somme de ses exemplaires (tous lots confondus) est dans la borne, comme à
+ * l'écran. Les cartes à zéro exemplaire n'ont pas de lot, donc `owned=0` vide l'export.
+ */
+export function filterGroupsByOwned<T extends { cardId: string; quantity: number }>(groups: T[], range: OwnedRange | undefined): T[] {
+  if (!range) return groups;
+  const totals = new Map<string, number>();
+  for (const group of groups) totals.set(group.cardId, (totals.get(group.cardId) ?? 0) + group.quantity);
+  return groups.filter((group) => {
+    const total = totals.get(group.cardId) ?? 0;
+    return (range.min === undefined || total >= range.min) && (range.max === undefined || total <= range.max);
+  });
 }

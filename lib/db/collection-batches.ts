@@ -51,12 +51,16 @@ export async function getQuickAddSets(game: Game): Promise<QuickAddSet[]> {
   });
 }
 
-/** Ce que possède la personne parmi les cartes de cette extension, pour le mode « compléter ». */
-async function ownedCounts(userId: ObjectId, names: string[]): Promise<OwnedCounts> {
+/**
+ * Ce que possède la personne parmi les cartes de cette extension, pour le mode
+ * « compléter ». Limité à l'extension : une réimpression ailleurs ne complète
+ * pas ce set-ci.
+ */
+async function ownedCounts(userId: ObjectId, setCode: string, names: string[]): Promise<OwnedCounts> {
   const rows = await db
     .collection("collection-cards")
     .aggregate<{ _id: { name: string; setCode: string; collectorNumber: unknown }; n: number }>([
-      { $match: { userId, name: { $in: names } } },
+      { $match: { userId, setCode, name: { $in: names } } },
       { $group: { _id: { name: "$name", setCode: "$setCode", collectorNumber: "$collectorNumber" }, n: { $sum: 1 } } },
     ])
     .toArray();
@@ -104,7 +108,7 @@ export async function quickAddSet(
   // Le mode « ajouter » ne regarde pas ce qu'on possède : inutile de le lire.
   const owned =
     request.mode === "fill"
-      ? await ownedCounts(user, [...new Set(printings.map((card) => card.name))])
+      ? await ownedCounts(user, printings[0].setCode, [...new Set(printings.map((card) => card.name))])
       : undefined;
   const plan = planSetFill(printings, request, owned);
   const { entries, ...summary } = plan;

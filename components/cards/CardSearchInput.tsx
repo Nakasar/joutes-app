@@ -30,6 +30,7 @@ export function CardSearchInput({
   className,
   openOnFocus = true,
   onKeyDown,
+  ariaLabel,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -45,6 +46,8 @@ export function CardSearchInput({
   openOnFocus?: boolean;
   /** Touches que les suggestions ne prennent pas : à l'appelant de trancher. */
   onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+  /** Nom du champ pour les lecteurs d'écran, quand aucun libellé visible ne le nomme. */
+  ariaLabel?: string;
 }) {
   const t = useTranslations("Games");
   const listId = useId();
@@ -101,6 +104,7 @@ export function CardSearchInput({
       <Input
         ref={inputRef}
         type="text"
+        aria-label={ariaLabel}
         placeholder={placeholder ?? t("cards.search.placeholder")}
         value={value}
         onChange={(e) => {

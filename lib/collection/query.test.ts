@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { CardFilterFacet } from "@/lib/cards/search-filters";
-import { collectionSearchFields, parseCollectionQuery } from "@/lib/collection/query";
+import { collectionSearchFields, filterGroupsByOwned, ownedQuantityMatch, parseCollectionQuery } from "@/lib/collection/query";
 
 /**
  * La recherche de la collection lit la même syntaxe que la galerie : ces tests
@@ -60,5 +60,23 @@ describe("recherche de la collection", () => {
     assert.deepEqual(result.cardMatch, {
       $and: [{ energy: { $gte: 2 } }, { domain: { $in: ["Calm", "Fury"] } }],
     });
+  });
+});
+
+describe("borne owned à l'export", () => {
+  const groups = [
+    { cardId: "A", quantity: 2 },
+    { cardId: "A", quantity: 2 },
+    { cardId: "B", quantity: 1 },
+  ];
+
+  it("compte tous les lots d'une carte avant de la garder", () => {
+    assert.deepEqual(filterGroupsByOwned(groups, { min: 4 }).map((group) => group.cardId), ["A", "A"]);
+    assert.deepEqual(filterGroupsByOwned(groups, { max: 2 }).map((group) => group.cardId), ["B"]);
+  });
+
+  it("ne compte rien pour owned>=0", () => {
+    assert.equal(ownedQuantityMatch({ min: 0 }), null);
+    assert.notEqual(ownedQuantityMatch({ min: 0, max: 0 }), null);
   });
 });
