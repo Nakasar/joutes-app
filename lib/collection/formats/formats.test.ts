@@ -210,6 +210,12 @@ describe("parseVariantNumber", () => {
       foil: false,
     });
   });
+
+  it("lit les suffixes de promo après le numéro, comme dans un vrai export", () => {
+    assert.deepEqual(parseVariantNumber("OGN-024-Nexus"), { setCode: "OGN", collectorNumber: "024", foil: false });
+    assert.deepEqual(parseVariantNumber("SFD-116-Prerift"), { setCode: "SFD", collectorNumber: "116", foil: false });
+    assert.deepEqual(parseVariantNumber("UNL-T05"), { setCode: "UNL", collectorNumber: "T05", foil: false });
+  });
 });
 
 describe("format Piltover Archive", () => {
@@ -297,6 +303,21 @@ describe("format Piltover Archive", () => {
       CONTEXT,
     );
     assert.equal(invalid.entries[0].grade, undefined);
+  });
+
+  it("retombe sur l'extension du numéro quand Set Prefix désigne une sous-série", () => {
+    // Extrait d'un vrai export : les promos Nexus Night portent « OGN-NN ».
+    const { entries, issues } = piltoverFormat.fromCsv(
+      "Variant Number,Card Name,Set Prefix,Foil,Quantity\r\n" +
+        "OGN-002-Nexus,Brazen Buccaneer,OGN-NN,true,1\r\n" +
+        "SFD-125-Release,Blazing Scorcher,SFD,true,1\r\n",
+      CONTEXT,
+    );
+    assert.deepEqual(issues, []);
+    assert.deepEqual(
+      entries.map((entry) => [entry.card.id, entry.foil]),
+      [["OGN002", true], ["SFD125", true]],
+    );
   });
 
   it("retrouve un numéro non complété de zéros", () => {
