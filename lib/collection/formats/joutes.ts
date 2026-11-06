@@ -11,6 +11,7 @@ import {
   matchPrinting,
   parseBoolean,
 } from "./fields";
+import { MAX_IMPORT_CANDIDATES } from "./types";
 import type { CollectionFormat, ImportIssue, ImportedEntry } from "./types";
 
 /**
@@ -80,12 +81,30 @@ export const joutesFormat: CollectionFormat = {
         (byName.length === 1 ? byName[0] : undefined);
 
       if (!card) {
+        const quantity = parseQuantity(row.Quantity ?? "");
+        const ambiguous = byName.length > 1 && quantity !== null;
+        const language = parseLanguageCode(row.Language ?? "");
+        const condition = parseCondition(row.Condition ?? "");
+        const grade = parseGrade(row.Grade ?? "");
         issues.push({
           line,
+          label: row.Name || row["Card ID"] || undefined,
           message:
             byName.length > 1
               ? `Plusieurs cartes portent le nom « ${row.Name} » : précisez l'extension et le numéro.`
               : `Carte introuvable dans le catalogue : « ${row.Name || row["Card ID"] || "?"} ».`,
+          ...(ambiguous
+            ? {
+                candidates: byName.slice(0, MAX_IMPORT_CANDIDATES),
+                pending: {
+                  quantity,
+                  foil: parseBoolean(row.Foil ?? "") === true,
+                  ...(language ? { language } : {}),
+                  ...(condition ? { condition } : {}),
+                  ...(grade !== undefined ? { grade } : {}),
+                },
+              }
+            : {}),
         });
         return;
       }

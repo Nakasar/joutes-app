@@ -9,10 +9,12 @@ import { Metadata } from "next/types";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getGameCollection } from "@/lib/db/collection.ts";
 import {
+  collectionApiParams,
   gameCollectionQuery,
   readCollectionBrowseState,
   writeCollectionBrowseState,
 } from "@/lib/collection/browse-state.ts";
+import { collectionQueryFromParams, getCollectionSearchSetup } from "@/lib/db/collection-search.ts";
 import { toURLSearchParams, type RawSearchParams } from "@/lib/navigation/url-query.ts";
 import { hasProducts } from "@/lib/db/products.ts";
 import { ObjectId } from "mongodb";
@@ -62,11 +64,13 @@ async function GameCollectionPageContent({
   const initialState = readCollectionBrowseState(toURLSearchParams(await searchParams));
   const filtered = writeCollectionBrowseState(initialState).size > 0;
 
+  const searchSetup = await getCollectionSearchSetup(game);
   const [initial, gameHasProducts] = await Promise.all([
     getGameCollection({
       owner: { type: "user", id: session.user.id },
       gameId: game.id,
       ...gameCollectionQuery(initialState),
+      query: collectionQueryFromParams(collectionApiParams(initialState), searchSetup),
       limit: 48,
     }),
     game.features?.products ? hasProducts(new ObjectId(game.id)) : Promise.resolve(false),
@@ -89,6 +93,7 @@ async function GameCollectionPageContent({
         languages={game.languages}
         initialData={initial}
         initialState={initialState}
+        searchSetup={searchSetup}
         hasProducts={gameHasProducts}
         valuePath={`/api/collection/games/${gameSlugOrId}/value`}
         transferFormats={collectionFormatsForGame(gameSlugOrId).map((format) => ({

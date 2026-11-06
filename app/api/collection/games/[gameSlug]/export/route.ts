@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { collectionQueryFromParams, getCollectionSearchSetup } from "@/lib/db/collection-search";
+import { collectionDoubles, DEFAULT_KEPT_COPIES } from "@/lib/collection/doubles";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getGameBySlugOrId } from "@/lib/db/games";
@@ -44,10 +46,28 @@ export async function GET(
   }
 
   try {
-    const [groups, context] = await Promise.all([
-      getCollectionEntriesForExport({ type: "user", id: session.user.id }, game.id),
+    // `scope` : `all` (défaut) toute la collection du jeu, `search` le résultat
+    // de la recherche passée (`search` et filtres, comme l'écran), `doubles` ce
+    // qui dépasse `keep` exemplaires par carte.
+    const searchParams = request.nextUrl.searchParams;
+    const scope = searchParams.get("scope") ?? "all";
+    if (!["all", "search", "doubles"].includes(scope)) {
+      return NextResponse.json({ error: `Contenu inconnu : « ${scope} ».` }, { status: 400 });
+    }
+    const query =
+      scope === "search"
+        ? collectionQueryFromParams(searchParams, await getCollectionSearchSetup(game))
+        : undefined;
+
+    const [allGroups, context] = await Promise.all([
+      getCollectionEntriesForExport({ type: "user", id: session.user.id }, game.id, query),
       buildCollectionFormatContext(game),
     ]);
+    const keep = Number.parseInt(searchParams.get("keep") ?? "", 10);
+    const groups =
+      scope === "doubles"
+        ? collectionDoubles(allGroups, Number.isFinite(keep) && keep >= 0 ? keep : DEFAULT_KEPT_COPIES)
+        : allGroups;
 
     const csv = format.toCsv(groups, context);
     const fileName = collectionExportFileName(slug, format, new Date());

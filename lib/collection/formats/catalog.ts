@@ -42,9 +42,12 @@ export function createCatalogIndex(catalog: CatalogCard[]): CatalogIndex {
     const key = printingKey(card.setCode, card.collectorNumber);
     if (!printings.has(key)) printings.set(key, card);
 
+    // Le catalogue porte une ligne par langue : le même tirage n'est compté
+    // qu'une fois, sans quoi un nom présent en anglais et en français passerait
+    // pour ambigu alors qu'il ne désigne qu'une carte.
     const nameKey = card.name.trim().toLowerCase();
     const list = names.get(nameKey) ?? [];
-    list.push(card);
+    if (!list.some((other) => printingKey(other.setCode, other.collectorNumber) === key)) list.push(card);
     names.set(nameKey, list);
   }
 

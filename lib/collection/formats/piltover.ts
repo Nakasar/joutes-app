@@ -1,6 +1,7 @@
 import { parseCsv, toCsv } from "@/lib/csv";
 import { createCatalogIndex } from "./catalog";
 import { parseCondition, parseGrade, parseQuantity, parseBoolean } from "./fields";
+import { MAX_IMPORT_CANDIDATES } from "./types";
 import type { CollectionFormat, CollectionLanguage, ImportIssue, ImportedEntry } from "./types";
 
 /**
@@ -132,12 +133,30 @@ export const piltoverFormat: CollectionFormat = {
         (byName.length === 1 ? byName[0] : undefined);
 
       if (!card) {
+        const quantity = parseQuantity(row.Quantity ?? "");
+        const ambiguous = byName.length > 1 && quantity !== null;
+        const language = LANGUAGE_CODES[(row.Language ?? "").trim().toLowerCase()];
+        const condition = parseCondition(row.Condition ?? "");
+        const grade = parseGrade(row["Grading Value"] ?? "");
         issues.push({
           line,
+          label: [name, row["Variant Number"]].filter(Boolean).join(" · ") || undefined,
           message:
             byName.length > 1
               ? `Plusieurs cartes portent le nom « ${name} » : le numéro de variante « ${row["Variant Number"]} » n'a pas été reconnu.`
               : `Carte introuvable dans le catalogue : « ${name || row["Variant Number"] || "?"} ».`,
+          ...(ambiguous
+            ? {
+                candidates: byName.slice(0, MAX_IMPORT_CANDIDATES),
+                pending: {
+                  quantity,
+                  foil: parseBoolean(row.Foil ?? "") ?? variant.foil,
+                  ...(language ? { language } : {}),
+                  ...(condition ? { condition } : {}),
+                  ...(grade !== undefined ? { grade } : {}),
+                },
+              }
+            : {}),
         });
         return;
       }

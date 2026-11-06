@@ -74,7 +74,22 @@ export type ImportedEntry = {
  * est signalée avec son numéro, et le reste du fichier est importé — un export
  * tiers contient souvent quelques cartes que le catalogue ne connaît pas.
  */
-export type ImportIssue = { line: number; message: string };
+export type ImportIssue = {
+  line: number;
+  message: string;
+  /** Ce que la ligne nomme (nom de carte, référence), pour la montrer telle quelle. */
+  label?: string;
+  /**
+   * Cartes que la ligne peut désigner quand elle est ambiguë. En choisir une
+   * résout la ligne (cf. `resolveImportIssues`) ; sans candidat, elle est ignorée.
+   */
+  candidates?: CatalogCard[];
+  /** L'exemplaire tel que la ligne le décrit, sans sa carte : de quoi l'importer une fois la carte choisie. */
+  pending?: Omit<ImportedEntry, "card">;
+};
+
+/** Nombre de candidats proposés pour une ligne ambiguë : au-delà, la liste ne se lit plus. */
+export const MAX_IMPORT_CANDIDATES = 12;
 
 export type ImportResult = { entries: ImportedEntry[]; issues: ImportIssue[] };
 

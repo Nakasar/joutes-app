@@ -6,6 +6,12 @@ import type { CardOrientation, CardPrinting } from "@/lib/types/card";
 import type { CollectionEntryGroup } from "@/lib/collection/formats";
 import { cardSearchFilter } from "@/lib/collection/search";
 import {
+  intersectOwned,
+  ownedQuantityMatch,
+  ownershipRange,
+  type CollectionQuery,
+} from "@/lib/collection/query";
+import {
   getOwnedProductGameIds,
   getProductGamesStats,
   type ProductCollectionStats,
@@ -549,6 +555,7 @@ export async function getGameCollection({
   type,
   search,
   owned,
+  query,
   page = 1,
   limit = 48,
 }: {
@@ -556,9 +563,15 @@ export async function getGameCollection({
   gameId: string;
   setCode?: string;
   type?: string;
+  /** Texte libre seul, sans syntaxe. Préférer `query`, qui la comprend. */
   search?: string;
   /** true = owned only, false = not-owned only, undefined = all */
   owned?: boolean;
+  /**
+   * Recherche lue avec la syntaxe commune (`lib/collection/query.ts`). Elle se
+   * cumule avec les autres options.
+   */
+  query?: CollectionQuery;
   page?: number;
   limit?: number;
 }): Promise<GameCollectionResult> {
@@ -572,6 +585,13 @@ export async function getGameCollection({
   // Nom, numéro de collection ou identifiant, sans se soucier des accents :
   // voir `lib/collection/search.ts`.
   Object.assign(match, cardSearchFilter(search) ?? {});
+  const cardMatch =
+    query && Object.keys(query.cardMatch).length > 0 ? { $and: [match, query.cardMatch] } : match;
+  // Avec `foil:yes`, `cond:nm` ou `lang:fr`, seuls les exemplaires qui y
+  // répondent sont comptés : « j'en ai 2 » veut alors dire « 2 foil ».
+  const copyMatch = query?.copyMatch ?? {};
+  const ownedRange = intersectOwned(ownershipRange(owned), query?.owned);
+  const quantityMatch = ownedQuantityMatch(ownedRange);
 
   const ownedLookup: Record<string, unknown>[] = [
     {
@@ -579,7 +599,12 @@ export async function getGameCollection({
         from: "collection-cards",
         let: { cid: "$id" },
         pipeline: [
-          { $match: { $expr: { $and: [{ $eq: ["$cardId", "$$cid"] }, { $eq: [`$${ownerFieldName}`, ownerObjId] }] } } },
+          {
+            $match: {
+              $expr: { $and: [{ $eq: ["$cardId", "$$cid"] }, { $eq: [`$${ownerFieldName}`, ownerObjId] }] },
+              ...copyMatch,
+            },
+          },
           { $count: "n" },
         ],
         as: "owned",
@@ -603,20 +628,20 @@ export async function getGameCollection({
 
   let countPipeline: Record<string, unknown>[];
   let itemsPipeline: Record<string, unknown>[];
-  if (owned !== undefined) {
+  if (quantityMatch) {
     // Ownership is only known after the lookup, so it must precede pagination.
     const filtered = [
-      { $match: match },
+      { $match: cardMatch },
       ...dedupePrintings,
       ...ownedLookup,
-      { $match: { quantity: owned ? { $gt: 0 } : { $eq: 0 } } },
+      { $match: { quantity: quantityMatch } },
     ];
     countPipeline = [...filtered, { $count: "total" }];
     itemsPipeline = [...filtered, ...sortSkipLimit, project];
   } else {
     // Paginate first, then only resolve quantities for the page being returned.
-    countPipeline = [{ $match: match }, ...dedupePrintings, { $count: "total" }];
-    itemsPipeline = [{ $match: match }, ...dedupePrintings, ...sortSkipLimit, ...ownedLookup, project];
+    countPipeline = [{ $match: cardMatch }, ...dedupePrintings, { $count: "total" }];
+    itemsPipeline = [{ $match: cardMatch }, ...dedupePrintings, ...sortSkipLimit, ...ownedLookup, project];
   }
 
   const countRes = await cards.aggregate(countPipeline).toArray();
@@ -850,8 +875,24 @@ export async function getCardOwnershipByOwners(
  */
 export async function getCollectionEntriesForExport(
   owner: CollectionOwner,
-  gameId: string
+  gameId: string,
+  /**
+   * Limite l'export à une recherche (`lib/collection/query.ts`) : les cartes qui
+   * y répondent, et parmi leurs exemplaires ceux qu'elle désigne (`foil:yes`).
+   */
+  query?: Pick<CollectionQuery, "cardMatch" | "copyMatch">
 ): Promise<CollectionEntryGroup[]> {
+  const copyFilter: Record<string, unknown> = { ...ownerMatch(owner), ...(query?.copyMatch ?? {}) };
+  if (query && Object.keys(query.cardMatch).length > 0) {
+    // Les critères portent sur la carte du catalogue : on en lit d'abord les
+    // identifiants, plutôt que de réécrire chaque critère sous le préfixe du
+    // `$lookup`.
+    const ids = await db
+      .collection("cards")
+      .distinct("id", { $and: [{ gameId: new ObjectId(gameId) }, query.cardMatch] });
+    copyFilter.cardId = { $in: ids };
+  }
+
   const rows = await db
     .collection("collection-cards")
     .aggregate<{
@@ -873,7 +914,7 @@ export async function getCollectionEntriesForExport(
       rarity?: string;
       printingName?: string;
     }>([
-      { $match: ownerMatch(owner) },
+      { $match: copyFilter },
       { $lookup: { from: "cards", localField: "cardId", foreignField: "id", as: "c" } },
       // Même précaution que `getGamesStats` : `cards.id` n'est pas strictement
       // unique, on ne garde qu'une correspondance pour ne pas dupliquer un
