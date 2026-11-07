@@ -286,7 +286,7 @@ export default function CollectionTransfer({
       </Button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className={preview && tab === "import" ? "sm:max-w-3xl" : undefined}>
+        <DialogContent className={`max-h-[85vh] overflow-y-auto${preview && tab === "import" ? " sm:max-w-3xl" : ""}`}>
           <DialogHeader>
             <div className="inline-flex w-fit rounded-lg border bg-muted/40 p-0.5 text-sm" role="tablist">
               {(["import", "export"] as const).map((value) => (
