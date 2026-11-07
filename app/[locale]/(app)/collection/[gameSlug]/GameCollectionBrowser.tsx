@@ -10,7 +10,6 @@ import {
   Loader2,
   Minus,
   Plus,
-  Search,
   SlidersHorizontal,
   Layers,
   LayoutGrid,
@@ -19,33 +18,36 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
-import { Input } from "@/components/ui/input.tsx";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select.tsx";
 import CollectionManager from "@/app/[locale]/(app)/games/[gameSlugOrId]/cards/[cardId]/CollectionManager.tsx";
 import AddToWishlistButton from "@/components/AddToWishlistButton.tsx";
 import { CompletionBar } from "@/app/[locale]/(app)/collection/CollectionOverview.tsx";
 import CollectionTransfer, { type CollectionFormatOption } from "./CollectionTransfer.tsx";
+import AddSetDialog from "./AddSetDialog.tsx";
 import CollectionValueSection from "@/app/[locale]/(app)/collection/CollectionValueSection.tsx";
 import type { CollectionValue } from "@/lib/collection/value.ts";
 import type { CardVariant, CollectionItem, GameCollectionResult } from "@/lib/db/collection.ts";
 import { CardPriceTag } from "@/components/cards/CardPriceTag.tsx";
 import {
+  collectionApiParams,
   writeCollectionBrowseState,
   type CardOwnershipFilter,
   type CollectionBrowseState,
 } from "@/lib/collection/browse-state.ts";
+import { CardSearchToolbar } from "@/components/cards/CardSearchToolbar.tsx";
+import { SearchTokenChips } from "@/components/cards/SearchTokenChips.tsx";
+import {
+  parseCardSearchCriteria,
+  serializeCardSearchCriteria,
+  type CardFilterFacet,
+  type CardSearchCriteria,
+} from "@/lib/cards/search-filters.ts";
+import { parseSearchSyntax, type SearchField } from "@/lib/cards/search-syntax.ts";
 import { useUrlQuerySync } from "@/lib/navigation/use-url-query-sync.ts";
 import { sameQuery } from "@/lib/navigation/url-query.ts";
 import { BackLink } from "@/components/navigation/BackLink.tsx";
@@ -79,6 +81,11 @@ type Props = {
   transferFormats?: CollectionFormatOption[];
   /** Langues réglées pour le jeu, proposées à l'ajout d'un exemplaire (cf. `CollectionManager`). */
   languages?: string[];
+  /**
+   * Facettes et vocabulaire de la barre de recherche, ceux de la galerie de
+   * cartes plus `owned`, `foil` et `cond` (cf. `lib/collection/query.ts`).
+   */
+  searchSetup: { facets: CardFilterFacet[]; fields: SearchField[] };
 };
 
 type ManageableCard = Pick<
@@ -99,21 +106,19 @@ export default function GameCollectionBrowser({
   valuePath,
   transferFormats,
   languages,
+  searchSetup,
 }: Props) {
   const t = useTranslations("Collection");
   const tProducts = useTranslations("Collection.products");
 
   const [items, setItems] = useState<CollectionItem[]>(initialData.items);
   const [stats, setStats] = useState(initialData.stats);
-  const [setCodes] = useState(initialData.setCodes);
-  const [types] = useState(initialData.types);
   const [total, setTotal] = useState(initialData.total);
   const [page, setPage] = useState(initialData.page);
   const [totalPages, setTotalPages] = useState(initialData.totalPages);
 
   const [search, setSearch] = useState(initialState.search);
-  const [setCode, setSetCode] = useState(initialState.setCode);
-  const [type, setType] = useState(initialState.type);
+  const [filters, setFilters] = useState<[string, string][]>(initialState.filters);
   const [ownership, setOwnership] = useState<CardOwnershipFilter>(initialState.ownership);
   // Ce que la grille montre — ou est en train de charger —, recopié dans
   // l'adresse : revenir d'une fiche rouvre la même recherche, à la même page.
@@ -163,12 +168,7 @@ export default function GameCollectionBrowser({
       // n'a rien déclenché.
       setLoadError(false);
       try {
-        const params = new URLSearchParams({ page: String(opts.page), limit: "48" });
-        if (opts.search.trim()) params.set("search", opts.search.trim());
-        if (opts.setCode !== "all") params.set("setCode", opts.setCode);
-        if (opts.type !== "all") params.set("type", opts.type);
-        if (opts.ownership === "owned") params.set("owned", "true");
-        if (opts.ownership === "unowned") params.set("owned", "false");
+        const params = collectionApiParams(opts);
 
         const res = await fetch(`${apiBasePath}/games/${gameSlug}?${params.toString()}`, {
           signal: controller.signal,
@@ -202,18 +202,18 @@ export default function GameCollectionBrowser({
   // demandée par l'adresse : rien n'est relancé tant que les filtres sont ceux
   // affichés — ni au montage, ni quand on revient sur la page.
   useEffect(() => {
-    const asked = { search, setCode, type, ownership };
-    const displayed = { search: shown.search, setCode: shown.setCode, type: shown.type, ownership: shown.ownership };
+    const asked = { search, filters, ownership };
+    const displayed = { search: shown.search, filters: shown.filters, ownership: shown.ownership };
     if (sameQuery(asked, displayed)) {
       return;
     }
     const delay = search.trim() ? 300 : 0;
     const timer = window.setTimeout(() => {
-      void fetchPage({ search, setCode, type, ownership, page: 1 });
+      void fetchPage({ search, filters, ownership, page: 1 });
     }, delay);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, setCode, type, ownership, shown]);
+  }, [search, filters, ownership, shown]);
 
   // Fetch other printings of the open card's name (only re-fetches when the name
   // changes, so clicking between variants of the same card doesn't re-fetch).
@@ -243,7 +243,7 @@ export default function GameCollectionBrowser({
 
   const goToPage = (next: number) => {
     if (next < 1 || next > totalPages || loading) return;
-    void fetchPage({ search, setCode, type, ownership, page: next });
+    void fetchPage({ search, filters, ownership, page: next });
     // Les boutons sont sous la grille : sans cela, la nouvelle page s'affiche
     // hors de vue et il faut remonter à la main pour la lire.
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -297,10 +297,21 @@ export default function GameCollectionBrowser({
       ? { start: 0, end: 0 }
       : { start: (page - 1) * initialData.limit + 1, end: Math.min(page * initialData.limit, total) };
 
+  // L'extension filtrée se lit dans la saisie (`set:OGN`) : c'est elle dont on
+  // montre la complétion.
+  const setCode = useMemo(
+    () => parseSearchSyntax(shown.search, searchSetup.fields).setCode,
+    [shown.search, searchSetup.fields]
+  );
   const activeSetStats = useMemo(
-    () => (setCode !== "all" ? stats?.sets.find((s) => s.setCode === setCode) ?? null : null),
+    () => (setCode ? stats?.sets.find((s) => s.setCode === setCode) ?? null : null),
     [stats, setCode]
   );
+  const criteria = useMemo<CardSearchCriteria>(
+    () => parseCardSearchCriteria(new URLSearchParams(filters), searchSetup.facets),
+    [filters, searchSetup.facets]
+  );
+  const reload = () => fetchPage({ search, filters, ownership, page: 1 });
 
   return (
     <div className="space-y-6">
@@ -342,7 +353,20 @@ export default function GameCollectionBrowser({
               <CollectionTransfer
                 gameSlug={gameSlug}
                 formats={transferFormats}
-                onImported={() => fetchPage({ search, setCode, type, ownership, page: 1 })}
+                onImported={reload}
+                searchParams={collectionApiParams(shown).toString()}
+                searchText={shown.search}
+              />
+            )}
+            {/* L'ajout d'une extension ne vise, comme l'import, que la
+                collection personnelle : ses routes ne connaissent pas les groupes. */}
+            {transferFormats && (
+              <AddSetDialog
+                key={setCode ?? "all"}
+                gameSlug={gameSlug}
+                initialSetCode={setCode}
+                catalogLanguage={languages?.[0]}
+                onAdded={reload}
               />
             )}
           </div>
@@ -405,48 +429,17 @@ export default function GameCollectionBrowser({
         />
       ) : null}
 
-      {/* Filters */}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("filters.searchPlaceholder")}
-            className="pl-9"
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {setCodes.length > 0 ? (
-            <Select value={setCode} onValueChange={setSetCode}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder={t("filters.allSets")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("filters.allSets")}</SelectItem>
-                {setCodes.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
-          {types.length > 0 ? (
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder={t("filters.allTypes")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("filters.allTypes")}</SelectItem>
-                {types.map((ty) => (
-                  <SelectItem key={ty} value={ty}>
-                    {ty}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
+      {/* Recherche : la barre de la galerie et des boosters, avec sa syntaxe. */}
+      <div className="flex flex-col gap-2">
+        <CardSearchToolbar
+          query={search}
+          onQueryChange={setSearch}
+          criteria={criteria}
+          onCriteriaChange={(next) => setFilters(serializeCardSearchCriteria(next))}
+          facets={searchSetup.facets}
+          fields={searchSetup.fields}
+          placeholder={t("filters.searchPlaceholder")}
+        >
           <div className="inline-flex items-center rounded-lg border bg-muted/40 p-0.5 text-sm">
             <button
               type="button"
@@ -479,7 +472,8 @@ export default function GameCollectionBrowser({
               {t("filters.notOwned")}
             </button>
           </div>
-        </div>
+        </CardSearchToolbar>
+        <SearchTokenChips value={search} onChange={setSearch} fields={searchSetup.fields} />
       </div>
 
       {/* Result meta */}
@@ -496,7 +490,7 @@ export default function GameCollectionBrowser({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchPage({ search, setCode, type, ownership, page })}
+            onClick={() => fetchPage({ search, filters, ownership, page })}
           >
             {t("filters.retry")}
           </Button>

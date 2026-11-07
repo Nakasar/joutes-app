@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { getPlayGroupByIdAndUser, isGameEnabledForPlayGroup } from "@/lib/db/play-groups";
 import { getGameCollection } from "@/lib/db/collection";
 import { getGameBySlugOrId } from "@/lib/db/games";
+import { collectionQueryFromParams, getCollectionSearchSetup } from "@/lib/db/collection-search";
 
 export async function GET(
   request: NextRequest,
@@ -30,7 +31,6 @@ export async function GET(
   const limit = Math.max(1, Math.min(96, parseInt(searchParams.get("limit") || "48", 10) || 48));
   const setCode = searchParams.get("setCode") || undefined;
   const type = searchParams.get("type") || undefined;
-  const search = searchParams.get("search") || undefined;
   const ownedParam = searchParams.get("owned");
   const owned = ownedParam === "true" ? true : ownedParam === "false" ? false : undefined;
 
@@ -40,8 +40,10 @@ export async function GET(
       gameId: game.id,
       setCode,
       type,
-      search,
       owned,
+      // La saisie suit la syntaxe de la galerie (`domain:fury owned<3`) : un
+      // texte sans token reste une recherche de nom, comme avant.
+      query: collectionQueryFromParams(searchParams, await getCollectionSearchSetup(game)),
       page,
       limit,
     });

@@ -10,6 +10,7 @@ import {
 } from "@/lib/collection/formats";
 import { joutesFormat } from "@/lib/collection/formats/joutes";
 import { parseVariantNumber, piltoverFormat } from "@/lib/collection/formats/piltover";
+import { resolveImportIssues } from "@/lib/collection/formats/resolve";
 
 /**
  * Tests des formats de collection. Un import de travers ajoute silencieusement
@@ -209,6 +210,12 @@ describe("parseVariantNumber", () => {
       foil: false,
     });
   });
+
+  it("lit les suffixes de promo après le numéro, comme dans un vrai export", () => {
+    assert.deepEqual(parseVariantNumber("OGN-024-Nexus"), { setCode: "OGN", collectorNumber: "024", foil: false });
+    assert.deepEqual(parseVariantNumber("SFD-116-Prerift"), { setCode: "SFD", collectorNumber: "116", foil: false });
+    assert.deepEqual(parseVariantNumber("UNL-T05"), { setCode: "UNL", collectorNumber: "T05", foil: false });
+  });
 });
 
 describe("format Piltover Archive", () => {
@@ -298,6 +305,21 @@ describe("format Piltover Archive", () => {
     assert.equal(invalid.entries[0].grade, undefined);
   });
 
+  it("retombe sur l'extension du numéro quand Set Prefix désigne une sous-série", () => {
+    // Extrait d'un vrai export : les promos Nexus Night portent « OGN-NN ».
+    const { entries, issues } = piltoverFormat.fromCsv(
+      "Variant Number,Card Name,Set Prefix,Foil,Quantity\r\n" +
+        "OGN-002-Nexus,Brazen Buccaneer,OGN-NN,true,1\r\n" +
+        "SFD-125-Release,Blazing Scorcher,SFD,true,1\r\n",
+      CONTEXT,
+    );
+    assert.deepEqual(issues, []);
+    assert.deepEqual(
+      entries.map((entry) => [entry.card.id, entry.foil]),
+      [["OGN002", true], ["SFD125", true]],
+    );
+  });
+
   it("retrouve un numéro non complété de zéros", () => {
     const { entries, issues } = piltoverFormat.fromCsv(
       "Variant Number,Set Prefix,Quantity\r\nOGN-1,OGN,1\r\n",
@@ -305,5 +327,41 @@ describe("format Piltover Archive", () => {
     );
     assert.deepEqual(issues, []);
     assert.equal(entries[0].card.id, "OGN001");
+  });
+});
+
+describe("vérification d'un import", () => {
+  const ambiguous =
+    "Variant Number,Card Name,Set Prefix,Quantity,Foil\r\n" + "PR-004,Blazing Scorcher,PR,2,true\r\n";
+
+  it("propose les cartes possibles d'une ligne ambiguë, avec l'exemplaire qu'elle décrit", () => {
+    const { issues } = piltoverFormat.fromCsv(ambiguous, CONTEXT);
+    assert.deepEqual(
+      issues[0].candidates?.map((candidate) => candidate.id),
+      ["OGN001", "SFD125"],
+    );
+    assert.deepEqual(issues[0].pending, { quantity: 2, foil: true });
+  });
+
+  it("importe la carte choisie parmi les candidats", () => {
+    const resolved = resolveImportIssues(piltoverFormat.fromCsv(ambiguous, CONTEXT), { 2: "SFD125" });
+    assert.equal(resolved.issues.length, 0);
+    assert.equal(resolved.entries[0].card.id, "SFD125");
+    assert.equal(resolved.entries[0].quantity, 2);
+    assert.equal(resolved.entries[0].foil, true);
+  });
+
+  it("refuse une carte qui n'est pas parmi les candidats", () => {
+    const resolved = resolveImportIssues(piltoverFormat.fromCsv(ambiguous, CONTEXT), { 2: "OGN002" });
+    assert.equal(resolved.entries.length, 0);
+    assert.equal(resolved.issues.length, 1);
+  });
+
+  it("ne voit pas d'ambiguïté dans un même tirage présent en deux langues", () => {
+    const context = { ...CONTEXT, catalog: [...CATALOG, card({ id: "OGN002", name: "Brazen Buccaneer", collectorNumber: "002" })] };
+    const csv = "Card ID,Name,Set Code,Collector Number,Quantity\r\n,Brazen Buccaneer,,,1\r\n";
+    const { entries, issues } = joutesFormat.fromCsv(csv, context);
+    assert.equal(issues.length, 0);
+    assert.equal(entries[0].card.id, "OGN002");
   });
 });

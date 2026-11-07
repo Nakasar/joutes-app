@@ -66,6 +66,12 @@ export const CARD_INDEXES: IndexDefinition[] = [
   },
   {
     collection: "collection-cards",
+    keys: { batchId: 1 },
+    options: { partialFilterExpression: { batchId: { $exists: true } } },
+    why: "Annuler un lot d'exemplaires (ajout d'une extension, import) : `lib/db/collection-batches.ts`",
+  },
+  {
+    collection: "collection-cards",
     keys: { cardId: 1 },
     why: "Les amis qui possèdent une carte (`cardId` puis `$or` des propriétaires)",
   },

@@ -93,7 +93,13 @@ const CORE_FIELDS: { key: string; kind: SearchFieldKind }[] = [
  */
 export function buildSearchFields(
   facets: CardFilterFacet[],
-  { setCodes = [], types = [], languages = [] }: { setCodes?: string[]; types?: string[]; languages?: string[] } = {}
+  { setCodes = [], types = [], languages = [] }: { setCodes?: string[]; types?: string[]; languages?: string[] } = {},
+  /**
+   * Champs propres à un écran, en plus de ceux du jeu : la collection y ajoute
+   * `owned`, `foil` et `cond`. Ils passent par la même attribution de
+   * raccourcis, pour qu'une lettre ne désigne jamais deux champs.
+   */
+  extra: SearchField[] = []
 ): SearchField[] {
   return withFieldAliases([
     ...facetFields(facets),
@@ -101,6 +107,7 @@ export function buildSearchFields(
       ...core,
       values: core.kind === "set" ? setCodes : core.kind === "type" ? types : languages,
     })),
+    ...extra.filter((field) => !facets.some((facet) => facet.key === field.key)),
   ]);
 }
 

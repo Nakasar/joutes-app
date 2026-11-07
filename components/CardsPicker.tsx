@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { CardSearchInput } from "@/components/cards/CardSearchInput";
+import { useCardSearchFields } from "@/lib/cards/use-card-search-fields";
 import { BoosterCard } from "@/lib/types/booster";
 import CardImage from "@/components/cards/CardImage";
 import { X } from "lucide-react";
@@ -29,6 +30,7 @@ export default function CardsPicker({
   maxCards?: number;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const searchFields = useCardSearchFields(gameSlugOrId);
   const [results, setResults] = useState<BoosterCard[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -102,13 +104,17 @@ export default function CardsPicker({
           ))}
         </div>
       )}
-      <Input
-        type="text"
-        placeholder={searchPlaceholder}
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        disabled={atMaxCards}
-      />
+      {/* La barre commune : mêmes tokens que la galerie (`set:OGN jinx`). */}
+      {atMaxCards ? null : (
+        <CardSearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          fields={searchFields}
+          placeholder={searchPlaceholder}
+          openOnFocus={false}
+          className="h-10 w-full pl-9"
+        />
+      )}
       {isSearching && !atMaxCards && (
         <p className="text-sm text-muted-foreground">{searchingLabel}</p>
       )}

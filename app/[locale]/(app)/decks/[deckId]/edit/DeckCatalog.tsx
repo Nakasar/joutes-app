@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Search, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 
-import { Input } from "@/components/ui/input.tsx";
+import { CardSearchInput } from "@/components/cards/CardSearchInput.tsx";
+import { useCardSearchFields } from "@/lib/cards/use-card-search-fields.ts";
 import { FacetChip, FilterSection } from "@/components/cards/CardFacetFilters.tsx";
 import { cardReference, DeckCardThumb } from "@/components/decks/DeckCardThumb.tsx";
 import { OwnedBadge } from "@/components/decks/OwnedBadge.tsx";
@@ -56,6 +57,7 @@ export function DeckCatalog({
   onDragEndAction?: () => void;
 }) {
   const [query, setQuery] = useState("");
+  const searchFields = useCardSearchFields(gameSlug);
   const [domains, setDomains] = useState<string[]>([]);
   const [domainValues, setDomainValues] = useState<string[]>([]);
   const [cards, setCards] = useState<DeckCardInfo[]>([]);
@@ -133,13 +135,14 @@ export function DeckCatalog({
       </div>
 
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        {/* La barre commune : mêmes tokens et mêmes suggestions que la galerie. */}
+        <CardSearchInput
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={"domain:fureur energy<=3"}
-          className="h-10 pl-9"
-          aria-label="Rechercher une carte"
+          onChange={setQuery}
+          fields={searchFields}
+          placeholder={"domain:fury energy<=3"}
+          ariaLabel="Rechercher une carte"
+          className="h-10 w-full pl-9"
         />
       </div>
 

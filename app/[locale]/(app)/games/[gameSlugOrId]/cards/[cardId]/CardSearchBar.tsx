@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Input } from "@/components/ui/input.tsx";
+import { useParams } from "next/navigation";
+import { CardSearchInput } from "@/components/cards/CardSearchInput.tsx";
+import { useCardSearchFields } from "@/lib/cards/use-card-search-fields.ts";
 import { BoosterCard } from "@/lib/types/booster.ts";
-import { Search } from "lucide-react";
 import { useRouter } from "@/i18n/navigation.ts";
 import { useLocale, useTranslations } from "next-intl";
 import CardImage from "@/components/cards/CardImage.tsx";
@@ -17,6 +18,10 @@ export default function CardSearchBar() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("Games");
+  // Le jeu de la fiche ouverte : la recherche ne vise plus Riftbound d'office.
+  const { gameSlugOrId } = useParams<{ gameSlugOrId: string }>();
+  const game = gameSlugOrId ?? "riftbound";
+  const searchFields = useCardSearchFields(game);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -47,7 +52,7 @@ export default function CardSearchBar() {
     setIsSearching(true);
     try {
       const response = await fetch(
-        `/api/games/riftbound/cards?searchQuery=${encodeURIComponent(
+        `/api/games/${encodeURIComponent(game)}/cards?searchQuery=${encodeURIComponent(
           searchQuery
         )}&setCode=*&lang=${locale}`
       );
@@ -62,7 +67,7 @@ export default function CardSearchBar() {
   };
 
   const handleCardSelect = (cardId: string) => {
-    router.push(`/games/riftbound/cards/${cardId}`);
+    router.push(`/games/${game}/cards/${cardId}`);
     setSearchQuery("");
     setCards([]);
     setIsOpen(false);
@@ -71,13 +76,14 @@ export default function CardSearchBar() {
   return (
     <div className="relative w-full max-w-2xl" ref={searchRef}>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder={t("cards.search.placeholder")}
+        {/* La barre commune : mêmes tokens que la galerie (`set:OGN jinx`). */}
+        <CardSearchInput
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          onChange={setSearchQuery}
+          fields={searchFields}
+          placeholder={t("cards.search.placeholder")}
+          openOnFocus={false}
+          className="h-10 w-full pl-9"
         />
       </div>
 
