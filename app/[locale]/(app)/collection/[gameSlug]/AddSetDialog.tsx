@@ -207,7 +207,7 @@ export default function AddSetDialog({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{t("title")}</DialogTitle>
             <DialogDescription>{t("description")}</DialogDescription>
