@@ -32,6 +32,8 @@ export type MetaView = {
   stapleSettings: StapleSettings;
   stapleNames: Set<string>;
   catalogTotal: number;
+  /** Écart de part des decks, 30 derniers jours contre les 30 d'avant ; null sans assez de decks. */
+  trends: Map<string, number> | null;
 };
 
 const CARDS_PER_PAGE = 50;
@@ -119,6 +121,31 @@ function Kpi({ label, value, hint, href: link, accent }: { label: string; value:
 }
 
 /** Une ligne de carte : vignette, nom, badge staple, et ce que la colonne de droite veut dire. */
+/** Les colonnes du tableau des cartes, avec ou sans la tendance. */
+function cardColumns(view: MetaView) {
+  return view.trends
+    ? "sm:grid-cols-[2rem_minmax(0,1fr)_4.5rem_7rem_9rem_5rem_5rem]"
+    : "sm:grid-cols-[2rem_minmax(0,1fr)_4.5rem_7rem_9rem_5rem]";
+}
+
+/** La tendance en points : « +9 pts », « −4 pts », « = » sous un point d'écart. */
+function Trend({ view, value, className }: { view: MetaView; value: number | undefined; className?: string }) {
+  const points = Math.round((value ?? 0) * 100);
+  const label = points === 0 ? "=" : view.t("trend.points", { points: `${points > 0 ? "+" : "−"}${Math.abs(points)}` });
+  return (
+    <span
+      className={cn(
+        "font-mono text-sm",
+        points > 0 ? "text-emerald-600 dark:text-emerald-400" : points < 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground",
+        className
+      )}
+      title={view.t("trend.hint")}
+    >
+      {label}
+    </span>
+  );
+}
+
 function CardRow({
   view,
   stat,
@@ -136,7 +163,7 @@ function CardRow({
   const domainLabel = stat.domains.length > 0 ? stat.domains.join(" + ") : COLORLESS;
 
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-2.5 sm:grid-cols-[2rem_minmax(0,1fr)_4.5rem_7rem_9rem_5rem] sm:px-5">
+    <li className={cn("grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-2.5 sm:px-5", cardColumns(view))}>
       {rank !== undefined && <span className="hidden font-mono text-xs text-muted-foreground sm:block">{rank}</span>}
       <Link
         href={href(view, { tab: "together", card: stat.name })}
@@ -155,9 +182,10 @@ function CardRow({
         </span>
       </Link>
       <span className="hidden font-mono text-xs text-muted-foreground sm:block">{stat.setCode ?? "—"}</span>
-      <span className="text-right sm:text-left">
+      <span className="flex flex-col items-end sm:block sm:text-left">
         <span className="font-mono text-sm">{pct(stat.share)}</span>
         <span className="ml-1.5 hidden text-xs text-muted-foreground sm:inline">{stat.decks}</span>
+        {showDetails && view.trends && <Trend view={view} value={view.trends.get(stat.name)} className="text-xs sm:hidden" />}
       </span>
       {showDetails && (
         <>
@@ -167,6 +195,7 @@ function CardRow({
             <span className="truncate text-xs text-muted-foreground">{domainLabel}</span>
           </span>
           <span className="hidden font-mono text-sm sm:block">{dec(stat.averageCopies)}</span>
+          {view.trends && <Trend view={view} value={view.trends.get(stat.name)} className="hidden sm:block" />}
         </>
       )}
     </li>
@@ -176,13 +205,14 @@ function CardRow({
 function CardTableHeader({ view, rank = true }: { view: MetaView; rank?: boolean }) {
   const { t } = view;
   return (
-    <div className="hidden grid-cols-[2rem_minmax(0,1fr)_4.5rem_7rem_9rem_5rem] gap-x-3 border-b border-border px-5 py-2 text-xs text-muted-foreground sm:grid">
+    <div className={cn("hidden gap-x-3 border-b border-border px-5 py-2 text-xs text-muted-foreground sm:grid", cardColumns(view))}>
       {rank ? <span>#</span> : <span />}
       <span>{t("columns.card")}</span>
       <span>{t("columns.set")}</span>
       <span>{t("columns.inDecks")}</span>
       <span>{t("columns.inDomain")}</span>
       <span>{t("columns.copies")}</span>
+      {view.trends && <span>{t("columns.trend")}</span>}
     </div>
   );
 }

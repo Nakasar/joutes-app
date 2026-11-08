@@ -620,7 +620,12 @@
         "inDecks": "In decks",
         "inDomain": "In its domain",
         "copies": "Avg. copies",
+        "trend": "Last 30 days",
         "type": "Type"
+      },
+      "trend": {
+        "points": "{points} pts",
+        "hint": "Share of decks over the last 30 days, compared with the 30 days before"
       },
       "kpi": {
         "decks": "Decks analysed",

@@ -154,6 +154,51 @@ export function computeCardStats(decks: MetaSampleDeck[], cards: Record<string, 
   return stats.sort((a, b) => b.decks - a.decks || b.domainShare - a.domainShare || a.name.localeCompare(b.name));
 }
 
+/** La fenêtre de la tendance, en jours, et le minimum de decks de chaque côté pour l'afficher. */
+export const TREND_WINDOW_DAYS = 30;
+export const TREND_MIN_DECKS = 5;
+
+/**
+ * La tendance de chaque carte : sa part des decks sur les 30 derniers jours,
+ * moins sa part sur les 30 jours d'avant, en fraction (0,09 = +9 points).
+ *
+ * Elle ignore la période choisie (elle a la sienne) mais suit les autres
+ * filtres, que l'appelant a déjà appliqués. Sans assez de decks d'un côté,
+ * rien : un écart sur trois decks ne dit rien.
+ */
+export function computeTrends(
+  decks: MetaSampleDeck[],
+  cards: Record<string, MetaCard>,
+  now: Date,
+  windowDays = TREND_WINDOW_DAYS,
+  minDecks = TREND_MIN_DECKS
+): Map<string, number> | null {
+  const end = now.getTime();
+  const middle = end - windowDays * DAY;
+  const start = middle - windowDays * DAY;
+  const recent: MetaSampleDeck[] = [];
+  const before: MetaSampleDeck[] = [];
+  for (const deck of decks) {
+    const time = new Date(deck.eventDate).getTime();
+    if (time >= middle && time <= end) recent.push(deck);
+    else if (time >= start && time < middle) before.push(deck);
+  }
+  if (recent.length < minDecks || before.length < minDecks) return null;
+
+  const share = (sample: MetaSampleDeck[]) => {
+    const counts = new Map<string, number>();
+    for (const deck of sample) for (const name of copiesByName(deck, cards).keys()) counts.set(name, (counts.get(name) ?? 0) + 1);
+    return counts;
+  };
+  const recentCounts = share(recent);
+  const beforeCounts = share(before);
+  const trends = new Map<string, number>();
+  for (const name of new Set([...recentCounts.keys(), ...beforeCounts.keys()])) {
+    trends.set(name, (recentCounts.get(name) ?? 0) / recent.length - (beforeCounts.get(name) ?? 0) / before.length);
+  }
+  return trends;
+}
+
 /** Le catalogue de l'échantillon réduit à une fiche par nom : la première rencontrée. */
 export function indexCardsByName(cards: Record<string, MetaCard>): Map<string, MetaCard> {
   const byName = new Map<string, MetaCard>();

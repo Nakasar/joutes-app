@@ -620,7 +620,12 @@
         "inDecks": "Nei mazzi",
         "inDomain": "Nel suo dominio",
         "copies": "Copie medie",
+        "trend": "Ultimi 30 giorni",
         "type": "Tipo"
+      },
+      "trend": {
+        "points": "{points} pt",
+        "hint": "Quota dei mazzi negli ultimi 30 giorni, rispetto ai 30 giorni precedenti"
       },
       "kpi": {
         "decks": "Mazzi analizzati",

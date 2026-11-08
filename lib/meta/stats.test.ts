@@ -8,6 +8,7 @@ import {
   computeOverview,
   computeSetStats,
   computeStapleGroups,
+  computeTrends,
   filterMetaDecks,
   isTopCut,
   type MetaCard,
@@ -173,5 +174,21 @@ describe("computeSetStats", () => {
     assert.deepEqual(rad.staplesByDomain, { [COLORLESS]: 1, Chaos: 1, Fury: 1 });
     const totalShare = sets.reduce((sum, set) => sum + set.copiesShare, 0);
     assert.ok(Math.abs(totalShare - 1) < 1e-9);
+  });
+});
+
+describe("computeTrends", () => {
+  it("compare la part des 30 derniers jours aux 30 d'avant", () => {
+    const recent = deck({ eventDate: "2026-11-01T00:00:00.000Z", cards: [{ cardId: "F1", quantity: 1 }] });
+    const old = deck({ eventDate: "2026-09-25T00:00:00.000Z", cards: [{ cardId: "C1", quantity: 1 }] });
+    const sample = [recent, recent, old, old, { ...old, cards: [{ cardId: "F1", quantity: 1 }] }];
+    const trends = computeTrends(sample, cards, now, 30, 2);
+    assert.ok(trends);
+    assert.equal(trends.get("Cloth Armor"), 1 - 1 / 3);
+    assert.equal(trends.get("Rebuke"), -2 / 3);
+  });
+
+  it("ne dit rien sans assez de decks de chaque côté", () => {
+    assert.equal(computeTrends(decks, cards, now), null);
   });
 });

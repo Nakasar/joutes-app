@@ -19,6 +19,7 @@ import {
   computeOverview,
   computeSetStats,
   computeStapleGroups,
+  computeTrends,
   filterMetaDecks,
   isStaple,
   legendKey,
@@ -159,6 +160,8 @@ async function MetaContent({ params, searchParams }: MetaPageProps) {
     stapleSettings,
     stapleNames: new Set(staples.map((stat) => stat.name)),
     catalogTotal: Object.values(sample.setTotals).reduce((sum, count) => sum + count, 0),
+    // La tendance a sa propre fenêtre : la période choisie ne s'y applique pas.
+    trends: computeTrends(filterMetaDecks(sample.decks, { ...state, periodDays: 0 }, now), sample.cards, now),
   };
 
   const latest = sample.decks.reduce((max, deck) => (deck.eventDate > max ? deck.eventDate : max), "");

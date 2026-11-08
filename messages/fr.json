@@ -620,7 +620,12 @@
         "inDecks": "Dans les decks",
         "inDomain": "Dans son domaine",
         "copies": "Ex. moyens",
+        "trend": "Sur 30 jours",
         "type": "Type"
+      },
+      "trend": {
+        "points": "{points} pts",
+        "hint": "Part des decks sur les 30 derniers jours, comparée aux 30 jours d’avant"
       },
       "kpi": {
         "decks": "Decks analysés",
