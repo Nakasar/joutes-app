@@ -19,7 +19,7 @@ import {
 import { MetaImportTooLargeError, resolveMetaImport } from "@/lib/meta/import";
 import { metaCacheTag } from "@/lib/meta/cache";
 import { META_DECKS_PERMISSION } from "@/lib/meta/permissions";
-import { resolveMetaSettings } from "@/lib/meta/settings";
+import { DEFAULT_META_SETTINGS, resolveMetaSettings, type GameMetaSettings, type ResolvedMetaSettings } from "@/lib/meta/settings";
 
 type ActionResult<T> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -187,8 +187,16 @@ export async function saveMetaSettingsAction(values: z.input<typeof settingsSche
   const game = await getGameBySlugOrId(parsed.data.gameId);
   if (!game) return { ok: false, error: "Jeu introuvable." };
 
+  // Seules les valeurs qui s'écartent des défauts s'enregistrent : un défaut
+  // qui change plus tard s'applique alors aux jeux qui ne l'avaient pas touché.
   const { gameId: _gameId, ...settings } = parsed.data;
-  await setGameMetaSettings(game.id, resolveMetaSettings(settings));
+  const resolved = resolveMetaSettings(settings);
+  const overrides = Object.fromEntries(
+    (Object.keys(resolved) as (keyof ResolvedMetaSettings)[])
+      .filter((key) => resolved[key] !== DEFAULT_META_SETTINGS[key])
+      .map((key) => [key, resolved[key]])
+  ) as GameMetaSettings;
+  await setGameMetaSettings(game.id, Object.keys(overrides).length > 0 ? overrides : null);
 
   updateTag(GAMES_CACHE_TAG);
   refreshMeta(game.id);

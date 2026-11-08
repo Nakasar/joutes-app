@@ -160,7 +160,7 @@ export function MetaDeckList({
           <span className="text-muted-foreground">
             Page {page} sur {totalPages} · {total} decks
           </span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm" className={cn(page <= 1 && "pointer-events-none opacity-50")}>
               <Link href={hrefFor(activeSource, page - 1)} aria-disabled={page <= 1}>
                 Précédente

@@ -102,7 +102,7 @@ export function MetaDeckBanner({
       )}
 
       {canManage && meta && (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {meta.imported && (
             <Button asChild variant="ghost" size="sm">
               <Link href={manageHref}>Gérer la méta</Link>
