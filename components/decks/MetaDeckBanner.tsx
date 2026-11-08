@@ -35,16 +35,19 @@ function today(): string {
  */
 export function MetaDeckBanner({
   deckId,
+  gameId,
   meta,
   canManage,
   isPublic,
 }: {
   deckId: string;
+  gameId: string;
   meta?: MetaDeckBannerMeta;
   canManage: boolean;
   isPublic: boolean;
 }) {
   const router = useRouter();
+  const manageHref = `/decks/meta/manage?game=${encodeURIComponent(gameId)}&tab=decks`;
   const [marking, setMarking] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [source, setSource] = useState("");
@@ -78,7 +81,7 @@ export function MetaDeckBanner({
       setRemoving(false);
       if (result.deleted) {
         toast.success("Deck supprimé.");
-        router.push("/decks/meta/manage?tab=decks");
+        router.push(manageHref);
       } else {
         toast.success("Le deck ne compte plus dans la méta.");
         router.refresh();
@@ -102,7 +105,7 @@ export function MetaDeckBanner({
         <div className="flex gap-2">
           {meta.imported && (
             <Button asChild variant="ghost" size="sm">
-              <Link href="/decks/meta/manage?tab=decks">Gérer la méta</Link>
+              <Link href={manageHref}>Gérer la méta</Link>
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={() => setRemoving(true)}>

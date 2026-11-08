@@ -10,7 +10,7 @@ import { auth } from "@/lib/auth.ts";
 import { hasPermission } from "@/lib/db/permissions.ts";
 import { getAllGames } from "@/lib/db/games.ts";
 import { searchDecks } from "@/lib/db/decks.ts";
-import { countMetaDecks, listMetaSources } from "@/lib/db/meta-decks.ts";
+import { countMetaDecks, getSingleSourceBatch, listMetaSources } from "@/lib/db/meta-decks.ts";
 import { META_DECKS_PERMISSION } from "@/lib/meta/permissions.ts";
 import { resolveMetaSettings } from "@/lib/meta/settings.ts";
 import { readPage, toURLSearchParams } from "@/lib/navigation/url-query.ts";
@@ -129,7 +129,7 @@ async function MetaDecksTab({
 }) {
   const source = first(params.source);
   const page = readPage(toURLSearchParams(params));
-  const [result, sources] = await Promise.all([
+  const [result, sources, sourceBatch] = await Promise.all([
     searchDecks({
       gameId,
       metaOnly: true,
@@ -140,6 +140,7 @@ async function MetaDecksTab({
       limit: 20,
     }),
     listMetaSources(gameId),
+    source ? getSingleSourceBatch(gameId, source) : null,
   ]);
 
   return (
@@ -158,12 +159,12 @@ async function MetaDecksTab({
               source: deck.meta.source,
               eventDate: new Date(deck.meta.eventDate).toISOString(),
               placement: deck.meta.placement,
-              batchId: deck.meta.batchId,
             }
           : undefined,
       }))}
       sources={sources.map((row) => ({ ...row, lastEventDate: new Date(row.lastEventDate).toISOString() }))}
       activeSource={source}
+      sourceBatch={sourceBatch ?? undefined}
       page={result.page}
       totalPages={result.totalPages}
       total={result.total}

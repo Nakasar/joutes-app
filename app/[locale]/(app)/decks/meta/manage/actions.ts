@@ -16,7 +16,7 @@ import {
   toPublicRows,
   type PublicMetaImportRow,
 } from "@/lib/db/meta-decks";
-import { resolveMetaImport } from "@/lib/meta/import";
+import { MetaImportTooLargeError, resolveMetaImport } from "@/lib/meta/import";
 import { metaCacheTag } from "@/lib/meta/cache";
 import { META_DECKS_PERMISSION } from "@/lib/meta/permissions";
 import { resolveMetaSettings } from "@/lib/meta/settings";
@@ -45,8 +45,15 @@ const importSchema = z.object({
   source: z.string().trim().min(1, "Indiquez la source (le tournoi).").max(80),
   eventDate: z.coerce.date(),
   format: z.string().trim().max(80).optional(),
-  skip: z.array(z.number().int().min(0)).max(200).optional(),
+  /** Le nombre de decks importables que la vérification a montrés. */
+  expected: z.number().int().min(0).optional(),
 });
+
+/** Un collage trop long se refuse avec son message ; toute autre erreur remonte. */
+function tooLarge(error: unknown): { ok: false; error: string } {
+  if (error instanceof MetaImportTooLargeError) return { ok: false, error: error.message };
+  throw error;
+}
 
 export type MetaImportFormValues = z.input<typeof importSchema>;
 
@@ -62,14 +69,21 @@ export async function previewMetaImportAction(
   const game = await getGameBySlugOrId(parsed.data.gameId);
   if (!game) return { ok: false, error: "Jeu introuvable." };
 
-  const rows = await resolveMetaImport(game, parsed.data.input, { source: parsed.data.source });
-  return { ok: true, rows: toPublicRows(rows) };
+  try {
+    const rows = await resolveMetaImport(game, parsed.data.input, { source: parsed.data.source });
+    return { ok: true, rows: toPublicRows(rows) };
+  } catch (error) {
+    return tooLarge(error);
+  }
 }
 
 /** Importe les decks prêts du collage, en decks publics. */
 export async function importMetaDecksAction(
   values: MetaImportFormValues
-): Promise<ActionResult<{ created: number; batchId: string; rows: PublicMetaImportRow[] }>> {
+): Promise<
+  | ActionResult<{ created: number; batchId: string; rows: PublicMetaImportRow[] }>
+  | { ok: false; error: string; rows: PublicMetaImportRow[] }
+> {
   const session = await requireMetaManager();
   if (!session) return { ok: false, error: "Accès refusé." };
 
@@ -79,17 +93,30 @@ export async function importMetaDecksAction(
   const game = await getGameBySlugOrId(parsed.data.gameId);
   if (!game) return { ok: false, error: "Jeu introuvable." };
 
-  const result = await importMetaDecks(
-    {
-      game,
-      input: parsed.data.input,
-      source: parsed.data.source,
-      eventDate: parsed.data.eventDate,
-      format: parsed.data.format || undefined,
-      skip: parsed.data.skip,
-    },
-    session.user.id
-  );
+  let result;
+  try {
+    result = await importMetaDecks(
+      {
+        game,
+        input: parsed.data.input,
+        source: parsed.data.source,
+        eventDate: parsed.data.eventDate,
+        format: parsed.data.format || undefined,
+        expected: parsed.data.expected,
+      },
+      session.user.id
+    );
+  } catch (error) {
+    return tooLarge(error);
+  }
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: "Le collage ne donne plus les mêmes decks qu'à la vérification (un deck Piltover a pu changer). Rien n'a été importé : vérifiez à nouveau.",
+      rows: toPublicRows(result.rows),
+    };
+  }
 
   refreshMeta(game.id);
   return { ok: true, created: result.created.length, batchId: result.batchId, rows: toPublicRows(result.rows) };

@@ -77,19 +77,22 @@ async function DeckPageContent({ params }: { params: Params }) {
 
   const game = await getGameById(deck.gameId);
   const zones = getDeckZones(game);
-  const [catalog, cardnexusOrder] = await Promise.all([
+  const [catalog, cardnexusOrder, canManageMeta] = await Promise.all([
     getDeckCardInfos(deck.gameId, deckCardIds(deck.cards)),
     // Le lien « Acheter le deck sur CardNexus » : le deck entier.
     getDeckCardnexusOrder(deck, zones),
+    // Le bandeau « Méta » ne sert qu'à un deck méta ou public : inutile de
+    // lire les permissions pour un brouillon.
+    session?.user?.id && (deck.meta || deck.visibility === "public") ? hasPermission(META_DECKS_PERMISSION) : false,
   ]);
   const isFavorited = Boolean(session?.user && deck.favoritedBy?.includes(session.user.id));
 
   // Le bandeau « Méta » : la provenance d'un deck méta pour tous, et de quoi
   // le marquer ou le retirer pour qui gère la méta.
-  const canManageMeta = Boolean(session?.user?.id) && (await hasPermission(META_DECKS_PERMISSION));
   const metaBanner = (
     <MetaDeckBanner
       deckId={deck.id}
+      gameId={deck.gameId}
       meta={
         deck.meta
           ? {

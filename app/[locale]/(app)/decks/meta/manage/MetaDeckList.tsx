@@ -18,7 +18,7 @@ type MetaDeckRow = {
   creatorName?: string;
   domains: string[];
   visibility: string;
-  meta?: { imported: boolean; source: string; eventDate: string; placement?: string; batchId?: string };
+  meta?: { imported: boolean; source: string; eventDate: string; placement?: string };
 };
 
 type Pending = { kind: "deck"; deck: MetaDeckRow } | { kind: "batch"; batchId: string; source: string; count: number };
@@ -30,6 +30,7 @@ export function MetaDeckList({
   decks,
   sources,
   activeSource,
+  sourceBatch,
   page,
   totalPages,
   total,
@@ -38,6 +39,8 @@ export function MetaDeckList({
   decks: MetaDeckRow[];
   sources: { source: string; decks: number; lastEventDate: string }[];
   activeSource?: string;
+  /** Le lot dont viennent tous les decks importés de la source filtrée, compté sur toutes les pages. */
+  sourceBatch?: { batchId: string; decks: number };
   page: number;
   totalPages: number;
   total: number;
@@ -49,15 +52,6 @@ export function MetaDeckList({
 
   const hrefFor = (source?: string, targetPage = 1) =>
     `${baseHref}${source ? `&source=${encodeURIComponent(source)}` : ""}${targetPage > 1 ? `&page=${targetPage}` : ""}`;
-
-  // Un lot entièrement affiché se retire d'un coup ; on ne propose le bouton
-  // que pour le lot de la source filtrée.
-  const batches = new Map<string, number>();
-  for (const deck of decks) {
-    if (deck.meta?.imported && deck.meta.batchId) {
-      batches.set(deck.meta.batchId, (batches.get(deck.meta.batchId) ?? 0) + 1);
-    }
-  }
 
   const confirm = () =>
     startTransition(async () => {
@@ -92,16 +86,13 @@ export function MetaDeckList({
         </div>
       )}
 
-      {activeSource && batches.size === 1 && (
+      {activeSource && sourceBatch && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm">
-          <span className="text-muted-foreground">Tous les decks importés de « {activeSource} » viennent du même import.</span>
+          <span className="text-muted-foreground">Les {sourceBatch.decks} decks importés de « {activeSource} » viennent du même import.</span>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              const [batchId, count] = [...batches.entries()][0];
-              setPending({ kind: "batch", batchId, source: activeSource, count });
-            }}
+            onClick={() => setPending({ kind: "batch", batchId: sourceBatch.batchId, source: activeSource, count: sourceBatch.decks })}
           >
             Annuler cet import
           </Button>

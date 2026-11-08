@@ -11,8 +11,9 @@
  *   c'est ce que l'on obtient en collant un seul deck sans rien autour.
  *
  * Sur la ligne d'un lien ou d'un code, ce qui suit `#` est le classement et ce
- * qui suit `@` le joueur : `https://… #1 @Kevin`. Dans une liste, une ligne
- * `# 1` ou `@Kevin` dit la même chose pour tout le bloc.
+ * qui suit `@` le joueur : `https://… #1 @Kevin`. Dans un bloc `---`, une
+ * ligne `# 1` ou `@Kevin` dit la même chose pour tout le bloc ; hors bloc,
+ * elle se place avant les cartes de la liste qu'elle annonce.
  *
  * Fonction pure : rien n'est lu ni vérifié ici, seulement découpé.
  */
@@ -128,6 +129,16 @@ export function splitMetaImportInput(input: string): MetaImportEntry[] {
         raw: line,
         reason: "Seuls les liens Piltover Archive (piltoverarchive.com/decks/view/…) sont lus.",
       });
+      return;
+    }
+
+    if (!rest && (placement || pilot)) {
+      // Hors bloc, une ligne `# 1` ou `@Kevin` seule annonce la liste qui
+      // suit : elle en ouvre une nouvelle si la liste en cours a déjà des cartes.
+      if (list && list.lines.some((candidate) => candidate.trim())) closeList();
+      if (!list) list = { line: lineNumber, lines: [], explicit: false };
+      if (placement) list.placement = placement;
+      if (pilot) list.pilot = pilot;
       return;
     }
 

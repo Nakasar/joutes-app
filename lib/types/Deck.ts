@@ -62,6 +62,22 @@ export type DeckMeta = {
   addedAt: Date;
 };
 
+/**
+ * Ce qu'un deck lu dit de sa méta : la provenance, rien de ce qui sert à la
+ * gestion (qui l'a ajouté, le lot, l'empreinte), qui ne quitte pas le serveur.
+ */
+export type PublicDeckMeta = Pick<DeckMeta, "imported" | "source" | "eventDate" | "placement" | "pilot">;
+
+export function toPublicDeckMeta(meta: DeckMeta | PublicDeckMeta): PublicDeckMeta {
+  return {
+    imported: meta.imported,
+    source: meta.source,
+    eventDate: meta.eventDate,
+    ...(meta.placement ? { placement: meta.placement } : {}),
+    ...(meta.pilot ? { pilot: meta.pilot } : {}),
+  };
+}
+
 export type Deck = {
   id: string;
   playerId: string;
@@ -122,7 +138,7 @@ export type Deck = {
   /** Numéro de version, incrémenté à chaque enregistrement du contenu. */
   version?: number;
   /** Présent quand le deck compte dans les statistiques de la méta. */
-  meta?: DeckMeta;
+  meta?: PublicDeckMeta;
   createdAt: Date;
   updatedAt: Date;
 };

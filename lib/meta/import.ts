@@ -23,6 +23,16 @@ const PILTOVER_GAME_SLUGS = new Set(["riftbound"]);
 /** Au-delà, un collage se découpe en plusieurs imports : chaque lien coûte un appel à Piltover Archive. */
 export const MAX_META_IMPORT_ENTRIES = 64;
 
+/** Un collage de plus de `MAX_META_IMPORT_ENTRIES` decks : refusé entier plutôt que tronqué en silence. */
+export class MetaImportTooLargeError extends Error {
+  constructor(readonly entries: number) {
+    super(
+      `${entries} decks dans le collage : ${MAX_META_IMPORT_ENTRIES} au plus par import. Coupez-le en plusieurs fois.`
+    );
+    this.name = "MetaImportTooLargeError";
+  }
+}
+
 /** Appels simultanés à Piltover Archive. */
 const FETCH_CONCURRENCY = 4;
 
@@ -124,7 +134,7 @@ async function readEntry(entry: MetaImportEntry, game: Game, zones: DeckZone[]):
 }
 
 /** `items.map(task)` avec au plus `limit` tâches en cours. */
-async function mapWithConcurrency<T, R>(items: T[], limit: number, task: (item: T) => Promise<R>): Promise<R[]> {
+export async function mapWithConcurrency<T, R>(items: T[], limit: number, task: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let next = 0;
   const worker = async () => {
@@ -183,9 +193,14 @@ async function resolveNames(
   }
 
   const catalogNames = await db.collection("cards").distinct("name", { gameId: new ObjectId(gameId) });
-  const byLooseKey = new Map<string, string>();
+  // Une clé que deux cartes partagent ne rapproche rien : mieux vaut une carte
+  // inconnue, que l'administrateur corrige, qu'une carte choisie au hasard.
+  const byLooseKey = new Map<string, string | null>();
   for (const name of catalogNames) {
-    if (typeof name === "string") byLooseKey.set(looseCardKey(name), name);
+    if (typeof name !== "string") continue;
+    const key = looseCardKey(name);
+    const known = byLooseKey.get(key);
+    byLooseKey.set(key, known === undefined || known === name ? name : null);
   }
 
   const candidates = new Map<string, string>();
@@ -216,7 +231,10 @@ async function resolveNames(
  */
 export async function resolveMetaImport(game: Game, input: string, options: MetaImportOptions): Promise<MetaImportRow[]> {
   const zones = getDeckZones(game);
-  const entries = splitMetaImportInput(input).slice(0, MAX_META_IMPORT_ENTRIES);
+  const entries = splitMetaImportInput(input);
+  if (entries.length > MAX_META_IMPORT_ENTRIES) {
+    throw new MetaImportTooLargeError(entries.length);
+  }
   const read = await mapWithConcurrency(entries, FETCH_CONCURRENCY, (entry) => readEntry(entry, game, zones));
 
   const names = [...new Set(read.flatMap((item) => item.parsed?.lines.map((line) => line.name) ?? []))];
@@ -303,8 +321,12 @@ export async function resolveMetaImport(game: Game, input: string, options: Meta
  * Un doublon est la même liste relevée deux fois : le même deck Piltover
  * Archive, ou le même contenu dans la même source. Deux joueurs d'un même
  * tournoi peuvent jouer la même liste — c'est alors de la méta, pas un
- * doublon — mais on ne le saura pas sans classement ni joueur : dans ce cas,
- * la ligne est signalée et l'administrateur tranche en la retirant du collage.
+ * doublon. Dans un même collage, deux listes identiques sans classement ni
+ * joueur pour les distinguer sont donc importées toutes deux, mais signalées :
+ * l'administrateur retire la ligne du collage si c'en est bien un.
+ *
+ * Face à la base, seuls les decks importés comptent : un deck de joueur
+ * marqué peut encore changer, son contenu ne prouve rien.
  */
 async function markDuplicates(gameId: string, rows: MetaImportRow[], source: string) {
   const seen = new Map<string, number>();
@@ -314,6 +336,12 @@ async function markDuplicates(gameId: string, rows: MetaImportRow[], source: str
       (key): key is string => Boolean(key)
     );
     const earlier = keys.map((key) => seen.get(key)).find((line) => line !== undefined);
+    const sameRef = Boolean(row.sourceRef && seen.has(`ref:${row.sourceRef}`));
+    if (earlier !== undefined && !sameRef && !row.pilot && !row.placement) {
+      if (row.status === "ready") row.status = "warning";
+      row.notes = [...row.notes, `Même liste que la ligne ${earlier}, sans classement ni joueur : importée aussi. Retirez-la du collage si c'est un doublon.`];
+      continue;
+    }
     if (earlier !== undefined) {
       row.status = "duplicate";
       row.duplicateOf = { line: earlier };
@@ -336,7 +364,7 @@ async function markDuplicates(gameId: string, rows: MetaImportRow[], source: str
         meta: { $exists: true },
         $or: [
           ...(refs.length > 0 ? [{ "meta.sourceRef": { $in: refs } }] : []),
-          { "meta.contentHash": { $in: hashes }, "meta.source": source },
+          { "meta.contentHash": { $in: hashes }, "meta.source": source, "meta.imported": true },
         ],
       },
       { projection: { _id: 1, name: 1, meta: 1 } }
@@ -347,7 +375,8 @@ async function markDuplicates(gameId: string, rows: MetaImportRow[], source: str
     const match = existing.find(
       (doc) =>
         (row.sourceRef && doc.meta?.sourceRef === row.sourceRef) ||
-        (doc.meta?.contentHash === row.contentHash &&
+        (doc.meta?.imported &&
+          doc.meta?.contentHash === row.contentHash &&
           doc.meta?.source === source &&
           (doc.meta?.pilot ?? undefined) === row.pilot &&
           (doc.meta?.placement ?? undefined) === row.placement)

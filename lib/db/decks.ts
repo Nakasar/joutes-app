@@ -1,5 +1,5 @@
 import db from "@/lib/mongodb";
-import { Deck, DeckVisibility } from "@/lib/types/Deck";
+import { Deck, DeckVisibility, toPublicDeckMeta, type DeckMeta } from "@/lib/types/Deck";
 import { ObjectId, WithId, Document } from "mongodb";
 import { getUsersByIds } from "@/lib/db/users";
 import { deriveDeckDomains, getDeckCardInfos } from "@/lib/db/deck-cards";
@@ -52,7 +52,7 @@ export type PaginatedDecksResult = {
 };
 
 // Type pour un deck dans MongoDB (avec _id)
-export type DeckDocument = Omit<Deck, "id"> & { _id: ObjectId };
+export type DeckDocument = Omit<Deck, "id" | "meta"> & { _id: ObjectId; meta?: DeckMeta };
 
 function getUserDisplayName(user: { displayName?: string; username?: string; discriminator?: string } | null | undefined): string | undefined {
   if (!user) {
@@ -99,14 +99,17 @@ function toDeck(doc: WithId<Document>, creatorName?: string): Deck {
     favoritesCount: doc.favoritesCount ?? favoritedBy.length,
     views: doc.views ?? 0,
     version: doc.version ?? 1,
-    ...(doc.meta ? { meta: doc.meta } : {}),
+    ...(doc.meta ? { meta: toPublicDeckMeta(doc.meta) } : {}),
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
 }
 
+/** Un deck à créer : la méta s'écrit entière, alors qu'un deck lu n'en montre que la provenance. */
+export type NewDeck = Omit<Deck, "id" | "createdAt" | "updatedAt" | "meta"> & { meta?: DeckMeta };
+
 // Convertir un Deck en document MongoDB (sans id)
-function toDocument(deck: Omit<Deck, "id" | "createdAt" | "updatedAt">): Omit<DeckDocument, "_id" | "createdAt" | "updatedAt"> {
+function toDocument(deck: NewDeck): Omit<DeckDocument, "_id" | "createdAt" | "updatedAt"> {
   return {
     playerId: deck.playerId,
     gameId: deck.gameId,
@@ -293,7 +296,7 @@ async function deriveFromCards(
 }
 
 // Créer un nouveau deck
-export async function createDeck(deckData: Omit<Deck, "id" | "createdAt" | "updatedAt">): Promise<Deck> {
+export async function createDeck(deckData: NewDeck): Promise<Deck> {
   // Vérifier l'unicité du nom pour ce joueur
   const existingDeck = await db.collection(COLLECTION_NAME).findOne({
     playerId: deckData.playerId,

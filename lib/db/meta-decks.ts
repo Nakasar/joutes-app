@@ -4,12 +4,9 @@ import { ObjectId } from "mongodb";
 
 import db from "@/lib/mongodb";
 import { createDeck, findAvailableDeckName, getDeckById } from "@/lib/db/decks";
-import { getDeckCardInfos } from "@/lib/db/deck-cards";
-import { deckCardIds } from "@/lib/decks/contents";
-import { deckFingerprint } from "@/lib/meta/fingerprint";
 import { formatPlacement } from "@/lib/meta/import-input";
-import { resolveMetaImport, type MetaImportRow } from "@/lib/meta/import";
-import type { Deck, DeckMeta } from "@/lib/types/Deck";
+import { mapWithConcurrency, resolveMetaImport, type MetaImportRow } from "@/lib/meta/import";
+import { toPublicDeckMeta, type Deck, type DeckMeta } from "@/lib/types/Deck";
 import type { Game } from "@/lib/types/Game";
 
 const COLLECTION_NAME = "decks";
@@ -20,15 +17,25 @@ export type MetaImportRequest = {
   source: string;
   eventDate: Date;
   format?: string;
-  /** Lignes du collage à laisser de côté, par leur position (`MetaImportRow.index`). */
-  skip?: number[];
+  /**
+   * Le nombre de decks que la vérification annonçait. L'import relit le
+   * collage (Piltover compris) : s'il n'en trouve plus autant, rien ne
+   * s'écrit, pour qu'on n'importe jamais autre chose que ce qu'on a vu.
+   */
+  expected?: number;
 };
 
-export type MetaImportResult = {
+export type MetaImportResult =
+  | { ok: false; changed: true; rows: MetaImportRow[] }
+  | {
+  ok: true;
   batchId: string;
   created: { deckId: string; name: string }[];
   rows: MetaImportRow[];
 };
+
+/** Créations simultanées : assez pour ne pas attendre chaque deck, peu pour ne pas saturer Mongo. */
+const CREATE_CONCURRENCY = 4;
 
 /** Ce que le navigateur reçoit d'une ligne : tout sauf le contenu lu, qui reste côté serveur. */
 export type PublicMetaImportRow = Omit<MetaImportRow, "cards" | "contentHash">;
@@ -40,22 +47,35 @@ export function toPublicRows(rows: MetaImportRow[]): PublicMetaImportRow[] {
 /**
  * Importe les decks prêts ou à vérifier d'un collage, en decks publics.
  *
- * Les doublons et les erreurs sont laissés de côté, comme les lignes que
- * l'administrateur a écartées. Chaque deck appartient à `playerId` (celui qui
+ * Les doublons et les erreurs sont laissés de côté. Chaque deck appartient à `playerId` (celui qui
  * importe) et s'affiche au nom du joueur, ou de « Méta Joutes ».
  */
 export async function importMetaDecks(request: MetaImportRequest, playerId: string): Promise<MetaImportResult> {
-  const { game, input, source, eventDate, format, skip = [] } = request;
+  const { game, input, source, eventDate, format, expected } = request;
   const rows = await resolveMetaImport(game, input, { source });
+  const importable = rows.filter((row) => (row.status === "ready" || row.status === "warning") && row.cards);
+  if (expected !== undefined && importable.length !== expected) {
+    return { ok: false, changed: true, rows };
+  }
+
   const batchId = new ObjectId().toString();
   const addedAt = new Date();
-  const created: MetaImportResult["created"] = [];
 
-  for (const row of rows) {
-    if (skip.includes(row.index)) continue;
-    if ((row.status !== "ready" && row.status !== "warning") || !row.cards) continue;
+  // Les noms se choisissent d'abord, un par un : deux decks du lot peuvent
+  // porter le même (« Jinx · Regional Lyon » sans classement), et deux
+  // recherches simultanées rendraient le même nom libre.
+  const taken = new Set<string>();
+  const named: { row: MetaImportRow; name: string }[] = [];
+  for (const row of importable) {
+    let name = await findAvailableDeckName(playerId, row.name ?? source);
+    for (let suffix = 2; taken.has(name); suffix += 1) {
+      name = await findAvailableDeckName(playerId, `${(row.name ?? source).slice(0, 80)} (${suffix})`);
+    }
+    taken.add(name);
+    named.push({ row, name });
+  }
 
-    const name = await findAvailableDeckName(playerId, row.name ?? source);
+  const created = await mapWithConcurrency(named, CREATE_CONCURRENCY, async ({ row, name }) => {
     const meta: DeckMeta = {
       imported: true,
       source,
@@ -87,10 +107,10 @@ export async function importMetaDecks(request: MetaImportRequest, playerId: stri
       visibility: "public",
       meta,
     });
-    created.push({ deckId: deck.id, name: deck.name });
-  }
+    return { deckId: deck.id, name: deck.name };
+  });
 
-  return { batchId, created, rows };
+  return { ok: true, batchId, created, rows };
 }
 
 /**
@@ -107,8 +127,9 @@ export async function markDeckAsMeta(
   if (deck.visibility !== "public") return { ok: false, error: "Seul un deck public peut compter dans la méta." };
   if (deck.meta?.imported) return { ok: false, error: "Ce deck a été importé : modifiez-le depuis la gestion de la méta." };
 
-  const infos = await getDeckCardInfos(deck.gameId, deckCardIds(deck.cards));
-  const names = new Map(infos.map((info) => [info.id, info.name]));
+  // Pas d'empreinte : le joueur peut encore modifier son deck, elle ne
+  // décrirait bientôt plus son contenu. Seuls les decks importés, figés,
+  // servent à reconnaître un doublon.
   const placement = formatPlacement(details.placement);
   const meta: DeckMeta = {
     imported: false,
@@ -117,11 +138,10 @@ export async function markDeckAsMeta(
     addedBy,
     addedAt: new Date(),
     ...(placement ? { placement } : {}),
-    ...(deck.cards ? { contentHash: deckFingerprint(deck.cards, (id) => names.get(id)) } : {}),
   };
 
   await db.collection(COLLECTION_NAME).updateOne({ _id: new ObjectId(deckId) }, { $set: { meta } });
-  return { ok: true, deck: { ...deck, meta } };
+  return { ok: true, deck: { ...deck, meta: toPublicDeckMeta(meta) } };
 }
 
 /**
@@ -178,6 +198,23 @@ export async function listMetaSources(gameId: string): Promise<MetaSourceSummary
     .toArray();
 
   return rows.map((row) => ({ source: row._id, decks: row.decks, lastEventDate: row.lastEventDate }));
+}
+
+/**
+ * Le lot d'import d'une source, quand tous ses decks importés en viennent :
+ * c'est lui que « Annuler cet import » retire, toutes pages confondues.
+ */
+export async function getSingleSourceBatch(gameId: string, source: string): Promise<{ batchId: string; decks: number } | null> {
+  const rows = await db
+    .collection(COLLECTION_NAME)
+    .aggregate<{ _id: string | null; decks: number }>([
+      { $match: { gameId, "meta.source": source, "meta.imported": true } },
+      { $group: { _id: "$meta.batchId", decks: { $sum: 1 } } },
+      { $limit: 2 },
+    ])
+    .toArray();
+
+  return rows.length === 1 && rows[0]._id ? { batchId: rows[0]._id, decks: rows[0].decks } : null;
 }
 
 /** Nombre de decks méta d'un jeu. */

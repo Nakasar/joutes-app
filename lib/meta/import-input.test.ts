@@ -55,6 +55,18 @@ describe("splitMetaImportInput", () => {
     assert.equal(entries[0].kind, "list");
   });
 
+  it("lit # et @ avant une liste sans --- comme ses annotations", () => {
+    const entries = splitMetaImportInput("# 1\n@Alice\nLegend:\n1 Jinx, Loose Cannon\n# 2\nLegend:\n1 Viktor");
+
+    assert.equal(entries.length, 2);
+    assert.equal(entries[0].kind, "list");
+    assert.equal(entries[0].placement, "1");
+    assert.equal(entries[0].pilot, "Alice");
+    assert.ok(entries[0].kind === "list" && !entries[0].text.includes("#") && !entries[0].text.includes("@"));
+    assert.equal(entries[1].placement, "2");
+    assert.ok(entries[1].kind === "list" && entries[1].text.includes("Viktor"));
+  });
+
   it("signale un lien qui n'est pas Piltover Archive", () => {
     const [entry] = splitMetaImportInput("https://example.com/deck/1");
 

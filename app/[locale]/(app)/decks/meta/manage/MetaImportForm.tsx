@@ -91,8 +91,11 @@ export function MetaImportForm({
 
   const runImport = () =>
     startImporting(async () => {
-      const result = await importMetaDecksAction(values);
+      const result = await importMetaDecksAction({ ...values, expected: importable });
       if (!result.ok) {
+        // L'import a relu autre chose que la vérification : on montre ce qu'il a lu.
+        if ("rows" in result) setRows(result.rows);
+        setError(result.error);
         toast.error(result.error);
         return;
       }
@@ -184,8 +187,8 @@ export function MetaImportForm({
             ].join("\n")}
           />
           <span className="text-xs text-muted-foreground">
-            Après un lien ou un code, « #1 » donne le classement et « @Pseudo » le joueur ; dans une liste, sur une ligne à
-            part.
+            Après un lien ou un code, « #1 » donne le classement et « @Pseudo » le joueur ; pour une liste, sur une ligne à
+            part, avant ses cartes.
           </span>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-3 sm:col-span-2 lg:col-span-3">
