@@ -171,7 +171,7 @@ export function cardIndexSettings(
 
   return {
     filterableAttributes: [...new Set([...core, ...facetKeys])],
-    sortableAttributes: [...new Set(["name", indexConfig.keys.collectorNumber, ...numericKeys])],
+    sortableAttributes: [...new Set(["name", indexConfig.keys.set, indexConfig.keys.collectorNumber, ...numericKeys])],
   };
 }
 

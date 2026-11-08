@@ -39,6 +39,7 @@ import {
 import { CardFacetFilters, FilterSection, facetLabel } from "@/components/cards/CardFacetFilters.tsx";
 import { CardSearchInput } from "@/components/cards/CardSearchInput.tsx";
 import { CardPriceTag } from "@/components/cards/CardPriceTag.tsx";
+import { bareCollectorNumber } from "@/lib/cards/search-query.ts";
 import type { MarketPrice } from "@/lib/prices/display.ts";
 
 // La recherche renvoie le document de catalogue : il porte aussi les variantes
@@ -68,6 +69,23 @@ const PAGE_SIZE = 24;
 const TILE_WIDTHS = [120, 152, 190, 240];
 const DEFAULT_DENSITY = 2;
 
+/**
+ * Sans tri choisi, la galerie suit l'ordre des classeurs : extension puis
+ * numéro de collection. Le texte cherché reste prioritaire (Meilisearch ne
+ * départage par le tri qu'à pertinence égale). Ce tri par défaut n'est pas
+ * écrit dans l'URL : un lien partagé ne garde que le tri choisi.
+ */
+const DEFAULT_SORT = { key: "collectorNumber", direction: "asc" } as const;
+const DEFAULT_SORT_VALUE = `${DEFAULT_SORT.key}:${DEFAULT_SORT.direction}`;
+
+function withDefaultSort(criteria: CardSearchCriteria | URLSearchParams): [string, string][] {
+  if (criteria instanceof URLSearchParams) {
+    const entries = [...criteria.entries()];
+    return criteria.has("sort") ? entries : [...entries, ["sort", DEFAULT_SORT_VALUE]];
+  }
+  return serializeCardSearchCriteria(criteria.sort ? criteria : { ...criteria, sort: { ...DEFAULT_SORT } });
+}
+
 export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -95,6 +113,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const [density, setDensity] = useState(DEFAULT_DENSITY);
   const [linkCopied, setLinkCopied] = useState(false);
   const copiedTimerRef = useRef<number | null>(null);
+  const resultsTopRef = useRef<HTMLDivElement | null>(null);
   useEffect(
     () => () => {
       if (copiedTimerRef.current !== null) {
@@ -170,10 +189,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
       const normalizedSetCode = setCode && setCode !== "all" ? setCode : "all";
       const normalizedType = type && type !== "all" ? type : "all";
       const normalizedLanguage = language && language !== "all" ? language : "all";
-      const criteriaEntries =
-        searchCriteria instanceof URLSearchParams
-          ? [...searchCriteria.entries()]
-          : serializeCardSearchCriteria(searchCriteria);
+      const criteriaEntries = withDefaultSort(searchCriteria);
       const requestKey = `${trimmedQuery}|${normalizedSetCode}|${normalizedType}|${normalizedLanguage}|${pageNumber}|${new URLSearchParams(criteriaEntries).toString()}`;
 
       if (pendingRequestKeyRef.current === requestKey) {
@@ -354,7 +370,9 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
       return undefined;
     }
 
-    if (trimmedQuery.length === 0 || trimmedQuery.length > 2) {
+    // Un numéro de collection se cherche dès le premier chiffre, comme dans
+    // les éditeurs de booster.
+    if (trimmedQuery.length === 0 || trimmedQuery.length > 2 || bareCollectorNumber(trimmedQuery)) {
       const timer = window.setTimeout(() => {
         void fetchCards(trimmedQuery, selectedSetCode, selectedType, selectedLanguage, 1, criteria);
         setCurrentPage(1);
@@ -385,6 +403,13 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const handlePageChange = (nextPage: number) => {
     if (nextPage < 1 || nextPage > pagination.totalPages || isLoading) {
       return;
+    }
+
+    // Les boutons sont sous la grille : sans cela, la page suivante s'afficherait
+    // hors de vue. On ne remonte que si le haut de la grille est caché.
+    const resultsTop = resultsTopRef.current;
+    if (resultsTop && resultsTop.getBoundingClientRect().top < 0) {
+      resultsTop.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     setCurrentPage(nextPage);
@@ -426,7 +451,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const toggleValue = (key: string, value: string) => applyCriteria(withToggledValue(criteria, key, value));
 
   const changeSort = (value: string) => {
-    if (value === "default") {
+    if (value === DEFAULT_SORT_VALUE) {
       applyCriteria({ ...criteria, sort: undefined });
       return;
     }
@@ -469,6 +494,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   };
 
   const activeFilterCount = countActiveFacetFilters(criteria);
+
+  // Les champs communs ont un nom traduit ; les attributs du jeu gardent le leur.
+  const sortFieldLabel = (key: string) =>
+    key === "collectorNumber" || key === "name" ? t(`cards.search.filters.sortFields.${key}`) : facetLabel(key);
 
   const getLanguageLabel = (language: string) => {
     if (language === "all") {
@@ -648,7 +677,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
           replier un panneau à chaque essai. Sur mobile, elle se déplie. */}
       <aside className={`${filtersOpen ? "block" : "hidden"} lg:block lg:w-72 lg:shrink-0`}>{sidebar}</aside>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
+      <div ref={resultsTopRef} className="flex min-w-0 flex-1 scroll-mt-4 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex min-w-[240px] flex-1 items-center">
             <CardSearchInput
@@ -676,20 +705,19 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
           </Button>
 
           <Select
-            value={criteria.sort ? `${criteria.sort.key}:${criteria.sort.direction}` : "default"}
+            value={criteria.sort ? `${criteria.sort.key}:${criteria.sort.direction}` : DEFAULT_SORT_VALUE}
             onValueChange={changeSort}
           >
-            <SelectTrigger className="h-10 w-full sm:w-52" aria-label={t("cards.search.filters.sort")}>
+            <SelectTrigger className="h-10 w-full sm:w-64" aria-label={t("cards.search.filters.sort")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="default">{t("cards.search.filters.sortRelevance")}</SelectItem>
               {sortableKeys(facets).flatMap((key) => [
                 <SelectItem key={`${key}:asc`} value={`${key}:asc`}>
-                  {t("cards.search.filters.sortAsc", { field: facetLabel(key) })}
+                  {t("cards.search.filters.sortAsc", { field: sortFieldLabel(key) })}
                 </SelectItem>,
                 <SelectItem key={`${key}:desc`} value={`${key}:desc`}>
-                  {t("cards.search.filters.sortDesc", { field: facetLabel(key) })}
+                  {t("cards.search.filters.sortDesc", { field: sortFieldLabel(key) })}
                 </SelectItem>,
               ])}
             </SelectContent>

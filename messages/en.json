@@ -770,9 +770,12 @@
           "language": "Language",
           "allLanguages": "All languages",
           "sort": "Sort",
-          "sortRelevance": "Relevance",
           "sortAsc": "{field} ascending",
           "sortDesc": "{field} descending",
+          "sortFields": {
+            "collectorNumber": "Collector number",
+            "name": "Name"
+          },
           "title": "Filters",
           "reset": "Reset all",
           "range": "{min} to {max}",

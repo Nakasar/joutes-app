@@ -153,6 +153,15 @@ describe("buildSortExpressions", () => {
     ]);
   });
 
+  it("range le numéro de collection par extension d'abord", () => {
+    const criteria = parseCardSearchCriteria(params("sort=collectorNumber:desc"), facets);
+
+    assert.deepEqual(buildSortExpressions(criteria, { collectorNumber: "collector_number", set: "set" }), [
+      "set:desc",
+      "collector_number:desc",
+    ]);
+  });
+
   it("ne trie pas sans consigne", () => {
     assert.deepEqual(
       buildSortExpressions(parseCardSearchCriteria(params(""), facets), { collectorNumber: "cn" }),
