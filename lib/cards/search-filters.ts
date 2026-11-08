@@ -162,12 +162,18 @@ export function buildFacetFilters(criteria: CardSearchCriteria, facets: CardFilt
  */
 export function buildSortExpressions(
   criteria: CardSearchCriteria,
-  indexKeys: { collectorNumber: string }
+  indexKeys: { collectorNumber: string; set?: string }
 ): string[] {
   if (!criteria.sort) return [];
 
-  const field = criteria.sort.key === "collectorNumber" ? indexKeys.collectorNumber : criteria.sort.key;
-  return [`${field}:${criteria.sort.direction}`];
+  const { key, direction } = criteria.sort;
+  if (key === "collectorNumber") {
+    // Un numéro de collection n'a de sens que dans son extension : sans ce
+    // premier critère, les `001` de toutes les extensions se suivraient.
+    const bySet = indexKeys.set ? [`${indexKeys.set}:${direction}`] : [];
+    return [...bySet, `${indexKeys.collectorNumber}:${direction}`];
+  }
+  return [`${key}:${direction}`];
 }
 
 /** Critères réécrits en paramètres d'URL, pour que la recherche reste partageable. */

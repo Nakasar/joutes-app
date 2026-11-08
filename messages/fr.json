@@ -770,9 +770,12 @@
           "language": "Langue",
           "allLanguages": "Toutes les langues",
           "sort": "Tri",
-          "sortRelevance": "Pertinence",
           "sortAsc": "{field} croissant",
           "sortDesc": "{field} décroissant",
+          "sortFields": {
+            "collectorNumber": "Numéro de collection",
+            "name": "Nom"
+          },
           "title": "Filtres",
           "reset": "Tout réinitialiser",
           "range": "de {min} à {max}",

@@ -18,6 +18,7 @@ import {
   mergeSearchCriteria,
   parseSearchSyntax,
 } from "@/lib/cards/search-syntax";
+import {bareCollectorNumber, collectorNumberVariants} from "@/lib/cards/search-query";
 
 type CardFilterValues = {
   setCodes: string[];
@@ -60,6 +61,27 @@ async function getFilterValues(gameSlug: string): Promise<CardFilterValues> {
   ]);
 
   return { setCodes, types, languages, loadCatalogLanguages };
+}
+
+/**
+ * Le tri par numéro de collection range d'abord par extension. Un index dont
+ * les réglages datent d'avant ne sait pas trier sur l'extension : plutôt que de
+ * perdre aussi les filtres dans le repli général, on retente sans elle.
+ */
+async function searchWithSort(
+  index: ReturnType<typeof meilisearch.index<SearchCard>>,
+  queryString: string,
+  options: { filter: string[]; limit?: number; offset?: number },
+  sort: string[],
+  setKey: string,
+) {
+  try {
+    return await index.search(queryString, { ...options, ...(sort.length > 0 ? { sort } : {}) });
+  } catch (error) {
+    const withoutSet = sort.filter((expression) => !expression.startsWith(`${setKey}:`));
+    if (!isUndeclaredCriteriaError(error) || withoutSet.length === sort.length) throw error;
+    return index.search(queryString, { ...options, ...(withoutSet.length > 0 ? { sort: withoutSet } : {}) });
+  }
 }
 
 async function search({ gameId, searchQuery, lang, setCode, type, limit, offset, criteriaParams, facets, filterValues }: { gameId: string; searchQuery: string; lang: string; setCode: string; type?: string; limit?: number; offset?: number; criteriaParams: URLSearchParams; facets: CardFilterFacet[]; filterValues: CardFilterValues }): Promise<{
@@ -116,11 +138,16 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
     );
   }
 
+  // `cn:012` comme dans les éditeurs de booster, et de même un numéro tapé
+  // seul, filtres compris (`set:UNL 12`) : c'est ce qu'on lit sur la carte.
   const cnRegex = /(?: cn|^cn):(?<cn>[\w*]+)/gm;
   const cnResult = cnRegex.exec(freeText);
-  if (cnResult?.groups?.cn) {
+  const collectorNumber = cnResult?.groups?.cn ?? bareCollectorNumber(freeText);
+  if (collectorNumber) {
+    // Toutes les écritures du numéro, zéros de tête ou non : `12` trouve la
+    // carte `012` de Riftbound.
     queryOptions.filter.push(
-      `${indexConfig.keys.collectorNumber} = ${cnResult?.groups?.cn}`,
+      `${indexConfig.keys.collectorNumber} IN [${collectorNumberVariants(collectorNumber).map((value) => quoteFilterValue(value)).join(", ")}]`,
     );
   } else {
     queryString = freeText;
@@ -156,11 +183,7 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
   let degraded = false;
   let result;
   try {
-    result = await index.search(queryString, {
-      ...queryOptions,
-      filter: [...queryOptions.filter, ...facetFilters],
-      ...(sort.length > 0 ? { sort } : {}),
-    });
+    result = await searchWithSort(index, queryString, { ...queryOptions, filter: [...queryOptions.filter, ...facetFilters] }, sort, indexConfig.keys.set);
   } catch (error) {
     if (!isUndeclaredCriteriaError(error) || (facetFilters.length === 0 && sort.length === 0)) {
       throw error;

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { cardSearchText, parseCardSearch } from "./search-query";
+import { bareCollectorNumber, cardSearchText, collectorNumberVariants, parseCardSearch } from "./search-query";
 
 /**
  * Saisie de la barre de recherche des éditeurs de booster et de paquet de cube.
@@ -54,5 +54,32 @@ describe("parseCardSearch", () => {
   it("laisse les attributs du jeu dans le texte", () => {
     // Ils ne sont pas de son ressort : c'est l'API qui les lit.
     assert.equal(parseCardSearch("domain:fury energy<=3").text, "domain:fury energy<=3");
+  });
+});
+
+describe("bareCollectorNumber", () => {
+  it("reconnaît un numéro tapé seul, variante comprise", () => {
+    assert.equal(bareCollectorNumber(" 12 "), "12");
+    assert.equal(bareCollectorNumber("202a"), "202a");
+    assert.equal(bareCollectorNumber("012*"), "012*");
+  });
+
+  it("laisse un nom ou un long nombre au texte libre", () => {
+    assert.equal(bareCollectorNumber("Jinx"), null);
+    assert.equal(bareCollectorNumber("12 Jinx"), null);
+    assert.equal(bareCollectorNumber("123456"), null);
+    assert.equal(bareCollectorNumber(""), null);
+  });
+});
+
+describe("collectorNumberVariants", () => {
+  it("couvre les zéros de tête dans les deux sens", () => {
+    assert.deepEqual(collectorNumberVariants("12"), ["12", "012", "0012"]);
+    assert.deepEqual(collectorNumberVariants("012a"), ["012a", "12a", "0012a"]);
+    assert.deepEqual(collectorNumberVariants("0"), ["0", "00", "000", "0000"]);
+  });
+
+  it("rend tel quel ce qui ne commence pas par un chiffre", () => {
+    assert.deepEqual(collectorNumberVariants("T1"), ["T1"]);
   });
 });

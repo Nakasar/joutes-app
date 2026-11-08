@@ -91,7 +91,7 @@ describe("cardIndexSettings", () => {
       "energy",
       "domain",
     ]);
-    assert.deepEqual(settings.sortableAttributes, ["name", "collector_number", "energy"]);
+    assert.deepEqual(settings.sortableAttributes, ["name", "set", "collector_number", "energy"]);
   });
 
   it("ne répète pas un attribut déjà couvert par les filtres de base", () => {
@@ -101,6 +101,6 @@ describe("cardIndexSettings", () => {
     });
 
     assert.deepEqual(settings.filterableAttributes, ["set", "collector_number", "lang", "type"]);
-    assert.deepEqual(settings.sortableAttributes, ["name", "collector_number"]);
+    assert.deepEqual(settings.sortableAttributes, ["name", "set", "collector_number"]);
   });
 });
