@@ -332,4 +332,28 @@ export const CARD_INDEXES: IndexDefinition[] = [
     keys: { createdAt: -1 },
     why: "Le centre des contributions de l'administration : les quiz, du plus récent au plus ancien",
   },
+  {
+    collection: "decks",
+    keys: { gameId: 1, "meta.eventDate": -1 },
+    options: { partialFilterExpression: { meta: { $exists: true } }, name: "meta_gameId_eventDate" },
+    why: "L'échantillon de la méta d'un jeu sur une période, et la liste des decks méta (`meta: { $exists: true }` dans la requête)",
+  },
+  {
+    collection: "decks",
+    keys: { gameId: 1, "meta.contentHash": 1 },
+    options: { partialFilterExpression: { meta: { $exists: true } }, name: "meta_gameId_contentHash" },
+    why: "Les doublons à l'import d'un deck méta : même contenu dans la même source",
+  },
+  {
+    collection: "decks",
+    keys: { gameId: 1, "meta.sourceRef": 1 },
+    options: { partialFilterExpression: { meta: { $exists: true } }, name: "meta_gameId_sourceRef" },
+    why: "Les doublons à l'import d'un deck méta : même deck Piltover Archive",
+  },
+  {
+    collection: "decks",
+    keys: { "meta.batchId": 1 },
+    options: { sparse: true },
+    why: "Retirer d'un coup un lot de decks méta importés",
+  },
 ];

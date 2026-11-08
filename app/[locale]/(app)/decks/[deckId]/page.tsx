@@ -14,6 +14,9 @@ import { getDeckCollectionCounts } from "@/lib/decks/collection.ts";
 import { riftboundDeckCode } from "@/lib/decks/export-code.ts";
 import { getDeckZones } from "@/lib/decks/zones.ts";
 import { isDeckIndexable } from "@/lib/types/Deck.ts";
+import { hasPermission } from "@/lib/db/permissions.ts";
+import { META_DECKS_PERMISSION } from "@/lib/meta/permissions.ts";
+import { MetaDeckBanner } from "@/components/decks/MetaDeckBanner.tsx";
 import { DeckSheet } from "./DeckSheet.tsx";
 import { PublicDeckSheet } from "./PublicDeckSheet.tsx";
 
@@ -81,6 +84,27 @@ async function DeckPageContent({ params }: { params: Params }) {
   ]);
   const isFavorited = Boolean(session?.user && deck.favoritedBy?.includes(session.user.id));
 
+  // Le bandeau « Méta » : la provenance d'un deck méta pour tous, et de quoi
+  // le marquer ou le retirer pour qui gère la méta.
+  const canManageMeta = Boolean(session?.user?.id) && (await hasPermission(META_DECKS_PERMISSION));
+  const metaBanner = (
+    <MetaDeckBanner
+      deckId={deck.id}
+      meta={
+        deck.meta
+          ? {
+              imported: deck.meta.imported,
+              source: deck.meta.source,
+              eventDate: new Date(deck.meta.eventDate).toISOString(),
+              placement: deck.meta.placement,
+            }
+          : undefined
+      }
+      canManage={canManageMeta}
+      isPublic={deck.visibility === "public"}
+    />
+  );
+
   if (!isOwner) {
     // Le compteur ne doit pas retarder la page : la vue se compte une fois
     // celle-ci envoyée, et son échec ne casse rien.
@@ -97,6 +121,7 @@ async function DeckPageContent({ params }: { params: Params }) {
 
     return (
       <div className="container mx-auto max-w-7xl px-4 py-8">
+        {metaBanner}
         <PublicDeckSheet
           deck={{ ...deck, notes: undefined }}
           gameName={game?.name}
@@ -113,6 +138,7 @@ async function DeckPageContent({ params }: { params: Params }) {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
+      {metaBanner}
       <DeckSheet
         deck={deck}
         gameName={game?.name}

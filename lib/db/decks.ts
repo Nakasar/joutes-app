@@ -8,6 +8,9 @@ import { deckCardIds, type DeckCards } from "@/lib/decks/contents";
 
 const COLLECTION_NAME = "decks";
 
+/** Le nom affiché d'un deck importé pour la méta dont on ne connaît pas le joueur. */
+export const META_IMPORT_AUTHOR = "Méta Joutes";
+
 // Type pour les options de recherche des decks
 export type SearchDecksOptions = {
   playerId?: string;
@@ -15,7 +18,7 @@ export type SearchDecksOptions = {
   /** Une valeur, ou plusieurs — « en cours » couvre le privé et le non répertorié. */
   visibility?: DeckVisibility | DeckVisibility[];
   search?: string;
-  sortBy?: "name" | "createdAt" | "updatedAt" | "favoritesCount" | "views";
+  sortBy?: "name" | "createdAt" | "updatedAt" | "favoritesCount" | "views" | "meta.eventDate";
   sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
@@ -33,6 +36,10 @@ export type SearchDecksOptions = {
   legendCardId?: string;
   /** Domaines que le deck doit tous couvrir. */
   domains?: string[];
+  /** Seulement les decks qui comptent dans la méta (`meta` posé). */
+  metaOnly?: boolean;
+  /** Seulement les decks méta de cette source (« Regional Lyon »). */
+  metaSource?: string;
 };
 
 // Type pour le résultat de recherche paginé
@@ -83,13 +90,16 @@ function toDeck(doc: WithId<Document>, creatorName?: string): Deck {
     coverImage: doc.coverImage,
     domains: doc.domains,
     visibility: doc.visibility || "private",
-    creatorName,
+    // Un deck importé pour la méta appartient au compte qui l'a importé, mais
+    // c'est le joueur du tournoi qui l'a construit : c'est lui qu'on nomme.
+    creatorName: doc.meta?.imported ? doc.meta.pilot || META_IMPORT_AUTHOR : creatorName,
     favoritedBy,
     // Le compteur est dénormalisé pour trier la librairie ; les decks d'avant
     // son introduction ne le portent pas, la longueur du tableau le remplace.
     favoritesCount: doc.favoritesCount ?? favoritedBy.length,
     views: doc.views ?? 0,
     version: doc.version ?? 1,
+    ...(doc.meta ? { meta: doc.meta } : {}),
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -120,6 +130,7 @@ function toDocument(deck: Omit<Deck, "id" | "createdAt" | "updatedAt">): Omit<De
     favoritesCount: deck.favoritedBy?.length ?? 0,
     views: 0,
     version: 1,
+    ...(deck.meta ? { meta: deck.meta } : {}),
   };
 }
 
@@ -145,6 +156,8 @@ export async function searchDecks(options: SearchDecksOptions): Promise<Paginate
     format,
     legendCardId,
     domains,
+    metaOnly = false,
+    metaSource,
   } = options;
 
   // `$and` plutôt que d'écraser `query.$or` : la portée et la recherche
@@ -191,6 +204,12 @@ export async function searchDecks(options: SearchDecksOptions): Promise<Paginate
     query.favoritedBy = viewerId;
   }
 
+  if (metaSource) {
+    query["meta.source"] = metaSource;
+  } else if (metaOnly) {
+    query.meta = { $exists: true };
+  }
+
   if (search) {
     const pattern = escapeRegExp(search);
     conditions.push({
@@ -212,7 +231,7 @@ export async function searchDecks(options: SearchDecksOptions): Promise<Paginate
   sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
   // Deux decks à égalité de favoris sortiraient dans un ordre arbitraire, et
   // donc différent d'une page à l'autre : le plus récent tranche.
-  if (sortBy === "favoritesCount" || sortBy === "views") {
+  if (sortBy === "favoritesCount" || sortBy === "views" || sortBy === "meta.eventDate") {
     sortOptions.updatedAt = -1;
   }
 
@@ -584,7 +603,7 @@ export async function copyDeckForPlayer(source: Deck, playerId: string): Promise
   });
 }
 
-async function findAvailableDeckName(playerId: string, name: string): Promise<string> {
+export async function findAvailableDeckName(playerId: string, name: string): Promise<string> {
   const base = name.slice(0, 90);
 
   for (let suffix = 0; suffix < 50; suffix += 1) {

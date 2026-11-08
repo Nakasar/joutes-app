@@ -31,6 +31,37 @@ export type DeckMatchup = {
   rating: DeckMatchupRating;
 };
 
+/**
+ * Ce qui fait d'un deck un deck « méta » : une liste de tournoi relevée pour
+ * les statistiques de la page Méta du jeu.
+ *
+ * Deux origines. Un deck **importé** (`imported: true`) a été créé par l'import
+ * depuis Piltover Archive ou une liste collée : il appartient au compte qui l'a
+ * importé, mais s'affiche au nom du joueur (`pilot`), et son retrait le
+ * supprime. Un deck **marqué** est le deck public d'un joueur de Joutes : il
+ * reste le sien, et son retrait n'enlève que ce champ.
+ */
+export type DeckMeta = {
+  imported: boolean;
+  /** Le tournoi ou la liste d'où vient le deck : « Regional Lyon ». */
+  source: string;
+  /** Date du tournoi : c'est elle qui range le deck dans une période, pas la date d'import. */
+  eventDate: Date;
+  /** « 1er », « Top 4 »… tel que saisi, facultatif. */
+  placement?: string;
+  /** Le joueur, quand on le connaît : il s'affiche à la place du compte importateur. */
+  pilot?: string;
+  /** Identifiant du deck ou code Piltover Archive dont le deck est tiré. */
+  sourceRef?: string;
+  /** Empreinte du contenu (`lib/meta/fingerprint.ts`), pour reconnaître un doublon. */
+  contentHash?: string;
+  /** Le lot d'import : un lot se retire d'un coup. */
+  batchId?: string;
+  /** Qui a importé ou marqué le deck. */
+  addedBy: string;
+  addedAt: Date;
+};
+
 export type Deck = {
   id: string;
   playerId: string;
@@ -90,6 +121,8 @@ export type Deck = {
   views?: number;
   /** Numéro de version, incrémenté à chaque enregistrement du contenu. */
   version?: number;
+  /** Présent quand le deck compte dans les statistiques de la méta. */
+  meta?: DeckMeta;
   createdAt: Date;
   updatedAt: Date;
 };

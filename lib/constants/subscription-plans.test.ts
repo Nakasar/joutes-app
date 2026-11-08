@@ -36,6 +36,7 @@ const PERMISSIONS_ACCORDEES_A_LA_MAIN = [
   "policies:update",
   "policies:vote",
   "news:update",
+  "metaDecks:manage",
 ];
 
 describe("table des abonnements", () => {

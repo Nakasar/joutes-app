@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   Boxes,
+  ChartLine,
   Dices,
   Download,
   Flag,
@@ -45,6 +46,7 @@ const ICONS: Record<AdminNavIcon, LucideIcon> = {
   download: Download,
   chat: MessageCircle,
   sliders: SlidersHorizontal,
+  chart: ChartLine,
 };
 
 export type AdminBadges = Partial<Record<AdminNavBadgeKey, number>>;
