@@ -580,6 +580,122 @@
         "api": "Les endpoints API et la documentation OpenAPI facilitent l’intégration dans des applications tierces ou des workflows automatisés."
       }
     },
+    "meta": {
+      "back": "Retour au jeu",
+      "title": "Méta {gameName}",
+      "description": "Ce que jouent les decks de tournoi relevés par l'équipe Joutes.",
+      "empty": "Pas encore de decks de tournoi pour ce jeu : les statistiques apparaîtront avec les premiers imports.",
+      "noMatch": "Aucun deck de tournoi pour ces filtres.",
+      "summary": "{decks, plural, one {# deck de tournoi} other {# decks de tournoi}} · dernier tournoi le {date}",
+      "staple": "Staple",
+      "allTypes": "Tous les types",
+      "inDomainShort": "{share} des decks {domain}",
+      "metadata": {
+        "title": "Méta {gameName} : cartes, staples et decks de tournoi",
+        "description": "Les cartes les plus jouées, les staples de chaque domaine et les associations des decks de tournoi de {gameName}.",
+        "notFoundTitle": "Méta introuvable"
+      },
+      "tabs": {
+        "label": "Sections de la méta",
+        "overview": "Vue d'ensemble",
+        "cards": "Cartes",
+        "staples": "Staples",
+        "together": "Jouées ensemble",
+        "sets": "Extensions",
+        "decks": "Decks"
+      },
+      "filters": {
+        "period": "Période",
+        "allTime": "Tout l'échantillon",
+        "lastDays": "{days} derniers jours",
+        "source": "Source",
+        "allSources": "Toutes les sources ({count})",
+        "legend": "Légende",
+        "allLegends": "Toutes les légendes",
+        "domain": "Domaine"
+      },
+      "columns": {
+        "card": "Carte",
+        "set": "Extension",
+        "inDecks": "Dans les decks",
+        "inDomain": "Dans son domaine",
+        "copies": "Ex. moyens",
+        "type": "Type"
+      },
+      "kpi": {
+        "decks": "Decks analysés",
+        "decksHint": "{count, plural, one {# source} other {# sources}}",
+        "legends": "Légendes vues",
+        "legendsHint": "les {count} premières font {share}",
+        "cards": "Cartes jouées",
+        "cardsHint": "sur {total} au catalogue",
+        "cardsHintNoTotal": "cartes différentes",
+        "staples": "Staples",
+        "staplesHint": "dans {threshold} des decks de leur domaine"
+      },
+      "overview": {
+        "legends": "Légendes les plus jouées",
+        "legendsHint": "part des decks",
+        "topCuts": "{count} en top 8",
+        "domains": "Domaines",
+        "domainsHint": "decks qui jouent le domaine",
+        "topPair": "Paire la plus jouée : <strong>{pair}</strong>, {share} des decks.",
+        "topCards": "Cartes les plus jouées",
+        "allCards": "Voir les {count} cartes"
+      },
+      "pagination": {
+        "label": "Pagination",
+        "cards": "Page {page} sur {totalPages} · {total} cartes",
+        "decks": "Page {page} sur {totalPages} · {total} decks",
+        "previous": "Précédente",
+        "next": "Suivante"
+      },
+      "staples": {
+        "title": "{count, plural, =0 {Aucune staple} one {# staple} other {# staples}}",
+        "explain": "Une staple est une carte présente dans au moins {threshold} des decks qui jouent son domaine. Une carte à deux domaines se compte sur les decks qui jouent les deux, une carte incolore sur tous les decks. Un domaine joué par moins de {minDecks} decks n'a pas de staples.",
+        "threshold": "Seuil",
+        "groupHint": "{decks} decks · {count, plural, one {# staple} other {# staples}}",
+        "tooFew": "Moins de {minDecks} decks : pas assez pour conclure.",
+        "none": "Aucune carte n'atteint le seuil.",
+        "cardHint": "{set} · {copies} ex. en moyenne",
+        "nearMisses": "Juste sous le seuil"
+      },
+      "together": {
+        "pick": "Chercher une carte jouée",
+        "show": "Voir",
+        "notFound": "« {name} » n'est jouée par aucun deck de cette sélection.",
+        "inDecks": "Dans les decks",
+        "inDomain": "Decks de son domaine",
+        "copies": "Ex. moyens",
+        "with": "Avec",
+        "often": "Souvent jouées avec {name}",
+        "oftenHint": "Part des {count} decks qui la jouent, comparée à la part de tous les decks.",
+        "noneOften": "Aucune carte ne l'accompagne plus que d'habitude.",
+        "withCard": "Avec elle",
+        "usually": "D'habitude",
+        "lift": "Écart",
+        "markerHint": "Le trait marque la part habituelle.",
+        "rarely": "Rarement ensemble",
+        "noneRarely": "Rien de notable.",
+        "insteadOf": "{with} au lieu de {base}",
+        "seeDecks": "Voir les {count} decks"
+      },
+      "sets": {
+        "origin": "D'où viennent les cartes des decks",
+        "originHint": "part des exemplaires joués, toutes listes confondues",
+        "staples": "staples",
+        "played": "jouées",
+        "playedOf": "jouées sur {total}",
+        "slots": "des emplacements",
+        "topCards": "Les plus jouées",
+        "matrix": "Staples par extension et par domaine",
+        "total": "Total"
+      },
+      "decks": {
+        "withCard": "{count, plural, one {# deck joue} other {# decks jouent}} « {name} »",
+        "clearCard": "Tous les decks"
+      }
+    },
     "nav": {
       "products": "Produits",
       "tools": "Outils",
@@ -595,7 +711,8 @@
       "news": "Actualités",
       "quizz": "Quizz",
       "social": "Réseaux",
-      "cubes": "Cubes"
+      "cubes": "Cubes",
+      "meta": "Méta"
     },
     "explorer": {
       "title": "Explorez les jeux",

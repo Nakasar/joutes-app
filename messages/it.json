@@ -580,6 +580,122 @@
         "api": "Gli endpoint API e la documentazione OpenAPI facilitano l’integrazione in applicazioni di terze parti o workflow automatizzati."
       }
     },
+    "meta": {
+      "back": "Torna al gioco",
+      "title": "Meta di {gameName}",
+      "description": "Cosa giocano i mazzi da torneo raccolti dal team Joutes.",
+      "empty": "Ancora nessun mazzo da torneo per questo gioco: le statistiche compariranno con le prime importazioni.",
+      "noMatch": "Nessun mazzo da torneo per questi filtri.",
+      "summary": "{decks, plural, one {# mazzo da torneo} other {# mazzi da torneo}} · ultimo torneo il {date}",
+      "staple": "Staple",
+      "allTypes": "Tutti i tipi",
+      "inDomainShort": "{share} dei mazzi {domain}",
+      "metadata": {
+        "title": "Meta di {gameName}: carte, staple e mazzi da torneo",
+        "description": "Le carte più giocate, le staple di ogni dominio e le combinazioni dei mazzi da torneo di {gameName}.",
+        "notFoundTitle": "Meta non trovato"
+      },
+      "tabs": {
+        "label": "Sezioni del meta",
+        "overview": "Panoramica",
+        "cards": "Carte",
+        "staples": "Staple",
+        "together": "Giocate insieme",
+        "sets": "Espansioni",
+        "decks": "Mazzi"
+      },
+      "filters": {
+        "period": "Periodo",
+        "allTime": "Tutto il campione",
+        "lastDays": "Ultimi {days} giorni",
+        "source": "Fonte",
+        "allSources": "Tutte le fonti ({count})",
+        "legend": "Leggenda",
+        "allLegends": "Tutte le leggende",
+        "domain": "Dominio"
+      },
+      "columns": {
+        "card": "Carta",
+        "set": "Espansione",
+        "inDecks": "Nei mazzi",
+        "inDomain": "Nel suo dominio",
+        "copies": "Copie medie",
+        "type": "Tipo"
+      },
+      "kpi": {
+        "decks": "Mazzi analizzati",
+        "decksHint": "{count, plural, one {# fonte} other {# fonti}}",
+        "legends": "Leggende viste",
+        "legendsHint": "le prime {count} fanno {share}",
+        "cards": "Carte giocate",
+        "cardsHint": "su {total} nel catalogo",
+        "cardsHintNoTotal": "carte diverse",
+        "staples": "Staple",
+        "staplesHint": "nel {threshold} dei mazzi del loro dominio"
+      },
+      "overview": {
+        "legends": "Leggende più giocate",
+        "legendsHint": "quota dei mazzi",
+        "topCuts": "{count} in top 8",
+        "domains": "Domini",
+        "domainsHint": "mazzi che giocano il dominio",
+        "topPair": "Coppia più giocata: <strong>{pair}</strong>, {share} dei mazzi.",
+        "topCards": "Carte più giocate",
+        "allCards": "Vedi tutte le {count} carte"
+      },
+      "pagination": {
+        "label": "Paginazione",
+        "cards": "Pagina {page} di {totalPages} · {total} carte",
+        "decks": "Pagina {page} di {totalPages} · {total} mazzi",
+        "previous": "Precedente",
+        "next": "Successiva"
+      },
+      "staples": {
+        "title": "{count, plural, =0 {Nessuna staple} one {# staple} other {# staple}}",
+        "explain": "Una staple è una carta presente in almeno il {threshold} dei mazzi che giocano il suo dominio. Una carta a due domini si conta sui mazzi che li giocano entrambi, una incolore su tutti i mazzi. Un dominio giocato da meno di {minDecks} mazzi non ha staple.",
+        "threshold": "Soglia",
+        "groupHint": "{decks} mazzi · {count, plural, one {# staple} other {# staple}}",
+        "tooFew": "Meno di {minDecks} mazzi: troppo pochi per concludere.",
+        "none": "Nessuna carta raggiunge la soglia.",
+        "cardHint": "{set} · {copies} copie in media",
+        "nearMisses": "Appena sotto la soglia"
+      },
+      "together": {
+        "pick": "Cerca una carta giocata",
+        "show": "Vedi",
+        "notFound": "«{name}» non è giocata da nessun mazzo di questa selezione.",
+        "inDecks": "Nei mazzi",
+        "inDomain": "Mazzi del suo dominio",
+        "copies": "Copie medie",
+        "with": "Con",
+        "often": "Spesso giocate con {name}",
+        "oftenHint": "Quota dei {count} mazzi che la giocano, confrontata con quella di tutti i mazzi.",
+        "noneOften": "Nessuna carta la accompagna più del solito.",
+        "withCard": "Con lei",
+        "usually": "Di solito",
+        "lift": "Scarto",
+        "markerHint": "Il segno indica la quota abituale.",
+        "rarely": "Raramente insieme",
+        "noneRarely": "Niente di notevole.",
+        "insteadOf": "{with} invece di {base}",
+        "seeDecks": "Vedi i {count} mazzi"
+      },
+      "sets": {
+        "origin": "Da dove vengono le carte dei mazzi",
+        "originHint": "quota delle copie giocate, tutte le liste insieme",
+        "staples": "staple",
+        "played": "giocate",
+        "playedOf": "giocate su {total}",
+        "slots": "degli slot",
+        "topCards": "Le più giocate",
+        "matrix": "Staple per espansione e dominio",
+        "total": "Totale"
+      },
+      "decks": {
+        "withCard": "{count, plural, one {# mazzo gioca} other {# mazzi giocano}} «{name}»",
+        "clearCard": "Tutti i mazzi"
+      }
+    },
     "nav": {
       "products": "Prodotti",
       "tools": "Strumenti",
@@ -595,7 +711,8 @@
       "news": "Notizie",
       "quizz": "Quiz",
       "social": "Social",
-      "cubes": "Cubi"
+      "cubes": "Cubi",
+      "meta": "Meta"
     },
     "explorer": {
       "title": "Esplora i giochi",
