@@ -207,11 +207,23 @@ export function CommandBox() {
                     value={`${group.key}-${item.href}-${item.label}`}
                     onSelect={() => navigate(item.href)}
                   >
-                    <group.icon />
+                    {item.kind === "card" && item.image ? (
+                      // Une vignette suffit à reconnaître la carte d'un coup d'œil ;
+                      // le cadre fixe garde les lignes alignées, cartes couchées comprises.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.image}
+                        alt=""
+                        loading="lazy"
+                        className="h-11 w-8 shrink-0 rounded-sm bg-muted object-contain"
+                      />
+                    ) : (
+                      <group.icon />
+                    )}
                     <span className="flex min-w-0 flex-col">
                       <span className="truncate">{item.label}</span>
                       {item.sublabel && (
-                        <span className="truncate text-xs text-muted-foreground">{item.sublabel}</span>
+                        <span className="truncate text-xs text-muted-foreground in-data-[selected=true]:text-accent-foreground/80">{item.sublabel}</span>
                       )}
                     </span>
                   </CommandItem>
