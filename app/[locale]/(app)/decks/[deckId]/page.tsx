@@ -14,6 +14,9 @@ import { getDeckCollectionCounts } from "@/lib/decks/collection.ts";
 import { riftboundDeckCode } from "@/lib/decks/export-code.ts";
 import { getDeckZones } from "@/lib/decks/zones.ts";
 import { isDeckIndexable } from "@/lib/types/Deck.ts";
+import { hasPermission } from "@/lib/db/permissions.ts";
+import { META_DECKS_PERMISSION } from "@/lib/meta/permissions.ts";
+import { MetaDeckBanner } from "@/components/decks/MetaDeckBanner.tsx";
 import { DeckSheet } from "./DeckSheet.tsx";
 import { PublicDeckSheet } from "./PublicDeckSheet.tsx";
 
@@ -74,12 +77,36 @@ async function DeckPageContent({ params }: { params: Params }) {
 
   const game = await getGameById(deck.gameId);
   const zones = getDeckZones(game);
-  const [catalog, cardnexusOrder] = await Promise.all([
+  const [catalog, cardnexusOrder, canManageMeta] = await Promise.all([
     getDeckCardInfos(deck.gameId, deckCardIds(deck.cards)),
     // Le lien « Acheter le deck sur CardNexus » : le deck entier.
     getDeckCardnexusOrder(deck, zones),
+    // Le bandeau « Méta » ne sert qu'à un deck méta ou public : inutile de
+    // lire les permissions pour un brouillon.
+    session?.user?.id && (deck.meta || deck.visibility === "public") ? hasPermission(META_DECKS_PERMISSION) : false,
   ]);
   const isFavorited = Boolean(session?.user && deck.favoritedBy?.includes(session.user.id));
+
+  // Le bandeau « Méta » : la provenance d'un deck méta pour tous, et de quoi
+  // le marquer ou le retirer pour qui gère la méta.
+  const metaBanner = (
+    <MetaDeckBanner
+      deckId={deck.id}
+      gameId={deck.gameId}
+      meta={
+        deck.meta
+          ? {
+              imported: deck.meta.imported,
+              source: deck.meta.source,
+              eventDate: new Date(deck.meta.eventDate).toISOString(),
+              placement: deck.meta.placement,
+            }
+          : undefined
+      }
+      canManage={canManageMeta}
+      isPublic={deck.visibility === "public"}
+    />
+  );
 
   if (!isOwner) {
     // Le compteur ne doit pas retarder la page : la vue se compte une fois
@@ -97,6 +124,7 @@ async function DeckPageContent({ params }: { params: Params }) {
 
     return (
       <div className="container mx-auto max-w-7xl px-4 py-8">
+        {metaBanner}
         <PublicDeckSheet
           deck={{ ...deck, notes: undefined }}
           gameName={game?.name}
@@ -113,6 +141,7 @@ async function DeckPageContent({ params }: { params: Params }) {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
+      {metaBanner}
       <DeckSheet
         deck={deck}
         gameName={game?.name}

@@ -22,5 +22,17 @@
     "name": "Unleashed",
     "maxCollectorNumber": 219,
     "cardMaxNumber": 238
+  },
+  {
+    "setCode": "VEN",
+    "name": "Vendetta",
+    "maxCollectorNumber": 166,
+    "cardMaxNumber": 197
+  },
+  {
+    "setCode": "RAD",
+    "name": "Radiance",
+    "maxCollectorNumber": 167,
+    "cardMaxNumber": 184
   }
 ]

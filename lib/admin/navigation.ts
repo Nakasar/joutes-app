@@ -23,7 +23,8 @@ export type AdminNavIcon =
   | "swords"
   | "download"
   | "chat"
-  | "sliders";
+  | "sliders"
+  | "chart";
 
 export type AdminNavBadgeKey = "reports" | "lairs";
 
@@ -63,6 +64,8 @@ export const ADMIN_NAVIGATION: AdminNavGroup[] = [
       { href: "/admin/translations", label: "Traductions", icon: "languages", keywords: ["français", "glossaire", "langues"] },
       { href: "/admin/products", label: "Produits", icon: "box", keywords: ["boîtes", "figurines"] },
       { href: "/admin/achievements", label: "Succès", icon: "trophy", keywords: ["trophées", "badges"] },
+      // Hors de /admin : l'écran s'ouvre aussi à qui a la permission metaDecks:manage.
+      { href: "/decks/meta/manage", label: "Méta des decks", icon: "chart", keywords: ["staples", "tournois", "import", "piltover"] },
     ],
   },
   {

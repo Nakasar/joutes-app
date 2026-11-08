@@ -3,6 +3,7 @@ import { GameFeatureKey } from "@/lib/constants/game-features";
 import { Lair } from "@/lib/types/Lair";
 import type { GameTournamentDefaults } from "@/lib/tournaments/game-defaults";
 import type { GameDeckBuilder } from "@/lib/decks/zones";
+import type { GameMetaSettings } from "@/lib/meta/settings";
 
 export type Game = {
   id: string;
@@ -84,6 +85,12 @@ export type Game = {
    * Absent = le jeu suit les zones livrées avec la plateforme.
    */
   deckBuilder?: GameDeckBuilder;
+  /**
+   * Réglages des statistiques de la méta (seuil des staples, période par
+   * défaut). Décrits et complétés dans `lib/meta/settings.ts` ; absent = les
+   * valeurs par défaut.
+   */
+  metaSettings?: GameMetaSettings;
   /**
    * Édition du jeu en cours, pour les gammes qui en traversent plusieurs — la
    * valeur que porte l'attribut `edition` des produits qui se jouent

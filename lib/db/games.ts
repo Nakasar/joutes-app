@@ -33,6 +33,7 @@ function toGame(doc: WithId<Document>): Game {
     features: doc.features || {},
     tournamentDefaults: doc.tournamentDefaults,
     deckBuilder: doc.deckBuilder,
+    metaSettings: doc.metaSettings,
     currentProductEdition: doc.currentProductEdition,
     boosterTypes: doc.boosterTypes,
     languages: doc.languages,
@@ -61,6 +62,7 @@ function toDocument(game: Omit<Game, "id">): Omit<GameDocument, "_id"> {
     features: game.features,
     tournamentDefaults: game.tournamentDefaults,
     deckBuilder: game.deckBuilder,
+    metaSettings: game.metaSettings,
     currentProductEdition: game.currentProductEdition,
     boosterTypes: game.boosterTypes,
     languages: game.languages,
@@ -215,6 +217,22 @@ export async function setGameDeckBuilder(
     deckBuilder === null
       ? { $unset: { deckBuilder: "" } }
       : { $set: { deckBuilder } }
+  );
+
+  return result.matchedCount > 0;
+}
+
+/**
+ * Réglages des statistiques de la méta d'un jeu (`lib/meta/settings.ts`).
+ * `null` retire le champ : le jeu revient aux valeurs par défaut.
+ */
+export async function setGameMetaSettings(
+  id: string,
+  metaSettings: Game["metaSettings"] | null
+): Promise<boolean> {
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(id) },
+    metaSettings === null ? { $unset: { metaSettings: "" } } : { $set: { metaSettings } }
   );
 
   return result.matchedCount > 0;

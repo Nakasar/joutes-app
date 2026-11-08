@@ -1,5 +1,5 @@
 import db from "@/lib/mongodb";
-import { Deck, DeckVisibility } from "@/lib/types/Deck";
+import { Deck, DeckVisibility, toPublicDeckMeta, type DeckMeta } from "@/lib/types/Deck";
 import { ObjectId, WithId, Document } from "mongodb";
 import { getUsersByIds } from "@/lib/db/users";
 import { deriveDeckDomains, getDeckCardInfos } from "@/lib/db/deck-cards";
@@ -8,6 +8,9 @@ import { deckCardIds, type DeckCards } from "@/lib/decks/contents";
 
 const COLLECTION_NAME = "decks";
 
+/** Le nom affiché d'un deck importé pour la méta dont on ne connaît pas le joueur. */
+export const META_IMPORT_AUTHOR = "Méta Joutes";
+
 // Type pour les options de recherche des decks
 export type SearchDecksOptions = {
   playerId?: string;
@@ -15,7 +18,7 @@ export type SearchDecksOptions = {
   /** Une valeur, ou plusieurs — « en cours » couvre le privé et le non répertorié. */
   visibility?: DeckVisibility | DeckVisibility[];
   search?: string;
-  sortBy?: "name" | "createdAt" | "updatedAt" | "favoritesCount" | "views";
+  sortBy?: "name" | "createdAt" | "updatedAt" | "favoritesCount" | "views" | "meta.eventDate";
   sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
@@ -33,6 +36,10 @@ export type SearchDecksOptions = {
   legendCardId?: string;
   /** Domaines que le deck doit tous couvrir. */
   domains?: string[];
+  /** Seulement les decks qui comptent dans la méta (`meta` posé). */
+  metaOnly?: boolean;
+  /** Seulement les decks méta de cette source (« Regional Lyon »). */
+  metaSource?: string;
 };
 
 // Type pour le résultat de recherche paginé
@@ -45,7 +52,7 @@ export type PaginatedDecksResult = {
 };
 
 // Type pour un deck dans MongoDB (avec _id)
-export type DeckDocument = Omit<Deck, "id"> & { _id: ObjectId };
+export type DeckDocument = Omit<Deck, "id" | "meta"> & { _id: ObjectId; meta?: DeckMeta };
 
 function getUserDisplayName(user: { displayName?: string; username?: string; discriminator?: string } | null | undefined): string | undefined {
   if (!user) {
@@ -83,20 +90,26 @@ function toDeck(doc: WithId<Document>, creatorName?: string): Deck {
     coverImage: doc.coverImage,
     domains: doc.domains,
     visibility: doc.visibility || "private",
-    creatorName,
+    // Un deck importé pour la méta appartient au compte qui l'a importé, mais
+    // c'est le joueur du tournoi qui l'a construit : c'est lui qu'on nomme.
+    creatorName: doc.meta?.imported ? doc.meta.pilot || META_IMPORT_AUTHOR : creatorName,
     favoritedBy,
     // Le compteur est dénormalisé pour trier la librairie ; les decks d'avant
     // son introduction ne le portent pas, la longueur du tableau le remplace.
     favoritesCount: doc.favoritesCount ?? favoritedBy.length,
     views: doc.views ?? 0,
     version: doc.version ?? 1,
+    ...(doc.meta ? { meta: toPublicDeckMeta(doc.meta) } : {}),
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
 }
 
+/** Un deck à créer : la méta s'écrit entière, alors qu'un deck lu n'en montre que la provenance. */
+export type NewDeck = Omit<Deck, "id" | "createdAt" | "updatedAt" | "meta"> & { meta?: DeckMeta };
+
 // Convertir un Deck en document MongoDB (sans id)
-function toDocument(deck: Omit<Deck, "id" | "createdAt" | "updatedAt">): Omit<DeckDocument, "_id" | "createdAt" | "updatedAt"> {
+function toDocument(deck: NewDeck): Omit<DeckDocument, "_id" | "createdAt" | "updatedAt"> {
   return {
     playerId: deck.playerId,
     gameId: deck.gameId,
@@ -120,6 +133,7 @@ function toDocument(deck: Omit<Deck, "id" | "createdAt" | "updatedAt">): Omit<De
     favoritesCount: deck.favoritedBy?.length ?? 0,
     views: 0,
     version: 1,
+    ...(deck.meta ? { meta: deck.meta } : {}),
   };
 }
 
@@ -145,6 +159,8 @@ export async function searchDecks(options: SearchDecksOptions): Promise<Paginate
     format,
     legendCardId,
     domains,
+    metaOnly = false,
+    metaSource,
   } = options;
 
   // `$and` plutôt que d'écraser `query.$or` : la portée et la recherche
@@ -191,6 +207,12 @@ export async function searchDecks(options: SearchDecksOptions): Promise<Paginate
     query.favoritedBy = viewerId;
   }
 
+  if (metaSource) {
+    query["meta.source"] = metaSource;
+  } else if (metaOnly) {
+    query.meta = { $exists: true };
+  }
+
   if (search) {
     const pattern = escapeRegExp(search);
     conditions.push({
@@ -212,7 +234,7 @@ export async function searchDecks(options: SearchDecksOptions): Promise<Paginate
   sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
   // Deux decks à égalité de favoris sortiraient dans un ordre arbitraire, et
   // donc différent d'une page à l'autre : le plus récent tranche.
-  if (sortBy === "favoritesCount" || sortBy === "views") {
+  if (sortBy === "favoritesCount" || sortBy === "views" || sortBy === "meta.eventDate") {
     sortOptions.updatedAt = -1;
   }
 
@@ -274,7 +296,7 @@ async function deriveFromCards(
 }
 
 // Créer un nouveau deck
-export async function createDeck(deckData: Omit<Deck, "id" | "createdAt" | "updatedAt">): Promise<Deck> {
+export async function createDeck(deckData: NewDeck): Promise<Deck> {
   // Vérifier l'unicité du nom pour ce joueur
   const existingDeck = await db.collection(COLLECTION_NAME).findOne({
     playerId: deckData.playerId,
@@ -584,7 +606,7 @@ export async function copyDeckForPlayer(source: Deck, playerId: string): Promise
   });
 }
 
-async function findAvailableDeckName(playerId: string, name: string): Promise<string> {
+export async function findAvailableDeckName(playerId: string, name: string): Promise<string> {
   const base = name.slice(0, 90);
 
   for (let suffix = 0; suffix < 50; suffix += 1) {
