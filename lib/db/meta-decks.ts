@@ -161,10 +161,18 @@ export async function updateMetaDeck(
     if (taken) return { ok: false, error: "Un autre deck du même compte porte déjà ce nom." };
   }
 
-  await db.collection(COLLECTION_NAME).updateOne(
-    { _id },
-    { $set: { ...plan.$set, updatedAt: new Date() }, ...(Object.keys(plan.$unset).length > 0 ? { $unset: plan.$unset } : {}) }
-  );
+  try {
+    await db.collection(COLLECTION_NAME).updateOne(
+      { _id },
+      { $set: { ...plan.$set, updatedAt: new Date() }, ...(Object.keys(plan.$unset).length > 0 ? { $unset: plan.$unset } : {}) }
+    );
+  } catch (error) {
+    // Un renommage concurrent a pris le nom entre la vérification et l'écriture (index unique playerId + name).
+    if ((error as { code?: number })?.code === 11000) {
+      return { ok: false, error: "Un autre deck du même compte porte déjà ce nom." };
+    }
+    throw error;
+  }
   return { ok: true, gameId: doc.gameId };
 }
 

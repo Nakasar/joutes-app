@@ -42,6 +42,15 @@ describe("planMetaDeckEdit", () => {
     assert.equal(plan.$set.name, undefined);
   });
 
+  it("garde le classement et le joueur quand ils ne sont pas fournis", () => {
+    const meta = { ...imported.meta, pilot: "Bob" };
+    const plan = planMetaDeckEdit({ ...imported, description: metaDeckDescription(meta), meta }, { source: "Regional Lyon", eventDate });
+    assert.deepEqual(plan.$unset, {});
+    assert.equal(plan.$set["meta.placement"], undefined);
+    assert.equal(plan.$set["meta.pilot"], undefined);
+    assert.equal(plan.$set.description, "Liste relevée à Regional Lyon, classée 1er, jouée par Bob.");
+  });
+
   it("garde une description réécrite à la main", () => {
     const plan = planMetaDeckEdit({ ...imported, description: "Mon analyse du deck." }, { source: "Lyon", eventDate });
     assert.equal(plan.$set.description, undefined);

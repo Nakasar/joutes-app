@@ -42,18 +42,23 @@ export type MetaDeckEditPlan = {
  * à la main ; un deck marqué garde son nom, son joueur et sa description.
  */
 export function planMetaDeckEdit(current: CurrentMetaDeck, edit: MetaDeckEdit): MetaDeckEditPlan {
-  const placement = formatPlacement(edit.placement);
+  // Un champ absent garde sa valeur ; seule une chaîne vide l'efface.
+  const placement = edit.placement === undefined ? current.meta.placement : formatPlacement(edit.placement);
   const $set: Record<string, unknown> = { "meta.source": edit.source.trim(), "meta.eventDate": edit.eventDate };
   const $unset: Record<string, ""> = {};
 
-  if (placement) $set["meta.placement"] = placement;
-  else $unset["meta.placement"] = "";
+  if (edit.placement !== undefined) {
+    if (placement) $set["meta.placement"] = placement;
+    else $unset["meta.placement"] = "";
+  }
 
   if (!current.meta.imported) return { $set, $unset };
 
-  const pilot = edit.pilot?.trim() || undefined;
-  if (pilot) $set["meta.pilot"] = pilot;
-  else $unset["meta.pilot"] = "";
+  const pilot = edit.pilot === undefined ? current.meta.pilot : edit.pilot.trim() || undefined;
+  if (edit.pilot !== undefined) {
+    if (pilot) $set["meta.pilot"] = pilot;
+    else $unset["meta.pilot"] = "";
+  }
 
   const generated = metaDeckDescription(current.meta);
   if (!current.description || current.description === generated) {
