@@ -24,6 +24,8 @@ const SET_NAMES_BY_GAME: Record<string, { setCode: string; name: string }[]> = {
 
 type MetaDeckDoc = {
   _id: ObjectId;
+  gameId: string;
+  visibility: string;
   name: string;
   legendCardId?: string;
   legendName?: string;
