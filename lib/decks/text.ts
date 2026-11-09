@@ -52,6 +52,17 @@ const NAMED_ENTITIES: Record<string, string> = { amp: "&", apos: "'", quot: '"',
  * « Can&#39;t » au lieu de « Can't », et la carte ne serait pas reconnue.
  */
 function decodeEntities(value: string): string {
+  // Un export encodé deux fois (« &amp;#39; ») demande plusieurs passes ; trois suffisent.
+  let decoded = value;
+  for (let pass = 0; pass < 3; pass += 1) {
+    const next = decodeEntitiesOnce(decoded);
+    if (next === decoded) break;
+    decoded = next;
+  }
+  return decoded;
+}
+
+function decodeEntitiesOnce(value: string): string {
   return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, entity: string) => {
     if (entity[0] === "#") {
       const code = entity[1] === "x" || entity[1] === "X" ? Number.parseInt(entity.slice(2), 16) : Number(entity.slice(1));

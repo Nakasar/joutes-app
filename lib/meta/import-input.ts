@@ -33,7 +33,7 @@ const PILTOVER_LINK = /^https?:\/\/(?:www\.)?piltoverarchive\.com\/decks\/view\/
 /** Les codes Piltover Archive sont du base32 : des majuscules et des chiffres de 2 à 7, sans espace. */
 const PILTOVER_CODE = /^[A-Z2-7]{16,}$/;
 /** riftdecks.com est derrière une protection anti-robots : ses pages ne se lisent pas depuis le serveur. */
-const RIFTDECKS_LINK = /^https?:\/\/(?:www\.)?riftdecks\.com\//i;
+const RIFTDECKS_LINK = /^https?:\/\/(?:www\.)?riftdecks\.com(?:[/?#]|$)/i;
 const SEPARATOR = /^-{3,}$/;
 /** Le classement et le joueur, en fin de ligne : `#1`, `# Top 8`, `@Kevin`. */
 const ANNOTATIONS = /\s+([#@])\s*([^#@]+?)\s*(?=\s[#@]|$)/g;

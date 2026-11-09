@@ -18,7 +18,7 @@ const riftbound = getDeckZones({ slug: "riftbound" });
 describe("lecture d'une liste collée", () => {
   it("lit l'export texte de riftdecks : « Rune Pool » et entités HTML", () => {
     const parsed = parseDeckText(
-      ["Legend:", "1 Kennen, Heart of the Tempest", "", "MainDeck:", "1 An Offer You Can&#39;t Refuse", "", "Rune Pool:", "3 Order Rune", "9 Chaos Rune"].join("\n"),
+      ["Legend:", "1 Kennen, Heart of the Tempest", "", "MainDeck:", "1 An Offer You Can&#39;t Refuse", "1 Can&amp;#39;t Stop", "", "Rune Pool:", "3 Order Rune", "9 Chaos Rune"].join("\n"),
       riftbound
     );
 
@@ -26,6 +26,7 @@ describe("lecture d'une liste collée", () => {
     assert.deepEqual(parsed.lines, [
       { zone: "legend", name: "Kennen, Heart of the Tempest", quantity: 1 },
       { zone: "maindeck", name: "An Offer You Can't Refuse", quantity: 1 },
+      { zone: "maindeck", name: "Can't Stop", quantity: 1 },
       { zone: "runes", name: "Order Rune", quantity: 3 },
       { zone: "runes", name: "Chaos Rune", quantity: 9 },
     ]);

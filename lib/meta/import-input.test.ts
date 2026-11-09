@@ -12,6 +12,8 @@ describe("splitMetaImportInput", () => {
     const [entry] = splitMetaImportInput("https://riftdecks.com/riftbound-tournaments/regional-18668 #1");
     assert.equal(entry.kind, "invalid");
     assert.match(entry.kind === "invalid" ? entry.reason : "", /export texte/);
+    const [bare] = splitMetaImportInput("https://riftdecks.com");
+    assert.match(bare.kind === "invalid" ? bare.reason : "", /riftdecks/);
   });
 
   it("lit un lien et un code par ligne, avec classement et joueur", () => {
