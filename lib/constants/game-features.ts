@@ -42,6 +42,11 @@ export const GAME_FEATURES = {
     description:
       "Explorateur des decks publiés du jeu, et l'entrée dans l'éditeur qui va avec. Ne ferme pas la création d'un deck depuis « Mes decks », qui reste ouverte à tous les jeux.",
   },
+  meta: {
+    label: "Méta",
+    description:
+      "Statistiques des decks de tournoi relevés pour le jeu : cartes et staples, légendes, extensions et page de chaque tournoi. Les decks s'importent depuis « Gérer la méta » (/decks/meta/manage).",
+  },
   news: {
     label: "Actualités",
     description: "Fil d'actualités du jeu, sur sa fiche et sur sa propre page.",

@@ -52,6 +52,7 @@
         "cubes": "Cubes",
         "deckChecker": "Deck checker",
         "decks": "Decks",
+        "meta": "Meta",
         "news": "News",
         "quizz": "Quizzes"
       },
@@ -602,7 +603,8 @@
         "staples": "Staples",
         "together": "Played together",
         "sets": "Sets",
-        "decks": "Decks"
+        "decks": "Decks",
+        "tournaments": "Tournaments"
       },
       "filters": {
         "period": "Period",
@@ -699,6 +701,91 @@
       "decks": {
         "withCard": "{count, plural, one {# deck plays} other {# decks play}} “{name}”",
         "clearCard": "All decks"
+      },
+      "tournaments": {
+        "explain": "A tournament groups the decks with the same name and date. The chosen period applies here; the other filters don't.",
+        "name": "Tournament",
+        "date": "Date",
+        "decks": "Decks",
+        "winner": "Winner",
+        "topLegend": "Most played legend",
+        "topDomains": "Leading domains",
+        "none": "—"
+      },
+      "tournament": {
+        "metadataTitle": "{source}: {gameName} meta",
+        "metadataDescription": "Legends, domains and cards of the {count} decks recorded at {source} ({date}).",
+        "back": "All tournaments",
+        "global": "Overall meta",
+        "seeDecks": "See the {count} decks",
+        "summary": "{date} · {decks, plural, one {# deck recorded} other {# decks recorded}}",
+        "ranked": "placement entered for {count, plural, one {# deck} other {# decks}}",
+        "noRanking": "no placements entered",
+        "kpi": {
+          "winner": "Winner",
+          "noWinner": "Not recorded",
+          "noWinnerHint": "no deck placed 1st",
+          "topLegend": "Most played legend",
+          "topLegendHint": "{decks} decks out of {total}",
+          "topLegendTopHint": "{decks} decks out of {total}, {topCuts} in the top 8",
+          "topDomain": "Most played domain",
+          "topDomainHint": "played by {share} of decks",
+          "topDomainTopHint": "{share} of top 8 domain slots",
+          "legends": "Different legends",
+          "legendsHint": "{count} in the top 8",
+          "legendsNoTopHint": "across {decks} decks"
+        },
+        "legends": {
+          "title": "Legend breakdown",
+          "all": "Whole tournament",
+          "top": "Top 8",
+          "decksUnit": "decks",
+          "others": "Others",
+          "detail": "By legend",
+          "conversionHint": "Conversion = share of the top 8 ÷ share of the tournament",
+          "legend": "Legend",
+          "share": "Tournament share",
+          "decks": "Decks",
+          "topCuts": "Top 8",
+          "best": "Best placement",
+          "conversion": "Conversion"
+        },
+        "domains": {
+          "title": "Domains",
+          "hint": "Each deck counts once for each of its domains"
+        },
+        "combos": {
+          "title": "Domain groups",
+          "hint": "The exact domains of each deck: pairs, but also single-domain or three-domain decks",
+          "none": "No domain"
+        },
+        "topCut": {
+          "title": "Top 8",
+          "hint": "The decks placed in the top 8"
+        },
+        "tiers": {
+          "title": "Legends by placement",
+          "hint": "Decks of each legend per tier; the darker the cell, the more the legend weighs in that tier",
+          "top8": "Top 8",
+          "top16": "9th – 16th",
+          "top32": "17th – 32nd",
+          "rest": "33rd and below",
+          "unranked": "No placement",
+          "count": "{count, plural, one {# deck} other {# decks}}"
+        },
+        "cards": {
+          "title": "Cards that made the difference",
+          "hint": "Share of top 8 decks playing the card, compared with the rest of the field",
+          "up": "Played more by the top 8",
+          "down": "Played less by the top 8",
+          "versus": "vs {share}",
+          "none": "Nothing notable."
+        },
+        "decks": {
+          "title": "{count, plural, one {The deck} other {All # decks}}",
+          "filter": "Filter by legend",
+          "all": "All"
+        }
       }
     },
     "nav": {
@@ -838,6 +925,10 @@
       "toolsDecks": {
         "title": "Decks",
         "description": "Browse the lists published by the community and build your own"
+      },
+      "toolsMeta": {
+        "title": "Meta",
+        "description": "The decks that win tournaments: legends, staple cards and the results of each event"
       },
       "toolsQuizz": {
         "title": "Quizzes",

@@ -59,6 +59,7 @@ const GAME_TOOLS: { segment: string; feature: GameFeatureKey; priority: number }
   { segment: "scanner", feature: "cards", priority: 0.3 },
   { segment: "products", feature: "products", priority: 0.5 },
   { segment: "decks", feature: "decks", priority: 0.5 },
+  { segment: "meta", feature: "meta", priority: 0.5 },
 ];
 
 /**

@@ -52,6 +52,7 @@
         "cubes": "Cubes",
         "deckChecker": "Deck-Checker",
         "decks": "Decks",
+        "meta": "Meta",
         "news": "Neuigkeiten",
         "quizz": "Quiz"
       },
@@ -602,7 +603,8 @@
         "staples": "Staples",
         "together": "Zusammen gespielt",
         "sets": "Erweiterungen",
-        "decks": "Decks"
+        "decks": "Decks",
+        "tournaments": "Turniere"
       },
       "filters": {
         "period": "Zeitraum",
@@ -699,6 +701,91 @@
       "decks": {
         "withCard": "{count, plural, one {# Deck spielt} other {# Decks spielen}} „{name}“",
         "clearCard": "Alle Decks"
+      },
+      "tournaments": {
+        "explain": "Ein Turnier fasst die Decks mit gleichem Namen und Datum zusammen. Der gewählte Zeitraum gilt auch hier, die übrigen Filter nicht.",
+        "name": "Turnier",
+        "date": "Datum",
+        "decks": "Decks",
+        "winner": "Sieger",
+        "topLegend": "Meistgespielte Legende",
+        "topDomains": "Führende Domänen",
+        "none": "—"
+      },
+      "tournament": {
+        "metadataTitle": "{source}: {gameName}-Meta",
+        "metadataDescription": "Legenden, Domänen und Karten der {count} Decks vom Turnier {source} ({date}).",
+        "back": "Alle Turniere",
+        "global": "Gesamte Meta",
+        "seeDecks": "Die {count} Decks ansehen",
+        "summary": "{date} · {decks, plural, one {# erfasstes Deck} other {# erfasste Decks}}",
+        "ranked": "Platzierung für {count, plural, one {# Deck} other {# Decks}} erfasst",
+        "noRanking": "keine Platzierungen erfasst",
+        "kpi": {
+          "winner": "Sieger",
+          "noWinner": "Nicht erfasst",
+          "noWinnerHint": "kein Deck auf Platz 1",
+          "topLegend": "Meistgespielte Legende",
+          "topLegendHint": "{decks} von {total} Decks",
+          "topLegendTopHint": "{decks} von {total} Decks, {topCuts} in den Top 8",
+          "topDomain": "Meistgespielte Domäne",
+          "topDomainHint": "in {share} der Decks",
+          "topDomainTopHint": "{share} der Domänenplätze in den Top 8",
+          "legends": "Verschiedene Legenden",
+          "legendsHint": "{count} in den Top 8",
+          "legendsNoTopHint": "bei {decks} Decks"
+        },
+        "legends": {
+          "title": "Verteilung der Legenden",
+          "all": "Ganzes Turnier",
+          "top": "Top 8",
+          "decksUnit": "Decks",
+          "others": "Andere",
+          "detail": "Nach Legende",
+          "conversionHint": "Conversion = Anteil an den Top 8 ÷ Anteil am Turnier",
+          "legend": "Legende",
+          "share": "Anteil am Turnier",
+          "decks": "Decks",
+          "topCuts": "Top 8",
+          "best": "Beste Platzierung",
+          "conversion": "Conversion"
+        },
+        "domains": {
+          "title": "Domänen",
+          "hint": "Jedes Deck zählt für jede seiner Domänen"
+        },
+        "combos": {
+          "title": "Domänengruppen",
+          "hint": "Die genauen Domänen jedes Decks: Paare, aber auch Decks mit einer oder drei Domänen",
+          "none": "Ohne Domäne"
+        },
+        "topCut": {
+          "title": "Top 8",
+          "hint": "Die Decks in den Top 8"
+        },
+        "tiers": {
+          "title": "Legenden nach Platzierung",
+          "hint": "Decks jeder Legende pro Stufe; je dunkler das Feld, desto stärker die Legende in dieser Stufe",
+          "top8": "Top 8",
+          "top16": "9. – 16.",
+          "top32": "17. – 32.",
+          "rest": "Ab Platz 33",
+          "unranked": "Ohne Platzierung",
+          "count": "{count, plural, one {# Deck} other {# Decks}}"
+        },
+        "cards": {
+          "title": "Karten, die den Unterschied machen",
+          "hint": "Anteil der Top-8-Decks mit der Karte, verglichen mit dem Rest des Turniers",
+          "up": "Häufiger in den Top 8",
+          "down": "Seltener in den Top 8",
+          "versus": "vs. {share}",
+          "none": "Nichts Auffälliges."
+        },
+        "decks": {
+          "title": "{count, plural, one {Das Deck} other {Alle # Decks}}",
+          "filter": "Nach Legende filtern",
+          "all": "Alle"
+        }
       }
     },
     "nav": {
@@ -838,6 +925,10 @@
       "toolsDecks": {
         "title": "Decks",
         "description": "Durchstöbere die von der Community veröffentlichten Listen und baue deine eigenen"
+      },
+      "toolsMeta": {
+        "title": "Meta",
+        "description": "Die Decks, die Turniere gewinnen: Legenden, Pflichtkarten und die Ergebnisse jedes Turniers"
       },
       "toolsQuizz": {
         "title": "Quiz",

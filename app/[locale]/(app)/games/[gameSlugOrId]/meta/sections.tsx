@@ -19,6 +19,7 @@ import {
   type StapleGroup,
   type StapleSettings,
 } from "@/lib/meta/stats.ts";
+import { tournamentPath, type TournamentSummary } from "@/lib/meta/tournaments.ts";
 import { cn } from "@/lib/utils.ts";
 
 export type MetaView = {
@@ -845,4 +846,86 @@ export function DecksTab({ view }: { view: MetaView }) {
 function placementRank(placement: string | undefined): number {
   const rank = placement?.match(/\d+/);
   return rank ? Number(rank[0]) : Number.MAX_SAFE_INTEGER;
+}
+
+const TOURNAMENT_COLUMNS = "sm:grid-cols-[minmax(0,1.6fr)_7.5rem_4rem_minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,1fr)]";
+
+/** Les tournois de la période : chacun mène à sa propre méta. */
+export function TournamentsTab({ view, tournaments }: { view: MetaView; tournaments: TournamentSummary[] }) {
+  const { t } = view;
+  const { pct } = formatters(view.locale);
+
+  if (tournaments.length === 0) {
+    return (
+      <p className="rounded-2xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">{t("noMatch")}</p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Panel className="overflow-hidden">
+        <div
+          className={cn(
+            "hidden gap-3 border-b border-border px-5 py-3 text-xs font-medium text-muted-foreground sm:grid",
+            TOURNAMENT_COLUMNS
+          )}
+        >
+          <span>{t("tournaments.name")}</span>
+          <span>{t("tournaments.date")}</span>
+          <span className="text-right">{t("tournaments.decks")}</span>
+          <span>{t("tournaments.winner")}</span>
+          <span>{t("tournaments.topLegend")}</span>
+          <span>{t("tournaments.topDomains")}</span>
+        </div>
+        <ul className="divide-y divide-border">
+          {tournaments.map((tournament) => {
+            const date = DateTime.fromISO(tournament.date, { zone: "utc" }).setLocale(view.locale).toLocaleString(DateTime.DATE_MED);
+            const winner = tournament.winner
+              ? [tournament.winner.legend, tournament.winner.pilot].filter(Boolean).join(" · ")
+              : t("tournaments.none");
+            return (
+              <li key={`${tournament.date}|${tournament.slug}`}>
+                <Link
+                  href={tournamentPath(view.basePath, tournament.source, tournament.date)}
+                  className={cn("grid grid-cols-1 gap-x-3 gap-y-1 px-4 py-3 text-sm hover:bg-muted/50 sm:items-center sm:px-5", TOURNAMENT_COLUMNS)}
+                >
+                  <span className="flex min-w-0 items-center justify-between gap-3">
+                    <span className="truncate font-semibold">{tournament.source}</span>
+                    <ArrowRight className="size-4 shrink-0 text-muted-foreground sm:hidden" aria-hidden />
+                  </span>
+                  <span className="text-muted-foreground sm:text-foreground">
+                    {date}
+                    <span className="sm:hidden"> · {t("tournament.tiers.count", { count: tournament.decks })}</span>
+                  </span>
+                  <span className="hidden text-right font-mono sm:block">{tournament.decks}</span>
+                  <span className="flex min-w-0 items-center gap-2 text-muted-foreground sm:text-foreground">
+                    {tournament.winner && <Thumb src={tournament.winner.image} className="h-8 w-6 object-top" />}
+                    <span className="min-w-0 truncate">
+                      <span className="sm:hidden">{t("tournaments.winner")} : </span>
+                      {winner}
+                    </span>
+                  </span>
+                  <span className="hidden min-w-0 items-center gap-2 sm:flex">
+                    {tournament.topLegend && <Thumb src={tournament.topLegend.image} className="h-8 w-6 object-top" />}
+                    <span className="min-w-0 truncate">
+                      {tournament.topLegend ? `${tournament.topLegend.name} · ${pct(tournament.topLegend.share)}` : t("tournaments.none")}
+                    </span>
+                  </span>
+                  <span className="flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground sm:text-foreground">
+                    {tournament.topDomains.map((domain) => (
+                      <span key={domain.domain} className="inline-flex items-center gap-1.5">
+                        <span className="size-2.5 rounded-full" style={{ background: domainColor(domain.domain) }} aria-hidden />
+                        {domain.domain} {pct(domain.share)}
+                      </span>
+                    ))}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </Panel>
+      <p className="text-sm text-muted-foreground">{t("tournaments.explain")}</p>
+    </div>
+  );
 }

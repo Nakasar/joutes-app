@@ -8,6 +8,7 @@ import { Link, useRouter } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog.tsx";
 import { MetaDeckEditDialog, type EditableMetaDeck } from "@/components/decks/MetaDeckEditDialog.tsx";
+import { tournamentPath } from "@/lib/meta/tournaments.ts";
 import { cn } from "@/lib/utils.ts";
 import { removeMetaBatchAction, removeMetaDeckAction } from "./actions.ts";
 
@@ -36,6 +37,7 @@ export function MetaDeckList({
   totalPages,
   total,
   baseHref,
+  metaPath,
 }: {
   decks: MetaDeckRow[];
   sources: { source: string; decks: number; lastEventDate: string }[];
@@ -46,6 +48,8 @@ export function MetaDeckList({
   totalPages: number;
   total: number;
   baseHref: string;
+  /** La page Méta publique du jeu, d'où partent les pages de tournoi. */
+  metaPath: string;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState<Pending | null>(null);
@@ -124,7 +128,9 @@ export function MetaDeckList({
                 </span>
                 {deck.meta && (
                   <span className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-                    <span>{deck.meta.source}</span>
+                    <Link href={tournamentPath(metaPath, deck.meta.source, deck.meta.eventDate)} className="hover:underline">
+                      {deck.meta.source}
+                    </Link>
                     <span>· {dateFormat.format(new Date(deck.meta.eventDate))}</span>
                     {deck.meta.placement && <span>· {deck.meta.placement}</span>}
                     <span

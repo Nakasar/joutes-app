@@ -83,6 +83,7 @@ export type GameToolKey =
   | "cubes"
   | "deckChecker"
   | "decks"
+  | "meta"
   | "news"
   | "quizz";
 
@@ -117,6 +118,7 @@ export function gameToolLinks(game: NavGame): GameToolLink[] {
   if (features.cubes) tools.push({ key: "cubes", href: `/games/${path}/cubes` });
   if (features.deckChecker) tools.push({ key: "deckChecker", href: `/games/${path}/deck-checker` });
   if (features.decks) tools.push({ key: "decks", href: `/games/${path}/decks` });
+  if (features.meta) tools.push({ key: "meta", href: `/games/${path}/meta` });
   if (features.news) tools.push({ key: "news", href: `/games/${path}/news` });
   if (features.quizz) tools.push({ key: "quizz", href: `/games/${path}/quizz` });
 
