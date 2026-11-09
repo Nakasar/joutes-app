@@ -6,14 +6,15 @@ import type { DeckCards } from "@/lib/decks/contents";
  *
  * Avec une légende qui porte des domaines, ce sont les siens : en Riftbound,
  * la légende fixe les domaines du deck, et le reste du contenu ne fait que
- * s'y ranger. Sans légende, l'union des domaines des cartes jouées.
+ * s'y ranger. Sans légende, l'union des domaines des cartes du deck, réserve
+ * comprise.
  *
- * Ni la réserve (des cartes hors du deck joué) ni les champs de bataille
- * (neutres, souvent marqués « Colorless » au catalogue) n'en ajoutent, et
- * « Colorless » n'est jamais un domaine : c'est l'absence de domaine.
+ * Les champs de bataille (neutres, marqués « Colorless » au catalogue) n'en
+ * ajoutent pas, et « Colorless » n'est jamais un domaine : c'est l'absence de
+ * domaine.
  */
 const COLORLESS_VALUES = new Set(["colorless", "incolore"]);
-const ZONES_WITHOUT_DOMAINS = new Set(["sideboard", "battlefields"]);
+const ZONES_WITHOUT_DOMAINS = new Set(["battlefields"]);
 
 /** Vrai pour un vrai domaine ; faux pour « Colorless » et les valeurs vides. */
 export function isPlayableDomain(domain: string): boolean {

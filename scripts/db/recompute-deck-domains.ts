@@ -2,10 +2,10 @@
  * Recalcule les domaines enregistrés de tous les decks : `npm run decks:domains`.
  *
  * Jusqu'au 2026-11-09, les domaines d'un deck réunissaient ceux de toutes ses
- * cartes, champs de bataille (« Colorless ») et réserve compris : un deck
- * Fury/Order affichait aussi Colorless et Body. La règle est maintenant celle
- * de `lib/decks/domains.ts` : les domaines de la légende, sinon ceux des
- * cartes jouées, sans « Colorless ».
+ * cartes, champs de bataille (« Colorless ») compris : un deck Fury/Order
+ * affichait aussi Colorless. La règle est maintenant celle de
+ * `lib/decks/domains.ts` : les domaines de la légende, sinon ceux des cartes
+ * du deck et de la réserve, sans champs de bataille ni « Colorless ».
  *
  *   npm run decks:domains -- --dry-run   compte ce qui changerait, sans rien écrire
  *
