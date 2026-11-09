@@ -15,6 +15,30 @@ const generateOTP = customAlphabet("0123456789", 6);
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
+ * Le code fixe du compte de vérification des magasins d'applications.
+ *
+ * Apple et Google testent l'application avec un compte qu'on leur confie ; ils
+ * ne lisent pas sa boîte aux lettres, d'où un code qui ne change pas. L'adresse
+ * et le code vivent dans l'environnement (`APP_REVIEW_EMAIL`,
+ * `APP_REVIEW_OTP`), et non dans le code source : un code écrit ici ouvre ce
+ * compte à quiconque lit le dépôt, et y reste dans l'historique. Ils se
+ * changent ainsi sans toucher au code, et il suffit de les retirer pour
+ * fermer la porte entre deux revues.
+ *
+ * Sans les deux variables, il n'y a pas de code fixe — pour personne.
+ */
+function reviewAccountOtp(email: string): string | undefined {
+  const reviewEmail = process.env.APP_REVIEW_EMAIL?.trim().toLowerCase();
+  const reviewOtp = process.env.APP_REVIEW_OTP?.trim();
+
+  if (!reviewEmail || !reviewOtp || !/^\d{6}$/.test(reviewOtp)) {
+    return undefined;
+  }
+
+  return email.trim().toLowerCase() === reviewEmail ? reviewOtp : undefined;
+}
+
+/**
  * Patreon, en fournisseur de **liaison uniquement**.
  *
  * La liste rendue est vide quand la configuration manque — un aperçu sans
@@ -184,14 +208,17 @@ export const auth = betterAuth({
   plugins: [
     jwt(),
     emailOTP({
-      generateOTP({ email, type }) {
-        if (email === 'app.verifier@joutes.app') {
-          return '567234';
-        }
-        return generateOTP();
+      generateOTP({ email }) {
+        return reviewAccountOtp(email) ?? generateOTP();
       },
       async sendVerificationOTP({ email, otp }: { email: string; otp: string }) {
-        if (process.env.RESEND_API_KEY === "CONSOLE" || email === 'app.verifier@joutes.app') {
+        if (reviewAccountOtp(email)) {
+          // Rien à envoyer, et rien à journaliser : le code est connu de ceux
+          // qui doivent le connaître.
+          return;
+        }
+
+        if (process.env.RESEND_API_KEY === "CONSOLE") {
           console.log(`Envoi OTP à ${email}: ${otp}`);
           return;
         }
@@ -244,6 +271,27 @@ export const auth = betterAuth({
       user: { ...user, ...(await accountDecorations(user.id)) },
     })),
   ],
+  /**
+   * Limite de débit tenue **en base**.
+   *
+   * Par défaut, better-auth compte en mémoire : sur un hébergement sans
+   * serveur, chaque instance a son propre compteur, et il suffit de tomber sur
+   * une autre pour repartir de zéro. Or un code à six chiffres ne résiste que
+   * si l'on ne peut pas en essayer beaucoup — et le compte administrateur se
+   * reconnaît à son adresse.
+   *
+   * Les deux règles visent la connexion par code : demander un code (chaque
+   * demande invalide le précédent et envoie un e-mail) et en proposer un.
+   * Elles comptent par adresse IP ; le plafond d'essais par code (trois) reste
+   * celui du greffon.
+   */
+  rateLimit: {
+    storage: "database",
+    customRules: {
+      "/email-otp/send-verification-otp": { window: 60, max: 5 },
+      "/sign-in/email-otp": { window: 60, max: 10 },
+    },
+  },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 jours
     updateAge: 60 * 60 * 24, // 1 jour

@@ -1,6 +1,7 @@
 import 'server-only';
 
 import db from "@/lib/mongodb";
+import { escapeRegex } from "@/lib/utils/regex";
 import { ObjectId, WithId, Document } from "mongodb";
 import { Wishlist, WishlistItem, WishlistOwnerType, WishlistVisibility } from "@/lib/types/Wishlist";
 import { getPlayGroupByIdAndUser, getPlayGroupById, getPlayGroupsForUser } from "@/lib/db/play-groups";
@@ -516,7 +517,7 @@ export async function getWishlistItems(
   const match: Record<string, unknown> = { wishlistId: wishlistObjId };
   if (gameId) match.gameId = new ObjectId(gameId);
   if (type) match.type = type;
-  if (search && search.trim()) match.name = { $regex: search.trim(), $options: "i" };
+  if (search && search.trim()) match.name = { $regex: escapeRegex(search.trim()), $options: "i" };
 
   const collection = db.collection(WISHLIST_ITEMS_COLLECTION);
 

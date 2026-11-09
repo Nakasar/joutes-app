@@ -1,4 +1,5 @@
 import db from "@/lib/mongodb";
+import { escapeRegex } from "@/lib/utils/regex";
 import {
   League,
   CreateLeagueInput,
@@ -460,8 +461,8 @@ export async function searchLeagues(
   // Recherche textuelle
   if (search) {
     filter.$or = [
-      {name: {$regex: search, $options: "i"}},
-      {description: {$regex: search, $options: "i"}},
+      {name: {$regex: escapeRegex(search), $options: "i"}},
+      {description: {$regex: escapeRegex(search), $options: "i"}},
     ];
   }
 

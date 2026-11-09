@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { httpUrl } from "@/lib/schemas/http-url";
 
 import { isDeckCoverImageUrl } from "@/lib/decks/cover";
 import { DECK_ZONE_KEYS } from "@/lib/decks/zones";
@@ -39,7 +40,7 @@ export const deckMatchupSchema = z.object({
 export const deckSchema = z.object({
   name: z.string().min(1, "Le nom du deck est requis").max(100, "Le nom est trop long"),
   gameId: z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du jeu doit être un ObjectId MongoDB valide"),
-  url: z.string().url("L'URL doit être valide").optional().or(z.literal("")),
+  url: httpUrl().optional().or(z.literal("")),
   description: z.string().max(2000, "La description est trop longue").optional(),
   decklist: z.string().max(20000, "La liste de cartes est trop longue").optional(),
   cards: deckCardsSchema.optional(),

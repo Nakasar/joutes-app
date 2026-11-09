@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 import createIntlProxy from 'next-intl/middleware'
 
 import { routing } from '@/i18n/routing'
+import { isCredentialedOrigin } from '@/lib/net/own-origins'
 
 const intlProxy = createIntlProxy(routing);
 
@@ -19,16 +20,26 @@ export function proxy(request: NextRequest) {
     const origin = request.headers.get("origin");
     const res = NextResponse.next();
 
-    // Comportement inchangé, mais écrit tel qu'il s'exécutait vraiment : la
-    // liste d'origines autorisées qui figurait ici n'avait aucun effet, le
-    // proxy ne tournant que sur `/api/` — sa branche de repli y renvoyait déjà
-    // l'origine appelante, quelle qu'elle soit. Toute origine est donc
-    // acceptée sur l'API, aujourd'hui comme hier.
-    if (origin) {
-      res.headers.set("Access-Control-Allow-Origin", origin);
+    // Le cookie de session n'est accordé qu'à nos propres pages et à
+    // l'application mobile (`lib/net/own-origins.ts`). Renvoyer l'origine
+    // appelante quelle qu'elle soit, avec `Allow-Credentials`, laissait
+    // n'importe quel site lire l'API au nom d'un compte connecté dès que le
+    // navigateur joignait le cookie.
+    //
+    // Les autres origines restent servies, sans identifiants : l'API publique
+    // et les clés `jts_…` (en-tête `Authorization`, qui n'est pas un
+    // « identifiant » au sens du CORS) continuent de fonctionner depuis un
+    // site tiers.
+    if (isCredentialedOrigin(origin)) {
+      res.headers.set("Access-Control-Allow-Origin", origin!);
+      res.headers.set("Access-Control-Allow-Credentials", "true");
+    } else if (origin) {
+      res.headers.set("Access-Control-Allow-Origin", "*");
     }
-    res.headers.set("Access-Control-Allow-Credentials", "true");
-    res.headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+    // La réponse dépend de l'origine : un cache partagé ne doit pas servir à
+    // l'une les en-têtes calculés pour l'autre.
+    res.headers.append("Vary", "Origin");
+    res.headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
     res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
     return res;

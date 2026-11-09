@@ -5,6 +5,7 @@ import {
   MARKDOWN_CONTENT_TYPE,
   MARKDOWN_SOURCE_HEADER,
 } from "@/lib/well-known/markdown-negotiation";
+import { isOwnHost } from "@/lib/net/own-origins";
 
 /**
  * La page demandée, rendue puis convertie en markdown.
@@ -41,9 +42,23 @@ export async function GET(
   // interne : ce sont les en-têtes transmis qui disent sous quel nom la page a
   // été demandée, et donc laquelle aller chercher.
   const forwardedHost = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-  const origin = forwardedHost
-    ? `${request.headers.get("x-forwarded-proto") ?? requested.protocol.replace(":", "")}://${forwardedHost}`
-    : requested.origin;
+
+  // Ces en-têtes sont écrits par la plateforme sur Vercel, mais par l'appelant
+  // partout ailleurs : aller chercher la page sur un hôte qu'il choisit ferait
+  // de cette route un relais vers n'importe quelle adresse, interne comprise.
+  // On ne suit donc que nos propres hôtes (`lib/net/own-origins.ts`).
+  if (forwardedHost && !isOwnHost(forwardedHost)) {
+    return new Response("Unknown host", {
+      status: 400,
+      headers: { "Content-Type": "text/plain", Vary: VARY },
+    });
+  }
+
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const protocol = forwardedProto === "http" || forwardedProto === "https"
+    ? forwardedProto
+    : requested.protocol.replace(":", "");
+  const origin = forwardedHost ? `${protocol}://${forwardedHost}` : requested.origin;
   const pathname = `/${(path ?? []).join("/")}`.replace(/\/+$/, "") || "/";
 
   const target = new URL(pathname + requested.search, origin);

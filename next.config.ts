@@ -6,6 +6,33 @@ import { MARKDOWN_NEGOTIATION_EXCLUDED } from "./lib/well-known/markdown-negotia
 
 const withNextIntl = createNextIntlPlugin();
 
+/**
+ * Les en-têtes de sécurité, posés sur toutes les réponses.
+ *
+ * - `frame-ancestors 'self'` (et `X-Frame-Options` pour les navigateurs qui ne
+ *   lisent pas la CSP) : une page Joutes ne s'affiche dans un cadre que sur
+ *   Joutes — l'aperçu des affiches en a besoin. Un site tiers ne peut plus
+ *   l'envelopper pour faire cliquer à l'aveugle un compte connecté.
+ * - `nosniff` : un fichier se lit avec le type que nous annonçons, pas celui
+ *   que le navigateur croit deviner.
+ * - `Referrer-Policy` : un lien sortant n'emporte que notre origine, jamais le
+ *   chemin — qui porte parfois un code d'invitation ou d'échange.
+ * - `Permissions-Policy` : la caméra (scan de cartes, QR) et la position
+ *   (lieux proches) restent ouvertes à nos pages, et à elles seules ; le
+ *   micro et le paiement ne servent pas.
+ *
+ * Pas de `Content-Security-Policy` complète ici : elle demande un nonce par
+ * requête pour les scripts de Next, et se règle à part. HSTS est posé par
+ * l'hébergeur.
+ */
+const SECURITY_HEADERS = [
+  { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), microphone=(), payment=()" },
+];
+
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
@@ -59,6 +86,12 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      {
+        // Sur toutes les réponses : ce que le navigateur doit refuser de faire
+        // avec nos pages, quoi qu'elles contiennent.
+        source: "/:path*",
+        headers: SECURITY_HEADERS,
+      },
       {
         // L'accueil est la porte d'entrée d'un agent : c'est là qu'il faut lui
         // dire où sont l'API, sa description et ses conditions, sans qu'il ait

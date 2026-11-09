@@ -4,6 +4,7 @@ import { authClient } from "@/lib/auth-client.ts";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation.ts";
+import { safeRedirectPath } from "@/lib/navigation/safe-redirect.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Key} from "lucide-react";
 import {useTranslations} from "next-intl";
@@ -73,16 +74,14 @@ function LoginForm({ socialProviders }: { socialProviders: LoginSocialProvider[]
       });
       
       // Rediriger vers l'URL de callback ou vers la page d'accueil
+      // Les trois paramètres viennent de l'adresse, donc de n'importe qui :
+      // seul un chemin interne est suivi (`lib/navigation/safe-redirect.ts`).
       if (callbackUrl) {
-        window.location.href = callbackUrl;
-      } else if (redirect) {
-        router.push(redirect);
-        router.refresh();
-      } else if (from) {
-        router.push(from);
-        router.refresh();
+        // Navigation complète : la cible peut être une route d'API, que le
+        // routeur client ne sait pas ouvrir.
+        window.location.href = safeRedirectPath(callbackUrl);
       } else {
-        router.push("/");
+        router.push(safeRedirectPath(redirect ?? from));
         router.refresh();
       }
     } catch (err) {

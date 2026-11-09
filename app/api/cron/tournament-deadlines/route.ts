@@ -11,6 +11,7 @@ import {
   notifyOrganizersDeadlineReached,
   notifyRoundDeadlineSoon,
 } from "@/lib/tournaments/interval-notifications";
+import { isCronAuthorized } from "@/lib/api/cron";
 
 /**
  * Relance des intervalles de ligue.
@@ -25,7 +26,7 @@ import {
  * supplémentaire. Le cron informe, il n'arbitre pas.
  */
 export async function GET(req: Request) {
-  if (req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

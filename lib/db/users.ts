@@ -130,21 +130,6 @@ export async function createInvitedUserByEmail(
   return toUser({ ...newUser, _id: result.insertedId });
 }
 
-export async function searchUsersByUsername(searchTerm: string): Promise<User[]> {
-  
-  const users = await db
-    .collection(COLLECTION_NAME)
-    .find({
-      $or: [
-        { username: { $regex: searchTerm, $options: "i" } },
-        { displayName: { $regex: searchTerm, $options: "i" } },
-      ],
-    })
-    .limit(10)
-    .toArray();
-  return users.map(toUser);
-}
-
 export async function getUserByUsernameAndDiscriminator(
   displayName: string,
   discriminator: string

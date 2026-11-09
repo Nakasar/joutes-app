@@ -93,11 +93,13 @@ export type DiscordBoard = {
 };
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  // Le corps est lu brut : la signature porte sur les octets reçus. Le
+  // re-sérialiser avant de vérifier ne tenait que tant que `JSON.stringify`
+  // rendait exactement ce que Discord avait écrit.
+  const rawBody = await req.text();
 
   const signature = req.headers.get("x-signature-ed25519");
   const timestamp = req.headers.get("x-signature-timestamp");
-  const rawBody = JSON.stringify(body);
 
   const isValid = await verify(
     rawBody,
@@ -110,6 +112,13 @@ export async function POST(req: Request) {
   if (!isValid) {
     console.warn("Invalid request signature");
     return NextResponse.json({success: false}, {status: 403});
+  }
+
+  let body;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({success: false}, {status: 400});
   }
 
   try {

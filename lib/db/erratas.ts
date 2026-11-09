@@ -1,6 +1,7 @@
 import 'server-only';
 
 import db from "@/lib/mongodb";
+import { escapeRegex } from "@/lib/utils/regex";
 import { getAuthorSummaries } from "@/lib/db/user-badges";
 import {
   Errata,
@@ -195,7 +196,7 @@ async function buildErrataMatchFilter({
   if (search?.trim()) {
     const matchingCards = await db
       .collection("cards")
-      .find({ name: { $regex: search.trim(), $options: "i" } }, { projection: { id: 1 } })
+      .find({ name: { $regex: escapeRegex(search.trim()), $options: "i" } }, { projection: { id: 1 } })
       .toArray();
     const ids = matchingCards.map((c) => c.id);
     // Same legacy `cardId` fallback as getErratasByCardId, see comment there.

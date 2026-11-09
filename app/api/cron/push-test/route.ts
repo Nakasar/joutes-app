@@ -3,6 +3,7 @@ import { isPushEnabled, pushConfig } from "@/lib/push/config";
 import { sendApns } from "@/lib/push/apns";
 import { sendFcm } from "@/lib/push/fcm";
 import { buildApnsPayload, buildFcmMessage } from "@/lib/push/payload";
+import { isCronAuthorized } from "@/lib/api/cron";
 
 /**
  * Envoi d'essai vers un jeton donné.
@@ -26,7 +27,7 @@ import { buildApnsPayload, buildFcmMessage } from "@/lib/push/payload";
 export const maxDuration = 30;
 
 export async function GET(req: Request) {
-  if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

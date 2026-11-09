@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { refreshGameLives } from "@/lib/streams/game-lives";
+import { isCronAuthorized } from "@/lib/api/cron";
 
 /**
  * Les directs des éditeurs, toutes les heures.
@@ -21,12 +22,7 @@ import { refreshGameLives } from "@/lib/streams/game-lives";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
-  // Contrôle de présence en plus de la comparaison : sans lui, un `CRON_SECRET`
-  // non défini ferait comparer à la chaîne littérale « Bearer undefined », que
-  // n'importe qui peut envoyer.
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || req.headers.get("Authorization") !== `Bearer ${cronSecret}`) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

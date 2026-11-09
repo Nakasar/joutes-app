@@ -9,6 +9,7 @@ import {
   weeklyDigestFilter,
   weeklyDigestPush,
 } from "@/lib/notifications/weekly-digest";
+import { isCronAuthorized } from "@/lib/api/cron";
 
 /**
  * Le récapitulatif hebdomadaire, par notification push.
@@ -28,7 +29,7 @@ import {
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
-  if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

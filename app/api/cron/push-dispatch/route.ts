@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { drainPushJobs } from "@/lib/push/dispatch";
 import { getNotificationById } from "@/lib/db/notifications";
+import { isCronAuthorized } from "@/lib/api/cron";
 
 /**
  * Dépilage des fan-outs mis en file.
@@ -19,7 +20,7 @@ import { getNotificationById } from "@/lib/db/notifications";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
-  if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -6,6 +6,7 @@ import { openai } from "@ai-sdk/openai";
 import * as lairsDb from "@/lib/db/lairs";
 import * as eventsDb from "@/lib/db/events";
 import { getAllGames } from "@/lib/db/games";
+import { safeFetch } from "@/lib/net/safe-fetch";
 import { EventSource, EventSourceRefreshResult, Lair, LairEventsRefreshReport } from "@/lib/types/Lair";
 import { Game } from "@/lib/types/Game";
 import {
@@ -265,17 +266,31 @@ async function fetchPage(url: string, fields: Record<string, string> | undefined
   // sert plusieurs villes sur la même adresse rend celle qu'on veut.
   const formFields = source.formFields && Object.keys(source.formFields).length > 0 ? source.formFields : null;
 
-  const response = await fetch(source.url, {
+  // L'adresse a été saisie dans un formulaire et la requête part du serveur :
+  // elle passe par la lecture protégée, qui refuse les adresses privées et
+  // revérifie chaque redirection (`lib/net/safe-fetch.ts`).
+  const result = await safeFetch(parsed, {
     method: formFields ? "POST" : "GET",
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    timeoutMs: FETCH_TIMEOUT_MS,
     headers: {
       "User-Agent": USER_AGENT,
       Accept: accept,
       ...(formFields ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
     },
     ...(formFields ? { body: new URLSearchParams(formFields).toString() } : {}),
-    redirect: "follow",
   });
+
+  if ("failure" in result) {
+    throw new Error(
+      result.failure === "private-address"
+        ? "Cette adresse n'est pas joignable depuis Joutes (adresse privée)"
+        : result.failure === "unreachable"
+          ? "La page ne répond pas"
+          : "Seules les adresses http(s) sont lues",
+    );
+  }
+
+  const response = result.response;
 
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
