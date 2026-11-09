@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Link, useRouter } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog.tsx";
+import { MetaDeckEditDialog, type EditableMetaDeck } from "@/components/decks/MetaDeckEditDialog.tsx";
 import { cn } from "@/lib/utils.ts";
 import { removeMetaBatchAction, removeMetaDeckAction } from "./actions.ts";
 
@@ -18,7 +19,7 @@ type MetaDeckRow = {
   creatorName?: string;
   domains: string[];
   visibility: string;
-  meta?: { imported: boolean; source: string; eventDate: string; placement?: string };
+  meta?: { imported: boolean; source: string; eventDate: string; placement?: string; pilot?: string };
 };
 
 type Pending = { kind: "deck"; deck: MetaDeckRow } | { kind: "batch"; batchId: string; source: string; count: number };
@@ -48,6 +49,7 @@ export function MetaDeckList({
 }) {
   const router = useRouter();
   const [pending, setPending] = useState<Pending | null>(null);
+  const [editing, setEditing] = useState<EditableMetaDeck | null>(null);
   const [busy, startTransition] = useTransition();
 
   const hrefFor = (source?: string, targetPage = 1) =>
@@ -141,15 +143,28 @@ export function MetaDeckList({
                   </span>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-11 shrink-0"
-                aria-label={deck.meta?.imported ? `Supprimer ${deck.name}` : `Retirer ${deck.name} de la méta`}
-                onClick={() => setPending({ kind: "deck", deck })}
-              >
-                <Trash2 aria-hidden />
-              </Button>
+              <div className="-mr-2 flex shrink-0">
+                {deck.meta && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-11"
+                    aria-label={`Modifier ${deck.name}`}
+                    onClick={() => deck.meta && setEditing({ id: deck.id, name: deck.name, meta: deck.meta })}
+                  >
+                    <Pencil aria-hidden />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-11"
+                  aria-label={deck.meta?.imported ? `Supprimer ${deck.name}` : `Retirer ${deck.name} de la méta`}
+                  onClick={() => setPending({ kind: "deck", deck })}
+                >
+                  <Trash2 aria-hidden />
+                </Button>
+              </div>
             </li>
           ))}
         </ul>
@@ -174,6 +189,8 @@ export function MetaDeckList({
           </div>
         </nav>
       )}
+
+      <MetaDeckEditDialog deck={editing} onClose={() => setEditing(null)} />
 
       <ConfirmDialog
         open={pending !== null}

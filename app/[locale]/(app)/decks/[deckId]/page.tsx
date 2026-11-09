@@ -92,6 +92,7 @@ async function DeckPageContent({ params }: { params: Params }) {
   const metaBanner = (
     <MetaDeckBanner
       deckId={deck.id}
+      deckName={deck.name}
       gameId={deck.gameId}
       meta={
         deck.meta
@@ -100,6 +101,7 @@ async function DeckPageContent({ params }: { params: Params }) {
               source: deck.meta.source,
               eventDate: new Date(deck.meta.eventDate).toISOString(),
               placement: deck.meta.placement,
+              pilot: deck.meta.pilot,
             }
           : undefined
       }
