@@ -16,11 +16,28 @@ function periodLabel(days: number): string {
 }
 
 /** Les réglages des statistiques du jeu : seuil des staples, échantillon minimum, période par défaut. */
-export function MetaSettingsForm({ gameId, settings }: { gameId: string; settings: ResolvedMetaSettings }) {
+export function MetaSettingsForm({
+  gameId,
+  settings,
+  sets,
+}: {
+  gameId: string;
+  settings: ResolvedMetaSettings;
+  /** Les extensions du jeu, dans l'ordre de sortie, pour dater leur sortie. */
+  sets: { setCode: string; name: string }[];
+}) {
   const [threshold, setThreshold] = useState(String(Math.round(settings.stapleThreshold * 100)));
   const [minDecks, setMinDecks] = useState(String(settings.minDecksPerDomain));
   const [period, setPeriod] = useState(String(settings.defaultPeriodDays));
+  const [releases, setReleases] = useState<Record<string, string>>(settings.setReleases);
   const [saving, startSaving] = useTransition();
+  // Une extension datée mais absente de la liste connue (code saisi ailleurs) reste visible.
+  const listedSets = [
+    ...sets,
+    ...Object.keys(settings.setReleases)
+      .filter((code) => !sets.some((set) => set.setCode === code))
+      .map((setCode) => ({ setCode, name: setCode })),
+  ];
 
   const periods: number[] = [...new Set<number>([...META_PERIOD_CHOICES, settings.defaultPeriodDays])].sort(
     (a, b) => (a === 0 ? 1 : b === 0 ? -1 : a - b)
@@ -34,6 +51,7 @@ export function MetaSettingsForm({ gameId, settings }: { gameId: string; setting
         stapleThreshold: Number(threshold) / 100,
         minDecksPerDomain: Number(minDecks),
         defaultPeriodDays: Number(period),
+        setReleases: Object.fromEntries(Object.entries(releases).filter(([, day]) => day)),
       });
       if (result.ok) toast.success("Réglages enregistrés.");
       else toast.error(result.error);
@@ -89,6 +107,35 @@ export function MetaSettingsForm({ gameId, settings }: { gameId: string; setting
           </SelectContent>
         </Select>
       </div>
+      {listedSets.length > 0 && (
+        <fieldset className="flex flex-col gap-3 border-t border-border pt-5">
+          <legend className="sr-only">Sorties d&apos;extension</legend>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium">Sorties d&apos;extension</span>
+            <p className="text-sm text-muted-foreground">
+              Les winrates de la méta se comptent par défaut depuis la sortie de la dernière extension, et repartent de zéro à
+              chaque sortie. Une extension sans date n&apos;ouvre pas de période.
+            </p>
+          </div>
+          <ul className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+            {listedSets.map((set) => (
+              <li key={set.setCode} className="flex items-center justify-between gap-3">
+                <Label htmlFor={`release-${set.setCode}`} className="min-w-0 font-normal">
+                  <span className="truncate">{set.name}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{set.setCode}</span>
+                </Label>
+                <Input
+                  id={`release-${set.setCode}`}
+                  type="date"
+                  value={releases[set.setCode] ?? ""}
+                  onChange={(event) => setReleases((previous) => ({ ...previous, [set.setCode]: event.target.value }))}
+                  className="w-40 shrink-0"
+                />
+              </li>
+            ))}
+          </ul>
+        </fieldset>
+      )}
       <div>
         <Button type="submit" disabled={saving}>
           {saving && <Loader2 className="animate-spin" aria-hidden />}

@@ -21,6 +21,7 @@ import { MetaImportTooLargeError, resolveMetaImport } from "@/lib/meta/import";
 import type { MetaImportEntry } from "@/lib/meta/import-input";
 import { LOCATOR_BATCH_SIZE, LOCATOR_DECK_ID, locatorEventUrl, parseLocatorEventId, type LocatorEvent, type LocatorStanding } from "@/lib/meta/locator";
 import { fetchLocatorEvent, fetchLocatorStandings, LocatorError } from "@/lib/meta/locator-api";
+import { importLocatorMatches } from "@/lib/meta/locator-matches";
 import { metaCacheTag } from "@/lib/meta/cache";
 import { META_DECKS_PERMISSION } from "@/lib/meta/permissions";
 import { DEFAULT_META_SETTINGS, resolveMetaSettings, type GameMetaSettings, type ResolvedMetaSettings } from "@/lib/meta/settings";
@@ -249,6 +250,51 @@ export async function importLocatorDecksAction(
   return { ok: true, created: result.created.length, batchId: result.batchId, rows: toPublicRows(result.rows) };
 }
 
+const locatorMatchesSchema = z.object({
+  gameId: z.string().min(1),
+  /** Le lien de l'évènement, ou son numéro. */
+  event: z.union([z.number().int().positive(), z.string().min(1)]),
+  source: z.string().trim().min(1, "Indiquez le nom du tournoi.").max(80),
+  eventDate: z.coerce.date(),
+});
+
+/**
+ * Importe les joueurs et les matchs d'un tournoi du locator, pour ses
+ * winrates. Remplace ceux d'un import précédent du même évènement.
+ */
+export async function importLocatorMatchesAction(
+  values: z.input<typeof locatorMatchesSchema>
+): Promise<ActionResult<{ players: number; matches: number }>> {
+  const session = await requireMetaManager();
+  if (!session) return { ok: false, error: "Accès refusé." };
+
+  const parsed = locatorMatchesSchema.safeParse(values);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Données invalides." };
+  if (Number.isNaN(parsed.data.eventDate.getTime())) return { ok: false, error: "Date du tournoi invalide." };
+
+  const game = await getGameBySlugOrId(parsed.data.gameId);
+  if (!game) return { ok: false, error: "Jeu introuvable." };
+  if (!LOCATOR_GAME_SLUGS.has(game.slug ?? "")) return { ok: false, error: "Le locator ne vaut que pour Riftbound." };
+
+  const eventId = typeof parsed.data.event === "number" ? parsed.data.event : parseLocatorEventId(parsed.data.event);
+  if (!eventId) return { ok: false, error: "Lien d'évènement du locator non reconnu." };
+
+  try {
+    const result = await importLocatorMatches({
+      game,
+      eventId,
+      source: parsed.data.source,
+      eventDate: parsed.data.eventDate,
+      userId: session.user.id,
+    });
+    refreshMeta(game.id);
+    return { ok: true, ...result };
+  } catch (error) {
+    if (error instanceof LocatorError) return { ok: false, error: `${error.message} Aucun match n'a été enregistré.` };
+    throw error;
+  }
+}
+
 /** Retire un deck de la méta : supprimé s'il a été importé, démarqué sinon. */
 export async function removeMetaDeckAction(deckId: string): Promise<ActionResult<{ deleted: boolean }>> {
   if (!(await requireMetaManager())) return { ok: false, error: "Accès refusé." };
@@ -328,6 +374,8 @@ const settingsSchema = z.object({
   stapleThreshold: z.coerce.number().min(0.05).max(1),
   minDecksPerDomain: z.coerce.number().int().min(1).max(10_000),
   defaultPeriodDays: z.coerce.number().int().min(0).max(3650),
+  /** La sortie de chaque extension ; une date vide retire l'extension. */
+  setReleases: z.record(z.string(), z.string()).optional(),
 });
 
 /** Enregistre les réglages des statistiques d'un jeu. */
@@ -346,7 +394,9 @@ export async function saveMetaSettingsAction(values: z.input<typeof settingsSche
   const resolved = resolveMetaSettings(settings);
   const overrides = Object.fromEntries(
     (Object.keys(resolved) as (keyof ResolvedMetaSettings)[])
-      .filter((key) => resolved[key] !== DEFAULT_META_SETTINGS[key])
+      .filter((key) =>
+        key === "setReleases" ? Object.keys(resolved.setReleases).length > 0 : resolved[key] !== DEFAULT_META_SETTINGS[key]
+      )
       .map((key) => [key, resolved[key]])
   ) as GameMetaSettings;
   await setGameMetaSettings(game.id, Object.keys(overrides).length > 0 ? overrides : null);

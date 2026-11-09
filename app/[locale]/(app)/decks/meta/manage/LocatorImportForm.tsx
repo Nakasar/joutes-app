@@ -16,6 +16,7 @@ import { tournamentPath } from "@/lib/meta/tournaments.ts";
 import { cn } from "@/lib/utils.ts";
 import {
   importLocatorDecksAction,
+  importLocatorMatchesAction,
   previewLocatorDecksAction,
   readLocatorEventAction,
   removeMetaBatchAction,
@@ -53,6 +54,12 @@ type Progress = {
   failed: { standing: LocatorStanding; note: string }[];
   finished: boolean;
 };
+
+/** L'import des joueurs et des matchs, à côté de celui des decks. */
+type MatchesImport =
+  | { status: "loading" }
+  | { status: "done"; players: number; matches: number }
+  | { status: "error"; error: string };
 
 function chunk<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
@@ -115,6 +122,8 @@ export function LocatorImportForm({
   const [progress, setProgress] = useState<Progress | null>(null);
   const [reading, startReading] = useTransition();
   const [checking, setChecking] = useState(false);
+  const [withMatches, setWithMatches] = useState(true);
+  const [matchesImport, setMatchesImport] = useState<MatchesImport | null>(null);
   // Un aperçu relancé rend caduc celui en cours : seul le dernier écrit ses résultats.
   const previewRun = useRef(0);
 
@@ -126,7 +135,18 @@ export function LocatorImportForm({
     setProgress(null);
     setSelected(new Set());
     setError(null);
+    setMatchesImport(null);
     setUrl("");
+  };
+
+  const importMatches = async () => {
+    if (!event) return;
+    setMatchesImport({ status: "loading" });
+    const result = await importLocatorMatchesAction({ gameId, event: event.id, source, eventDate });
+    setMatchesImport(
+      result.ok ? { status: "done", players: result.players, matches: result.matches } : { status: "error", error: result.error }
+    );
+    if (result.ok) router.refresh();
   };
 
   const readEvent = () =>
@@ -134,6 +154,7 @@ export function LocatorImportForm({
       setError(null);
       setPreview(null);
       setProgress(null);
+      setMatchesImport(null);
       const result = await readLocatorEventAction({ gameId, url });
       if (!result.ok) {
         setEvent(null);
@@ -256,9 +277,35 @@ export function LocatorImportForm({
     router.refresh();
   };
 
-  const startImport = () => {
+  const matchesSummary = matchesImport && (
+    <div aria-live="polite" className="text-sm">
+      {matchesImport.status === "loading" && (
+        <span className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" aria-hidden />
+          Lecture des matchs de chaque ronde…
+        </span>
+      )}
+      {matchesImport.status === "done" && (
+        <span>
+          {plural(matchesImport.matches, "match importé", "matchs importés")} entre{" "}
+          {plural(matchesImport.players, "joueur")} : les winrates du tournoi sont à jour.
+        </span>
+      )}
+      {matchesImport.status === "error" && (
+        <span className="text-destructive">
+          {matchesImport.error}{" "}
+          <Button variant="link" className="h-auto p-0" onClick={() => void importMatches()}>
+            Réessayer
+          </Button>
+        </span>
+      )}
+    </div>
+  );
+
+  const startImport = async () => {
     setError(null);
-    void runImport(toImport.map((row) => row.standing));
+    await runImport(toImport.map((row) => row.standing));
+    if (withMatches) await importMatches();
   };
 
   const undo = async () => {
@@ -332,6 +379,7 @@ export function LocatorImportForm({
                 <span className={cn("rounded-full px-2.5 py-0.5", STATE.absent.className)}>{leftAside} laissés de côté</span>
               )}
             </div>
+            {matchesSummary}
             {progress.failed.length > 0 && (
               <ul className="flex flex-col gap-1 text-sm">
                 {progress.failed.map(({ standing, note }) => (
@@ -498,6 +546,24 @@ export function LocatorImportForm({
               </Button>
             )}
           </div>
+
+          <div className="flex flex-col gap-2 border-t border-border pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm text-muted-foreground">
+                Decks déjà importés ? Les matchs seuls complètent le tournoi, pour ses winrates et ses matchups.
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={matchesImport?.status === "loading" || !source.trim() || !eventDate}
+                onClick={() => void importMatches()}
+              >
+                Importer seulement les matchs
+              </Button>
+            </div>
+            {matchesSummary}
+          </div>
         </section>
       )}
 
@@ -634,13 +700,22 @@ export function LocatorImportForm({
               Publiés en decks publics, étiquetés « Méta · {source.trim()} ». Les lignes décochées, déjà importées ou sans
               liste sont laissées de côté.
             </p>
+            <label className="flex w-full items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={withMatches}
+                onChange={(change) => setWithMatches(change.target.checked)}
+              />
+              Importer aussi les matchs de tous les joueurs, pour les winrates
+            </label>
             <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap">
               <Button variant="ghost" className="flex-1 sm:flex-none" onClick={reset}>
                 Annuler
               </Button>
               <Button
                 className="flex-1 sm:flex-none"
-                onClick={startImport}
+                onClick={() => void startImport()}
                 disabled={checking || toImport.length === 0 || !source.trim() || !eventDate}
               >
                 {toImport.length > 1 ? `Importer ${toImport.length} decks` : toImport.length === 1 ? "Importer 1 deck" : "Rien à importer"}

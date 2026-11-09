@@ -604,7 +604,8 @@
         "together": "Jouées ensemble",
         "sets": "Extensions",
         "decks": "Decks",
-        "tournaments": "Tournois"
+        "tournaments": "Tournois",
+        "winrates": "Winrates"
       },
       "filters": {
         "period": "Période",
@@ -785,6 +786,118 @@
           "title": "{count, plural, one {Le deck} other {Les # decks}}",
           "filter": "Filtrer par légende",
           "all": "Toutes"
+        }
+      },
+      "matches": {
+        "summary": "{players, plural, one {# joueur} other {# joueurs}} · {rounds, plural, one {# ronde} other {# rondes}} · {matches, plural, one {# match} other {# matchs}}",
+        "tabs": {
+          "label": "Vues du tournoi",
+          "decks": "Decks et légendes",
+          "matchs": "Matchs et winrates",
+          "classement": "Classement"
+        },
+        "phase": {
+          "label": "Phases comptées",
+          "swiss": "Rondes suisses",
+          "withTop": "Avec le top 8"
+        },
+        "kpi": {
+          "bestLegend": "Meilleur winrate",
+          "bestLegendHint": "sur {matches} matchs, miroirs exclus",
+          "lopsided": "Matchup le plus déséquilibré",
+          "lopsidedHint": "{matches} matchs",
+          "bestDomain": "Domaine le plus gagnant",
+          "bestDomainHint": "sur {matches} matchs",
+          "draws": "Nuls",
+          "drawsHint": "{draws, plural, one {# match} other {# matchs}} · {byes, plural, one {# bye exclu} other {# byes exclus}}",
+          "noRate": "Rien n'atteint encore {min} matchs"
+        },
+        "legends": {
+          "title": "Winrate par légende",
+          "legend": "Légende",
+          "players": "Joueurs",
+          "matches": "Matchs",
+          "record": "V-D-N",
+          "rate": "Winrate",
+          "top8": "Top 8",
+          "few": "peu de matchs",
+          "mobileCounts": "{players} j. · {matches} m.",
+          "hint": "Nul compté ½ victoire, byes exclus, miroirs exclus. Le trait marque 50 %. Grisé : moins de {min} matchs.",
+          "unknown": "{count, plural, one {# joueur sans légende connue ne compte pas.} other {# joueurs sans légende connue ne comptent pas.}}"
+        },
+        "domains": {
+          "title": "Winrate par domaine",
+          "rate": "{rate} · {matches} matchs",
+          "hint": "Un deck compte pour chacun de ses domaines ; deux decks du même domaine qui s'affrontent ne comptent pas pour lui."
+        },
+        "matchups": {
+          "title": "Matchups",
+          "hint": "Winrate de la ligne contre la colonne · nombre de matchs en petit",
+          "against": "Contre →",
+          "mirror": "miroir",
+          "short": "{count} m.",
+          "unfavorable": "Défavorable",
+          "favorable": "Favorable",
+          "few": "Case pâle : moins de {min} matchs",
+          "more": "Les {count} légendes les plus jouées ; les autres sont dans le tableau des winrates.",
+          "pick": "Légende",
+          "versus": "contre"
+        },
+        "faced": {
+          "title": "Ce qu'a affronté le top {count}",
+          "hint": "{matches} matchs des {players} premiers, sur tout le tournoi",
+          "legends": "Légendes rencontrées",
+          "wins": "Victoires",
+          "losses": "Défaites",
+          "draws": "Nuls",
+          "record": "{matches} · {record}",
+          "rounds": "Ronde par ronde",
+          "roundsHint": "Une case par ronde : la légende adverse, soulignée en bleu pour une victoire, en orange pour une défaite, en gris pour un nul."
+        },
+        "standings": {
+          "title": "Classement",
+          "hint": "{count, plural, one {# joueur} other {# joueurs}}, pseudos tels que le locator les publie. Chaque ligne mène au parcours du joueur.",
+          "place": "{place, selectordinal, one {#er} other {#e}}"
+        },
+        "player": {
+          "back": "Classement",
+          "metadataTitle": "{player} · {source} · Méta {gameName}",
+          "noPlace": "Non classé",
+          "rounds": "Ses rondes",
+          "roundShort": "R{round}",
+          "topRound": "Top · R{round}",
+          "bye": "Bye",
+          "byeShort": "BYE",
+          "unknownLegend": "Légende inconnue",
+          "faced": "Légendes affrontées",
+          "seeDeck": "Voir son deck",
+          "results": {
+            "W": "Victoire",
+            "L": "Défaite",
+            "D": "Nul",
+            "BYE": "Bye"
+          }
+        },
+        "winrates": {
+          "modes": {
+            "label": "Période des winrates",
+            "set": "Par extension",
+            "all": "Absolu",
+            "dates": "Dates choisies"
+          },
+          "sets": "Extensions",
+          "sinceShort": "depuis le {from}",
+          "noReleases": "Aucune date de sortie d'extension n'est réglée : les winrates portent sur tout l'historique.",
+          "from": "Du",
+          "to": "Au",
+          "apply": "Afficher",
+          "between": "Du {from} au {to}",
+          "since": "Depuis le {from}",
+          "until": "Jusqu'au {to}",
+          "allTime": "Depuis le premier tournoi",
+          "summary": "{events, plural, one {# tournoi} other {# tournois}} · {matches, plural, one {# match} other {# matchs}}",
+          "empty": "Aucun tournoi importé avec ses matchs sur cette période.",
+          "events": "{count, plural, one {Le tournoi compté} other {Les # tournois comptés}}"
         }
       }
     },

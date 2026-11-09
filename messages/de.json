@@ -604,7 +604,8 @@
         "together": "Zusammen gespielt",
         "sets": "Erweiterungen",
         "decks": "Decks",
-        "tournaments": "Turniere"
+        "tournaments": "Turniere",
+        "winrates": "Siegquoten"
       },
       "filters": {
         "period": "Zeitraum",
@@ -785,6 +786,118 @@
           "title": "{count, plural, one {Das Deck} other {Alle # Decks}}",
           "filter": "Nach Legende filtern",
           "all": "Alle"
+        }
+      },
+      "matches": {
+        "summary": "{players, plural, one {# Spieler} other {# Spieler}} · {rounds, plural, one {# Runde} other {# Runden}} · {matches, plural, one {# Match} other {# Matches}}",
+        "tabs": {
+          "label": "Turnieransichten",
+          "decks": "Decks und Legenden",
+          "matchs": "Matches und Siegquoten",
+          "classement": "Rangliste"
+        },
+        "phase": {
+          "label": "Gezählte Phasen",
+          "swiss": "Schweizer Runden",
+          "withTop": "Mit Top 8"
+        },
+        "kpi": {
+          "bestLegend": "Beste Siegquote",
+          "bestLegendHint": "aus {matches} Matches, ohne Spiegelmatches",
+          "lopsided": "Einseitigstes Matchup",
+          "lopsidedHint": "{matches} Matches",
+          "bestDomain": "Erfolgreichste Domäne",
+          "bestDomainHint": "aus {matches} Matches",
+          "draws": "Unentschieden",
+          "drawsHint": "{draws, plural, one {# Match} other {# Matches}} · {byes, plural, one {# Freilos ausgenommen} other {# Freilose ausgenommen}}",
+          "noRate": "Noch nichts erreicht {min} Matches"
+        },
+        "legends": {
+          "title": "Siegquote nach Legende",
+          "legend": "Legende",
+          "players": "Spieler",
+          "matches": "Matches",
+          "record": "S-N-U",
+          "rate": "Siegquote",
+          "top8": "Top 8",
+          "few": "wenige Matches",
+          "mobileCounts": "{players} Sp. · {matches} M.",
+          "hint": "Unentschieden zählt als ½ Sieg, ohne Freilose und Spiegelmatches. Die Linie markiert 50 %. Ausgegraut: weniger als {min} Matches.",
+          "unknown": "{count, plural, one {# Spieler ohne bekannte Legende zählt nicht.} other {# Spieler ohne bekannte Legende zählen nicht.}}"
+        },
+        "domains": {
+          "title": "Siegquote nach Domäne",
+          "rate": "{rate} · {matches} Matches",
+          "hint": "Ein Deck zählt für jede seiner Domänen; treffen zwei Decks derselben Domäne aufeinander, zählt das für sie nicht."
+        },
+        "matchups": {
+          "title": "Matchups",
+          "hint": "Siegquote der Zeile gegen die Spalte · Anzahl der Matches klein",
+          "against": "Gegen →",
+          "mirror": "Spiegel",
+          "short": "{count} M.",
+          "unfavorable": "Ungünstig",
+          "favorable": "Günstig",
+          "few": "Blasses Feld: weniger als {min} Matches",
+          "more": "Die {count} meistgespielten Legenden; die anderen stehen in der Siegquoten-Tabelle.",
+          "pick": "Legende",
+          "versus": "gegen"
+        },
+        "faced": {
+          "title": "Gegen wen die Top {count} spielten",
+          "hint": "{matches} Matches der ersten {players}, über das ganze Turnier",
+          "legends": "Getroffene Legenden",
+          "wins": "Siege",
+          "losses": "Niederlagen",
+          "draws": "Unentschieden",
+          "record": "{matches} · {record}",
+          "rounds": "Runde für Runde",
+          "roundsHint": "Ein Feld pro Runde: die gegnerische Legende, blau unterstrichen bei Sieg, orange bei Niederlage, grau bei Unentschieden."
+        },
+        "standings": {
+          "title": "Rangliste",
+          "hint": "{count, plural, one {# Spieler} other {# Spieler}}, Namen wie im Locator veröffentlicht. Jede Zeile führt zum Turnierverlauf des Spielers.",
+          "place": "{place}."
+        },
+        "player": {
+          "back": "Rangliste",
+          "metadataTitle": "{player} · {source} · Meta {gameName}",
+          "noPlace": "Ohne Platzierung",
+          "rounds": "Runden",
+          "roundShort": "R{round}",
+          "topRound": "Top · R{round}",
+          "bye": "Freilos",
+          "byeShort": "FREI",
+          "unknownLegend": "Unbekannte Legende",
+          "faced": "Getroffene Legenden",
+          "seeDeck": "Deck ansehen",
+          "results": {
+            "W": "Sieg",
+            "L": "Niederlage",
+            "D": "Unentschieden",
+            "BYE": "Freilos"
+          }
+        },
+        "winrates": {
+          "modes": {
+            "label": "Zeitraum der Siegquoten",
+            "set": "Nach Erweiterung",
+            "all": "Gesamt",
+            "dates": "Eigene Daten"
+          },
+          "sets": "Erweiterungen",
+          "sinceShort": "seit {from}",
+          "noReleases": "Keine Erscheinungsdaten eingestellt: Die Siegquoten umfassen die gesamte Historie.",
+          "from": "Von",
+          "to": "Bis",
+          "apply": "Anzeigen",
+          "between": "Vom {from} bis {to}",
+          "since": "Seit {from}",
+          "until": "Bis {to}",
+          "allTime": "Seit dem ersten Turnier",
+          "summary": "{events, plural, one {# Turnier} other {# Turniere}} · {matches, plural, one {# Match} other {# Matches}}",
+          "empty": "Kein Turnier mit Matches in diesem Zeitraum importiert.",
+          "events": "{count, plural, one {Das gezählte Turnier} other {Die # gezählten Turniere}}"
         }
       }
     },

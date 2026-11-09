@@ -604,7 +604,8 @@
         "together": "Played together",
         "sets": "Sets",
         "decks": "Decks",
-        "tournaments": "Tournaments"
+        "tournaments": "Tournaments",
+        "winrates": "Win rates"
       },
       "filters": {
         "period": "Period",
@@ -785,6 +786,118 @@
           "title": "{count, plural, one {The deck} other {All # decks}}",
           "filter": "Filter by legend",
           "all": "All"
+        }
+      },
+      "matches": {
+        "summary": "{players, plural, one {# player} other {# players}} · {rounds, plural, one {# round} other {# rounds}} · {matches, plural, one {# match} other {# matches}}",
+        "tabs": {
+          "label": "Tournament views",
+          "decks": "Decks and legends",
+          "matchs": "Matches and win rates",
+          "classement": "Standings"
+        },
+        "phase": {
+          "label": "Phases counted",
+          "swiss": "Swiss rounds",
+          "withTop": "With the top 8"
+        },
+        "kpi": {
+          "bestLegend": "Best win rate",
+          "bestLegendHint": "over {matches} matches, mirrors excluded",
+          "lopsided": "Most lopsided matchup",
+          "lopsidedHint": "{matches} matches",
+          "bestDomain": "Best domain",
+          "bestDomainHint": "over {matches} matches",
+          "draws": "Draws",
+          "drawsHint": "{draws, plural, one {# match} other {# matches}} · {byes, plural, one {# bye excluded} other {# byes excluded}}",
+          "noRate": "Nothing has {min} matches yet"
+        },
+        "legends": {
+          "title": "Win rate by legend",
+          "legend": "Legend",
+          "players": "Players",
+          "matches": "Matches",
+          "record": "W-L-D",
+          "rate": "Win rate",
+          "top8": "Top 8",
+          "few": "few matches",
+          "mobileCounts": "{players} pl. · {matches} m.",
+          "hint": "A draw counts as ½ win, byes and mirrors excluded. The line marks 50%. Greyed out: fewer than {min} matches.",
+          "unknown": "{count, plural, one {# player with no known legend is not counted.} other {# players with no known legend are not counted.}}"
+        },
+        "domains": {
+          "title": "Win rate by domain",
+          "rate": "{rate} · {matches} matches",
+          "hint": "A deck counts for each of its domains; two decks sharing a domain don't count for it when they meet."
+        },
+        "matchups": {
+          "title": "Matchups",
+          "hint": "Win rate of the row against the column · number of matches in small print",
+          "against": "Against →",
+          "mirror": "mirror",
+          "short": "{count} m.",
+          "unfavorable": "Unfavorable",
+          "favorable": "Favorable",
+          "few": "Pale cell: fewer than {min} matches",
+          "more": "The {count} most played legends; the others are in the win rate table.",
+          "pick": "Legend",
+          "versus": "vs"
+        },
+        "faced": {
+          "title": "What the top {count} faced",
+          "hint": "{matches} matches of the top {players}, across the whole tournament",
+          "legends": "Legends faced",
+          "wins": "Wins",
+          "losses": "Losses",
+          "draws": "Draws",
+          "record": "{matches} · {record}",
+          "rounds": "Round by round",
+          "roundsHint": "One cell per round: the opposing legend, underlined in blue for a win, orange for a loss, grey for a draw."
+        },
+        "standings": {
+          "title": "Standings",
+          "hint": "{count, plural, one {# player} other {# players}}, names as the locator publishes them. Each row opens the player's run.",
+          "place": "{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
+        },
+        "player": {
+          "back": "Standings",
+          "metadataTitle": "{player} · {source} · {gameName} meta",
+          "noPlace": "Unranked",
+          "rounds": "Rounds",
+          "roundShort": "R{round}",
+          "topRound": "Top · R{round}",
+          "bye": "Bye",
+          "byeShort": "BYE",
+          "unknownLegend": "Unknown legend",
+          "faced": "Legends faced",
+          "seeDeck": "See the deck",
+          "results": {
+            "W": "Win",
+            "L": "Loss",
+            "D": "Draw",
+            "BYE": "Bye"
+          }
+        },
+        "winrates": {
+          "modes": {
+            "label": "Win rate period",
+            "set": "By set",
+            "all": "All time",
+            "dates": "Custom dates"
+          },
+          "sets": "Sets",
+          "sinceShort": "since {from}",
+          "noReleases": "No set release date is configured: win rates cover the whole history.",
+          "from": "From",
+          "to": "To",
+          "apply": "Show",
+          "between": "From {from} to {to}",
+          "since": "Since {from}",
+          "until": "Until {to}",
+          "allTime": "Since the first tournament",
+          "summary": "{events, plural, one {# tournament} other {# tournaments}} · {matches, plural, one {# match} other {# matches}}",
+          "empty": "No tournament imported with its matches in this period.",
+          "events": "{count, plural, one {The tournament counted} other {The # tournaments counted}}"
         }
       }
     },

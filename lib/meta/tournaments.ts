@@ -45,6 +45,11 @@ export function findTournamentDecks(decks: MetaSampleDeck[], date: string, slug:
   return decks.filter((deck) => tournamentDate(deck.eventDate) === date && tournamentSlug(deck.source) === slug);
 }
 
+/** Les matchs importés d'un tournoi, retrouvés comme ses decks. */
+export function findTournamentMatches<T extends { source: string; eventDate: string }>(events: T[], date: string, slug: string): T | undefined {
+  return events.find((event) => tournamentDate(event.eventDate) === date && tournamentSlug(event.source) === slug);
+}
+
 /** Le rang lu dans un classement : « 3e-4e » donne 3, « Top 8 » donne 8 ; rien sans nombre. */
 export function placementRank(placement: string | undefined): number | undefined {
   if (!placement) return undefined;
