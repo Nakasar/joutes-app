@@ -56,7 +56,9 @@ export async function loadMetaSample(gameId: string, gameSlug?: string): Promise
     )
     .toArray();
 
-  const decks: MetaSampleDeck[] = docs.map((doc) => ({
+  // Un deck sans date de tournoi lisible n'a pas sa place dans une période : on l'écarte.
+  const dated = docs.filter((doc) => !Number.isNaN(new Date(doc.meta?.eventDate as Date).getTime()));
+  const decks: MetaSampleDeck[] = dated.map((doc) => ({
     id: doc._id.toString(),
     name: doc.name,
     ...(doc.legendCardId ? { legendCardId: doc.legendCardId } : {}),

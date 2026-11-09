@@ -48,7 +48,7 @@ export function MetaFilters({
         </SelectContent>
       </Select>
 
-      {sources.length > 1 && (
+      {(sources.length > 1 || state.source) && (
         <Select value={state.source ?? ALL} onValueChange={(value) => go({ source: value === ALL ? undefined : value })}>
           <SelectTrigger className="w-[13rem] max-w-full" aria-label={t("source")}>
             <SelectValue />
@@ -64,7 +64,7 @@ export function MetaFilters({
         </Select>
       )}
 
-      {legends.length > 1 && (
+      {(legends.length > 1 || state.legend) && (
         <Select value={state.legend ?? ALL} onValueChange={(value) => go({ legend: value === ALL ? undefined : value })}>
           <SelectTrigger className="w-[13rem] max-w-full" aria-label={t("legend")}>
             <SelectValue />
@@ -80,7 +80,7 @@ export function MetaFilters({
         </Select>
       )}
 
-      {domains.length > 1 && (
+      {(domains.length > 1 || state.domain) && (
         <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("domain")}>
           {domains.map((domain) => {
             const active = state.domain === domain;

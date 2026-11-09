@@ -37,17 +37,22 @@ export function periodChoices(settings: ResolvedMetaSettings): number[] {
   );
 }
 
+/** Un seuil en pourcentage, au dixième : 0,625 donne 62,5. */
+export function thresholdPercent(threshold: number): number {
+  return Math.round(threshold * 1000) / 10;
+}
+
 /** Les seuils proposés, en pourcentage : les choix habituels, plus celui du jeu. */
 export function thresholdChoices(settings: ResolvedMetaSettings): number[] {
-  return [...new Set<number>([...STAPLE_THRESHOLD_CHOICES, settings.stapleThreshold].map((value) => Math.round(value * 100)))].sort(
-    (a, b) => a - b
-  );
+  return [...new Set<number>([...STAPLE_THRESHOLD_CHOICES, settings.stapleThreshold].map(thresholdPercent))].sort((a, b) => a - b);
 }
 
 export function parseMetaPageParams(raw: RawParams, settings: ResolvedMetaSettings): MetaPageState {
   const tab = first(raw.tab);
   const period = Number(first(raw.period));
   const threshold = Number(first(raw.seuil));
+  // Le seuil du jeu garde sa valeur exacte, même affiché arrondi.
+  const gameThreshold = thresholdPercent(settings.stapleThreshold);
   const page = Number(first(raw.page));
 
   return {
@@ -56,7 +61,8 @@ export function parseMetaPageParams(raw: RawParams, settings: ResolvedMetaSettin
     source: first(raw.source),
     legend: first(raw.legend),
     domain: first(raw.domain),
-    threshold: thresholdChoices(settings).includes(threshold) ? threshold / 100 : settings.stapleThreshold,
+    threshold:
+      thresholdChoices(settings).includes(threshold) && threshold !== gameThreshold ? threshold / 100 : settings.stapleThreshold,
     card: first(raw.card),
     type: first(raw.type),
     page: Number.isInteger(page) && page > 1 ? page : 1,
@@ -80,7 +86,9 @@ export function metaHref(
   if (next.source) params.set("source", next.source);
   if (next.legend) params.set("legend", next.legend);
   if (next.domain) params.set("domain", next.domain);
-  if (next.threshold !== settings.stapleThreshold) params.set("seuil", String(Math.round(next.threshold * 100)));
+  if (thresholdPercent(next.threshold) !== thresholdPercent(settings.stapleThreshold)) {
+    params.set("seuil", String(thresholdPercent(next.threshold)));
+  }
   if (next.card) params.set("card", next.card);
   if (next.type) params.set("type", next.type);
   if (next.page > 1) params.set("page", String(next.page));

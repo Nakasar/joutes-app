@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ChartLine } from "lucide-react";
+import { DateTime } from "luxon";
 
 import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -23,6 +24,7 @@ import {
   filterMetaDecks,
   isStaple,
   legendKey,
+  legendLabel,
 } from "@/lib/meta/stats.ts";
 import { cn } from "@/lib/utils.ts";
 import { MetaFilters } from "./MetaFilters.tsx";
@@ -140,13 +142,22 @@ async function MetaContent({ params, searchParams }: MetaPageProps) {
   const stapleSettings = { threshold: state.threshold, minDecks: settings.minDecksPerDomain };
   const staples = stats.filter((stat) => isStaple(stat, stapleSettings));
 
-  const sources = countBy(inPeriod.map((deck) => deck.source)).map(([value, count]) => ({ value, decks: count }));
-  const legends = countBy(inPeriod.map(legendKey).filter(Boolean)).map(([value, count]) => {
-    const deck = inPeriod.find((candidate) => legendKey(candidate) === value);
-    const label = (deck?.legendCardId && sample.cards[deck.legendCardId]?.name) || deck?.legendName || value;
-    return { value, label, decks: count };
-  });
-  const domains = countBy(inPeriod.flatMap((deck) => deck.domains)).map(([value]) => value);
+  const legendLabels = new Map<string, string>();
+  for (const deck of sample.decks) {
+    const key = legendKey(deck);
+    if (key && !legendLabels.has(key)) legendLabels.set(key, legendLabel(deck, sample.cards) ?? key);
+  }
+  // Un filtre posé reste dans sa liste même si la période n'en a plus de deck : sinon on ne pourrait plus le retirer.
+  const sources = withSelected(countBy(inPeriod.map((deck) => deck.source)), state.source).map(([value, count]) => ({
+    value,
+    decks: count,
+  }));
+  const legends = withSelected(countBy(inPeriod.map(legendKey).filter(Boolean)), state.legend).map(([value, count]) => ({
+    value,
+    label: legendLabels.get(value) ?? value,
+    decks: count,
+  }));
+  const domains = withSelected(countBy(inPeriod.flatMap((deck) => deck.domains)), state.domain).map(([value]) => value);
 
   const view: MetaView = {
     t,
@@ -160,17 +171,19 @@ async function MetaContent({ params, searchParams }: MetaPageProps) {
     stapleSettings,
     stapleNames: new Set(staples.map((stat) => stat.name)),
     catalogTotal: Object.values(sample.setTotals).reduce((sum, count) => sum + count, 0),
-    // La tendance a sa propre fenêtre : la période choisie ne s'y applique pas.
-    trends: computeTrends(filterMetaDecks(sample.decks, { ...state, periodDays: 0 }, now), sample.cards, now),
+    // La tendance n'apparaît que dans le tableau des cartes, et a sa propre fenêtre : la période choisie ne s'y applique pas.
+    trends:
+      state.tab === "overview" || state.tab === "cards"
+        ? computeTrends(filterMetaDecks(sample.decks, { ...state, periodDays: 0 }, now), sample.cards, now)
+        : null,
   };
 
   const latest = sample.decks.reduce((max, deck) => (deck.eventDate > max ? deck.eventDate : max), "");
-  const dateFormat = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
 
   return (
     <div className="flex flex-col gap-5">
       <p className="text-sm text-muted-foreground">
-        {t("summary", { decks: sample.decks.length, date: dateFormat.format(new Date(latest)) })}
+        {t("summary", { decks: sample.decks.length, date: DateTime.fromISO(latest).setLocale(locale).toLocaleString(DateTime.DATE_MED) })}
       </p>
 
       <nav aria-label={t("tabs.label")} className="-mx-4 flex gap-6 overflow-x-auto border-b border-border px-4 sm:mx-0 sm:px-0">
@@ -230,6 +243,11 @@ function TabContent({ tab, view }: { tab: MetaTab; view: MetaView }) {
     default:
       return <OverviewTab view={view} overview={computeOverview(view.decks, view.sample.cards, view.stats)} />;
   }
+}
+
+/** Ajoute la valeur choisie, avec 0 deck, si la liste ne l'a pas. */
+function withSelected(entries: [string, number][], selected: string | undefined): [string, number][] {
+  return selected && !entries.some(([value]) => value === selected) ? [...entries, [selected, 0]] : entries;
 }
 
 /** Les valeurs et leur nombre d'occurrences, les plus fréquentes d'abord. */

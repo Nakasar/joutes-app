@@ -1,13 +1,15 @@
 import type { getTranslations } from "next-intl/server";
 import { ArrowRight } from "lucide-react";
+import { DateTime } from "luxon";
 
-import { Link } from "@/i18n/navigation.ts";
+import { getPathname, Link } from "@/i18n/navigation.ts";
 import { COLORLESS_COLOR, domainColor } from "@/lib/meta/domains.ts";
-import { metaHref, thresholdChoices, type MetaPageState } from "@/lib/meta/page-params.ts";
+import { metaHref, thresholdChoices, thresholdPercent, type MetaPageState } from "@/lib/meta/page-params.ts";
 import type { ResolvedMetaSettings } from "@/lib/meta/settings.ts";
 import {
   COLORLESS,
   isTopCut,
+  legendLabel,
   type CardAssociations,
   type MetaCardStat,
   type MetaOverview,
@@ -120,7 +122,6 @@ function Kpi({ label, value, hint, href: link, accent }: { label: string; value:
   );
 }
 
-/** Une ligne de carte : vignette, nom, badge staple, et ce que la colonne de droite veut dire. */
 /** Les colonnes du tableau des cartes, avec ou sans la tendance. */
 function cardColumns(view: MetaView) {
   return view.trends
@@ -128,15 +129,24 @@ function cardColumns(view: MetaView) {
     : "sm:grid-cols-[2rem_minmax(0,1fr)_4.5rem_7rem_9rem_5rem]";
 }
 
-/** La tendance en points : « +9 pts », « −4 pts », « = » sous un point d'écart. */
+/** La tendance en points : « +9 pts », « −4 pts », « = » sous un point d'écart, « — » sans decks récents. */
 function Trend({ view, value, className }: { view: MetaView; value: number | undefined; className?: string }) {
-  const points = Math.round((value ?? 0) * 100);
-  const label = points === 0 ? "=" : view.t("trend.points", { points: `${points > 0 ? "+" : "−"}${Math.abs(points)}` });
+  const points = value === undefined ? undefined : Math.round(value * 100);
+  const label =
+    points === undefined
+      ? "—"
+      : points === 0
+        ? "="
+        : view.t("trend.points", { points: `${points > 0 ? "+" : "−"}${Math.abs(points)}` });
   return (
     <span
       className={cn(
         "font-mono text-sm",
-        points > 0 ? "text-emerald-600 dark:text-emerald-400" : points < 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground",
+        points && points > 0
+          ? "text-emerald-600 dark:text-emerald-400"
+          : points && points < 0
+            ? "text-red-600 dark:text-red-400"
+            : "text-muted-foreground",
         className
       )}
       title={view.t("trend.hint")}
@@ -146,17 +156,8 @@ function Trend({ view, value, className }: { view: MetaView; value: number | und
   );
 }
 
-function CardRow({
-  view,
-  stat,
-  rank,
-  showDetails = true,
-}: {
-  view: MetaView;
-  stat: MetaCardStat;
-  rank?: number;
-  showDetails?: boolean;
-}) {
+/** Une ligne du tableau des cartes : vignette, nom, badge staple, parts, exemplaires et tendance. */
+function CardRow({ view, stat, rank }: { view: MetaView; stat: MetaCardStat; rank?: number }) {
   const { t } = view;
   const { pct, dec } = formatters(view.locale);
   const staple = view.stapleNames.has(stat.name);
@@ -185,19 +186,15 @@ function CardRow({
       <span className="flex flex-col items-end sm:block sm:text-left">
         <span className="font-mono text-sm">{pct(stat.share)}</span>
         <span className="ml-1.5 hidden text-xs text-muted-foreground sm:inline">{stat.decks}</span>
-        {showDetails && view.trends && <Trend view={view} value={view.trends.get(stat.name)} className="text-xs sm:hidden" />}
+        {view.trends && <Trend view={view} value={view.trends.get(stat.name)} className="text-xs sm:hidden" />}
       </span>
-      {showDetails && (
-        <>
-          <span className="hidden items-center gap-1.5 text-sm sm:flex">
-            <DomainDots domains={stat.domains} />
-            <span className="font-mono">{pct(stat.domainShare)}</span>
-            <span className="truncate text-xs text-muted-foreground">{domainLabel}</span>
-          </span>
-          <span className="hidden font-mono text-sm sm:block">{dec(stat.averageCopies)}</span>
-          {view.trends && <Trend view={view} value={view.trends.get(stat.name)} className="hidden sm:block" />}
-        </>
-      )}
+      <span className="hidden items-center gap-1.5 text-sm sm:flex">
+        <DomainDots domains={stat.domains} />
+        <span className="font-mono">{pct(stat.domainShare)}</span>
+        <span className="truncate text-xs text-muted-foreground">{domainLabel}</span>
+      </span>
+      <span className="hidden font-mono text-sm sm:block">{dec(stat.averageCopies)}</span>
+      {view.trends && <Trend view={view} value={view.trends.get(stat.name)} className="hidden sm:block" />}
     </li>
   );
 }
@@ -421,7 +418,7 @@ export function StaplesTab({ view, groups }: { view: MetaView; groups: StapleGro
         <div className="flex shrink-0 flex-wrap items-center gap-1.5" role="group" aria-label={t("staples.threshold")}>
           <span className="mr-1 text-sm text-muted-foreground">{t("staples.threshold")}</span>
           {thresholds.map((value) => {
-            const active = Math.round(view.state.threshold * 100) === value;
+            const active = thresholdPercent(view.state.threshold) === value;
             return (
               <Link
                 key={value}
@@ -513,12 +510,11 @@ export function TogetherTab({
 
   return (
     <div className="flex flex-col gap-5">
-      <form action={view.basePath} className="flex flex-wrap items-center gap-2">
-        <input type="hidden" name="tab" value="together" />
-        {view.state.periodDays !== view.settings.defaultPeriodDays && <input type="hidden" name="period" value={view.state.periodDays} />}
-        {view.state.source && <input type="hidden" name="source" value={view.state.source} />}
-        {view.state.legend && <input type="hidden" name="legend" value={view.state.legend} />}
-        {view.state.domain && <input type="hidden" name="domain" value={view.state.domain} />}
+      {/* Les champs cachés reprennent l'adresse de la vue (filtres, seuil), et l'action garde la langue. */}
+      <form action={getPathname({ href: view.basePath, locale: view.locale })} className="flex flex-wrap items-center gap-2">
+        {[...new URLSearchParams(href(view, { tab: "together", card: undefined }).split("?")[1] ?? "")].map(([name, value]) => (
+          <input key={name} type="hidden" name={name} value={value} />
+        ))}
         <label htmlFor="meta-card" className="sr-only">
           {t("together.pick")}
         </label>
@@ -798,7 +794,6 @@ export function DecksTab({ view }: { view: MetaView }) {
   const totalPages = Math.max(1, Math.ceil(sorted.length / DECKS_PER_PAGE));
   const page = Math.min(view.state.page, totalPages);
   const start = (page - 1) * DECKS_PER_PAGE;
-  const dateFormat = new Intl.DateTimeFormat(view.locale, { day: "numeric", month: "short", year: "numeric" });
 
   return (
     <div className="flex flex-col gap-4">
@@ -814,6 +809,7 @@ export function DecksTab({ view }: { view: MetaView }) {
         <ul className="divide-y divide-border">
           {sorted.slice(start, start + DECKS_PER_PAGE).map((deck) => {
             const legend = deck.legendCardId ? view.sample.cards[deck.legendCardId] : undefined;
+            const date = DateTime.fromISO(deck.eventDate).setLocale(view.locale).toLocaleString(DateTime.DATE_MED);
             return (
               <li key={deck.id}>
                 <Link href={`/decks/${deck.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 sm:px-5">
@@ -822,12 +818,12 @@ export function DecksTab({ view }: { view: MetaView }) {
                     <span className="truncate font-semibold">{deck.name}</span>
                     <span className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
                       <DomainDots domains={deck.domains} />
-                      <span>{legend?.name ?? deck.legendName}</span>
+                      <span>{legendLabel(deck, view.sample.cards)}</span>
                       {deck.pilot && <span>· {deck.pilot}</span>}
                     </span>
                     <span className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
                       <span>{deck.source}</span>
-                      <span>· {dateFormat.format(new Date(deck.eventDate))}</span>
+                      <span>· {date}</span>
                       {deck.placement && (
                         <span className={cn(isTopCut(deck.placement) && "font-medium text-foreground")}>· {deck.placement}</span>
                       )}

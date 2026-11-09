@@ -11,6 +11,8 @@
  * réédition, une version alternative) sont la même carte pour un joueur.
  */
 
+import { DateTime } from "luxon";
+
 export type MetaCard = {
   id: string;
   name: string;
@@ -55,14 +57,17 @@ export type MetaFilters = {
 /** Le nom du groupe des cartes sans domaine : elles se comptent sur tous les decks. */
 export const COLORLESS = "Incolore";
 
-const DAY = 24 * 60 * 60 * 1000;
+/** L'instant d'un deck, en millisecondes. */
+function deckTime(deck: Pick<MetaSampleDeck, "eventDate">): number {
+  return DateTime.fromISO(deck.eventDate).toMillis();
+}
 
 /** Les decks de l'échantillon qui passent les filtres de la page. */
 export function filterMetaDecks(decks: MetaSampleDeck[], filters: MetaFilters, now: Date): MetaSampleDeck[] {
-  const since = filters.periodDays > 0 ? now.getTime() - filters.periodDays * DAY : undefined;
+  const since = filters.periodDays > 0 ? DateTime.fromJSDate(now).minus({ days: filters.periodDays }).toMillis() : undefined;
   return decks.filter(
     (deck) =>
-      (since === undefined || new Date(deck.eventDate).getTime() >= since) &&
+      (since === undefined || deckTime(deck) >= since) &&
       (!filters.source || deck.source === filters.source) &&
       (!filters.legend || legendKey(deck) === filters.legend) &&
       (!filters.domain || deck.domains.includes(filters.domain))
@@ -72,6 +77,14 @@ export function filterMetaDecks(decks: MetaSampleDeck[], filters: MetaFilters, n
 /** Ce qui identifie la légende d'un deck : sa carte, sinon son nom. */
 export function legendKey(deck: Pick<MetaSampleDeck, "legendCardId" | "legendName">): string {
   return deck.legendCardId ?? deck.legendName ?? "";
+}
+
+/** Le nom à afficher pour la légende d'un deck : celui de sa carte, sinon celui relevé à l'import. */
+export function legendLabel(
+  deck: Pick<MetaSampleDeck, "legendCardId" | "legendName">,
+  cards: Record<string, MetaCard>
+): string | undefined {
+  return (deck.legendCardId && cards[deck.legendCardId]?.name) || deck.legendName || undefined;
 }
 
 /** Les cartes d'un deck par nom, exemplaires additionnés entre zones et impressions. */
@@ -173,14 +186,14 @@ export function computeTrends(
   windowDays = TREND_WINDOW_DAYS,
   minDecks = TREND_MIN_DECKS
 ): Map<string, number> | null {
-  const end = now.getTime();
-  const middle = end - windowDays * DAY;
-  const start = middle - windowDays * DAY;
+  const end = DateTime.fromJSDate(now);
+  const middle = end.minus({ days: windowDays }).toMillis();
+  const start = end.minus({ days: 2 * windowDays }).toMillis();
   const recent: MetaSampleDeck[] = [];
   const before: MetaSampleDeck[] = [];
   for (const deck of decks) {
-    const time = new Date(deck.eventDate).getTime();
-    if (time >= middle && time <= end) recent.push(deck);
+    const time = deckTime(deck);
+    if (time >= middle && time <= end.toMillis()) recent.push(deck);
     else if (time >= start && time < middle) before.push(deck);
   }
   if (recent.length < minDecks || before.length < minDecks) return null;
@@ -223,7 +236,7 @@ export type StapleGroup = {
   /** Trop peu de decks pour conclure : pas de staples. */
   tooFew: boolean;
   staples: MetaCardStat[];
-  /** Jouées par au moins 15 points de moins que le seuil, sans l'atteindre. */
+  /** À moins de 15 points sous le seuil, sans l'atteindre. */
   nearMisses: MetaCardStat[];
 };
 
@@ -327,7 +340,7 @@ export function computeOverview(
       const card = deck.legendCardId ? cards[deck.legendCardId] : undefined;
       legend = {
         key,
-        name: card?.name ?? deck.legendName ?? key,
+        name: legendLabel(deck, cards) ?? key,
         cardId: deck.legendCardId,
         image: card?.image,
         domains: card?.domains.length ? card.domains : deck.domains,
@@ -444,7 +457,7 @@ export function computeAssociations(
   const legendCounts = new Map<string, number>();
   for (const index of withIndexes) {
     const deck = decks[index];
-    const name = (deck.legendCardId && cards[deck.legendCardId]?.name) || deck.legendName;
+    const name = legendLabel(deck, cards);
     if (name) legendCounts.set(name, (legendCounts.get(name) ?? 0) + 1);
   }
 
