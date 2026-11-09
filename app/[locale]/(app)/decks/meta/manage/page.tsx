@@ -17,6 +17,7 @@ import { readPage, toURLSearchParams } from "@/lib/navigation/url-query.ts";
 import { cn } from "@/lib/utils.ts";
 import { MetaGamePicker } from "./MetaGamePicker.tsx";
 import { MetaImportForm } from "./MetaImportForm.tsx";
+import { LocatorImportForm } from "./LocatorImportForm.tsx";
 import { MetaDeckList } from "./MetaDeckList.tsx";
 import { MetaSettingsForm } from "./MetaSettingsForm.tsx";
 
@@ -64,6 +65,9 @@ async function MetaManageContent({ searchParams }: { searchParams: SearchParams 
   const tabHref = (key: TabKey) => `/decks/meta/manage?game=${encodeURIComponent(gameKey)}${key === "import" ? "" : `&tab=${key}`}`;
 
   const total = await countMetaDecks(game.id);
+  // Seul Riftbound a un locator dont les tournois se lisent.
+  const locatorAvailable = game.slug === "riftbound";
+  const importMode = locatorAvailable && first(params.mode) === "locator" ? "locator" : "paste";
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pt-7 pb-16 sm:px-8">
@@ -102,7 +106,40 @@ async function MetaManageContent({ searchParams }: { searchParams: SearchParams 
         ))}
       </nav>
 
-      {tab === "import" && (
+      {tab === "import" && locatorAvailable && (
+        <div role="tablist" aria-label="Mode d'import" className="flex w-full rounded-xl border border-border bg-muted/40 p-1 sm:w-fit">
+          {(
+            [
+              ["paste", "Liens et listes"],
+              ["locator", "Tournoi du locator"],
+            ] as const
+          ).map(([key, label]) => (
+            <Link
+              key={key}
+              role="tab"
+              aria-selected={importMode === key}
+              href={`${tabHref("import")}${key === "locator" ? "&mode=locator" : ""}`}
+              className={cn(
+                "flex-1 rounded-lg px-4 py-2 text-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:flex-none",
+                importMode === key && "bg-card font-semibold text-foreground shadow-sm"
+              )}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {tab === "import" && importMode === "locator" && (
+        <LocatorImportForm
+          gameId={game.id}
+          gameKey={gameKey}
+          formats={(game.formats ?? []).map((format) => format.name)}
+          decksHref={tabHref("decks")}
+        />
+      )}
+
+      {tab === "import" && importMode === "paste" && (
         <MetaImportForm
           gameId={game.id}
           gameName={game.name}

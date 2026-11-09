@@ -8,14 +8,17 @@ import {
   getDeckFromPiltoverCode,
   type DeckList,
 } from "@/app/[locale]/(app)/games/riftbound/deck-checker/action";
-import { resolveCardIdsByName } from "@/lib/db/deck-cards";
-import { deckCardIds, deckLegality, type DeckCardInfo, type DeckCards } from "@/lib/decks/contents";
+import { listLegendCards, resolveCardIdsByName } from "@/lib/db/deck-cards";
+import { deckLegality, zoneCount, type DeckCardInfo, type DeckCards } from "@/lib/decks/contents";
+import { computeDeckDomains } from "@/lib/decks/domains";
 import { routeCardToZone } from "@/lib/decks/routing";
 import { applyDeckText, normalizeCardName, parseDeckText, type ParsedDeckText } from "@/lib/decks/text";
 import { getDeckZones, type DeckZone, type DeckZoneKey } from "@/lib/decks/zones";
 import type { Game } from "@/lib/types/Game";
 import { deckFingerprint, looseCardKey } from "@/lib/meta/fingerprint";
 import { formatPlacement, splitMetaImportInput, type MetaImportEntry } from "@/lib/meta/import-input";
+import { inferLegendAndChampion, locatorDeckToParsed } from "@/lib/meta/locator";
+import { fetchLocatorDeck } from "@/lib/meta/locator-api";
 
 /** Les jeux dont les liens et codes Piltover Archive se lisent. */
 const PILTOVER_GAME_SLUGS = new Set(["riftbound"]);
@@ -119,6 +122,12 @@ async function readEntry(entry: MetaImportEntry, game: Game, zones: DeckZone[]):
         return { parsed: deckListToParsed(await getDeckFromPiltoverCode(entry.code), zones), sourceRef: entry.code };
       case "list":
         return { parsed: parseDeckText(entry.text, zones) };
+      case "locator-deck":
+        return {
+          parsed: locatorDeckToParsed(await fetchLocatorDeck(entry.deckId), zones, entry.legendName),
+          sourceRef: `locator:${entry.deckId}`,
+          url: entry.eventUrl,
+        };
       case "invalid":
         return { error: entry.reason };
     }
@@ -128,7 +137,9 @@ async function readEntry(entry: MetaImportEntry, game: Game, zones: DeckZone[]):
       error:
         entry.kind === "list"
           ? "Liste illisible."
-          : "Deck introuvable sur Piltover Archive (lien ou code erroné, ou deck privé).",
+          : entry.kind === "locator-deck"
+            ? "Le locator n'a pas rendu ce deck (pas de réponse, ou liste non publiée)."
+            : "Deck introuvable sur Piltover Archive (lien ou code erroné, ou deck privé).",
     };
   }
 }
@@ -157,6 +168,8 @@ function entryLabel(entry: MetaImportEntry): string {
       const first = entry.text.split(/\r?\n/).find((line) => line.trim()) ?? "";
       return `Liste : ${first.trim().slice(0, 60)}`;
     }
+    case "locator-deck":
+      return `Locator · ${entry.pilot ?? entry.deckId}`;
     case "invalid":
       return entry.raw.slice(0, 80);
   }
@@ -229,9 +242,13 @@ async function resolveNames(
  * C'est la même fonction qui sert la vérification et l'import : l'import la
  * relance plutôt que de faire confiance à un contenu renvoyé par le navigateur.
  */
-export async function resolveMetaImport(game: Game, input: string, options: MetaImportOptions): Promise<MetaImportRow[]> {
+export async function resolveMetaImport(
+  game: Game,
+  input: string | MetaImportEntry[],
+  options: MetaImportOptions
+): Promise<MetaImportRow[]> {
   const zones = getDeckZones(game);
-  const entries = splitMetaImportInput(input);
+  const entries = typeof input === "string" ? splitMetaImportInput(input) : input;
   if (entries.length > MAX_META_IMPORT_ENTRIES) {
     throw new MetaImportTooLargeError(entries.length);
   }
@@ -239,6 +256,26 @@ export async function resolveMetaImport(game: Game, input: string, options: Meta
 
   const names = [...new Set(read.flatMap((item) => item.parsed?.lines.map((line) => line.name) ?? []))];
   const { byName, approximations } = await resolveNames(game.id, names);
+
+  // Le deck du locator ne porte ni la légende (lue dans son classement, à
+  // défaut déduite) ni le champion choisi (déduit) : ils s'ajoutent à la liste lue.
+  const inferenceNotes = new Map<number, string[]>();
+  if (entries.some((entry) => entry.kind === "locator-deck")) {
+    const legends = await listLegendCards(game.id);
+    const cardOf = (name: string) => byName.get(normalizeCardName(name));
+    entries.forEach((entry, index) => {
+      const parsed = read[index].parsed;
+      if (entry.kind !== "locator-deck" || !parsed) return;
+      const { legend, champion, notes } = inferLegendAndChampion(parsed, cardOf, legends);
+      if (legend) {
+        byName.set(normalizeCardName(legend.name), legend);
+        parsed.lines.unshift({ zone: "legend", name: legend.name, quantity: 1 });
+      }
+      if (champion) parsed.lines.splice(legend ? 1 : 0, 0, { zone: "champions", name: champion.name, quantity: 1 });
+      if (notes.length > 0) inferenceNotes.set(index, notes);
+    });
+  }
+
   const byId = new Map([...byName.values()].map((card) => [card.id, card]));
 
   const rows: MetaImportRow[] = entries.map((entry, index) => {
@@ -275,7 +312,7 @@ export async function resolveMetaImport(game: Game, input: string, options: Meta
       return { ...base, status: "error", notes: ["Aucune carte reconnue."] };
     }
 
-    const notes: string[] = [];
+    const notes: string[] = [...(inferenceNotes.get(index) ?? [])];
     const approximated = [...new Set(item.parsed.lines.map((line) => line.name))].filter((name) => approximations.has(name));
     for (const name of approximated) {
       notes.push(`« ${name} » rapproché de ${approximations.get(name)}`);
@@ -285,15 +322,23 @@ export async function resolveMetaImport(game: Game, input: string, options: Meta
     }
 
     const legality = deckLegality(applied.cards, zones);
+    // Le locator ne publie ni les champs de bataille ni le champion choisi : leur
+    // absence (et le deck principal à qui manque alors le champion) ne se
+    // signale pas à chaque deck, l'écran le dit une fois pour toutes.
+    const championMissing = zoneCount(applied.cards, "champions") === 0;
+    const unpublished = (zone: DeckZone, count: number) =>
+      entry.kind === "locator-deck" &&
+      ((zone.key === "battlefields" || zone.key === "champions") && count === 0
+        ? true
+        : zone.key === "maindeck" && championMissing && zone.min !== undefined && count === zone.min - 1);
     for (const row of legality) {
-      if (!row.compliant) notes.push(`${row.zone.label} : ${row.count} (${row.zone.rule})`);
+      if (!row.compliant && !unpublished(row.zone, row.count)) notes.push(`${row.zone.label} : ${row.count} (${row.zone.rule})`);
     }
 
     const legendEntry = applied.cards.legend?.[0];
     const legend = legendEntry ? byId.get(legendEntry.cardId) : undefined;
-    const domains = [
-      ...new Set(deckCardIds(applied.cards).flatMap((id) => byId.get(id)?.domain ?? [])),
-    ].sort((a, b) => a.localeCompare(b, "fr"));
+    // La règle des decks enregistrés : ceux de la légende, à défaut ceux des cartes.
+    const domains = computeDeckDomains(applied.cards, (cardId) => byId.get(cardId)?.domain);
 
     return {
       ...base,

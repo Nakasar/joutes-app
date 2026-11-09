@@ -94,6 +94,26 @@ export async function resolveCardIdsByName(
   return byName;
 }
 
+/** Les légendes du catalogue d'un jeu, une par nom : de quoi retrouver celle d'un deck qui ne la donne pas. */
+export async function listLegendCards(gameId: string): Promise<DeckCardInfo[]> {
+  if (!ObjectId.isValid(gameId)) return [];
+
+  const docs = await db
+    .collection<CardDoc & { gameId: ObjectId }>("cards")
+    .find(
+      { gameId: new ObjectId(gameId), $or: [{ type: { $regex: /^legend$/i } }, { types: { $regex: /^legend$/i } }] },
+      { projection: DECK_CARD_PROJECTION }
+    )
+    .toArray();
+
+  const byName = new Map<string, DeckCardInfo>();
+  for (const doc of docs) {
+    const key = normalizeCardName(doc.name);
+    if (!byName.has(key)) byName.set(key, toDeckCardInfo(doc));
+  }
+  return [...byName.values()];
+}
+
 /**
  * Domaines couverts par un deck, pour que la librairie puisse s'y filtrer sans
  * relire le catalogue à chaque recherche.

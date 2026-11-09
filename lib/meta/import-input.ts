@@ -26,6 +26,8 @@ export type MetaImportEntry = {
   | { kind: "piltover-link"; deckId: string; url: string }
   | { kind: "piltover-code"; code: string }
   | { kind: "list"; text: string }
+  /** Un deck d'un tournoi du locator Riftbound ; ne vient jamais d'un collage. */
+  | { kind: "locator-deck"; deckId: string; eventUrl: string; legendName?: string }
   | { kind: "invalid"; raw: string; reason: string }
 );
 
