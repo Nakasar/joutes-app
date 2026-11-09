@@ -131,7 +131,7 @@ export default function PricePreferenceManager({
       </div>
 
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Le réglage vaut pour tous les jeux et partout où un prix s'affiche : galerie, collection, boosters, échanges,
+        Le réglage vaut pour tous les jeux et partout où un prix s&apos;affiche : galerie, collection, boosters, échanges,
         listes de vente. Il ne change aucun relevé — seulement celui qui vous est montré.
       </p>
     </div>

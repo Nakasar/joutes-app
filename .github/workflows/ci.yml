@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Types, lint et tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Les vues MCP sont empaquetées en fichiers `*.generated.ts` hors git,
+      # et `next-env.d.ts` déclare les imports d'images : sans eux, la
+      # vérification des types échoue sur des fichiers absents.
+      - run: npm run build:mcp-apps
+      - run: npx next typegen
+
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm test

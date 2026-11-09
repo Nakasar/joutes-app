@@ -35,6 +35,8 @@ export default function UsePriceSourceButton({
 
   const choose = async () => {
     setSaving(true);
+    // Une action serveur, pas un hook : seul son nom commence par « use ».
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const result = await usePriceSourceAction(source);
     setSaving(false);
 
