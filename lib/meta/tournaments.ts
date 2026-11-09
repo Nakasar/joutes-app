@@ -81,11 +81,17 @@ export type TournamentSummary = {
   slug: string;
   decks: number;
   /** Le deck classé premier, s'il y en a un. */
-  winner?: { deckId: string; legend?: string; pilot?: string };
-  topLegend?: { name: string; decks: number; share: number };
+  winner?: { deckId: string; legend?: string; pilot?: string; image?: string };
+  topLegend?: { name: string; decks: number; share: number; image?: string };
   /** Les deux domaines les plus joués, en part des decks. */
   topDomains: { domain: string; share: number }[];
 };
+
+/** L'image de la carte légende d'un deck, à étaler dans un objet. */
+function legendImage(deck: MetaSampleDeck, cards: Record<string, MetaCard>): { image?: string } {
+  const image = deck.legendCardId ? cards[deck.legendCardId]?.image : undefined;
+  return image ? { image } : {};
+}
 
 /** Les tournois d'un échantillon, les plus récents d'abord. */
 export function listTournaments(decks: MetaSampleDeck[], cards: Record<string, MetaCard>): TournamentSummary[] {
@@ -110,10 +116,24 @@ export function listTournaments(decks: MetaSampleDeck[], cards: Record<string, M
         slug: tournamentSlug(first.source),
         decks: group.length,
         ...(winner
-          ? { winner: { deckId: winner.id, legend: legendLabel(winner, cards), ...(winner.pilot ? { pilot: winner.pilot } : {}) } }
+          ? {
+              winner: {
+                deckId: winner.id,
+                legend: legendLabel(winner, cards),
+                ...(winner.pilot ? { pilot: winner.pilot } : {}),
+                ...legendImage(winner, cards),
+              },
+            }
           : {}),
         ...(legendDeck && legendDecks
-          ? { topLegend: { name: legendLabel(legendDeck, cards) ?? legendKeyValue!, decks: legendDecks, share: legendDecks / group.length } }
+          ? {
+              topLegend: {
+                name: legendLabel(legendDeck, cards) ?? legendKeyValue!,
+                decks: legendDecks,
+                share: legendDecks / group.length,
+                ...legendImage(legendDeck, cards),
+              },
+            }
           : {}),
         topDomains: countBy(group.flatMap((deck) => [...new Set(deck.domains)]))
           .slice(0, 2)

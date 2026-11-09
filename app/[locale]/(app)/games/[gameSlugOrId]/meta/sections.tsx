@@ -898,12 +898,18 @@ export function TournamentsTab({ view, tournaments }: { view: MetaView; tourname
                     <span className="sm:hidden"> · {t("tournament.tiers.count", { count: tournament.decks })}</span>
                   </span>
                   <span className="hidden text-right font-mono sm:block">{tournament.decks}</span>
-                  <span className="min-w-0 truncate text-muted-foreground sm:text-foreground">
-                    <span className="sm:hidden">{t("tournaments.winner")} : </span>
-                    {winner}
+                  <span className="flex min-w-0 items-center gap-2 text-muted-foreground sm:text-foreground">
+                    {tournament.winner && <Thumb src={tournament.winner.image} className="h-8 w-6 object-top" />}
+                    <span className="min-w-0 truncate">
+                      <span className="sm:hidden">{t("tournaments.winner")} : </span>
+                      {winner}
+                    </span>
                   </span>
-                  <span className="hidden min-w-0 truncate sm:block">
-                    {tournament.topLegend ? `${tournament.topLegend.name} · ${pct(tournament.topLegend.share)}` : t("tournaments.none")}
+                  <span className="hidden min-w-0 items-center gap-2 sm:flex">
+                    {tournament.topLegend && <Thumb src={tournament.topLegend.image} className="h-8 w-6 object-top" />}
+                    <span className="min-w-0 truncate">
+                      {tournament.topLegend ? `${tournament.topLegend.name} · ${pct(tournament.topLegend.share)}` : t("tournaments.none")}
+                    </span>
                   </span>
                   <span className="flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground sm:text-foreground">
                     {tournament.topDomains.map((domain) => (

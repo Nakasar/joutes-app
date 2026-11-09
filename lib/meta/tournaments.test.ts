@@ -13,7 +13,7 @@ import {
 } from "./tournaments";
 
 const cards: Record<string, MetaCard> = {
-  L1: { id: "L1", name: "Rek'Sai", domains: ["Fury", "Order"] },
+  L1: { id: "L1", name: "Rek'Sai", domains: ["Fury", "Order"], image: "https://img/L1.png" },
   L2: { id: "L2", name: "Kai'Sa", domains: ["Fury", "Mind"] },
   A: { id: "A", name: "Rebuke", domains: ["Order"] },
   B: { id: "B", name: "Cloth Armor", domains: ["Fury"] },
@@ -156,8 +156,9 @@ describe("listTournaments", () => {
     assert.equal(list.length, 2);
     assert.equal(list[0].source, "RC Europe 2026");
     assert.equal(list[0].decks, 3);
-    assert.deepEqual(list[0].winner, { deckId: decks[0].id, legend: "Rek'Sai", pilot: "Hugo" });
+    assert.deepEqual(list[0].winner, { deckId: decks[0].id, legend: "Rek'Sai", pilot: "Hugo", image: "https://img/L1.png" });
     assert.equal(list[0].topLegend?.name, "Rek'Sai");
+    assert.equal(list[0].topLegend?.image, "https://img/L1.png");
     assert.deepEqual(list[0].topDomains[0], { domain: "Fury", share: 1 });
     assert.equal(list[1].winner, undefined);
   });

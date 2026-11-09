@@ -57,13 +57,27 @@ export function Donut({
   );
 }
 
+/**
+ * La vignette d'une légende, posée à côté de son nom. Sans image, une case
+ * grise garde l'alignement.
+ */
+export function LegendThumb({ src, className }: { src?: string; className?: string }) {
+  return src ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" loading="lazy" className={cn("h-8 w-6 shrink-0 rounded-sm object-cover object-top", className)} />
+  ) : (
+    <span className={cn("h-8 w-6 shrink-0 rounded-sm bg-muted", className)} aria-hidden />
+  );
+}
+
 /** La légende commune à deux camemberts : la part de chaque élément dans l'un et l'autre. */
 export function DonutKey({
   rows,
   firstLabel,
   secondLabel,
 }: {
-  rows: { label: string; color: string; first: string; second?: string }[];
+  /** `withThumb` ajoute la vignette `image` (ou une case vide) après la couleur. */
+  rows: { label: string; color: string; first: string; second?: string; image?: string; withThumb?: boolean }[];
   firstLabel: string;
   secondLabel?: string;
 }) {
@@ -80,6 +94,7 @@ export function DonutKey({
           <li key={row.label} className={cn("grid items-center gap-2 border-t border-border py-1.5", columns)}>
             <span className="flex min-w-0 items-center gap-2 font-medium">
               <span className="size-3 shrink-0 rounded-sm" style={{ background: row.color }} aria-hidden />
+              {row.withThumb && <LegendThumb src={row.image} className="h-7 w-5" />}
               <span className="truncate">{row.label}</span>
             </span>
             <span className="text-right font-mono tabular-nums">{row.first}</span>

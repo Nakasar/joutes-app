@@ -21,7 +21,7 @@ import {
   type TournamentStats,
 } from "@/lib/meta/tournaments.ts";
 import { cn } from "@/lib/utils.ts";
-import { Donut, DonutKey, LEGEND_COLORS, OTHERS_COLOR, type DonutPart } from "../../../charts.tsx";
+import { Donut, DonutKey, LEGEND_COLORS, LegendThumb, OTHERS_COLOR, type DonutPart } from "../../../charts.tsx";
 
 type Params = Promise<{ gameSlugOrId: string; date: string; slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -172,12 +172,16 @@ function PanelTitle({ title, hint }: { title: string; hint?: string }) {
   );
 }
 
-function Kpi({ label, value, hint }: { label: string; value: string; hint: string }) {
+/** Un chiffre clé ; `image` (une chaîne, même vide) y ajoute la vignette d'une légende. */
+function Kpi({ label, value, hint, image }: { label: string; value: string; hint: string; image?: string }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 rounded-2xl border border-border bg-card p-4">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="truncate text-xl font-bold tracking-tight">{value}</span>
-      <span className="text-xs text-muted-foreground">{hint}</span>
+    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card p-4">
+      {image !== undefined && <LegendThumb src={image || undefined} className="hidden h-16 w-12 sm:block" />}
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="truncate text-xl font-bold tracking-tight">{value}</span>
+        <span className="text-xs text-muted-foreground">{hint}</span>
+      </div>
     </div>
   );
 }
@@ -206,12 +210,14 @@ function Kpis({
       <Kpi
         label={t("tournament.kpi.winner")}
         value={winner ? (legendLabel(winner, sample.cards) ?? winner.name) : t("tournament.kpi.noWinner")}
+        image={winner ? ((winner.legendCardId && sample.cards[winner.legendCardId]?.image) || winner.coverImage || "") : undefined}
         hint={winner ? [winner.pilot, winnerDomains].filter(Boolean).join(" · ") : t("tournament.kpi.noWinnerHint")}
       />
       {legend && (
         <Kpi
           label={t("tournament.kpi.topLegend")}
           value={`${legend.name} · ${pct(legend.share)}`}
+          image={legend.image ?? ""}
           hint={
             hasTop
               ? t("tournament.kpi.topLegendTopHint", { decks: legend.decks, total: stats.decks, topCuts: legend.topCuts })
@@ -297,6 +303,8 @@ function LegendsPanel({
             rows={all.map((part, index) => ({
               label: part.label,
               color: part.color,
+              withThumb: true,
+              image: index < PIE_LEGENDS ? stats.legends[index]?.image : undefined,
               first: pct(part.value / stats.decks),
               second: hasTop ? (top[index]?.value ? pct(top[index].value / stats.topCut.length) : "—") : undefined,
             }))}
@@ -328,15 +336,18 @@ function LegendsPanel({
             const bad = conversion !== undefined && legend.topCuts > 0 && conversion < 1;
             return (
               <li key={legend.key} className={cn("grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 border-t border-border py-2.5 text-sm", columns)}>
-                <span className="flex min-w-0 flex-col gap-0.5">
-                  <span className="truncate font-semibold">{legend.name}</span>
-                  <span className="flex flex-wrap gap-x-2.5 text-xs text-muted-foreground">
-                    {legend.domains.map((domain) => (
-                      <span key={domain} className="inline-flex items-center gap-1">
-                        <span className="size-2 rounded-full" style={{ background: domainColor(domain) }} aria-hidden />
-                        {domain}
-                      </span>
-                    ))}
+                <span className="flex min-w-0 items-center gap-3">
+                  <LegendThumb src={legend.image} className="h-12 w-9" />
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="truncate font-semibold">{legend.name}</span>
+                    <span className="flex flex-wrap gap-x-2.5 text-xs text-muted-foreground">
+                      {legend.domains.map((domain) => (
+                        <span key={domain} className="inline-flex items-center gap-1">
+                          <span className="size-2 rounded-full" style={{ background: domainColor(domain) }} aria-hidden />
+                          {domain}
+                        </span>
+                      ))}
+                    </span>
                   </span>
                 </span>
                 <span className="order-last col-span-2 flex items-center gap-2 sm:order-none sm:col-span-1">
@@ -529,8 +540,11 @@ function TiersPanel({ t, stats }: { t: T; stats: TournamentStats }) {
           <tbody>
             {stats.legends.map((legend) => (
               <tr key={legend.key}>
-                <th scope="row" className="max-w-40 truncate py-1 pr-2 text-left font-medium">
-                  {legend.name}
+                <th scope="row" className="max-w-48 py-1 pr-2 text-left font-medium">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <LegendThumb src={legend.image} className="h-8 w-6" />
+                    <span className="truncate">{legend.name}</span>
+                  </span>
                 </th>
                 {(stats.matrix[legend.key] ?? []).map((count, index) => {
                   const weight = count / stats.tiers[index].decks;
@@ -630,7 +644,14 @@ function DecksPanel({
         <nav aria-label={t("tournament.decks.filter")} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
           <Chip href={query({ legend: undefined })} active={!legend} label={t("tournament.decks.all")} count={decks.length} />
           {stats.legends.map((entry) => (
-            <Chip key={entry.key} href={query({ legend: entry.key })} active={entry.key === legend} label={entry.name} count={entry.decks} />
+            <Chip
+              key={entry.key}
+              href={query({ legend: entry.key })}
+              active={entry.key === legend}
+              label={entry.name}
+              count={entry.decks}
+              image={entry.image}
+            />
           ))}
         </nav>
       )}
@@ -662,7 +683,7 @@ function DecksPanel({
   );
 }
 
-function Chip({ href, active, label, count }: { href: string; active: boolean; label: string; count: number }) {
+function Chip({ href, active, label, count, image }: { href: string; active: boolean; label: string; count: number; image?: string }) {
   return (
     <Link
       href={href}
@@ -670,9 +691,11 @@ function Chip({ href, active, label, count }: { href: string; active: boolean; l
       aria-current={active ? "page" : undefined}
       className={cn(
         "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm whitespace-nowrap",
+        image && "pl-1.5",
         active ? "border-primary bg-primary/10 text-primary" : "border-border text-foreground hover:bg-muted"
       )}
     >
+      {image && <LegendThumb src={image} className="h-6 w-[18px]" />}
       {label}
       <span className="font-mono text-xs text-muted-foreground">{count}</span>
     </Link>
