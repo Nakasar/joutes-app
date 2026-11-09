@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { readBlobFilename } from "@/lib/media/blob-filename";
+import { STILL_IMAGE_KINDS, readImageUpload } from "@/lib/media/image-upload";
 
 /**
  * Le dépôt de la bannière d'un événement.
@@ -15,8 +16,6 @@ import { readBlobFilename } from "@/lib/media/blob-filename";
  * que l'adresse vient bien de notre stockage.
  */
 
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-const MAX_SIZE = 5 * 1024 * 1024; // 5 Mo
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -27,22 +26,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-
-    if (!file) {
-      return NextResponse.json({ error: "Aucun fichier fourni" }, { status: 400 });
+    const upload = await readImageUpload(formData, { kinds: STILL_IMAGE_KINDS, maxMegabytes: 5 });
+    if ("error" in upload) {
+      return NextResponse.json({ error: upload.error }, { status: 400 });
     }
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Type de fichier non autorisé. Utilisez JPG, PNG ou WebP." },
-        { status: 400 },
-      );
-    }
-
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "Le fichier est trop volumineux (max 5 Mo)" }, { status: 400 });
-    }
+    const { file } = upload;
 
     const name = readBlobFilename(file.name, "banner.png");
 

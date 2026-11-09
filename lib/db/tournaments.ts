@@ -93,6 +93,7 @@ import {
   getUserByUsernameAndDiscriminator,
   getUserDiscriminator,
 } from "@/lib/db/users";
+import { escapeRegex } from "@/lib/utils/regex";
 
 // Validation d'email volontairement simple : le but est de distinguer un
 // email d'un nom d'utilisateur, pas de valider strictement l'adresse.
@@ -895,7 +896,7 @@ export async function listPlayerTournamentsPageForUser(
   if (options.search) {
     // Recherche par nom, insensible à la casse. Les caractères spéciaux sont
     // échappés : un joueur qui tape « (final) » cherche ce texte, pas un groupe.
-    query.name = { $regex: options.search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
+    query.name = { $regex: escapeRegex(options.search), $options: "i" };
   }
   if (options.statuses && options.statuses.length > 0) {
     query.status = { $in: options.statuses };

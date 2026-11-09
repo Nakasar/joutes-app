@@ -1,3 +1,4 @@
+import { escapeRegex } from "@/lib/utils/regex";
 /**
  * Traductions des cartes, saisies depuis l'administration (`/admin/translations`).
  *
@@ -211,10 +212,6 @@ export function translateAttributeValue(lookup: GlossaryLookup, field: string, v
   return typeof value === "string" ? translateTerm(lookup, field, value) : value;
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 /**
  * Le texte anglais d'une carte, mots-clés traduits : le point de départ de la
  * saisie.
@@ -240,7 +237,7 @@ export function prefillTranslatedText(
   }
 
   const byName = new Map(keywords.map((entry) => [entry.en, entry]));
-  const names = [...byName.keys()].sort((a, b) => b.length - a.length).map(escapeRegExp);
+  const names = [...byName.keys()].sort((a, b) => b.length - a.length).map(escapeRegex);
   // Le nom, une valeur éventuelle (chiffres, symboles, un niveau de crochets
   // comme dans `[Equip [1]:rb_rune_body:]`), puis le rappel qui suit
   // immédiatement le mot-clé, éventuellement après un point (`[Predict]. (…)`).

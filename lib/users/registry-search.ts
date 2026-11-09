@@ -1,4 +1,5 @@
 import type { Document, WithId } from "mongodb";
+import { escapeRegex } from "@/lib/utils/regex";
 
 /**
  * La lecture de ce que le registre demande.
@@ -11,15 +12,6 @@ import type { Document, WithId } from "mongodb";
  * MongoDB au chargement et ne peut donc pas être importé par un test, alors que
  * l'interprétation de la saisie est exactement ce qui mérite d'en avoir un.
  */
-
-/**
- * Un pseudonyme peut contenir n'importe quoi, y compris ce qui a un sens dans
- * une expression régulière. Sans échappement, chercher « (test » ferait échouer
- * la requête, et « .* » balaierait toute la collection.
- */
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 /** Ce que le visiteur a désigné, une fois sa saisie interprétée. */
 export type RegistryQuery =

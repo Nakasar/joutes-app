@@ -2,6 +2,7 @@ import cr from '@/data/riftbound/cr.json';
 import tr from '@/data/riftbound/tr.json';
 import fr_cr from '@/data/riftbound/fr/cr.json';
 import fr_tr from '@/data/riftbound/fr/tr.json';
+import { escapeRegex } from "@/lib/utils/regex";
 
 export type RuleDocument = 'TR' | 'CR';
 export type RuleLang = 'en' | 'fr';
@@ -137,7 +138,7 @@ function buildTitleData(entries: RuleEntry[], document: RuleDocument): TitleData
     }
   }
   const sortedTitles = [...map.keys()].sort((a, b) => b.length - a.length);
-  const escaped = sortedTitles.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const escaped = sortedTitles.map(t => escapeRegex(t));
   const regexSource = escaped.length > 0 ? `(${escaped.join('|')})` : '';
   return { map, regexSource };
 }
@@ -182,7 +183,7 @@ function tokenizeWithLinks(text: string, titleData: TitleData, currentId: string
 // Wrap occurrences of `query` inside a plain text run with {{match}}, case-insensitive
 function markQueryInMarkup(text: string, query: string): string {
   if (!query) return text;
-  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedQuery = escapeRegex(query);
   const regex = new RegExp(`(${escapedQuery})`, 'gi');
   const parts: string[] = [];
   let lastIndex = 0;

@@ -1,9 +1,8 @@
 import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import { checkAdmin } from "@/lib/middleware/admin";
+import { STILL_IMAGE_KINDS, readImageUpload } from "@/lib/media/image-upload";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-const MAX_SIZE = 2 * 1024 * 1024; // 2 Mo
 
 /**
  * Téléverse l'image (carrée) d'un succès vers Vercel Blob. Réservé aux
@@ -16,23 +15,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-
-    if (!file) {
-      return NextResponse.json({ error: "Aucun fichier fourni" }, { status: 400 });
+    const upload = await readImageUpload(formData, { kinds: STILL_IMAGE_KINDS, maxMegabytes: 2 });
+    if ("error" in upload) {
+      return NextResponse.json({ error: upload.error }, { status: 400 });
     }
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Type de fichier non autorisé. Utilisez JPG, PNG ou WebP." },
-        { status: 400 }
-      );
-    }
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json(
-        { error: "Le fichier est trop volumineux (max 2 Mo)" },
-        { status: 400 }
-      );
-    }
+    const { file } = upload;
 
     // Nom de fichier normalisé pour la clé Blob (évite espaces/unicode/« / »).
     const safeName =

@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { getDeckById } from "@/lib/db/decks";
 import { readBlobFilename } from "@/lib/media/blob-filename";
 import { deckIdSchema } from "@/lib/schemas/deck.schema";
+import { IMAGE_KINDS_WITH_GIF, readImageUpload } from "@/lib/media/image-upload";
 
 /**
  * Le dépôt de l'image de couverture d'un deck.
@@ -19,11 +20,7 @@ import { deckIdSchema } from "@/lib/schemas/deck.schema";
  * l'illustre tant que son auteur n'a pas validé son choix.
  */
 
-/** Ce que le stockage accepte, et ce que `next.config.ts` sait afficher. */
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
 
-/** 5 Mo, comme les autres dépôts d'images : un bandeau tient large en dessous. */
-const MAX_SIZE = 5 * 1024 * 1024;
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ deckId: string }> }) {
   try {
@@ -53,22 +50,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const formData = await request.formData();
-    const file = formData.get("file");
-
-    if (!(file instanceof File)) {
-      return NextResponse.json({ error: "Aucun fichier fourni" }, { status: 400 });
+    const upload = await readImageUpload(formData, { kinds: IMAGE_KINDS_WITH_GIF, maxMegabytes: 5 });
+    if ("error" in upload) {
+      return NextResponse.json({ error: upload.error }, { status: 400 });
     }
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou GIF." },
-        { status: 400 },
-      );
-    }
-
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "Le fichier est trop volumineux (max 5 Mo)" }, { status: 400 });
-    }
+    const { file } = upload;
 
     // Le chemin porte l'identifiant du deck, et un suffixe aléatoire : deux
     // decks qui déposent chacun leur « cover.png » ne s'écrasent pas, et
