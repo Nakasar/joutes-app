@@ -5,6 +5,7 @@ import type { DeckCardInfo, DeckCards } from "@/lib/decks/contents";
 import { deckCardIds } from "@/lib/decks/contents";
 import { CARD_COST_KEYS, toDeckCardInfo, type RawCard } from "@/lib/decks/card-info";
 import { normalizeCardName } from "@/lib/decks/text";
+import { computeDeckDomains } from "@/lib/decks/domains";
 import { getCardnexusProductIds } from "@/lib/db/card-prices";
 import { copyPriceKey } from "@/lib/prices/copies";
 import { deckCardnexusOrder, deckOrderLines, type DeckCardnexusOrder } from "@/lib/decks/cardnexus-order";
@@ -100,17 +101,14 @@ export async function resolveCardIdsByName(
  * Recalculés à chaque enregistrement du contenu : c'est une valeur dérivée, pas
  * une saisie de l'auteur.
  */
-export async function deriveDeckDomains(gameId: string, cards: DeckCards | undefined): Promise<string[]> {
-  const infos = await getDeckCardInfos(gameId, deckCardIds(cards));
-  const domains = new Set<string>();
-
-  for (const info of infos) {
-    for (const domain of info.domain ?? []) {
-      domains.add(domain);
-    }
-  }
-
-  return [...domains].sort((a, b) => a.localeCompare(b, "fr"));
+export async function deriveDeckDomains(
+  gameId: string,
+  cards: DeckCards | undefined,
+  legendCardId?: string
+): Promise<string[]> {
+  const ids = [...new Set([...deckCardIds(cards), ...(legendCardId ? [legendCardId] : [])])];
+  const infos = new Map((await getDeckCardInfos(gameId, ids)).map((info) => [info.id, info]));
+  return computeDeckDomains(cards, (cardId) => infos.get(cardId)?.domain, legendCardId);
 }
 
 /**

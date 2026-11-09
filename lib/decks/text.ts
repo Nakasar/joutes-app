@@ -32,6 +32,8 @@ const ZONE_ALIASES: Record<string, DeckZoneKey> = {
   principal: "maindeck",
   rune: "runes",
   runes: "runes",
+  "rune pool": "runes",
+  "réserve de runes": "runes",
   battlefield: "battlefields",
   battlefields: "battlefields",
   "champs de bataille": "battlefields",
@@ -42,6 +44,33 @@ const ZONE_ALIASES: Record<string, DeckZoneKey> = {
   extra: "extra",
   "zone extra": "extra",
 };
+
+const NAMED_ENTITIES: Record<string, string> = { amp: "&", apos: "'", quot: '"', lt: "<", gt: ">", nbsp: " " };
+
+/**
+ * Décode les entités HTML d'une ligne : certains exports (riftdecks) écrivent
+ * « Can&#39;t » au lieu de « Can't », et la carte ne serait pas reconnue.
+ */
+function decodeEntities(value: string): string {
+  // Un export encodé deux fois (« &amp;#39; ») demande plusieurs passes ; trois suffisent.
+  let decoded = value;
+  for (let pass = 0; pass < 3; pass += 1) {
+    const next = decodeEntitiesOnce(decoded);
+    if (next === decoded) break;
+    decoded = next;
+  }
+  return decoded;
+}
+
+function decodeEntitiesOnce(value: string): string {
+  return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, entity: string) => {
+    if (entity[0] === "#") {
+      const code = entity[1] === "x" || entity[1] === "X" ? Number.parseInt(entity.slice(2), 16) : Number(entity.slice(1));
+      return Number.isFinite(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : match;
+    }
+    return NAMED_ENTITIES[entity.toLowerCase()] ?? match;
+  });
+}
 
 function normalizeHeader(value: string): string {
   return value.trim().replace(/:$/, "").trim().toLowerCase();
@@ -92,7 +121,7 @@ export function parseDeckText(text: string, zones: DeckZone[]): ParsedDeckText {
   let headed = false;
 
   for (const raw of text.split(/\r?\n/)) {
-    const line = raw.trim();
+    const line = decodeEntities(raw).trim();
     if (!line) continue;
 
     const headerMatch = line.match(/^([\p{L}\p{M} '\-]+):?$/u);

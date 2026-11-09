@@ -32,6 +32,8 @@ export type MetaImportEntry = {
 const PILTOVER_LINK = /^https?:\/\/(?:www\.)?piltoverarchive\.com\/decks\/view\/([A-Za-z0-9-]+)/i;
 /** Les codes Piltover Archive sont du base32 : des majuscules et des chiffres de 2 à 7, sans espace. */
 const PILTOVER_CODE = /^[A-Z2-7]{16,}$/;
+/** riftdecks.com est derrière une protection anti-robots : ses pages ne se lisent pas depuis le serveur. */
+const RIFTDECKS_LINK = /^https?:\/\/(?:www\.)?riftdecks\.com(?:[/?#]|$)/i;
 const SEPARATOR = /^-{3,}$/;
 /** Le classement et le joueur, en fin de ligne : `#1`, `# Top 8`, `@Kevin`. */
 const ANNOTATIONS = /\s+([#@])\s*([^#@]+?)\s*(?=\s[#@]|$)/g;
@@ -118,6 +120,18 @@ export function splitMetaImportInput(input: string): MetaImportEntry[] {
     if (PILTOVER_CODE.test(rest)) {
       closeList();
       entries.push({ kind: "piltover-code", line: lineNumber, code: rest, ...annotations });
+      return;
+    }
+
+    if (RIFTDECKS_LINK.test(rest)) {
+      closeList();
+      entries.push({
+        kind: "invalid",
+        line: lineNumber,
+        raw: line,
+        reason:
+          "riftdecks ne se lit pas automatiquement : sur la page du deck, copiez l'export texte et collez-le ici, avec # et @ pour le classement et le joueur.",
+      });
       return;
     }
 
