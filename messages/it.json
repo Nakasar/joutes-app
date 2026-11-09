@@ -602,7 +602,8 @@
         "staples": "Staple",
         "together": "Giocate insieme",
         "sets": "Espansioni",
-        "decks": "Mazzi"
+        "decks": "Mazzi",
+        "tournaments": "Tornei"
       },
       "filters": {
         "period": "Periodo",
@@ -699,6 +700,87 @@
       "decks": {
         "withCard": "{count, plural, one {# mazzo gioca} other {# mazzi giocano}} «{name}»",
         "clearCard": "Tutti i mazzi"
+      },
+      "tournaments": {
+        "explain": "Un torneo raggruppa i mazzi con lo stesso nome e la stessa data. Il periodo scelto vale anche qui, gli altri filtri no.",
+        "name": "Torneo",
+        "date": "Data",
+        "decks": "Mazzi",
+        "winner": "Vincitore",
+        "topLegend": "Leggenda più giocata",
+        "topDomains": "Domini principali",
+        "none": "—"
+      },
+      "tournament": {
+        "metadataTitle": "{source}: meta di {gameName}",
+        "metadataDescription": "Leggende, domini e carte dei {count} mazzi registrati al torneo {source} ({date}).",
+        "back": "Tutti i tornei",
+        "global": "Meta generale",
+        "seeDecks": "Vedi i {count} mazzi",
+        "summary": "{date} · {decks, plural, one {# mazzo registrato} other {# mazzi registrati}}",
+        "ranked": "piazzamento indicato per {count, plural, one {# mazzo} other {# mazzi}}",
+        "noRanking": "nessun piazzamento indicato",
+        "kpi": {
+          "winner": "Vincitore",
+          "noWinner": "Non indicato",
+          "noWinnerHint": "nessun mazzo al 1° posto",
+          "topLegend": "Leggenda più giocata",
+          "topLegendHint": "{decks} mazzi su {total}",
+          "topLegendTopHint": "{decks} mazzi su {total}, {topCuts} nella top 8",
+          "topDomain": "Dominio più giocato",
+          "topDomainHint": "giocato dal {share} dei mazzi",
+          "topDomainTopHint": "{share} dei domini della top 8",
+          "legends": "Leggende diverse",
+          "legendsHint": "{count} nella top 8",
+          "legendsNoTopHint": "su {decks} mazzi"
+        },
+        "legends": {
+          "title": "Ripartizione delle leggende",
+          "all": "Tutto il torneo",
+          "top": "Top 8",
+          "decksUnit": "mazzi",
+          "others": "Altre",
+          "detail": "Per leggenda",
+          "conversionHint": "Conversione = quota nella top 8 ÷ quota nel torneo",
+          "legend": "Leggenda",
+          "share": "Quota del torneo",
+          "decks": "Mazzi",
+          "topCuts": "Top 8",
+          "best": "Miglior piazzamento",
+          "conversion": "Conversione"
+        },
+        "domains": {
+          "title": "Domini",
+          "hint": "Ogni mazzo conta per ciascuno dei suoi domini",
+          "pairs": "Coppie più giocate: {pairs}"
+        },
+        "topCut": {
+          "title": "Top 8",
+          "hint": "I mazzi classificati nella top 8"
+        },
+        "tiers": {
+          "title": "Leggende per piazzamento",
+          "hint": "Mazzi di ogni leggenda per fascia; più la casella è scura, più la leggenda pesa nella fascia",
+          "top8": "Top 8",
+          "top16": "9° – 16°",
+          "top32": "17° – 32°",
+          "rest": "Dal 33° in giù",
+          "unranked": "Senza piazzamento",
+          "count": "{count, plural, one {# mazzo} other {# mazzi}}"
+        },
+        "cards": {
+          "title": "Carte che fanno la differenza",
+          "hint": "Quota dei mazzi della top 8 che giocano la carta, rispetto al resto del torneo",
+          "up": "Più giocate dalla top 8",
+          "down": "Meno giocate dalla top 8",
+          "versus": "vs {share}",
+          "none": "Niente di rilevante."
+        },
+        "decks": {
+          "title": "{count, plural, one {Il mazzo} other {Tutti i # mazzi}}",
+          "filter": "Filtra per leggenda",
+          "all": "Tutte"
+        }
       }
     },
     "nav": {

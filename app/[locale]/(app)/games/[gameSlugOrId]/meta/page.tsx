@@ -26,9 +26,10 @@ import {
   legendKey,
   legendLabel,
 } from "@/lib/meta/stats.ts";
+import { listTournaments } from "@/lib/meta/tournaments.ts";
 import { cn } from "@/lib/utils.ts";
 import { MetaFilters } from "./MetaFilters.tsx";
-import { CardsTab, DecksTab, OverviewTab, SetsTab, StaplesTab, TogetherTab, type MetaView } from "./sections.tsx";
+import { CardsTab, DecksTab, OverviewTab, SetsTab, StaplesTab, TogetherTab, TournamentsTab, type MetaView } from "./sections.tsx";
 
 type GameParams = Promise<{ gameSlugOrId: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -159,6 +160,9 @@ async function MetaContent({ params, searchParams }: MetaPageProps) {
   }));
   const domains = withSelected(countBy(inPeriod.flatMap((deck) => deck.domains)), state.domain).map(([value]) => value);
 
+  // Un tournoi se lit en entier : seule la période s'applique à leur liste.
+  const tournaments = listTournaments(inPeriod, sample.cards);
+
   const view: MetaView = {
     t,
     locale,
@@ -190,7 +194,12 @@ async function MetaContent({ params, searchParams }: MetaPageProps) {
         {META_TABS.map((tab) => (
           <Link
             key={tab}
-            href={metaHref(basePath, state, settings, { tab, card: tab === "together" || tab === "decks" ? state.card : undefined })}
+            href={metaHref(basePath, state, settings, {
+              tab,
+              card: tab === "together" || tab === "decks" ? state.card : undefined,
+              // Les tournois ne se filtrent que par période.
+              ...(tab === "tournaments" ? { source: undefined, legend: undefined, domain: undefined } : {}),
+            })}
             scroll={false}
             aria-current={tab === state.tab ? "page" : undefined}
             className={cn(
@@ -200,6 +209,7 @@ async function MetaContent({ params, searchParams }: MetaPageProps) {
           >
             {t(`tabs.${tab}`)}
             {tab === "decks" && <span className="ml-1.5 font-mono text-xs">{decks.length}</span>}
+            {tab === "tournaments" && <span className="ml-1.5 font-mono text-xs">{tournaments.length}</span>}
           </Link>
         ))}
       </nav>
@@ -209,12 +219,14 @@ async function MetaContent({ params, searchParams }: MetaPageProps) {
         state={state}
         settings={settings}
         periods={periodChoices(settings)}
-        sources={sources}
-        legends={legends}
-        domains={domains}
+        sources={state.tab === "tournaments" ? [] : sources}
+        legends={state.tab === "tournaments" ? [] : legends}
+        domains={state.tab === "tournaments" ? [] : domains}
       />
 
-      {decks.length === 0 ? (
+      {state.tab === "tournaments" ? (
+        <TournamentsTab view={view} tournaments={tournaments} />
+      ) : decks.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
           {t("noMatch")}
         </p>

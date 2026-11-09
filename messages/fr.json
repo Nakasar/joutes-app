@@ -602,7 +602,8 @@
         "staples": "Staples",
         "together": "Jouées ensemble",
         "sets": "Extensions",
-        "decks": "Decks"
+        "decks": "Decks",
+        "tournaments": "Tournois"
       },
       "filters": {
         "period": "Période",
@@ -699,6 +700,87 @@
       "decks": {
         "withCard": "{count, plural, one {# deck joue} other {# decks jouent}} « {name} »",
         "clearCard": "Tous les decks"
+      },
+      "tournaments": {
+        "explain": "Un tournoi regroupe les decks de même nom et de même date. La période choisie s'applique ici ; les autres filtres non.",
+        "name": "Tournoi",
+        "date": "Date",
+        "decks": "Decks",
+        "winner": "Vainqueur",
+        "topLegend": "Légende la plus jouée",
+        "topDomains": "Domaines dominants",
+        "none": "—"
+      },
+      "tournament": {
+        "metadataTitle": "{source} : méta {gameName}",
+        "metadataDescription": "Les légendes, domaines et cartes des {count} decks relevés au tournoi {source} ({date}).",
+        "back": "Tous les tournois",
+        "global": "Méta globale",
+        "seeDecks": "Voir les {count} decks",
+        "summary": "{date} · {decks, plural, one {# deck relevé} other {# decks relevés}}",
+        "ranked": "classement saisi pour {count, plural, one {# deck} other {# decks}}",
+        "noRanking": "aucun classement saisi",
+        "kpi": {
+          "winner": "Vainqueur",
+          "noWinner": "Non renseigné",
+          "noWinnerHint": "aucun deck classé 1er",
+          "topLegend": "Légende la plus jouée",
+          "topLegendHint": "{decks} decks sur {total}",
+          "topLegendTopHint": "{decks} decks sur {total}, {topCuts} dans le top 8",
+          "topDomain": "Domaine le plus joué",
+          "topDomainHint": "joué par {share} des decks",
+          "topDomainTopHint": "{share} des emplacements du top 8",
+          "legends": "Légendes différentes",
+          "legendsHint": "{count} au top 8",
+          "legendsNoTopHint": "sur {decks} decks"
+        },
+        "legends": {
+          "title": "Répartition des légendes",
+          "all": "Tout le tournoi",
+          "top": "Top 8",
+          "decksUnit": "decks",
+          "others": "Autres",
+          "detail": "Détail par légende",
+          "conversionHint": "Conversion = part dans le top 8 ÷ part dans le tournoi",
+          "legend": "Légende",
+          "share": "Part du tournoi",
+          "decks": "Decks",
+          "topCuts": "Top 8",
+          "best": "Meilleur classement",
+          "conversion": "Conversion"
+        },
+        "domains": {
+          "title": "Domaines",
+          "hint": "Chaque deck compte pour chacun de ses domaines",
+          "pairs": "Paires les plus jouées : {pairs}"
+        },
+        "topCut": {
+          "title": "Top 8",
+          "hint": "Les decks classés dans le top 8"
+        },
+        "tiers": {
+          "title": "Légendes selon le classement",
+          "hint": "Decks de chaque légende par palier ; plus la case est foncée, plus la légende pèse dans le palier",
+          "top8": "Top 8",
+          "top16": "9e – 16e",
+          "top32": "17e – 32e",
+          "rest": "33e et au-delà",
+          "unranked": "Sans classement",
+          "count": "{count, plural, one {# deck} other {# decks}}"
+        },
+        "cards": {
+          "title": "Cartes qui font la différence",
+          "hint": "Part des decks du top 8 qui jouent la carte, comparée au reste du tournoi",
+          "up": "Plus jouées par le top 8",
+          "down": "Moins jouées par le top 8",
+          "versus": "vs {share}",
+          "none": "Rien de notable."
+        },
+        "decks": {
+          "title": "{count, plural, one {Le deck} other {Les # decks}}",
+          "filter": "Filtrer par légende",
+          "all": "Toutes"
+        }
       }
     },
     "nav": {

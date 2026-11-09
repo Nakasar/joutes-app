@@ -170,6 +170,7 @@ async function MetaDecksTab({
       totalPages={result.totalPages}
       total={result.total}
       baseHref={`/decks/meta/manage?game=${encodeURIComponent(gameKey)}&tab=decks`}
+      metaPath={`/games/${encodeURIComponent(gameKey)}/meta`}
     />
   );
 }

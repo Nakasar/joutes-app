@@ -8,6 +8,7 @@ import { Link, useRouter } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog.tsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog.tsx";
+import { tournamentPath } from "@/lib/meta/tournaments.ts";
 import { MetaDeckEditDialog } from "@/components/decks/MetaDeckEditDialog.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
@@ -98,7 +99,10 @@ export function MetaDeckBanner({
       <ChartLine className="size-4 shrink-0 text-primary" aria-hidden />
       {meta ? (
         <span className="min-w-48 flex-1">
-          <span className="font-semibold">Méta</span> · {meta.source}
+          <span className="font-semibold">Méta</span> ·{" "}
+          <Link href={tournamentPath(`/games/${gameId}/meta`, meta.source, meta.eventDate)} className="underline-offset-2 hover:underline">
+            {meta.source}
+          </Link>
           {meta.placement && ` · ${meta.placement}`}
           <span className="text-muted-foreground"> · {dateFormat.format(new Date(meta.eventDate))}</span>
         </span>
