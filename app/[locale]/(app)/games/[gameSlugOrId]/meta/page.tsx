@@ -42,7 +42,7 @@ interface MetaPageProps {
 /** La méta n'existe que pour un jeu qui ouvre ses decks. */
 async function requireGameWithDecks(gameSlugOrId: string) {
   const game = await readGameBySlugOrId(gameSlugOrId);
-  if (!game?.features?.decks) notFound();
+  if (!game?.features?.meta) notFound();
   return game;
 }
 
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: MetaPageProps): Promise<Metad
   const { gameSlugOrId } = await params;
   const game = await readGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games.meta");
-  if (!game?.features?.decks) return { title: t("metadata.notFoundTitle") };
+  if (!game?.features?.meta) return { title: t("metadata.notFoundTitle") };
 
   const title = t("metadata.title", { gameName: game.name });
   const description = t("metadata.description", { gameName: game.name });

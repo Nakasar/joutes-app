@@ -66,7 +66,7 @@ export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string
             </Link>
           </Button>
         }
-        {game.features?.decks && currentTab !== 'meta' &&
+        {game.features?.meta && currentTab !== 'meta' &&
           <Button variant="secondary" asChild>
             <Link href={`/games/${gameSlug}/meta`} className="hover:underline">
               {t("meta")}
@@ -174,7 +174,7 @@ export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string
                 </Link>
               </DropdownMenuItem>
             }
-            {game.features?.decks &&
+            {game.features?.meta &&
               <DropdownMenuItem asChild>
                 <Link href={`/games/${gameSlug}/meta`}>
                   {t("meta")}

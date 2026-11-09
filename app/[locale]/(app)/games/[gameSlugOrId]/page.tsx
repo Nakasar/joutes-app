@@ -379,6 +379,15 @@ async function GameTools({ params }: GameDetailPageProps) {
             </Link>
           )}
 
+          {game.features?.meta && (
+            <Link href={`/games/${game.slug ?? game.id}/meta`} className="group">
+              <div className="bg-gradient-to-br from-sky-900/30 to-sky-800/20 backdrop-blur-sm rounded-xl border border-sky-500/20 p-8 hover:border-sky-500/50 transition-all hover:scale-105">
+                <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsMeta.title")}</h3>
+                <p className="text-gray-300">{t("detail.toolsMeta.description")}</p>
+              </div>
+            </Link>
+          )}
+
           {game.features?.quizz && (
             <Link href={`/games/${game.slug ?? game.id}/quizz`} className="group">
               <div className="bg-gradient-to-br from-pink-900/30 to-pink-800/20 backdrop-blur-sm rounded-xl border border-pink-500/20 p-8 hover:border-pink-500/50 transition-all hover:scale-105">

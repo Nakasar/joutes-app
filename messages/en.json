@@ -52,6 +52,7 @@
         "cubes": "Cubes",
         "deckChecker": "Deck checker",
         "decks": "Decks",
+        "meta": "Meta",
         "news": "News",
         "quizz": "Quizzes"
       },
@@ -924,6 +925,10 @@
       "toolsDecks": {
         "title": "Decks",
         "description": "Browse the lists published by the community and build your own"
+      },
+      "toolsMeta": {
+        "title": "Meta",
+        "description": "The decks that win tournaments: legends, staple cards and the results of each event"
       },
       "toolsQuizz": {
         "title": "Quizzes",

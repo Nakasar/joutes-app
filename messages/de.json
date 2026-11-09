@@ -52,6 +52,7 @@
         "cubes": "Cubes",
         "deckChecker": "Deck-Checker",
         "decks": "Decks",
+        "meta": "Meta",
         "news": "Neuigkeiten",
         "quizz": "Quiz"
       },
@@ -924,6 +925,10 @@
       "toolsDecks": {
         "title": "Decks",
         "description": "Durchstöbere die von der Community veröffentlichten Listen und baue deine eigenen"
+      },
+      "toolsMeta": {
+        "title": "Meta",
+        "description": "Die Decks, die Turniere gewinnen: Legenden, Pflichtkarten und die Ergebnisse jedes Turniers"
       },
       "toolsQuizz": {
         "title": "Quiz",

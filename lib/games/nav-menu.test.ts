@@ -120,12 +120,12 @@ describe("gameToolLinks", () => {
     );
   });
 
-  it("ouvre decks, actualités et quizz sous leurs propres fanions", () => {
+  it("ouvre decks, méta, actualités et quizz sous leurs propres fanions", () => {
     const game: NavGame = {
       id: "abc",
       name: "Shatterpoint",
       slug: "shatterpoint",
-      features: { decks: true, news: true, quizz: true },
+      features: { decks: true, meta: true, news: true, quizz: true },
     };
 
     assert.deepEqual(
@@ -133,6 +133,7 @@ describe("gameToolLinks", () => {
       [
         "/games/shatterpoint",
         "/games/shatterpoint/decks",
+        "/games/shatterpoint/meta",
         "/games/shatterpoint/news",
         "/games/shatterpoint/quizz",
       ],

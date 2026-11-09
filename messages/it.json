@@ -52,6 +52,7 @@
         "cubes": "Cubi",
         "deckChecker": "Controllo del mazzo",
         "decks": "Mazzi",
+        "meta": "Meta",
         "news": "Notizie",
         "quizz": "Quiz"
       },
@@ -924,6 +925,10 @@
       "toolsDecks": {
         "title": "Mazzi",
         "description": "Sfoglia le liste pubblicate dalla community e componi le tue"
+      },
+      "toolsMeta": {
+        "title": "Meta",
+        "description": "I mazzi che vincono i tornei: leggende, carte imprescindibili e risultati di ogni torneo"
       },
       "toolsQuizz": {
         "title": "Quiz",

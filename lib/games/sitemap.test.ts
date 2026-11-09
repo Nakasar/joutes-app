@@ -75,6 +75,13 @@ describe("gameSitemapUrls", () => {
     ]);
   });
 
+  it("annonce la méta sur son propre fanion, pas sur celui des decks", () => {
+    assert.deepEqual(paths({ id: "1", slug: "riftbound", features: { meta: true } }), [
+      "/games/riftbound",
+      "/games/riftbound/meta",
+    ]);
+  });
+
   it("laisse la collection en dehors : elle est personnelle", () => {
     // Elle figure pourtant dans la barre d'outils du jeu, sous le fanion des
     // cartes — mais elle ne se lit qu'avec un compte.

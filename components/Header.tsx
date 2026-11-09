@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, ArrowLeftRight, Boxes, BookOpen, Hammer, Layers, ListChecks, Newspaper, Package, Printer, Scale, Settings2, Store, Swords, HelpCircle, type LucideIcon} from "lucide-react";
+import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, ArrowLeftRight, Boxes, BookOpen, ChartLine, Hammer, Layers, ListChecks, Newspaper, Package, Printer, Scale, Settings2, Store, Swords, HelpCircle, type LucideIcon} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -97,6 +97,7 @@ const GAME_TOOL_ICONS: Record<GameToolKey, LucideIcon> = {
   cubes: Boxes,
   deckChecker: ListChecks,
   decks: Hammer,
+  meta: ChartLine,
   news: Newspaper,
   quizz: HelpCircle,
 };
@@ -258,6 +259,7 @@ export default function Header() {
     cubes: t('menu.tools.cubes'),
     deckChecker: t('menu.tools.deckChecker'),
     decks: t('menu.tools.decks'),
+    meta: t('menu.tools.meta'),
     news: t('menu.tools.news'),
     quizz: t('menu.tools.quizz'),
   };

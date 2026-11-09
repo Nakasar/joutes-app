@@ -46,7 +46,7 @@ function first(value: string | string[] | undefined): string | undefined {
 async function loadTournament(params: Params) {
   const { gameSlugOrId, date, slug } = await params;
   const game = await readGameBySlugOrId(gameSlugOrId);
-  if (!game?.features?.decks) notFound();
+  if (!game?.features?.meta) notFound();
   const sample = await loadMetaSample(game.id, game.slug);
   const decks = findTournamentDecks(sample.decks, date, slug);
   if (decks.length === 0) notFound();
@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: TournamentPageProps): Promise
   const { gameSlugOrId, date, slug } = await params;
   const game = await readGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games.meta");
-  if (!game?.features?.decks) return { title: t("metadata.notFoundTitle") };
+  if (!game?.features?.meta) return { title: t("metadata.notFoundTitle") };
   const sample = await loadMetaSample(game.id, game.slug);
   const decks = findTournamentDecks(sample.decks, date, slug);
   if (decks.length === 0) return { title: t("metadata.notFoundTitle") };

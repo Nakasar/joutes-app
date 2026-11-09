@@ -47,7 +47,7 @@ async function MetaManageContent({ searchParams }: { searchParams: SearchParams 
     notFound();
   }
 
-  const games = (await getAllGames()).filter((game) => game.features?.decks || game.slug === "riftbound");
+  const games = (await getAllGames()).filter((game) => game.features?.meta || game.features?.decks || game.slug === "riftbound");
   const requested = first(params.game);
   const game =
     games.find((candidate) => candidate.slug === requested || candidate.id === requested) ??
