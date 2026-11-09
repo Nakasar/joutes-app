@@ -217,7 +217,13 @@ export function LocatorImportForm({
   const runImport = async (targets: LocatorStanding[], previous?: Progress) => {
     if (!event) return;
     const state: Progress = previous
-      ? { ...previous, total: previous.total, finished: false, failed: previous.failed.filter((item) => !targets.includes(item.standing)) }
+      ? {
+          ...previous,
+          // Une relance repart de ce qui était déjà passé : la barre avance avec les decks relancés.
+          done: previous.total - targets.length,
+          finished: false,
+          failed: previous.failed.filter((item) => !targets.includes(item.standing)),
+        }
       : { total: targets.length, done: 0, created: 0, failed: [], finished: false };
     setProgress({ ...state });
 
@@ -240,7 +246,7 @@ export function LocatorImportForm({
           if (row.status === "error") state.failed.push({ standing: batch[index], note: row.notes[0] ?? "Deck illisible." });
         });
       }
-      state.done = Math.min(state.total, state.done + (previous ? 0 : batch.length));
+      state.done = Math.min(state.total, state.done + batch.length);
       setProgress({ ...state, failed: [...state.failed] });
     }
 
@@ -628,7 +634,7 @@ export function LocatorImportForm({
               Publiés en decks publics, étiquetés « Méta · {source.trim()} ». Les lignes décochées, déjà importées ou sans
               liste sont laissées de côté.
             </p>
-            <div className="flex w-full gap-2 sm:w-auto">
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap">
               <Button variant="ghost" className="flex-1 sm:flex-none" onClick={reset}>
                 Annuler
               </Button>

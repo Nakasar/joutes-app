@@ -66,9 +66,10 @@ async function getAllPages<T>(path: string): Promise<T[]> {
       throw new LocatorError("Réponse du locator illisible : son API a peut-être changé.");
     }
     items.push(...data.results);
-    if (!data.next || data.results.length === 0) break;
+    if (!data.next || data.results.length === 0) return items;
   }
-  return items;
+  // Plutôt qu'un classement tronqué sans le dire.
+  throw new LocatorError(`Plus de ${MAX_REGISTRATION_PAGES * REGISTRATIONS_PAGE_SIZE} lignes sur le locator : trop pour un import.`);
 }
 
 /**
