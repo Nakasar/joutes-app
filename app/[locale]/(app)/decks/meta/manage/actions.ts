@@ -14,6 +14,7 @@ import {
   removeMetaBatch,
   removeMetaDeck,
   toPublicRows,
+  updateMetaDeck,
   type PublicMetaImportRow,
 } from "@/lib/db/meta-decks";
 import { MetaImportTooLargeError, resolveMetaImport } from "@/lib/meta/import";
@@ -167,6 +168,32 @@ export async function markDeckAsMetaAction(values: z.input<typeof markSchema>): 
 
   refreshMeta(result.deck.gameId);
   revalidatePath(`/decks/${parsed.data.deckId}`);
+  return { ok: true };
+}
+
+const editSchema = z.object({
+  deckId: z.string().min(1),
+  source: z.string().trim().min(1, "Indiquez la source (le tournoi).").max(80),
+  eventDate: z.coerce.date(),
+  placement: z.string().trim().max(40).optional(),
+  name: z.string().trim().max(100).optional(),
+  pilot: z.string().trim().max(80).optional(),
+});
+
+/** Corrige la provenance d'un deck méta (tournoi, date, classement, joueur, nom). */
+export async function updateMetaDeckAction(values: z.input<typeof editSchema>): Promise<ActionResult<object>> {
+  if (!(await requireMetaManager())) return { ok: false, error: "Accès refusé." };
+
+  const parsed = editSchema.safeParse(values);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Données invalides." };
+  if (Number.isNaN(parsed.data.eventDate.getTime())) return { ok: false, error: "Date du tournoi invalide." };
+
+  const { deckId, ...edit } = parsed.data;
+  const result = await updateMetaDeck(deckId, edit);
+  if (!result.ok) return result;
+
+  refreshMeta(result.gameId);
+  revalidatePath(`/decks/${deckId}`);
   return { ok: true };
 }
 

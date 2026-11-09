@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb";
 
 import db from "@/lib/mongodb";
 import { createDeck, findAvailableDeckName, getDeckById } from "@/lib/db/decks";
+import { metaDeckDescription, planMetaDeckEdit, type MetaDeckEdit } from "@/lib/meta/edit";
 import { formatPlacement } from "@/lib/meta/import-input";
 import { mapWithConcurrency, resolveMetaImport, type MetaImportRow } from "@/lib/meta/import";
 import { toPublicDeckMeta, type Deck, type DeckMeta } from "@/lib/types/Deck";
@@ -94,14 +95,7 @@ export async function importMetaDecks(request: MetaImportRequest, playerId: stri
       gameId: game.id,
       name,
       ...(row.url ? { url: row.url } : {}),
-      description: [
-        `Liste relevée à ${source}`,
-        row.placement ? `classée ${row.placement}` : undefined,
-        row.pilot ? `jouée par ${row.pilot}` : undefined,
-      ]
-        .filter(Boolean)
-        .join(", ")
-        .concat("."),
+      description: metaDeckDescription({ source, placement: row.placement, pilot: row.pilot }),
       cards: row.cards,
       ...(format ? { format } : {}),
       visibility: "public",
@@ -142,6 +136,36 @@ export async function markDeckAsMeta(
 
   await db.collection(COLLECTION_NAME).updateOne({ _id: new ObjectId(deckId) }, { $set: { meta } });
   return { ok: true, deck: { ...deck, meta: toPublicDeckMeta(meta) } };
+}
+
+/**
+ * Modifie la provenance d'un deck méta : tournoi, date, classement, et pour
+ * un deck importé son nom et son joueur. Rend le jeu du deck, pour invalider
+ * ses statistiques.
+ */
+export async function updateMetaDeck(
+  deckId: string,
+  edit: MetaDeckEdit
+): Promise<{ ok: true; gameId: string } | { ok: false; error: string }> {
+  if (!ObjectId.isValid(deckId)) return { ok: false, error: "Deck introuvable." };
+
+  const _id = new ObjectId(deckId);
+  const doc = await db
+    .collection(COLLECTION_NAME)
+    .findOne({ _id, meta: { $exists: true } }, { projection: { gameId: 1, playerId: 1, name: 1, description: 1, meta: 1 } });
+  if (!doc) return { ok: false, error: "Deck introuvable." };
+
+  const plan = planMetaDeckEdit({ name: doc.name, description: doc.description, meta: doc.meta }, edit);
+  if (plan.rename) {
+    const taken = await db.collection(COLLECTION_NAME).findOne({ playerId: doc.playerId, name: plan.rename, _id: { $ne: _id } });
+    if (taken) return { ok: false, error: "Un autre deck du même compte porte déjà ce nom." };
+  }
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id },
+    { $set: { ...plan.$set, updatedAt: new Date() }, ...(Object.keys(plan.$unset).length > 0 ? { $unset: plan.$unset } : {}) }
+  );
+  return { ok: true, gameId: doc.gameId };
 }
 
 /**

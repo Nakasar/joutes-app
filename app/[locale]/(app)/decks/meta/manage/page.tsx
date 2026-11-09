@@ -159,6 +159,7 @@ async function MetaDecksTab({
               source: deck.meta.source,
               eventDate: new Date(deck.meta.eventDate).toISOString(),
               placement: deck.meta.placement,
+              pilot: deck.meta.pilot,
             }
           : undefined,
       }))}

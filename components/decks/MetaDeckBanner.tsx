@@ -8,6 +8,7 @@ import { Link, useRouter } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog.tsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog.tsx";
+import { MetaDeckEditDialog } from "@/components/decks/MetaDeckEditDialog.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { markDeckAsMetaAction, removeMetaDeckAction } from "@/app/[locale]/(app)/decks/meta/manage/actions.ts";
@@ -17,6 +18,7 @@ export type MetaDeckBannerMeta = {
   source: string;
   eventDate: string;
   placement?: string;
+  pilot?: string;
 };
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
@@ -35,12 +37,14 @@ function today(): string {
  */
 export function MetaDeckBanner({
   deckId,
+  deckName,
   gameId,
   meta,
   canManage,
   isPublic,
 }: {
   deckId: string;
+  deckName: string;
   gameId: string;
   meta?: MetaDeckBannerMeta;
   canManage: boolean;
@@ -50,6 +54,7 @@ export function MetaDeckBanner({
   const manageHref = `/decks/meta/manage?game=${encodeURIComponent(gameId)}&tab=decks`;
   const [marking, setMarking] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [source, setSource] = useState("");
   const [eventDate, setEventDate] = useState(today);
   const [placement, setPlacement] = useState("");
@@ -108,6 +113,9 @@ export function MetaDeckBanner({
               <Link href={manageHref}>Gérer la méta</Link>
             </Button>
           )}
+          <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+            Modifier
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setRemoving(true)}>
             {meta.imported ? "Supprimer" : "Retirer de la méta"}
           </Button>
@@ -167,6 +175,10 @@ export function MetaDeckBanner({
           </form>
         </DialogContent>
       </Dialog>
+
+      {canManage && meta && (
+        <MetaDeckEditDialog deck={editing ? { id: deckId, name: deckName, meta } : null} onClose={() => setEditing(false)} />
+      )}
 
       <ConfirmDialog
         open={removing}
