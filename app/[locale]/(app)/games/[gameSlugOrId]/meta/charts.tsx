@@ -37,20 +37,22 @@ export function Donut({
 }) {
   const total = parts.reduce((sum, part) => sum + part.value, 0);
   let acc = 0;
-  const stops = parts
-    .filter((part) => part.value > 0)
-    .map((part) => {
-      const from = (acc / total) * 100;
-      acc += part.value;
-      const to = (acc / total) * 100;
-      const colors = part.colors && part.colors.length > 1 ? part.colors : undefined;
-      if (!colors) return `${part.color} ${from.toFixed(2)}% ${to.toFixed(2)}%`;
-      // Le dégradé tient dans l'arc : première couleur au début, dernière à la fin.
-      const step = (to - from) / (colors.length - 1);
-      return colors.map((color, index) => `${color} ${(from + step * index).toFixed(2)}%`).join(", ");
-    });
-  const label = `${title} : ${parts
-    .filter((part) => part.value > 0)
+  const shown = parts.filter((part) => part.value > 0);
+  // Des dégradés voisins peuvent se toucher par la même couleur : un mince trait les sépare.
+  const gap = shown.length > 1 && shown.some((part) => (part.colors?.length ?? 0) > 1) ? 0.6 : 0;
+  const stops = shown.map((part) => {
+    const start = (acc / total) * 100;
+    acc += part.value;
+    const to = (acc / total) * 100;
+    const from = Math.min(start + gap, to);
+    const separator = gap > 0 ? `var(--card) ${start.toFixed(2)}% ${from.toFixed(2)}%, ` : "";
+    const colors = part.colors && part.colors.length > 1 ? part.colors : undefined;
+    if (!colors) return `${separator}${part.color} ${from.toFixed(2)}% ${to.toFixed(2)}%`;
+    // Le dégradé tient dans l'arc : première couleur au début, dernière à la fin.
+    const step = (to - from) / (colors.length - 1);
+    return separator + colors.map((color, index) => `${color} ${(from + step * index).toFixed(2)}%`).join(", ");
+  });
+  const label = `${title} : ${shown
     .map((part) => `${part.label} ${formatShare(part.value / total)}`)
     .join(", ")}`;
 
