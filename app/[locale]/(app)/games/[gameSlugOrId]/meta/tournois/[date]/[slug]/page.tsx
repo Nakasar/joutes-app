@@ -510,9 +510,9 @@ function DeckLink({ deck, sample, highlight }: { deck: MetaSampleDeck; sample: M
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate font-semibold">{deck.name}</span>
         <span className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-          <span className="inline-flex gap-1" aria-label={deck.domains.join(", ")}>
+          <span role="img" className="inline-flex gap-1" aria-label={deck.domains.join(", ")}>
             {deck.domains.map((domain) => (
-              <span key={domain} className="size-2 rounded-full" style={{ background: domainColor(domain) }} />
+              <span key={domain} className="size-2 rounded-full" style={{ background: domainColor(domain) }} aria-hidden />
             ))}
           </span>
           <span>{legendLabel(deck, sample.cards)}</span>
