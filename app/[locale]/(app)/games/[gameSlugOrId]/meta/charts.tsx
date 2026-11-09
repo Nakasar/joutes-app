@@ -2,23 +2,32 @@ import { cn } from "@/lib/utils.ts";
 
 /**
  * Une part de camembert. `colors` (deux couleurs ou plus) la peint en dégradé
- * sur son arc, à la place de `color`.
+ * du bord intérieur de l'anneau (première couleur) au bord extérieur (dernière),
+ * à la place de `color`.
  */
 export type DonutPart = { label: string; value: number; color: string; colors?: string[] };
 
-/** Un fond CSS pour une liste de couleurs : pleine s'il n'y en a qu'une, en dégradé sinon. */
+/** Un fond CSS pour une liste de couleurs : pleine s'il n'y en a qu'une, en dégradé du centre vers le bord sinon. */
 export function swatchBackground(colors: string[], fallback: string): string {
   if (colors.length === 0) return fallback;
-  return colors.length === 1 ? colors[0] : `linear-gradient(135deg, ${colors.join(", ")})`;
+  return colors.length === 1 ? colors[0] : `radial-gradient(circle, ${colors.join(", ")})`;
 }
 
 /** Les couleurs des légendes dans les camemberts, la dernière pour « Autres ». */
 export const LEGEND_COLORS = ["#0b6d9e", "#e0892b", "#2f9a5b", "#8b4fd1", "#d64545", "#62b4e0", "#b8900f", "#d977a8", "#4f7a6b"];
 export const OTHERS_COLOR = "#94a3b8";
 
+/** Le trou de l'anneau, en part du diamètre (le cercle central fait `w-[58%]`). */
+const HOLE = 58;
+
 /**
  * Un camembert en anneau, dessiné en CSS (`conic-gradient`) : rien à charger.
  * Le total s'affiche au centre ; les parts sont dites aux lecteurs d'écran.
+ *
+ * Une part en dégradé (`colors`) passe d'une couleur à l'autre en s'éloignant
+ * du centre : un calque conique par couleur, chacun estompé vers l'extérieur
+ * par un masque radial au-dessus du suivant. Les parts voisines ne se touchent
+ * ainsi jamais par un dégradé.
  */
 export function Donut({
   title,
@@ -36,35 +45,49 @@ export function Donut({
   formatShare: (share: number) => string;
 }) {
   const total = parts.reduce((sum, part) => sum + part.value, 0);
-  let acc = 0;
   const shown = parts.filter((part) => part.value > 0);
-  // Des dégradés voisins peuvent se toucher par la même couleur : un mince trait les sépare.
-  const gap = shown.length > 1 && shown.some((part) => (part.colors?.length ?? 0) > 1) ? 0.6 : 0;
-  const stops = shown.map((part) => {
-    const start = (acc / total) * 100;
-    acc += part.value;
-    const to = (acc / total) * 100;
-    const from = Math.min(start + gap, to);
-    const separator = gap > 0 ? `var(--card) ${start.toFixed(2)}% ${from.toFixed(2)}%, ` : "";
-    const colors = part.colors && part.colors.length > 1 ? part.colors : undefined;
-    if (!colors) return `${separator}${part.color} ${from.toFixed(2)}% ${to.toFixed(2)}%`;
-    // Le dégradé tient dans l'arc : première couleur au début, dernière à la fin.
-    const step = (to - from) / (colors.length - 1);
-    return separator + colors.map((color, index) => `${color} ${(from + step * index).toFixed(2)}%`).join(", ");
-  });
-  const label = `${title} : ${shown
-    .map((part) => `${part.label} ${formatShare(part.value / total)}`)
-    .join(", ")}`;
+  const layers = Math.max(1, ...shown.map((part) => part.colors?.length ?? 1));
+  // Entre deux dégradés, un mince trait sépare les parts.
+  const gap = shown.length > 1 && layers > 1 ? 0.6 : 0;
+  const conic = (layer: number) => {
+    let acc = 0;
+    const stops = shown.map((part) => {
+      const start = (acc / total) * 100;
+      acc += part.value;
+      const to = (acc / total) * 100;
+      const from = Math.min(start + gap, to);
+      const colors = part.colors && part.colors.length > 0 ? part.colors : [part.color];
+      const color = colors[Math.min(layer, colors.length - 1)];
+      const separator = gap > 0 ? `var(--card) ${start.toFixed(2)}% ${from.toFixed(2)}%, ` : "";
+      return `${separator}${color} ${from.toFixed(2)}% ${to.toFixed(2)}%`;
+    });
+    return `conic-gradient(${stops.join(", ")})`;
+  };
+  // Le rayon (en part du rayon extérieur) où la couleur n° `layer` est pure.
+  const radius = (layer: number) => HOLE + ((100 - HOLE) * layer) / Math.max(1, layers - 1);
+  const label = `${title} : ${shown.map((part) => `${part.label} ${formatShare(part.value / total)}`).join(", ")}`;
 
   return (
     <figure className={cn("m-0 flex flex-col items-center gap-2.5", className)}>
       <div
         role="img"
         aria-label={label}
-        className="flex aspect-square w-full items-center justify-center rounded-full"
-        style={{ background: total > 0 ? `conic-gradient(${stops.join(", ")})` : "var(--muted)" }}
+        className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-full"
+        style={{ background: total > 0 ? conic(layers - 1) : "var(--muted)" }}
       >
-        <div className="flex aspect-square w-[58%] flex-col items-center justify-center rounded-full bg-card">
+        {total > 0 &&
+          Array.from({ length: layers - 1 }, (_, index) => layers - 2 - index).map((layer) => {
+            const mask = `radial-gradient(closest-side, #000 ${radius(layer).toFixed(1)}%, transparent ${radius(layer + 1).toFixed(1)}%)`;
+            return (
+              <span
+                key={layer}
+                aria-hidden
+                className="absolute inset-0 rounded-full"
+                style={{ background: conic(layer), maskImage: mask, WebkitMaskImage: mask }}
+              />
+            );
+          })}
+        <div className="relative flex aspect-square w-[58%] flex-col items-center justify-center rounded-full bg-card">
           <span className="text-2xl font-bold tabular-nums">{center}</span>
           <span className="text-xs text-muted-foreground">{unit}</span>
         </div>
