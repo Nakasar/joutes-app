@@ -5,6 +5,7 @@ import { getUsersByIds } from "@/lib/db/users";
 import { deriveDeckDomains, getDeckCardInfos } from "@/lib/db/deck-cards";
 import { deckVersionWrite } from "@/lib/db/deck-version";
 import { deckCardIds, type DeckCards } from "@/lib/decks/contents";
+import { escapeRegex } from "@/lib/utils/regex";
 
 const COLLECTION_NAME = "decks";
 
@@ -137,11 +138,6 @@ function toDocument(deck: NewDeck): Omit<DeckDocument, "_id" | "createdAt" | "up
   };
 }
 
-/** Une recherche saisie par un visiteur ne doit pas pouvoir devenir une expression régulière. */
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 // Rechercher des decks avec pagination et filtres
 export async function searchDecks(options: SearchDecksOptions): Promise<PaginatedDecksResult> {
   const {
@@ -214,7 +210,7 @@ export async function searchDecks(options: SearchDecksOptions): Promise<Paginate
   }
 
   if (search) {
-    const pattern = escapeRegExp(search);
+    const pattern = escapeRegex(search);
     conditions.push({
       $or: [
         { name: { $regex: pattern, $options: "i" } },

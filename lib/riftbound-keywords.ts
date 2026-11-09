@@ -1,4 +1,5 @@
 import { getAllKeywordEntries } from "@/lib/rules/riftbound";
+import { escapeRegex } from "@/lib/utils/regex";
 
 // A keyword mention may carry an associated value after its name, e.g.
 // "[Predict 2]", "[Assault 2]", or "[Equip [1]:rb_rune_body:]" — but not
@@ -28,7 +29,7 @@ function getCache() {
   }
 
   const sortedNames = [...idByName.keys()].sort((a, b) => b.length - a.length);
-  const escaped = sortedNames.map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const escaped = sortedNames.map(escapeRegex);
 
   cache = { idByName, namesPattern: escaped.length > 0 ? escaped.join("|") : null };
   return cache;

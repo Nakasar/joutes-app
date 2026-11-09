@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { admins } from "@/lib/config/admins";
+import { readBlobFilename } from "@/lib/media/blob-filename";
+import { IMAGE_KINDS_WITH_GIF, readImageUpload } from "@/lib/media/image-upload";
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -19,35 +21,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     const formData = await request.formData();
-    const file = formData.get("file") as File;
-
-    if (!file) {
-      return NextResponse.json(
-        { error: "Aucun fichier fourni" },
-        { status: 400 }
-      );
+    const upload = await readImageUpload(formData, { kinds: IMAGE_KINDS_WITH_GIF, maxMegabytes: 5 });
+    if ("error" in upload) {
+      return NextResponse.json({ error: upload.error }, { status: 400 });
     }
-
-    // Vérifier le type de fichier
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou GIF." },
-        { status: 400 }
-      );
-    }
-
-    // Limiter la taille du fichier à 5 MB
-    const maxSize = 5 * 1024 * 1024; // 5 MB
-    if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: "Le fichier est trop volumineux (max 5 MB)" },
-        { status: 400 }
-      );
-    }
+    const { file } = upload;
 
     // Upload vers Vercel Blob
-    const blob = await put(file.name, file, {
+    const blob = await put(readBlobFilename(file.name, "image"), file, {
       access: "public",
     });
 

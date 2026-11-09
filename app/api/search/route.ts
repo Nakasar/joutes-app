@@ -8,6 +8,7 @@ import { getGameCardFilterFacets } from "@/lib/db/cards";
 import { buildSearchFields, type SearchField } from "@/lib/cards/search-syntax";
 import type { CardFilterFacet } from "@/lib/cards/search-filters";
 import { cardSyntaxMatch, mayUseCardSyntax } from "@/lib/cards/global-search";
+import { escapeRegex } from "@/lib/utils/regex";
 
 /**
  * Un résultat, tel que la palette du site le lit — et tel qu'un client tiers
@@ -44,10 +45,6 @@ export type SearchResponse = {
 };
 
 const LIMIT = 5;
-
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 async function searchGames(regex: { $regex: string; $options: string }): Promise<SearchResult[]> {
   const games = await db

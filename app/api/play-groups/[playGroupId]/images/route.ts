@@ -5,12 +5,9 @@ import { auth } from "@/lib/auth";
 import { getPlayGroupById } from "@/lib/db/play-groups";
 import { readBlobFilename } from "@/lib/media/blob-filename";
 import { canManagePlayGroup, readMemberRole } from "@/lib/play-groups/access";
+import { IMAGE_KINDS_WITH_GIF, readImageUpload } from "@/lib/media/image-upload";
 
-/** Ce que le stockage accepte, et ce que `next.config.ts` sait afficher. */
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
 
-/** 5 Mo, comme le téléversement des administrateurs : une bannière tient large en dessous. */
-const MAX_SIZE = 5 * 1024 * 1024;
 
 /**
  * Le téléversement de l'emblème et de la bannière d'un groupe.
@@ -40,22 +37,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const formData = await request.formData();
-    const file = formData.get("file");
-
-    if (!(file instanceof File)) {
-      return NextResponse.json({ error: "Aucun fichier fourni" }, { status: 400 });
+    const upload = await readImageUpload(formData, { kinds: IMAGE_KINDS_WITH_GIF, maxMegabytes: 5 });
+    if ("error" in upload) {
+      return NextResponse.json({ error: upload.error }, { status: 400 });
     }
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou GIF." },
-        { status: 400 },
-      );
-    }
-
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "Le fichier est trop volumineux (max 5 Mo)" }, { status: 400 });
-    }
+    const { file } = upload;
 
     // Le chemin porte l'identifiant du groupe, et un suffixe aléatoire :
     // deux groupes qui téléversent chacun leur « logo.png » ne s'écrasent pas,

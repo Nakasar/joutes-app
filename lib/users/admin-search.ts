@@ -1,3 +1,4 @@
+import { escapeRegex } from "@/lib/utils/regex";
 /**
  * Recherche d'utilisateurs pour l'administration.
  *
@@ -24,15 +25,6 @@ export type AdminUserQuery =
   | { kind: "tag"; displayName: string; discriminator: string }
   // Fragment de pseudonyme, déjà échappé pour servir d'expression régulière.
   | { kind: "text"; pattern: string };
-
-/**
- * Un pseudonyme peut contenir n'importe quoi, y compris ce qui a un sens dans
- * une expression régulière. Sans échappement, chercher « (test » ferait échouer
- * la requête, et « .* » balaierait toute la collection.
- */
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 /**
  * Interprète la saisie. Rend `null` quand il n'y a rien à chercher : une

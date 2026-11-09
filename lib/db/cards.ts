@@ -9,6 +9,7 @@ import { planPrintingAddition, type BulkPrinting } from "@/lib/cards/bulk-printi
 import { getGameLanguages } from "@/lib/constants/card-languages";
 import type { Game } from "@/lib/types/Game";
 import { readCardTranslations, type CardTranslations } from "@/lib/cards/translations";
+import { escapeRegex } from "@/lib/utils/regex";
 
 export type CardNameMatch = {
   id: string;
@@ -286,10 +287,6 @@ export async function getRecentGameCards(gameId: ObjectId, limit = 10): Promise<
   return docs.map(toSummary);
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 /** Recherche d'une carte à modifier : par identifiant, nom ou numéro de collection. */
 export async function searchGameCards(gameId: ObjectId, query: string, limit = 20): Promise<GameCardSummary[]> {
   const trimmed = query.trim();
@@ -297,7 +294,7 @@ export async function searchGameCards(gameId: ObjectId, query: string, limit = 2
     return [];
   }
 
-  const pattern = new RegExp(escapeRegExp(trimmed), "i");
+  const pattern = new RegExp(escapeRegex(trimmed), "i");
   const docs = await db
     .collection<CardSummaryDoc & { gameId: ObjectId }>("cards")
     .find(

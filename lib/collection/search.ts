@@ -1,3 +1,4 @@
+import { escapeRegex } from "@/lib/utils/regex";
 /**
  * Recherche de cartes dans la collection.
  *
@@ -6,10 +7,6 @@
  * saisi sans ses accents. Chercher `name` au caractère près laisse ces cas sans
  * résultat, ce qui donne l'impression que la recherche ne marche pas.
  */
-
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 /**
  * Lettres latines et leurs variantes accentuées. MongoDB n'applique pas la

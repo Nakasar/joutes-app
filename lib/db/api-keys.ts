@@ -102,18 +102,6 @@ export async function getApiKeysByUserId(userId: string): Promise<ApiKey[]> {
 }
 
 /**
- * Récupérer une clé API par son ID
- */
-export async function getApiKeyById(id: string): Promise<ApiKey | null> {
-  
-  const doc = await db.collection(COLLECTION_NAME).findOne({
-    _id: ObjectId.createFromHexString(id)
-  });
-  
-  return doc ? toApiKey(doc) : null;
-}
-
-/**
  * Valider une clé API et récupérer l'utilisateur associé
  */
 export async function validateApiKey(key: string): Promise<{ userId: string; apiKeyId: string } | null> {
@@ -141,81 +129,6 @@ export async function validateApiKey(key: string): Promise<{ userId: string; api
   return {
     userId: doc.userId,
     apiKeyId: doc._id.toString()
-  };
-}
-
-/**
- * Mettre à jour une clé API
- */
-export async function updateApiKey(
-  id: string,
-  updates: {
-    name?: string;
-    description?: string;
-    isActive?: boolean;
-  }
-): Promise<boolean> {
-  
-  
-  const updateDoc: Partial<ApiKey> = {
-    updatedAt: new Date(),
-    ...updates
-  };
-  
-  const result = await db.collection(COLLECTION_NAME).updateOne(
-    { _id: ObjectId.createFromHexString(id) },
-    { $set: updateDoc }
-  );
-  
-  return result.modifiedCount > 0;
-}
-
-/**
- * Supprimer une clé API
- */
-export async function deleteApiKey(id: string): Promise<boolean> {
-  
-  const result = await db.collection(COLLECTION_NAME).deleteOne({
-    _id: ObjectId.createFromHexString(id)
-  });
-  
-  return result.deletedCount > 0;
-}
-
-/**
- * Désactiver une clé API
- */
-export async function deactivateApiKey(id: string): Promise<boolean> {
-  return updateApiKey(id, { isActive: false });
-}
-
-/**
- * Réactiver une clé API
- */
-export async function reactivateApiKey(id: string): Promise<boolean> {
-  return updateApiKey(id, { isActive: true });
-}
-
-/**
- * Récupérer les statistiques d'usage d'une clé API
- */
-export async function getApiKeyUsageStats(id: string): Promise<{
-  usageCount: number;
-  lastUsedAt?: Date;
-} | null> {
-  
-  const doc = await db.collection(COLLECTION_NAME).findOne(
-    { _id: ObjectId.createFromHexString(id) },
-    { projection: { usageCount: 1, lastUsedAt: 1 } }
-  );
-  
-  if (!doc) {
-    return null;
-  }
-  
-  return {
-    usageCount: doc.usageCount || 0,
-    lastUsedAt: doc.lastUsedAt || undefined
   };
 }
 
@@ -249,13 +162,4 @@ export async function revokeApiKey(keyId: string, userId: string): Promise<boole
   });
   
   return result.deletedCount > 0;
-}
-
-/**
- * Supprimer toutes les clés API d'un utilisateur
- */
-export async function deleteAllApiKeysForUser(userId: string): Promise<number> {
-  
-  const result = await db.collection(COLLECTION_NAME).deleteMany({ userId });
-  return result.deletedCount;
 }

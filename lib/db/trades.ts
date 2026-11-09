@@ -22,6 +22,7 @@ import { getMarketPrices } from "@/lib/db/card-prices";
 import { findLandscapeCards, type LandscapeCards } from "@/lib/db/card-orientations";
 import type { MarketPrice } from "@/lib/prices/display";
 import type { CardOrientation } from "@/lib/types/card";
+import { escapeRegex } from "@/lib/utils/regex";
 
 /**
  * Échange de cartes.
@@ -73,10 +74,6 @@ export type TradeCardSearchResult = {
 export type TradeCardScope = "collection" | "catalog";
 
 export type TradeGame = { id: string; name: string; slug?: string };
-
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 function cardKey(name: string, setCode: string, collectorNumber: string): string {
   return `${name}|${setCode}|${collectorNumber}`;

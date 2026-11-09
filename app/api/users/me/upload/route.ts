@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { readBlobFilename } from "@/lib/media/blob-filename";
+import { STILL_IMAGE_KINDS, readImageUpload } from "@/lib/media/image-upload";
 
 /**
  * Le dépôt d'images d'un compte — son avatar, la bannière de sa vitrine.
@@ -24,15 +25,13 @@ import { readBlobFilename } from "@/lib/media/blob-filename";
  *   finissait en 500.
  */
 
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-
-/** Une bannière est large, un avatar est petit : deux bornes, pas une. */
-const MAX_SIZE = {
-  avatar: 2 * 1024 * 1024,
-  banner: 5 * 1024 * 1024,
+/** Une bannière est large, un avatar est petit : deux bornes (en Mo), pas une. */
+const MAX_MEGABYTES = {
+  avatar: 2,
+  banner: 5,
 } as const;
 
-type UploadKind = keyof typeof MAX_SIZE;
+type UploadKind = keyof typeof MAX_MEGABYTES;
 
 function readKind(value: FormDataEntryValue | null): UploadKind {
   return value === "banner" ? "banner" : "avatar";
@@ -47,28 +46,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
     const kind = readKind(formData.get("kind"));
-
-    if (!file) {
-      return NextResponse.json({ error: "Aucun fichier fourni" }, { status: 400 });
+    const upload = await readImageUpload(formData, { kinds: STILL_IMAGE_KINDS, maxMegabytes: MAX_MEGABYTES[kind] });
+    if ("error" in upload) {
+      return NextResponse.json({ error: upload.error }, { status: 400 });
     }
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Type de fichier non autorisé. Utilisez JPG, PNG ou WebP." },
-        { status: 400 },
-      );
-    }
-
-    if (file.size > MAX_SIZE[kind]) {
-      return NextResponse.json(
-        {
-          error: `Le fichier est trop volumineux (max ${MAX_SIZE[kind] / (1024 * 1024)} Mo)`,
-        },
-        { status: 400 },
-      );
-    }
+    const { file } = upload;
 
     const name = readBlobFilename(file.name, `${kind}.png`);
 

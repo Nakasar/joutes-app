@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth";
 import { readBlobFilename } from "@/lib/media/blob-filename";
+import { IMAGE_KINDS_WITH_GIF, readImageUpload } from "@/lib/media/image-upload";
 
 /**
  * Le dépôt de l'image de couverture d'un quizz.
@@ -18,11 +19,7 @@ import { readBlobFilename } from "@/lib/media/blob-filename";
  * le fichier existe, mais rien ne l'illustre tant que son auteur n'a pas validé.
  */
 
-/** Ce que le stockage accepte, et ce que les écrans savent afficher. */
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
 
-/** 5 Mo, comme les autres dépôts d'images : un bandeau tient large en dessous. */
-const MAX_SIZE = 5 * 1024 * 1024;
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -33,22 +30,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const formData = await request.formData();
-    const file = formData.get("file");
-
-    if (!(file instanceof File)) {
-      return NextResponse.json({ error: "Aucun fichier fourni" }, { status: 400 });
+    const upload = await readImageUpload(formData, { kinds: IMAGE_KINDS_WITH_GIF, maxMegabytes: 5 });
+    if ("error" in upload) {
+      return NextResponse.json({ error: upload.error }, { status: 400 });
     }
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou GIF." },
-        { status: 400 },
-      );
-    }
-
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "Le fichier est trop volumineux (max 5 Mo)" }, { status: 400 });
-    }
+    const { file } = upload;
 
     // Le chemin porte le compte déposant, et un suffixe aléatoire : deux
     // personnes qui déposent chacune leur « cover.png » ne s'écrasent pas, et

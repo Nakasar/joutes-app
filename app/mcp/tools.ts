@@ -129,6 +129,7 @@ import type { DeckViewCard, DeckViewList } from "@/components/decks/DeckCheckVie
 import { DECK_CHECK_VIEW_URI, type DeckCheckResult } from "@/mcp-apps/deck-check/result";
 import { DECK_CHECK_VIEW_HTML } from "./apps/deck-check.generated";
 import { AUTH_REQUIRED, registerJoutesTool, ToolResult, userIdFrom } from "./tool-policy";
+import { escapeRegex } from "@/lib/utils/regex";
 
 type ToolExtra = ServerContext;
 
@@ -170,10 +171,6 @@ async function resolveGame(gameName: string): Promise<(Game & { _id: ObjectId })
             { name: { $regex: `^${escapeRegex(gameName)}$`, $options: "i" } },
         ],
     });
-}
-
-function escapeRegex(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**

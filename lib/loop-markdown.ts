@@ -1,6 +1,4 @@
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+import { escapeRegex } from "@/lib/utils/regex";
 
 /**
  * Wraps every plain-text mention of a known card name in brackets (e.g.
@@ -29,7 +27,7 @@ export function createCardMentionBracketer(cardNames: string[]): (text: string) 
   if (cardNames.length === 0) return (text) => text;
 
   const sorted = [...cardNames].sort((a, b) => b.length - a.length);
-  const namesPattern = sorted.map(escapeRegExp).join("|");
+  const namesPattern = sorted.map(escapeRegex).join("|");
   const regex = new RegExp(
     `(\\[[^\\]]*\\])|(?<![\\p{L}\\p{N}])(${namesPattern})(?![\\p{L}\\p{N}])`,
     "giu"

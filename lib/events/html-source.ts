@@ -15,6 +15,7 @@ import {
   resolveEventYear,
   type SourceEvent,
 } from "./source-events";
+import { escapeRegex } from "@/lib/utils/regex";
 
 /**
  * Une source HTML : une page lue par sélecteurs CSS, sans modèle.
@@ -228,7 +229,7 @@ function separatorPattern(separator: string): RegExp {
   if (trimmed === "" || /^[-–—]$/.test(trimmed)) {
     return /\s+[-–—]\s+/;
   }
-  return new RegExp(`\\s*${trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*`);
+  return new RegExp(`\\s*${escapeRegex(trimmed)}\\s*`);
 }
 
 /**

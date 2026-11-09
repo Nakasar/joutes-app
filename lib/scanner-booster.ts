@@ -10,6 +10,8 @@
 
 import Fuse from "fuse.js";
 
+import { escapeRegex } from "@/lib/utils/regex";
+
 export type ScannedCandidate = { id: string; name: string; collectorNumber: string };
 
 /** `007a` et `7A` désignent le même numéro : sans zéros en tête, en minuscules. */
@@ -23,7 +25,6 @@ function digitsOf(collectorNumber: string): string {
   return normalizeCollectorNumber(collectorNumber).match(/\d+/)?.[0] ?? "";
 }
 
-const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * Numéros de collection lus sur la carte, dans l'ordre de lecture. La lecture
@@ -40,7 +41,7 @@ export function readCollectorNumbers(text: string, setCode?: string): string[] {
       normalizeCollectorNumber(`${match[1]}${match[2] ?? ""}`),
     );
 
-  const withSetCode = setCode ? read(`${escapeRegExp(setCode)}\\s*[-–·.]?\\s*${number}`) : [];
+  const withSetCode = setCode ? read(`${escapeRegex(setCode)}\\s*[-–·.]?\\s*${number}`) : [];
   const found = withSetCode.length > 0 ? withSetCode : read(`${number}\\s*\\/\\s*\\d{2,4}`);
   return [...new Set(found)];
 }

@@ -8,6 +8,7 @@ import type { Product, ProductAttributeValue, ProductContent, ProductDb } from "
 import { normalizeContents, type ReferencedProduct } from "@/lib/products/contents";
 import type { ProductFacet } from "@/lib/products/search";
 import { PRODUCT_EDITION_ATTRIBUTE, PRODUCT_EDITION_FIELD } from "@/lib/constants/product-editions";
+import { escapeRegex } from "@/lib/utils/regex";
 
 const COLLECTION = "products";
 
@@ -340,10 +341,6 @@ export async function getRecentGameProducts(gameId: ObjectId, limit = 10): Promi
   return docs.map(toSummary);
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 /** Recherche d'un produit à modifier ou à ajouter à un contenu : par identifiant ou par nom. */
 export async function searchGameProducts(
   gameId: ObjectId,
@@ -359,7 +356,7 @@ export async function searchGameProducts(
     return [];
   }
 
-  const pattern = new RegExp(escapeRegExp(trimmed), "i");
+  const pattern = new RegExp(escapeRegex(trimmed), "i");
   const docs = await db
     .collection<SummaryDoc & { gameId: ObjectId }>(COLLECTION)
     .find(

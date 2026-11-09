@@ -17,6 +17,7 @@ import {
   type CardTranslationState,
   type CardTranslationStatus,
 } from "@/lib/cards/translations";
+import { escapeRegex } from "@/lib/utils/regex";
 
 /**
  * Lectures et écritures de l'écran de traduction des cartes
@@ -91,14 +92,10 @@ function stateFilter(lang: string, state: TranslationQueueFilter): Filter<Docume
   }
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function searchFilter(lang: string, search: string | undefined): Filter<Document> {
   const trimmed = search?.trim();
   if (!trimmed) return {};
-  const regex = { $regex: escapeRegExp(trimmed), $options: "i" };
+  const regex = { $regex: escapeRegex(trimmed), $options: "i" };
   return { $or: [{ name: regex }, { id: regex }, { [`${translationPath(lang)}.name`]: regex }] };
 }
 
