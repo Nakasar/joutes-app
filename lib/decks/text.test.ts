@@ -16,6 +16,21 @@ import type { DeckCards } from "@/lib/decks/contents";
 const riftbound = getDeckZones({ slug: "riftbound" });
 
 describe("lecture d'une liste collée", () => {
+  it("lit l'export texte de riftdecks : « Rune Pool » et entités HTML", () => {
+    const parsed = parseDeckText(
+      ["Legend:", "1 Kennen, Heart of the Tempest", "", "MainDeck:", "1 An Offer You Can&#39;t Refuse", "", "Rune Pool:", "3 Order Rune", "9 Chaos Rune"].join("\n"),
+      riftbound
+    );
+
+    assert.deepEqual(parsed.sections, ["legend", "maindeck", "runes"]);
+    assert.deepEqual(parsed.lines, [
+      { zone: "legend", name: "Kennen, Heart of the Tempest", quantity: 1 },
+      { zone: "maindeck", name: "An Offer You Can't Refuse", quantity: 1 },
+      { zone: "runes", name: "Order Rune", quantity: 3 },
+      { zone: "runes", name: "Chaos Rune", quantity: 9 },
+    ]);
+  });
+
   it("reconnaît les en-têtes de section, français comme anglais", () => {
     const parsed = parseDeckText(
       ["Légende :", "1 Voix de la Faille", "MainDeck", "3 Éclat de Faille", "Sideboard:", "2 Verrou runique"].join("\n"),

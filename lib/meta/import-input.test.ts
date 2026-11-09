@@ -8,6 +8,12 @@ const LINK = "https://piltoverarchive.com/decks/view/7f3c1e2a-91b4-4c0e-a1f2-5d0
 const CODE = "CMAAAAAGAQAQCAYEBYCQGBQCAEBQKBQGBAAQEBYHA4EAEBQDAEBQMAQDAEAQEAI";
 
 describe("splitMetaImportInput", () => {
+  it("explique qu'un lien riftdecks ne se lit pas, et dit quoi coller à la place", () => {
+    const [entry] = splitMetaImportInput("https://riftdecks.com/riftbound-tournaments/regional-18668 #1");
+    assert.equal(entry.kind, "invalid");
+    assert.match(entry.kind === "invalid" ? entry.reason : "", /export texte/);
+  });
+
   it("lit un lien et un code par ligne, avec classement et joueur", () => {
     const entries = splitMetaImportInput(`${LINK} #1 @Kevin\n${CODE} #3-4\n`);
 
