@@ -57,7 +57,7 @@ export default function EditPolicyDialog({
         import("rehype-sanitize"),
       ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setReactMarkdown(() => (props: any) => <MD remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]} {...props} />);
+      setReactMarkdown(() => (props: any) => <MD {...props} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]} />);
     }
     if (!isOpen) setPreview(false);
   };

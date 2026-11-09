@@ -52,6 +52,13 @@ describe("isCredentialedOrigin", () => {
     assert.equal(isCredentialedOrigin(null, PROD), false);
   });
 
+  it("n'accorde pas les identifiants à un *.vercel.app quelconque", () => {
+    const env = { ...PROD, VERCEL: "1", VERCEL_BRANCH_URL: "joutes-git-x.vercel.app" };
+    assert.equal(isCredentialedOrigin("https://evil.vercel.app", env), false);
+    assert.equal(isCredentialedOrigin("https://joutes-git-x.vercel.app", env), true);
+    assert.equal(isCredentialedOrigin("https://www.joutes.app:443", env), true);
+  });
+
   it("accepte la machine locale en développement", () => {
     assert.equal(isCredentialedOrigin("http://localhost:3000", { NODE_ENV: "development" }), true);
     assert.equal(isCredentialedOrigin("http://localhost:3000", PROD), false);

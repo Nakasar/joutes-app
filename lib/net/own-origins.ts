@@ -106,5 +106,9 @@ export function isCredentialedOrigin(origin: string | null | undefined, env: Env
   // un réseau hostile ne doit pas lire l'API au nom de quelqu'un.
   if (url.protocol === "http:" && !LOCAL_HOSTNAMES.has(hostnameOf(url.host))) return false;
 
-  return isOwnHost(url.host, env);
+  // `Origin` est écrit par le navigateur de l'appelant, pas par la plateforme :
+  // le suffixe `*.vercel.app` n'y prouve rien, n'importe qui peut y héberger
+  // une page. Seuls les hôtes nommés (production, `VERCEL_URL`,
+  // `VERCEL_BRANCH_URL`…) reçoivent donc les identifiants.
+  return isOwnHost(url.host, { ...env, VERCEL: undefined });
 }
