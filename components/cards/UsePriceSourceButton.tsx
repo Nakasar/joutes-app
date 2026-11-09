@@ -5,7 +5,9 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { usePriceSourceAction } from "@/app/[locale]/(app)/account/price-actions.ts";
+// Une action serveur, pas un hook : l'alias évite que son nom en « use » la
+// fasse passer pour tel auprès d'ESLint.
+import { usePriceSourceAction as applyPriceSource } from "@/app/[locale]/(app)/account/price-actions.ts";
 import type { CardPriceSource } from "@/lib/types/card-price";
 
 /**
@@ -35,9 +37,7 @@ export default function UsePriceSourceButton({
 
   const choose = async () => {
     setSaving(true);
-    // Une action serveur, pas un hook : seul son nom commence par « use ».
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const result = await usePriceSourceAction(source);
+    const result = await applyPriceSource(source);
     setSaving(false);
 
     if (!result.success) {
