@@ -9,13 +9,14 @@ import { getLairById } from "@/lib/db/lairs.ts";
 import { Event } from "@/lib/types/Event.ts";
 import { DateTime } from "luxon";
 import { z } from "zod";
+import { httpUrl } from "@/lib/schemas/http-url.ts";
 
 const createEventSchema = z.object({
   name: z.string().min(1, "Le nom de l'événement est requis").max(500, "Le nom est trop long"),
   startDateTime: z.string().min(1, "La date de début est requise"),
   endDateTime: z.string().min(1, "La date de fin est requise"),
   gameName: z.string().min(1, "Le nom du jeu est requis").max(200, "Le nom du jeu est trop long"),
-  url: z.string().url("L'URL doit être valide").optional().or(z.literal("")),
+  url: httpUrl().optional().or(z.literal("")),
   price: z.number().min(0, "Le prix doit être positif").optional(),
   status: z.enum(['available', 'sold-out', 'cancelled']),
 }).refine(

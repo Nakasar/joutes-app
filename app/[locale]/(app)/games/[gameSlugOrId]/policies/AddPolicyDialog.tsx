@@ -38,13 +38,14 @@ export default function AddPolicyDialog({ gameId }: { gameId: string; gameSlug: 
   const openDialog = async (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen && !ReactMarkdown) {
-      const [{ default: MD }, { default: remarkGfm }, { default: rehypeRaw }] = await Promise.all([
+      const [{ default: MD }, { default: remarkGfm }, { default: rehypeRaw }, { default: rehypeSanitize }] = await Promise.all([
         import("react-markdown"),
         import("remark-gfm"),
         import("rehype-raw"),
+        import("rehype-sanitize"),
       ]);
       const MarkdownPreview = ({ children }: { children: string }) => (
-        <MD remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{children}</MD>
+        <MD remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{children}</MD>
       );
       MarkdownPreview.displayName = "MarkdownPreview";
       setReactMarkdown(() => MarkdownPreview);

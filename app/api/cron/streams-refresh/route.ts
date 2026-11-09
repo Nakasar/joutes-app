@@ -18,6 +18,7 @@ import {
   youtubeWatchUrl,
 } from "@/lib/streams/youtube-websub";
 import type { StreamLink } from "@/lib/types/StreamLink";
+import { isCronAuthorized } from "@/lib/api/cron";
 
 /**
  * Le filet sous les webhooks.
@@ -44,12 +45,7 @@ import type { StreamLink } from "@/lib/types/StreamLink";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
-  // Contrôle de présence en plus de la comparaison : sans lui, un `CRON_SECRET`
-  // non défini ferait comparer à la chaîne littérale « Bearer undefined », que
-  // n'importe qui peut envoyer.
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || req.headers.get("Authorization") !== `Bearer ${cronSecret}`) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

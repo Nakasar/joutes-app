@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { httpUrl, isHttpUrl } from "@/lib/schemas/http-url";
 import { hobbynextSourceUrl, isHobbynextId } from "@/lib/events/hobbynext-source";
 import { isRiftboundOrganizerId, riftboundSourceUrl } from "@/lib/events/riftbound-source";
 
@@ -164,7 +165,7 @@ export const lairSchema = z.object({
   eventsSourceInstructions: z.string().max(2000, "Les consignes sont trop longues").optional(),
   location: geoJSONPointSchema,
   address: z.string().max(500, "L'adresse est trop longue").optional(),
-  website: z.url("L'URL du site web doit être valide").optional().or(z.literal("")),
+  website: httpUrl("L'URL du site web doit être valide").optional().or(z.literal("")),
   isPrivate: z.boolean().default(false),
   invitationCode: z.string().optional(),
   options: z.object({
@@ -213,7 +214,7 @@ export const lairDetailsSchema = z.object({
   games: z.array(objectIdSchema).default([]),
   location: geoJSONPointSchema,
   address: z.string().max(500, "L'adresse est trop longue").optional(),
-  website: z.url("L'URL du site web doit être valide").optional().or(z.literal("")),
+  website: httpUrl("L'URL du site web doit être valide").optional().or(z.literal("")),
 });
 
 /**
@@ -263,7 +264,7 @@ export const lairCreationSchema = z.object({
   name: z.string().trim().min(1, "Le nom du lieu est requis").max(200, "Le nom est trop long"),
   visibility: z.enum(["public", "private"]),
   address: z.string().trim().max(500, "L'adresse est trop longue").optional(),
-  website: z.url("L'URL du site web doit être valide").optional(),
+  website: httpUrl("L'URL du site web doit être valide").optional(),
   location: z
     .object({
       latitude: z.number().min(-90, "La latitude doit être entre -90 et 90").max(90, "La latitude doit être entre -90 et 90"),
@@ -304,14 +305,7 @@ export const eventsRefreshFrequencySchema = z.enum(["weekly", "daily"]);
  * l'administration et dans un courriel à l'équipe. Le rendu refait le même
  * contrôle, pour ce qui a été écrit avant cette règle.
  */
-export function isWebUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+export const isWebUrl = isHttpUrl;
 
 export const webUrlSchema = z
   .string()

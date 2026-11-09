@@ -7,13 +7,14 @@ import {getEventsByLairIds} from "@/lib/db/events";
 import {DateTime} from "luxon";
 import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
 import {DiscordEmojis} from "@/app/discord/utils";
+import { isCronAuthorized } from "@/lib/api/cron";
 
 const rest = new REST({version: "10"}).setToken(
   process.env.DISCORD_TOKEN ?? "",
 );
 
 export async function GET(req: Request) {
-  if (req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({error: 'Unauthorized'}, {status: 401});
   }
 

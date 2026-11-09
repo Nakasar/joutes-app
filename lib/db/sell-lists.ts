@@ -1,6 +1,7 @@
 import 'server-only';
 
 import db from "@/lib/mongodb";
+import { escapeRegex } from "@/lib/utils/regex";
 import { ObjectId, WithId, Document, MongoServerError } from "mongodb";
 import { SellList, SellListItem, SellListOwnerType } from "@/lib/types/SellList";
 import { getPlayGroupByIdAndUser, getPlayGroupById } from "@/lib/db/play-groups";
@@ -312,7 +313,7 @@ export async function getSellListItems(
       ...(priceMax !== undefined && { $lte: priceMax }),
     };
   }
-  if (search && search.trim()) match.name = { $regex: search.trim(), $options: "i" };
+  if (search && search.trim()) match.name = { $regex: escapeRegex(search.trim()), $options: "i" };
 
   const collection = db.collection(SELL_LIST_ITEMS_COLLECTION);
 

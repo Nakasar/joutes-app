@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { importAllPrices } from "@/lib/services/price-imports";
+import { isCronAuthorized } from "@/lib/api/cron";
 
 /**
  * L'import quotidien des prix CardNexus, pour chaque jeu qu'il sait coter.
@@ -12,9 +13,7 @@ import { importAllPrices } from "@/lib/services/price-imports";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || req.headers.get("Authorization") !== `Bearer ${cronSecret}`) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

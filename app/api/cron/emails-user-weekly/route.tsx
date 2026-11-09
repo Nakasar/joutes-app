@@ -6,11 +6,12 @@ import {DateTime} from "luxon";
 import UserWeeklyEmail from "@/app/api/cron/emails-user-weekly/user-weekly-email";
 import {getEventsForUser} from "@/lib/db/events";
 import {WEEKLY_DIGEST_COOLDOWN_DAYS, weeklyDigestFilter} from "@/lib/notifications/weekly-digest";
+import {isCronAuthorized} from "@/lib/api/cron";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function GET(req: Request) {
-  if (req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({error: 'Unauthorized'}, {status: 401});
   }
 

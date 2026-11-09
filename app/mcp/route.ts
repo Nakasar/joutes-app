@@ -22,6 +22,7 @@ import { registerJoutesDataTools, withToolLogging } from "./tools";
 import { registerJoutesTool, requiresAccount, userIdFrom } from "./tool-policy";
 import { linkLine, mcpLinks } from "@/lib/mcp/links";
 import { nanoid } from "nanoid";
+import { httpUrl } from "@/lib/schemas/http-url";
 
 // Gestionnaires pour chaque outil
 async function handleSearchEvents(argsRaw: Record<string, unknown>, ctx: ServerContext): Promise<{ content: TextContent[]; isError?: boolean }> {
@@ -183,7 +184,7 @@ async function handleCreateEvent(argsRaw: Record<string, unknown>, ctx: ServerCo
             gameName: z.string(),
             startDateTime: z.string(),
             endDateTime: z.string(),
-            url: z.string().optional(),
+            url: httpUrl().optional(),
             price: z.string().transform((val) => parseFloat(val)).optional()
         });
 

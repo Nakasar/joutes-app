@@ -5,6 +5,7 @@ import { refreshEvents } from '@/lib/services/refresh-events';
 import { proLairIds } from '@/lib/subscriptions/access';
 import { isRefreshDue } from '@/lib/events/connect';
 import { EVENTS_TIMEZONE } from '@/lib/events/source-events';
+import { isCronAuthorized } from "@/lib/api/cron";
 
 /**
  * Combien de lieux sont moissonnés en même temps.
@@ -32,7 +33,7 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, task: (item: 
 }
 
 export async function GET(req: Request) {
-    if (req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!isCronAuthorized(req)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

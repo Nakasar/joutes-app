@@ -1,4 +1,5 @@
 import db from "@/lib/mongodb";
+import { escapeRegex } from "@/lib/utils/regex";
 import { purgeStreamTarget } from "@/lib/db/stream-links";
 import {
   EventSource,
@@ -262,7 +263,7 @@ export async function searchLairsForAdmin(term: string, limit = 5): Promise<Lair
     return [];
   }
 
-  const pattern = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = escapeRegex(trimmed);
   const docs = await db
     .collection(COLLECTION_NAME)
     .find({ name: { $regex: pattern, $options: "i" } })
@@ -301,7 +302,7 @@ export async function searchLairs(options: SearchLairsOptions): Promise<Paginate
   // Search by name
   if (search && search.trim()) {
     filters.push({
-      name: { $regex: search.trim(), $options: "i" }
+      name: { $regex: escapeRegex(search.trim()), $options: "i" }
     });
   }
 

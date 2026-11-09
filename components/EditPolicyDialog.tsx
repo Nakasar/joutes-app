@@ -50,13 +50,14 @@ export default function EditPolicyDialog({
   const openDialog = async (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen && !ReactMarkdown) {
-      const [{ default: MD }, { default: remarkGfm }, { default: rehypeRaw }] = await Promise.all([
+      const [{ default: MD }, { default: remarkGfm }, { default: rehypeRaw }, { default: rehypeSanitize }] = await Promise.all([
         import("react-markdown"),
         import("remark-gfm"),
         import("rehype-raw"),
+        import("rehype-sanitize"),
       ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setReactMarkdown(() => (props: any) => <MD remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} {...props} />);
+      setReactMarkdown(() => (props: any) => <MD remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]} {...props} />);
     }
     if (!isOpen) setPreview(false);
   };

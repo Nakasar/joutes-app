@@ -1,7 +1,7 @@
 import "server-only";
 
-import { lookup } from "node:dns/promises";
-import { ipLiteralOf, isBlockedIpAddress, parsePublicHttpUrl } from "@/lib/net/public-url";
+import { parsePublicHttpUrl } from "@/lib/net/public-url";
+import { safeFetch } from "@/lib/net/safe-fetch";
 
 /**
  * Récupération d'une page extérieure et de ses images, pour l'import d'une
@@ -41,72 +41,27 @@ export type FetchFailure =
 
 export type FetchedPage = { html: string; finalUrl: string };
 
-/** Vraie si le nom d'hôte se résout entièrement vers des adresses publiques. */
-async function resolvesToPublicAddress(hostname: string): Promise<boolean> {
-  // Une URL déjà écrite en IP se juge directement, v4 comme v6 : la résoudre
-  // ne renverrait rien de plus, et `dns.lookup` sur une IPv6 littérale échoue
-  // selon la plateforme — ce qui refuserait une adresse publique parfaitement
-  // valide.
-  const literal = ipLiteralOf(hostname);
-  if (literal) return !isBlockedIpAddress(literal);
-
-  try {
-    const addresses = await lookup(hostname, { all: true });
-    return addresses.length > 0 && addresses.every((entry) => !isBlockedIpAddress(entry.address));
-  } catch {
-    return false;
-  }
-}
-
 /**
- * Suit les redirections à la main plutôt que de les confier à `fetch` : c'est
- * le seul moyen de revérifier chaque étape. Rend la réponse finale.
+ * La lecture protégée (`lib/net/safe-fetch.ts`), avec nos en-têtes et notre
+ * règle : une réponse en erreur n'est pas une page.
  */
 async function fetchFollowingSafeRedirects(
   startUrl: URL,
   accept: string
 ): Promise<{ response: Response; finalUrl: URL } | { failure: FetchFailure }> {
-  let url = startUrl;
+  const result = await safeFetch(startUrl, {
+    headers: { "User-Agent": USER_AGENT, Accept: accept },
+    timeoutMs: REQUEST_TIMEOUT_MS,
+    maxRedirects: MAX_REDIRECTS,
+  });
+  if ("failure" in result) return result;
 
-  for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-    if (!(await resolvesToPublicAddress(url.hostname))) {
-      return { failure: "private-address" };
-    }
-
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        redirect: "manual",
-        headers: { "User-Agent": USER_AGENT, Accept: accept },
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
-    } catch {
-      return { failure: "unreachable" };
-    }
-
-    const location = response.headers.get("location");
-    if (response.status >= 300 && response.status < 400 && location) {
-      // Le corps d'une redirection ne sert à rien : le libérer évite de tenir
-      // la connexion ouverte pendant qu'on suit le saut suivant.
-      await response.body?.cancel().catch(() => undefined);
-
-      const next = parsePublicHttpUrl(new URL(location, url).toString());
-      if ("rejection" in next) {
-        return { failure: next.rejection === "private" ? "private-address" : "unsupported-protocol" };
-      }
-      url = next.url;
-      continue;
-    }
-
-    if (!response.ok) {
-      await response.body?.cancel().catch(() => undefined);
-      return { failure: "http-error" };
-    }
-
-    return { response, finalUrl: url };
+  if (!result.response.ok) {
+    await result.response.body?.cancel().catch(() => undefined);
+    return { failure: "http-error" };
   }
 
-  return { failure: "unreachable" };
+  return result;
 }
 
 /** Lit le corps d'une réponse en s'arrêtant net au-delà du plafond. */

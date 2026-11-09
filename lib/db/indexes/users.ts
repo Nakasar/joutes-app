@@ -36,6 +36,11 @@ export const USER_INDEXES: IndexDefinition[] = [
     why: "La vérification d'un code de connexion par e-mail",
   },
   {
+    collection: "rateLimit",
+    keys: { key: 1 },
+    why: "Le compteur de débit de better-auth (adresse IP + route), lu à chaque appel de /api/auth",
+  },
+  {
     collection: "passkey",
     keys: { userId: 1 },
     why: "Les clés d'accès d'une personne",

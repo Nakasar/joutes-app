@@ -5,6 +5,7 @@ import { fetchCampaignMembers, nextCursor } from "@/lib/patreon/api";
 import { patreonConfig } from "@/lib/patreon/config";
 import { resolveMembership } from "@/lib/patreon/resolve";
 import { applySnapshot, PATREON_PROVIDER_ID } from "@/lib/patreon/sync";
+import { isCronAuthorized } from "@/lib/api/cron";
 
 /**
  * La réconciliation quotidienne des abonnements.
@@ -26,13 +27,7 @@ import { applySnapshot, PATREON_PROVIDER_ID } from "@/lib/patreon/sync";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
-  // Contrôle de présence en plus de la comparaison : sans lui, un `CRON_SECRET`
-  // non défini ferait comparer à la chaîne littérale « Bearer undefined », que
-  // n'importe qui peut envoyer. Les sept crons plus anciens ont ce défaut ; on
-  // ne le reproduit pas ici.
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || req.headers.get("Authorization") !== `Bearer ${cronSecret}`) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

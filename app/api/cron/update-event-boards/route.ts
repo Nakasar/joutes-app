@@ -5,13 +5,14 @@ import {REST} from "@discordjs/rest";
 import {Routes} from "discord-api-types/v10";
 import {makeEventDiscordInfoMessage} from "@/lib/discord/utils";
 import {GameDocument} from "@/lib/db/games";
+import { isCronAuthorized } from "@/lib/api/cron";
 
 const rest = new REST({version: "10"}).setToken(
   process.env.DISCORD_TOKEN ?? "",
 );
 
 export async function GET(req: Request) {
-  if (req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({error: 'Unauthorized'}, {status: 401});
   }
 
