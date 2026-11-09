@@ -18,6 +18,9 @@ import {
   type PublicMetaImportRow,
 } from "@/lib/db/meta-decks";
 import { MetaImportTooLargeError, resolveMetaImport } from "@/lib/meta/import";
+import type { MetaImportEntry } from "@/lib/meta/import-input";
+import { LOCATOR_BATCH_SIZE, LOCATOR_DECK_ID, locatorEventUrl, parseLocatorEventId, type LocatorEvent, type LocatorStanding } from "@/lib/meta/locator";
+import { fetchLocatorEvent, fetchLocatorStandings, LocatorError } from "@/lib/meta/locator-api";
 import { metaCacheTag } from "@/lib/meta/cache";
 import { META_DECKS_PERMISSION } from "@/lib/meta/permissions";
 import { DEFAULT_META_SETTINGS, resolveMetaSettings, type GameMetaSettings, type ResolvedMetaSettings } from "@/lib/meta/settings";
@@ -120,6 +123,129 @@ export async function importMetaDecksAction(
   }
 
   refreshMeta(game.id);
+  return { ok: true, created: result.created.length, batchId: result.batchId, rows: toPublicRows(result.rows) };
+}
+
+/** Les jeux dont les tournois se lisent sur un locator. */
+const LOCATOR_GAME_SLUGS = new Set(["riftbound"]);
+
+/** Lit un évènement du locator et ses inscrits, sans lire les decks. */
+export async function readLocatorEventAction(values: {
+  gameId: string;
+  url: string;
+}): Promise<ActionResult<{ event: LocatorEvent; standings: LocatorStanding[] }>> {
+  if (!(await requireMetaManager())) return { ok: false, error: "Accès refusé." };
+
+  const game = await getGameBySlugOrId(values.gameId);
+  if (!game) return { ok: false, error: "Jeu introuvable." };
+  if (!LOCATOR_GAME_SLUGS.has(game.slug ?? "")) return { ok: false, error: "Le locator ne vaut que pour Riftbound." };
+
+  const id = parseLocatorEventId(values.url ?? "");
+  if (!id) {
+    return { ok: false, error: "Lien non reconnu : collez l'adresse d'un évènement, locator.riftbound.uvsgames.com/events/<numéro>." };
+  }
+
+  try {
+    const event = await fetchLocatorEvent(id);
+    const standings = await fetchLocatorStandings(event);
+    return { ok: true, event, standings };
+  } catch (error) {
+    if (error instanceof LocatorError) {
+      return { ok: false, error: error.status === 404 ? "Évènement introuvable sur le locator." : `${error.message} Rien n'a été lu.` };
+    }
+    throw error;
+  }
+}
+
+const locatorDecksSchema = z.object({
+  gameId: z.string().min(1),
+  eventId: z.number().int().positive(),
+  source: z.string().trim().min(1, "Indiquez le nom du tournoi.").max(80),
+  decks: z
+    .array(
+      z.object({
+        deckId: z.string().regex(LOCATOR_DECK_ID, "Deck du locator invalide."),
+        place: z.number().int().positive().optional(),
+        player: z.string().trim().max(80).optional(),
+        legend: z.string().trim().max(120).optional(),
+      })
+    )
+    .min(1)
+    .max(LOCATOR_BATCH_SIZE),
+});
+
+function locatorEntries(data: z.output<typeof locatorDecksSchema>): MetaImportEntry[] {
+  const eventUrl = locatorEventUrl(data.eventId);
+  return data.decks.map((deck, index) => ({
+    kind: "locator-deck",
+    deckId: deck.deckId,
+    eventUrl,
+    line: deck.place ?? index + 1,
+    ...(deck.place ? { placement: String(deck.place) } : {}),
+    ...(deck.player ? { pilot: deck.player } : {}),
+    ...(deck.legend ? { legendName: deck.legend } : {}),
+  }));
+}
+
+/** Lit et vérifie un lot de decks d'un tournoi du locator, sans rien écrire. */
+export async function previewLocatorDecksAction(
+  values: z.input<typeof locatorDecksSchema>
+): Promise<ActionResult<{ rows: PublicMetaImportRow[] }>> {
+  if (!(await requireMetaManager())) return { ok: false, error: "Accès refusé." };
+
+  const parsed = locatorDecksSchema.safeParse(values);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Données invalides." };
+
+  const game = await getGameBySlugOrId(parsed.data.gameId);
+  if (!game) return { ok: false, error: "Jeu introuvable." };
+
+  const rows = await resolveMetaImport(game, locatorEntries(parsed.data), { source: parsed.data.source });
+  return { ok: true, rows: toPublicRows(rows) };
+}
+
+const locatorImportSchema = locatorDecksSchema.extend({
+  eventDate: z.coerce.date(),
+  format: z.string().trim().max(80).optional(),
+  batchId: z
+    .string()
+    .regex(/^[0-9a-f]{24}$/)
+    .optional(),
+});
+
+/**
+ * Importe un lot de decks d'un tournoi du locator.
+ *
+ * Chaque deck est relu : ceux qui ne se lisent plus (le locator n'a pas
+ * répondu) reviennent en erreur, à relancer, sans bloquer le reste du lot.
+ * Les lots d'un même tournoi partagent `batchId`, pour s'annuler ensemble.
+ */
+export async function importLocatorDecksAction(
+  values: z.input<typeof locatorImportSchema>
+): Promise<ActionResult<{ created: number; batchId: string; rows: PublicMetaImportRow[] }>> {
+  const session = await requireMetaManager();
+  if (!session) return { ok: false, error: "Accès refusé." };
+
+  const parsed = locatorImportSchema.safeParse(values);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Données invalides." };
+  if (Number.isNaN(parsed.data.eventDate.getTime())) return { ok: false, error: "Date du tournoi invalide." };
+
+  const game = await getGameBySlugOrId(parsed.data.gameId);
+  if (!game) return { ok: false, error: "Jeu introuvable." };
+
+  const result = await importMetaDecks(
+    {
+      game,
+      input: locatorEntries(parsed.data),
+      source: parsed.data.source,
+      eventDate: parsed.data.eventDate,
+      format: parsed.data.format || undefined,
+      ...(parsed.data.batchId ? { batchId: parsed.data.batchId } : {}),
+    },
+    session.user.id
+  );
+  if (!result.ok) return { ok: false, error: "Import impossible." };
+
+  if (result.created.length > 0) refreshMeta(game.id);
   return { ok: true, created: result.created.length, batchId: result.batchId, rows: toPublicRows(result.rows) };
 }
 

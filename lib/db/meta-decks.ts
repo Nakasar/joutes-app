@@ -5,7 +5,7 @@ import { ObjectId } from "mongodb";
 import db from "@/lib/mongodb";
 import { createDeck, findAvailableDeckName, getDeckById } from "@/lib/db/decks";
 import { metaDeckDescription, planMetaDeckEdit, type MetaDeckEdit } from "@/lib/meta/edit";
-import { formatPlacement } from "@/lib/meta/import-input";
+import { formatPlacement, type MetaImportEntry } from "@/lib/meta/import-input";
 import { mapWithConcurrency, resolveMetaImport, type MetaImportRow } from "@/lib/meta/import";
 import { toPublicDeckMeta, type Deck, type DeckMeta } from "@/lib/types/Deck";
 import type { Game } from "@/lib/types/Game";
@@ -14,7 +14,8 @@ const COLLECTION_NAME = "decks";
 
 export type MetaImportRequest = {
   game: Game;
-  input: string;
+  /** Le collage, ou des entrées déjà découpées (un lot de decks du locator). */
+  input: string | MetaImportEntry[];
   source: string;
   eventDate: Date;
   format?: string;
@@ -24,6 +25,8 @@ export type MetaImportRequest = {
    * s'écrit, pour qu'on n'importe jamais autre chose que ce qu'on a vu.
    */
   expected?: number;
+  /** Rattache le lot à un import déjà commencé : un tournoi du locator s'importe en plusieurs appels, annulables d'un coup. */
+  batchId?: string;
 };
 
 export type MetaImportResult =
@@ -59,7 +62,7 @@ export async function importMetaDecks(request: MetaImportRequest, playerId: stri
     return { ok: false, changed: true, rows };
   }
 
-  const batchId = new ObjectId().toString();
+  const batchId = request.batchId ?? new ObjectId().toString();
   const addedAt = new Date();
 
   // Les noms se choisissent d'abord, un par un : deux decks du lot peuvent
