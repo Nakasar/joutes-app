@@ -751,8 +751,12 @@
         },
         "domains": {
           "title": "Domini",
-          "hint": "Ogni mazzo conta per ciascuno dei suoi domini",
-          "pairs": "Coppie più giocate: {pairs}"
+          "hint": "Ogni mazzo conta per ciascuno dei suoi domini"
+        },
+        "combos": {
+          "title": "Gruppi di domini",
+          "hint": "I domini esatti di ogni mazzo: coppie, ma anche mazzi a un solo dominio o a tre domini",
+          "none": "Nessun dominio"
         },
         "topCut": {
           "title": "Top 8",

@@ -751,8 +751,12 @@
         },
         "domains": {
           "title": "Domaines",
-          "hint": "Chaque deck compte pour chacun de ses domaines",
-          "pairs": "Paires les plus jouées : {pairs}"
+          "hint": "Chaque deck compte pour chacun de ses domaines"
+        },
+        "combos": {
+          "title": "Groupes de domaines",
+          "hint": "Les domaines exacts de chaque deck : paires, mais aussi decks à un seul ou à trois domaines",
+          "none": "Sans domaine"
         },
         "topCut": {
           "title": "Top 8",

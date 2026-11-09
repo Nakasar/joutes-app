@@ -751,8 +751,12 @@
         },
         "domains": {
           "title": "Domains",
-          "hint": "Each deck counts once for each of its domains",
-          "pairs": "Most played pairs: {pairs}"
+          "hint": "Each deck counts once for each of its domains"
+        },
+        "combos": {
+          "title": "Domain groups",
+          "hint": "The exact domains of each deck: pairs, but also single-domain or three-domain decks",
+          "none": "No domain"
         },
         "topCut": {
           "title": "Top 8",

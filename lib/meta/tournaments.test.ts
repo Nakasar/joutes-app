@@ -104,7 +104,19 @@ describe("computeTournamentStats", () => {
     assert.equal(fury.topSlotShare, 0.5);
     const order = stats.domains.find((d) => d.domain === "Order")!;
     assert.equal(order.topSlotShare, 3 / 8);
-    assert.deepEqual(stats.pairs[0], { domains: ["Fury", "Mind"], decks: 5 });
+    assert.deepEqual(stats.combos[0], { domains: ["Fury", "Mind"], decks: 5, share: 5 / 8, topDecks: 1, topShare: 1 / 4 });
+    assert.deepEqual(stats.combos[1].domains, ["Fury", "Order"]);
+  });
+
+  it("garde les combinaisons à un ou trois domaines telles quelles", () => {
+    const mixed = computeTournamentStats(
+      [deck({ domains: ["Order", "Fury", "Mind"] }), deck({ domains: ["Calm"] }), deck({ domains: [] })],
+      cards
+    );
+    assert.deepEqual(
+      mixed.combos.map((combo) => combo.domains),
+      [[], ["Calm"], ["Fury", "Mind", "Order"]]
+    );
   });
 
   it("range les légendes par palier", () => {

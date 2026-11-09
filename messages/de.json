@@ -751,8 +751,12 @@
         },
         "domains": {
           "title": "Domänen",
-          "hint": "Jedes Deck zählt für jede seiner Domänen",
-          "pairs": "Meistgespielte Paare: {pairs}"
+          "hint": "Jedes Deck zählt für jede seiner Domänen"
+        },
+        "combos": {
+          "title": "Domänengruppen",
+          "hint": "Die genauen Domänen jedes Decks: Paare, aber auch Decks mit einer oder drei Domänen",
+          "none": "Ohne Domäne"
         },
         "topCut": {
           "title": "Top 8",

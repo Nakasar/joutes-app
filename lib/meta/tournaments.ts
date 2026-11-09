@@ -151,6 +151,18 @@ export type TournamentDomain = {
   topSlotShare: number;
 };
 
+/** Une combinaison exacte de domaines : une paire, un seul domaine, trois domaines… */
+export type TournamentCombo = {
+  /** Les domaines, triés ; vide pour un deck sans domaine. */
+  domains: string[];
+  decks: number;
+  /** Part des decks du tournoi. */
+  share: number;
+  topDecks: number;
+  /** Part du top 8. */
+  topShare: number;
+};
+
 export type TournamentCardDiff = {
   name: string;
   cardId: string;
@@ -167,7 +179,8 @@ export type TournamentStats = {
   ranked: number;
   legends: TournamentLegend[];
   domains: TournamentDomain[];
-  pairs: { domains: [string, string]; decks: number }[];
+  /** Les combinaisons de domaines jouées, les plus fréquentes d'abord. */
+  combos: TournamentCombo[];
   topCut: MetaSampleDeck[];
   /** Les paliers présents, dans l'ordre, et leur nombre de decks. */
   tiers: { tier: PlacementTier; decks: number }[];
@@ -228,7 +241,7 @@ export function computeTournamentStats(decks: MetaSampleDeck[], cards: Record<st
 
   // Les domaines : chaque deck compte pour chacun de ses domaines.
   const domainCounts = new Map<string, { decks: number; top: number }>();
-  const pairCounts = new Map<string, number>();
+  const comboCounts = new Map<string, { domains: string[]; decks: number; top: number }>();
   let slots = 0;
   let topSlots = 0;
   for (const deck of decks) {
@@ -244,12 +257,11 @@ export function computeTournamentStats(decks: MetaSampleDeck[], cards: Record<st
       }
       domainCounts.set(domain, entry);
     }
-    for (let i = 0; i < domains.length; i += 1) {
-      for (let j = i + 1; j < domains.length; j += 1) {
-        const key = `${domains[i]}|${domains[j]}`;
-        pairCounts.set(key, (pairCounts.get(key) ?? 0) + 1);
-      }
-    }
+    const comboKey = domains.join("|");
+    const combo = comboCounts.get(comboKey) ?? { domains, decks: 0, top: 0 };
+    combo.decks += 1;
+    if (isTop) combo.top += 1;
+    comboCounts.set(comboKey, combo);
   }
   const domainList = [...domainCounts.entries()]
     .map(([domain, { decks: count, top }]) => ({
@@ -260,10 +272,15 @@ export function computeTournamentStats(decks: MetaSampleDeck[], cards: Record<st
       topSlotShare: topSlots > 0 ? top / topSlots : 0,
     }))
     .sort((a, b) => b.decks - a.decks || a.domain.localeCompare(b.domain));
-  const pairs = [...pairCounts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, 3)
-    .map(([key, count]) => ({ domains: key.split("|") as [string, string], decks: count }));
+  const combos = [...comboCounts.values()]
+    .map((combo) => ({
+      domains: combo.domains,
+      decks: combo.decks,
+      share: total > 0 ? combo.decks / total : 0,
+      topDecks: combo.top,
+      topShare: topCut.length > 0 ? combo.top / topCut.length : 0,
+    }))
+    .sort((a, b) => b.decks - a.decks || b.topDecks - a.topDecks || a.domains.join("|").localeCompare(b.domains.join("|")));
 
   // Les paliers de classement présents, et les légendes dans chacun.
   const tierCounts = new Map<PlacementTier, number>();
@@ -309,7 +326,7 @@ export function computeTournamentStats(decks: MetaSampleDeck[], cards: Record<st
     ranked: decks.filter((deck) => placementRank(deck.placement) !== undefined).length,
     legends: legendList,
     domains: domainList,
-    pairs,
+    combos,
     topCut,
     tiers,
     matrix,

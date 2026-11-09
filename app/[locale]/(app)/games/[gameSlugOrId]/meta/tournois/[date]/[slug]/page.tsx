@@ -145,6 +145,8 @@ async function TournamentContent({ params, searchParams }: TournamentPageProps) 
         {hasTop && <TopCutPanel t={t} stats={stats} sample={sample} />}
       </div>
 
+      {stats.combos.length > 1 && <CombosPanel t={t} stats={stats} pct={pct} hasTop={hasTop} />}
+
       {stats.ranked > 0 && stats.tiers.length > 1 && <TiersPanel t={t} stats={stats} />}
       {(stats.cardsUp.length > 0 || stats.cardsDown.length > 0) && <CardsPanel t={t} stats={stats} pct={pct} />}
 
@@ -410,13 +412,54 @@ function DomainsPanel({ t, stats, pct, hasTop }: { t: T; stats: TournamentStats;
           second: hasTop ? pct(domain.topSlotShare) : undefined,
         }))}
       />
-      {stats.pairs.length > 0 && (
-        <p className="text-sm text-muted-foreground">
-          {t("tournament.domains.pairs", {
-            pairs: stats.pairs.map((pair) => `${pair.domains.join(" + ")} (${pair.decks})`).join(", "),
-          })}
-        </p>
-      )}
+    </Panel>
+  );
+}
+
+/** Les combinaisons exactes de domaines (paires, decks à un ou trois domaines…), comme les légendes : en camemberts. */
+function CombosPanel({ t, stats, pct, hasTop }: { t: T; stats: TournamentStats; pct: (value: number) => string; hasTop: boolean }) {
+  const unit = t("tournament.legends.decksUnit");
+  const label = (domains: string[]) => (domains.length > 0 ? domains.join(" + ") : t("tournament.combos.none"));
+  const shown = stats.combos.slice(0, PIE_LEGENDS);
+  const rest = stats.combos.slice(PIE_LEGENDS);
+  const parts = (pick: "decks" | "topDecks"): DonutPart[] => {
+    const list = shown.map((combo, index) => ({ label: label(combo.domains), value: combo[pick], color: LEGEND_COLORS[index] }));
+    const others = rest.reduce((sum, combo) => sum + combo[pick], 0);
+    return others > 0 ? [...list, { label: t("tournament.legends.others"), value: others, color: OTHERS_COLOR }] : list;
+  };
+  const all = parts("decks");
+  const top = parts("topDecks");
+
+  return (
+    <Panel>
+      <PanelTitle title={t("tournament.combos.title")} hint={t("tournament.combos.hint")} />
+      <div className="flex flex-wrap items-center gap-x-10 gap-y-6">
+        <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
+          <Donut className="w-36 sm:w-52" title={t("tournament.legends.all")} center={String(stats.decks)} unit={unit} parts={all} formatShare={pct} />
+          {hasTop && (
+            <Donut
+              className="w-36 sm:w-52"
+              title={t("tournament.legends.top")}
+              center={String(stats.topCut.length)}
+              unit={unit}
+              parts={top}
+              formatShare={pct}
+            />
+          )}
+        </div>
+        <div className="min-w-64 flex-1 basis-80 lg:max-w-md">
+          <DonutKey
+            firstLabel={t("tournament.legends.all")}
+            secondLabel={hasTop ? t("tournament.legends.top") : undefined}
+            rows={all.map((part, index) => ({
+              label: part.label,
+              color: part.color,
+              first: pct(part.value / stats.decks),
+              second: hasTop ? (top[index]?.value ? pct(top[index].value / stats.topCut.length) : "—") : undefined,
+            }))}
+          />
+        </div>
+      </div>
     </Panel>
   );
 }
