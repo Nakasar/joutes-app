@@ -9,6 +9,7 @@ import { META_IMPORT_AUTHOR } from "@/lib/db/decks";
 import type { DeckCards } from "@/lib/decks/contents";
 import riftboundSets from "@/data/riftbound/sets.json";
 import { metaCacheTag } from "@/lib/meta/cache";
+import { computeDeckDomains, playableDomains } from "@/lib/decks/domains";
 import type { MetaCard, MetaSample, MetaSampleDeck } from "@/lib/meta/stats";
 import type { DeckMeta } from "@/lib/types/Deck";
 
@@ -93,7 +94,8 @@ export async function loadMetaSample(gameId: string, gameSlug?: string): Promise
         ...(info.image ? { image: info.image } : {}),
         ...(info.type ? { type: info.type } : {}),
         ...(info.setCode ? { setCode: info.setCode } : {}),
-        domains: info.domain ?? [],
+        // « Colorless » n'est pas un domaine : une carte incolore n'en a aucun.
+        domains: playableDomains(info.domain),
       },
     ])
   );
@@ -102,6 +104,16 @@ export async function loadMetaSample(gameId: string, gameSlug?: string): Promise
   const setNames = Object.fromEntries(
     (SET_NAMES_BY_GAME[gameSlug ?? ""] ?? []).map((set) => [set.setCode, set.name])
   );
+
+  // Les domaines enregistrés sur un deck ont longtemps compté les champs de
+  // bataille et la réserve : on les recalcule ici, depuis la légende, sur le
+  // contenu complet du deck.
+  const docsById = new Map(dated.map((doc) => [doc._id.toString(), doc]));
+  for (const deck of decks) {
+    const doc = docsById.get(deck.id);
+    const computed = computeDeckDomains(doc?.cards, (cardId) => cards[cardId]?.domains, deck.legendCardId);
+    deck.domains = computed.length > 0 ? computed : playableDomains(deck.domains);
+  }
 
   return { decks, cards, setTotals, setNames };
 }

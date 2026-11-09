@@ -285,8 +285,8 @@ async function deriveFromCards(
   cards: DeckCards,
   chosenLegendCardId?: string
 ): Promise<Pick<Deck, "domains" | "legendCardId" | "legendName">> {
-  const domains = await deriveDeckDomains(gameId, cards);
   const legendCardId = chosenLegendCardId ?? deriveLegendCardId(cards);
+  const domains = await deriveDeckDomains(gameId, cards, legendCardId);
   if (!legendCardId) {
     return { domains, legendCardId: undefined, legendName: undefined };
   }
