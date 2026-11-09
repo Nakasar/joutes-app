@@ -333,6 +333,16 @@ export const CARD_INDEXES: IndexDefinition[] = [
     why: "Le centre des contributions de l'administration : les quiz, du plus récent au plus ancien",
   },
   {
+    collection: "metaEvents",
+    keys: { gameId: 1, eventRef: 1 },
+    why: "Réimporter les matchs d'un tournoi remplace son document (`replaceOne` par jeu et référence)",
+  },
+  {
+    collection: "metaEvents",
+    keys: { gameId: 1, eventDate: -1 },
+    why: "Les matchs des tournois d'un jeu, du plus récent au plus ancien (page Méta, onglet Winrates)",
+  },
+  {
     collection: "decks",
     keys: { gameId: 1, "meta.eventDate": -1 },
     options: { partialFilterExpression: { meta: { $exists: true } }, name: "meta_gameId_eventDate" },

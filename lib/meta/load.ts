@@ -23,6 +23,11 @@ const SET_NAMES_BY_GAME: Record<string, { setCode: string; name: string }[]> = {
   riftbound: riftboundSets,
 };
 
+/** Les extensions connues d'un jeu, dans l'ordre de sortie. */
+export function knownGameSets(gameSlug: string | undefined): { setCode: string; name: string }[] {
+  return (SET_NAMES_BY_GAME[gameSlug ?? ""] ?? []).map((set) => ({ setCode: set.setCode, name: set.name }));
+}
+
 type MetaDeckDoc = {
   _id: ObjectId;
   gameId: string;

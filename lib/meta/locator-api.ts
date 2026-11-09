@@ -2,6 +2,9 @@ import "server-only";
 
 import {
   legendsByRegistration,
+  toLocatorMatches,
+  type ParsedLocatorMatch,
+  type RawLocatorMatch,
   toLocatorEvent,
   toLocatorStandings,
   type LocatorEvent,
@@ -101,4 +104,24 @@ export async function fetchLocatorDeck(deckId: string): Promise<RawLocatorDeck> 
     throw new LocatorError("Deck illisible : l'API du locator a peut-être changé.");
   }
   return deck;
+}
+
+/** Rondes lues en même temps. */
+const ROUND_CONCURRENCY = 4;
+
+/** Tous les matchs terminés du tournoi, ronde par ronde. */
+export async function fetchLocatorMatches(event: LocatorEvent): Promise<ParsedLocatorMatch[]> {
+  const rounds = [...event.rounds];
+  const results: ParsedLocatorMatch[][] = new Array(rounds.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < rounds.length) {
+      const index = next++;
+      const round = rounds[index];
+      const raw = await getAllPages<RawLocatorMatch>(`/tournament-rounds/${round.id}/matches/paginated/`);
+      results[index] = toLocatorMatches(raw, round);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(ROUND_CONCURRENCY, rounds.length) }, worker));
+  return results.flat();
 }

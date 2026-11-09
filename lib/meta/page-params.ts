@@ -5,7 +5,7 @@ import { META_PERIOD_CHOICES, STAPLE_THRESHOLD_CHOICES, type ResolvedMetaSetting
  * filtres, la carte étudiée. Tout est dans l'URL, pour qu'une vue se partage.
  * Les valeurs par défaut (celles du jeu) n'y figurent pas.
  */
-export const META_TABS = ["overview", "cards", "staples", "together", "sets", "decks", "tournaments"] as const;
+export const META_TABS = ["overview", "cards", "staples", "together", "sets", "decks", "tournaments", "winrates"] as const;
 export type MetaTab = (typeof META_TABS)[number];
 
 export type MetaPageState = {

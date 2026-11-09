@@ -10,18 +10,43 @@ import { Button } from "@/components/ui/button.tsx";
 import { BackLink } from "@/components/navigation/BackLink.tsx";
 import { GameToolGridSkeleton, GameToolHeaderSkeleton } from "@/components/games/GameToolSkeletons.tsx";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
+import { loadMetaEventsMatches } from "@/lib/db/meta-events.ts";
 import { loadMetaSample } from "@/lib/meta/load.ts";
 import { domainColor } from "@/lib/meta/domains.ts";
 import { legendKey, legendLabel, type MetaSample, type MetaSampleDeck } from "@/lib/meta/stats.ts";
 import {
+  domainWinrates,
+  facedLegends,
+  legendMatchups,
+  legendWinrates,
+  matchTotals,
+  MIN_MATCHES_FOR_RATE,
+  mostLopsidedMatchup,
+  playerRounds,
+  shortLegendName,
+  topCutPlayers,
+  type MetaEventMatches,
+} from "@/lib/meta/match-stats.ts";
+import {
   byPlacement,
   computeTournamentStats,
   findTournamentDecks,
+  findTournamentMatches,
   placementRank,
   type TournamentStats,
 } from "@/lib/meta/tournaments.ts";
 import { cn } from "@/lib/utils.ts";
 import { Donut, DonutKey, LEGEND_COLORS, LegendThumb, OTHERS_COLOR, swatchBackground, type DonutPart } from "../../../charts.tsx";
+import {
+  DomainWinratesPanel,
+  FacedLegendsList,
+  LegendWinratesPanel,
+  MatchPanel,
+  MatchupsPanel,
+  PhaseToggle,
+  PlayerLink,
+  RoundStrip,
+} from "../../../matches.tsx";
 
 type Params = Promise<{ gameSlugOrId: string; date: string; slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -50,7 +75,8 @@ async function loadTournament(params: Params) {
   const sample = await loadMetaSample(game.id, game.slug);
   const decks = findTournamentDecks(sample.decks, date, slug);
   if (decks.length === 0) notFound();
-  return { game, sample, decks, date, metaPath: `/games/${game.slug ?? game.id}/meta` };
+  const matches = findTournamentMatches(await loadMetaEventsMatches(game.id), date, slug);
+  return { game, sample, decks, date, slug, matches, metaPath: `/games/${game.slug ?? game.id}/meta` };
 }
 
 export async function generateMetadata({ params }: TournamentPageProps): Promise<Metadata> {
@@ -90,7 +116,7 @@ export default function TournamentMetaPage({ params, searchParams }: TournamentP
 }
 
 async function TournamentContent({ params, searchParams }: TournamentPageProps) {
-  const [{ game, sample, decks, date, metaPath }, raw, t, locale] = await Promise.all([
+  const [{ game, sample, decks, date, slug, matches, metaPath }, raw, t, locale] = await Promise.all([
     loadTournament(params),
     searchParams,
     getTranslations("Games.meta"),
@@ -103,6 +129,10 @@ async function TournamentContent({ params, searchParams }: TournamentPageProps) 
   const source = decks[0].source;
   const day = DateTime.fromISO(date, { zone: "utc" }).setLocale(locale).toLocaleString(DateTime.DATE_HUGE);
   const hasTop = stats.topCut.length > 0;
+  const requestedView = first(raw.vue);
+  const view: TournamentView = matches && (requestedView === "matchs" || requestedView === "classement") ? requestedView : "decks";
+  const totals = matches ? matchTotals([matches]) : undefined;
+  const tournamentHref = `${metaPath}/tournois/${date}/${slug}`;
 
   return (
     <>
@@ -124,19 +154,75 @@ async function TournamentContent({ params, searchParams }: TournamentPageProps) 
             <p className="text-muted-foreground">
               {t("tournament.summary", { date: day, decks: stats.decks })} ·{" "}
               {stats.ranked > 0 ? t("tournament.ranked", { count: stats.ranked }) : t("tournament.noRanking")}
+              {matches && totals && (
+                <>
+                  {" "}
+                  · {t("matches.summary", { players: matches.players.length, rounds: totals.rounds, matches: totals.matches })}
+                </>
+              )}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
-              <a href="#decks">{t("tournament.seeDecks", { count: stats.decks })}</a>
+              <Link href={`${tournamentHref}#decks`}>{t("tournament.seeDecks", { count: stats.decks })}</Link>
             </Button>
             <Button asChild>
               <Link href={metaPath}>{t("tournament.global")}</Link>
             </Button>
           </div>
         </div>
+        {matches && (
+          <nav aria-label={t("matches.tabs.label")} className="-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4 sm:mx-0 sm:px-0">
+            {(["decks", "matchs", "classement"] as const).map((key) => (
+              <Link
+                key={key}
+                href={key === "decks" ? tournamentHref : `${tournamentHref}?vue=${key}`}
+                scroll={false}
+                aria-current={view === key ? "page" : undefined}
+                className={cn(
+                  "-mb-px shrink-0 border-b-2 border-transparent px-3 py-2.5 text-sm whitespace-nowrap text-muted-foreground hover:text-foreground",
+                  view === key && "border-primary font-semibold text-foreground"
+                )}
+              >
+                {t(`matches.tabs.${key}`)}
+              </Link>
+            ))}
+          </nav>
+        )}
       </header>
 
+      {matches && view === "matchs" && (
+        <MatchesView t={t} event={matches} locale={locale} raw={raw} tournamentHref={tournamentHref} />
+      )}
+      {matches && view === "classement" && <StandingsView t={t} event={matches} tournamentHref={tournamentHref} />}
+      {view === "decks" && <DecksView t={t} stats={stats} decks={decks} sample={sample} pct={pct} decimal={decimal} hasTop={hasTop} raw={raw} />}
+    </>
+  );
+}
+
+type TournamentView = "decks" | "matchs" | "classement";
+
+function DecksView({
+  t,
+  stats,
+  decks,
+  sample,
+  pct,
+  decimal,
+  hasTop,
+  raw,
+}: {
+  t: T;
+  stats: TournamentStats;
+  decks: MetaSampleDeck[];
+  sample: MetaSample;
+  pct: (value: number) => string;
+  decimal: Intl.NumberFormat;
+  hasTop: boolean;
+  raw: Record<string, string | string[] | undefined>;
+}) {
+  return (
+    <>
       <Kpis t={t} stats={stats} decks={decks} sample={sample} pct={pct} />
       <LegendsPanel t={t} stats={stats} pct={pct} decimal={decimal} hasTop={hasTop} />
 
@@ -703,5 +789,151 @@ function Chip({ href, active, label, count, image }: { href: string; active: boo
       {label}
       <span className="font-mono text-xs text-muted-foreground">{count}</span>
     </Link>
+  );
+}
+
+/** Le classement lu sur le locator, en place lisible : 1 donne « 1er ». */
+function placeLabel(t: T, place: number | undefined): string {
+  return place === undefined ? "–" : t("matches.standings.place", { place });
+}
+
+function MatchesView({
+  t,
+  event,
+  locale,
+  raw,
+  tournamentHref,
+}: {
+  t: T;
+  event: MetaEventMatches;
+  locale: string;
+  raw: Record<string, string | string[] | undefined>;
+  tournamentHref: string;
+}) {
+  const includeTop = first(raw.phases) === "top";
+  const hasTopPhase = event.matches.some((match) => match.phase === "top");
+  const filter = { includeTop };
+  const legends = legendWinrates([event], filter);
+  const domains = domainWinrates([event], filter);
+  const matchups = legendMatchups([event], filter);
+  const lopsided = mostLopsidedMatchup(matchups);
+  const totals = matchTotals([event]);
+  const rateFormat = new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const rate = (value: number) => rateFormat.format(value);
+  const wholePercent = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 });
+  const best = legends.find((row) => row.matches >= MIN_MATCHES_FOR_RATE);
+  const bestDomain = domains.find((row) => row.matches >= MIN_MATCHES_FOR_RATE);
+  const unknownPlayers = event.players.filter((player) => !player.legend).length;
+  const top = topCutPlayers(event, 8);
+  const faced = facedLegends(
+    event,
+    top.map((player) => player.id)
+  );
+  const topMatches = top.reduce(
+    (sum, player) => sum + playerRounds(event, player.id).filter((round) => round.result !== "BYE").length,
+    0
+  );
+  const playerHref = (id: number) => `${tournamentHref}/joueurs/${id}`;
+  const toggle = hasTopPhase ? (
+    <PhaseToggle t={t} includeTop={includeTop} href={(value) => `${tournamentHref}?vue=matchs${value ? "&phases=top" : ""}`} />
+  ) : undefined;
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Kpi
+          label={t("matches.kpi.bestLegend")}
+          value={best?.rate !== undefined ? `${shortLegendName(best.legend)} · ${rate(best.rate)}` : "—"}
+          image={best ? (best.legendImage ?? "") : undefined}
+          hint={best ? t("matches.kpi.bestLegendHint", { matches: best.matches }) : t("matches.kpi.noRate", { min: MIN_MATCHES_FOR_RATE })}
+        />
+        <Kpi
+          label={t("matches.kpi.lopsided")}
+          value={lopsided ? `${shortLegendName(lopsided.legend)} – ${shortLegendName(lopsided.opponent)} · ${wholePercent.format(lopsided.rate)}` : "—"}
+          hint={lopsided ? t("matches.kpi.lopsidedHint", { matches: lopsided.matches }) : t("matches.kpi.noRate", { min: MIN_MATCHES_FOR_RATE })}
+        />
+        <Kpi
+          label={t("matches.kpi.bestDomain")}
+          value={bestDomain?.rate !== undefined ? `${bestDomain.domain} · ${rate(bestDomain.rate)}` : "—"}
+          hint={bestDomain ? t("matches.kpi.bestDomainHint", { matches: bestDomain.matches }) : t("matches.kpi.noRate", { min: MIN_MATCHES_FOR_RATE })}
+        />
+        <Kpi
+          label={t("matches.kpi.draws")}
+          value={totals.matches > 0 ? wholePercent.format(totals.draws / totals.matches) : "—"}
+          hint={t("matches.kpi.drawsHint", { draws: totals.draws, byes: totals.byes })}
+        />
+      </div>
+
+      <LegendWinratesPanel t={t} rows={legends} rate={rate} toggle={toggle} unknownPlayers={unknownPlayers} />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+        <DomainWinratesPanel t={t} rows={domains} rate={rate} />
+        <MatchupsPanel t={t} legends={legends} matchups={matchups} rate={rate} />
+      </div>
+
+      {top.length > 0 && (
+        <MatchPanel>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-base font-semibold">{t("matches.faced.title", { count: top.length })}</h2>
+            <p className="text-sm text-muted-foreground">{t("matches.faced.hint", { matches: topMatches, players: top.length })}</p>
+          </div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+            <div className="flex min-w-0 flex-col gap-3">
+              <h3 className="text-sm font-semibold">{t("matches.faced.legends")}</h3>
+              <FacedLegendsList t={t} rows={faced} />
+            </div>
+            <div className="flex min-w-0 flex-col gap-3">
+              <h3 className="text-sm font-semibold">{t("matches.faced.rounds")}</h3>
+              <ol className="flex flex-col">
+                {top.map((player) => (
+                  <li key={player.id} className="flex flex-col gap-2 border-t border-border py-2.5 first:border-t-0 sm:flex-row sm:items-center">
+                    <span className="flex min-w-0 items-center gap-2 sm:w-52 sm:shrink-0">
+                      <span className="w-9 shrink-0 text-sm font-semibold tabular-nums">{placeLabel(t, player.place)}</span>
+                      <PlayerLink player={player} href={playerHref(player.id)} />
+                    </span>
+                    <RoundStrip t={t} rounds={playerRounds(event, player.id)} />
+                  </li>
+                ))}
+              </ol>
+              <p className="text-xs text-muted-foreground">{t("matches.faced.roundsHint")}</p>
+            </div>
+          </div>
+        </MatchPanel>
+      )}
+    </>
+  );
+}
+
+function StandingsView({ t, event, tournamentHref }: { t: T; event: MetaEventMatches; tournamentHref: string }) {
+  const players = event.players
+    .slice()
+    .sort((a, b) => (a.place ?? Number.MAX_SAFE_INTEGER) - (b.place ?? Number.MAX_SAFE_INTEGER) || a.name.localeCompare(b.name));
+  return (
+    <MatchPanel>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-base font-semibold">{t("matches.standings.title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("matches.standings.hint", { count: players.length })}</p>
+      </div>
+      <ol className="flex flex-col">
+        {players.map((player) => (
+          <li
+            key={player.id}
+            className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 border-t border-border py-2 text-sm first:border-t-0 sm:grid-cols-[3rem_minmax(0,1fr)_minmax(0,12rem)_5rem]"
+          >
+            <span className="font-semibold tabular-nums">{placeLabel(t, player.place)}</span>
+            <PlayerLink player={player} href={`${tournamentHref}/joueurs/${player.id}`} />
+            <span className="hidden min-w-0 flex-wrap gap-x-2.5 text-xs text-muted-foreground sm:flex">
+              {player.domains.map((domain) => (
+                <span key={domain} className="inline-flex items-center gap-1">
+                  <span className="size-2 rounded-full" style={{ background: domainColor(domain) }} aria-hidden />
+                  {domain}
+                </span>
+              ))}
+            </span>
+            <span className="text-right font-mono tabular-nums text-muted-foreground">{player.record}</span>
+          </li>
+        ))}
+      </ol>
+    </MatchPanel>
   );
 }

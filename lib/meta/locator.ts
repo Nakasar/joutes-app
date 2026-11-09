@@ -51,7 +51,11 @@ export type LocatorEvent = {
   format?: string;
   /** Les rondes dont le classement porte la légende de chaque joueur, de la dernière à la première phase. */
   standingRoundIds: number[];
+  /** Toutes les rondes, dans l'ordre, avec leur phase : suisse, ou élimination directe (le top). */
+  rounds: LocatorRound[];
 };
+
+export type LocatorRound = { id: number; number: number; phase: "swiss" | "top" };
 
 type RawEvent = {
   id?: number;
@@ -66,9 +70,24 @@ type RawEvent = {
   settings?: { decklist_status?: string | null } | null;
   tournament_phases?: {
     order_in_phases?: number | null;
-    rounds?: { id?: number | null; standings_status?: string | null }[] | null;
+    round_type?: string | null;
+    rounds?: { id?: number | null; round_number?: number | null; standings_status?: string | null }[] | null;
   }[];
 };
+
+/** Les rondes de toutes les phases, de la première à la dernière ; une phase à élimination directe est le top. */
+function allRounds(raw: RawEvent): LocatorRound[] {
+  return [...(raw.tournament_phases ?? [])]
+    .sort((a, b) => (a.order_in_phases ?? 0) - (b.order_in_phases ?? 0))
+    .flatMap((phase) =>
+      (phase.rounds ?? [])
+        .filter((round): round is { id: number; round_number?: number | null } => typeof round.id === "number")
+        .sort((a, b) => (a.round_number ?? 0) - (b.round_number ?? 0))
+        .map((round) => ({ id: round.id, phase: /ELIMINATION/i.test(phase.round_type ?? "") ? "top" : "swiss" }) as const)
+    )
+    // Numérotées à la suite, phase après phase : le top peut repartir de 1 sur le locator.
+    .map((round, index): LocatorRound => ({ ...round, number: index + 1 }));
+}
 
 /** La dernière ronde classée de chaque phase, de la dernière phase à la première. */
 function standingRounds(raw: RawEvent): number[] {
@@ -105,10 +124,13 @@ export function toLocatorEvent(raw: RawEvent, id: number): LocatorEvent {
     decklistsPublished: raw.settings?.decklist_status === "PUBLISHED",
     ...(format ? { format } : {}),
     standingRoundIds: standingRounds(raw),
+    rounds: allRounds(raw),
   };
 }
 
 export type LocatorStanding = {
+  /** L'inscription au locator : ce qui relie un joueur à ses matchs. */
+  registrationId?: number;
   /** Place finale ; absente tant que le tournoi n'est pas classé. */
   place?: number;
   player: string;
@@ -158,6 +180,7 @@ export function toLocatorStandings(registrations: RawRegistration[], legends = n
         record: [raw.matches_won, raw.matches_lost, raw.matches_drawn].map((value) => value ?? 0).join("-"),
         ...(raw.deck_id ? { deckId: raw.deck_id } : {}),
         ...(legend ? { legend } : {}),
+        ...(typeof raw.id === "number" ? { registrationId: raw.id } : {}),
       };
     })
     .sort(
@@ -324,4 +347,76 @@ function copiesByCardRoom(card: DeckCardInfo, parsed: ParsedDeckText, cardOf: (n
     .filter((line) => line.zone !== "sideboard" && cardOf(line.name)?.id === card.id)
     .reduce((total, line) => total + line.quantity, 0);
   return MAX_COPIES - played;
+}
+
+export type RawLocatorMatch = {
+  status?: string | null;
+  match_is_bye?: boolean | null;
+  match_is_intentional_draw?: boolean | null;
+  match_is_unintentional_draw?: boolean | null;
+  winning_player?: number | null;
+  games_won_by_winner?: number | null;
+  games_won_by_loser?: number | null;
+  games_drawn?: number | null;
+  player_match_relationships?: {
+    player_order?: number | null;
+    player?: { id?: number | null } | null;
+    user_event_status?: { id?: number | null; deck_defining_card?: { name?: string | null } | null } | null;
+  }[];
+};
+
+/**
+ * Un match, tel que la méta le garde : les inscriptions des deux joueurs
+ * (`b` absent pour un bye), le gagnant (`null` pour un nul) et les manches
+ * gagnées par chacun.
+ */
+export type ParsedLocatorMatch = {
+  round: number;
+  phase: "swiss" | "top";
+  a: number;
+  b?: number;
+  winner: "a" | "b" | null;
+  games: [number, number];
+  /** La légende lue sur le match, pour les joueurs absents du classement. */
+  legends: [string | undefined, string | undefined];
+};
+
+/** Les matchs terminés d'une ronde ; un match sans joueur lisible est ignoré. */
+export function toLocatorMatches(raw: RawLocatorMatch[], round: LocatorRound): ParsedLocatorMatch[] {
+  const matches: ParsedLocatorMatch[] = [];
+  for (const match of raw) {
+    if (match.status && match.status !== "COMPLETE") continue;
+    const sides = [...(match.player_match_relationships ?? [])]
+      .sort((x, y) => (x.player_order ?? 0) - (y.player_order ?? 0))
+      .filter((side) => typeof side.user_event_status?.id === "number");
+    if (sides.length === 0) continue;
+
+    const [first, second] = sides;
+    const a = first.user_event_status?.id as number;
+    const b = second?.user_event_status?.id ?? undefined;
+    const legends: [string | undefined, string | undefined] = [
+      first.user_event_status?.deck_defining_card?.name?.trim() || undefined,
+      second?.user_event_status?.deck_defining_card?.name?.trim() || undefined,
+    ];
+
+    if (b === undefined || match.match_is_bye) {
+      matches.push({ round: round.number, phase: round.phase, a, winner: "a", games: [0, 0], legends });
+      continue;
+    }
+
+    const draw = Boolean(match.match_is_intentional_draw || match.match_is_unintentional_draw) || !match.winning_player;
+    const winnerSide = draw ? null : match.winning_player === first.player?.id ? "a" : match.winning_player === second?.player?.id ? "b" : null;
+    const won = match.games_won_by_winner ?? 0;
+    const lost = match.games_won_by_loser ?? 0;
+    matches.push({
+      round: round.number,
+      phase: round.phase,
+      a,
+      b,
+      winner: winnerSide,
+      games: winnerSide === "b" ? [lost, won] : [won, lost],
+      legends,
+    });
+  }
+  return matches;
 }

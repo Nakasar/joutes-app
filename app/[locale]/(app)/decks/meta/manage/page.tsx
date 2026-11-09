@@ -10,7 +10,9 @@ import { auth } from "@/lib/auth.ts";
 import { hasPermission } from "@/lib/db/permissions.ts";
 import { getAllGames } from "@/lib/db/games.ts";
 import { searchDecks } from "@/lib/db/decks.ts";
-import { countMetaDecks, getSingleSourceBatch, listMetaSources } from "@/lib/db/meta-decks.ts";
+import { countMetaDecks, getSingleSourceBatch, listMetaSources, listSourceLocatorEvents } from "@/lib/db/meta-decks.ts";
+import { listMetaEventKeys } from "@/lib/db/meta-events.ts";
+import { knownGameSets } from "@/lib/meta/load.ts";
 import { META_DECKS_PERMISSION } from "@/lib/meta/permissions.ts";
 import { resolveMetaSettings } from "@/lib/meta/settings.ts";
 import { readPage, toURLSearchParams } from "@/lib/navigation/url-query.ts";
@@ -19,6 +21,7 @@ import { MetaGamePicker } from "./MetaGamePicker.tsx";
 import { MetaImportForm } from "./MetaImportForm.tsx";
 import { LocatorImportForm } from "./LocatorImportForm.tsx";
 import { MetaDeckList } from "./MetaDeckList.tsx";
+import { CompleteMatchesBar } from "./CompleteMatchesBar.tsx";
 import { MetaSettingsForm } from "./MetaSettingsForm.tsx";
 
 export const metadata: Metadata = {
@@ -150,7 +153,7 @@ async function MetaManageContent({ searchParams }: { searchParams: SearchParams 
 
       {tab === "decks" && <MetaDecksTab gameId={game.id} gameKey={gameKey} params={params} />}
 
-      {tab === "settings" && <MetaSettingsForm gameId={game.id} settings={resolveMetaSettings(game.metaSettings)} />}
+      {tab === "settings" && <MetaSettingsForm gameId={game.id} settings={resolveMetaSettings(game.metaSettings)} sets={knownGameSets(game.slug)} />}
     </div>
   );
 }
@@ -166,7 +169,7 @@ async function MetaDecksTab({
 }) {
   const source = first(params.source);
   const page = readPage(toURLSearchParams(params));
-  const [result, sources, sourceBatch] = await Promise.all([
+  const [result, sources, sourceBatch, locatorEvents, eventKeys] = await Promise.all([
     searchDecks({
       gameId,
       metaOnly: true,
@@ -178,7 +181,13 @@ async function MetaDecksTab({
     }),
     listMetaSources(gameId),
     source ? getSingleSourceBatch(gameId, source) : null,
+    source ? listSourceLocatorEvents(gameId, source) : [],
+    source ? listMetaEventKeys(gameId) : new Set<string>(),
   ]);
+  const sourceEvents = locatorEvents.map((event) => {
+    const eventDate = new Date(event.eventDate).toISOString();
+    return { url: event.url, eventDate, hasMatches: eventKeys.has(`${source}|${eventDate.slice(0, 10)}`) };
+  });
 
   return (
     <MetaDeckList
@@ -208,6 +217,9 @@ async function MetaDecksTab({
       total={result.total}
       baseHref={`/decks/meta/manage?game=${encodeURIComponent(gameKey)}&tab=decks`}
       metaPath={`/games/${encodeURIComponent(gameKey)}/meta`}
+      sourceActions={
+        source && sourceEvents.length > 0 ? <CompleteMatchesBar gameId={gameId} source={source} events={sourceEvents} /> : undefined
+      }
     />
   );
 }

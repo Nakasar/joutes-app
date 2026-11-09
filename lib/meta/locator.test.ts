@@ -9,6 +9,7 @@ import {
   locatorDeckToParsed,
   parseLocatorEventId,
   toLocatorEvent,
+  toLocatorMatches,
   toLocatorStandings,
 } from "./locator.ts";
 
@@ -180,5 +181,53 @@ describe("inferLegendAndChampion", () => {
     const result = inferLegendAndChampion(lines([]), cardOf, legends);
     assert.equal(result.legend, undefined);
     assert.match(result.notes[0], /Légende introuvable/);
+  });
+});
+
+describe("rondes et matchs", () => {
+  it("numérote les rondes à la suite, phase après phase, et marque le top", () => {
+    const event = toLocatorEvent(
+      {
+        tournament_phases: [
+          { order_in_phases: 2, round_type: "RANKED_SINGLE_ELIMINATION", rounds: [{ id: 30, round_number: 1 }] },
+          { order_in_phases: 1, round_type: "SWISS", rounds: [{ id: 11, round_number: 2 }, { id: 10, round_number: 1 }] },
+        ],
+      },
+      1
+    );
+    assert.deepEqual(event.rounds, [
+      { id: 10, phase: "swiss", number: 1 },
+      { id: 11, phase: "swiss", number: 2 },
+      { id: 30, phase: "top", number: 3 },
+    ]);
+  });
+
+  const side = (order: number, player: number, registration: number, legend?: string) => ({
+    player_order: order,
+    player: { id: player },
+    user_event_status: { id: registration, deck_defining_card: legend ? { name: legend } : null },
+  });
+
+  it("lit le gagnant, les manches dans l'ordre des joueurs, les nuls et les byes", () => {
+    const matches = toLocatorMatches(
+      [
+        {
+          status: "COMPLETE",
+          winning_player: 902,
+          games_won_by_winner: 2,
+          games_won_by_loser: 1,
+          player_match_relationships: [side(2, 902, 12, "Kennen, Heart of the Tempest"), side(1, 901, 11, "Riven, The Exile")],
+        },
+        { status: "COMPLETE", match_is_intentional_draw: true, player_match_relationships: [side(1, 903, 13), side(2, 904, 14)] },
+        { status: "COMPLETE", match_is_bye: true, player_match_relationships: [side(1, 905, 15)] },
+        { status: "IN_PROGRESS", player_match_relationships: [side(1, 906, 16), side(2, 907, 17)] },
+      ],
+      { id: 10, number: 4, phase: "swiss" }
+    );
+    assert.deepEqual(matches, [
+      { round: 4, phase: "swiss", a: 11, b: 12, winner: "b", games: [1, 2], legends: ["Riven, The Exile", "Kennen, Heart of the Tempest"] },
+      { round: 4, phase: "swiss", a: 13, b: 14, winner: null, games: [0, 0], legends: [undefined, undefined] },
+      { round: 4, phase: "swiss", a: 15, winner: "a", games: [0, 0], legends: [undefined, undefined] },
+    ]);
   });
 });

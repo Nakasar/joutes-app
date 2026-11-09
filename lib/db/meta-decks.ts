@@ -252,6 +252,23 @@ export async function getSingleSourceBatch(gameId: string, source: string): Prom
   return rows.length === 1 && rows[0]._id ? { batchId: rows[0]._id, decks: rows[0].decks } : null;
 }
 
+/**
+ * Les tournois du locator d'où viennent les decks d'une source : le lien de
+ * l'évènement (celui des decks importés) et le jour du tournoi.
+ */
+export async function listSourceLocatorEvents(gameId: string, source: string): Promise<{ url: string; eventDate: Date }[]> {
+  const rows = await db
+    .collection(COLLECTION_NAME)
+    .aggregate<{ _id: { url: string; eventDate: Date } }>([
+      { $match: { gameId, "meta.source": source, "meta.imported": true, url: { $regex: "^https://locator\\.riftbound\\." } } },
+      { $group: { _id: { url: "$url", eventDate: "$meta.eventDate" } } },
+      { $sort: { "_id.eventDate": -1 } },
+      { $limit: 5 },
+    ])
+    .toArray();
+  return rows.map((row) => row._id);
+}
+
 /** Nombre de decks méta d'un jeu. */
 export async function countMetaDecks(gameId: string): Promise<number> {
   return db.collection(COLLECTION_NAME).countDocuments({ gameId, meta: { $exists: true } });

@@ -13,6 +13,11 @@ export type GameMetaSettings = {
   minDecksPerDomain?: number;
   /** Période affichée par défaut sur la page Méta, en jours. */
   defaultPeriodDays?: number;
+  /**
+   * La sortie de chaque extension, `AAAA-MM-JJ` par code d'extension : les
+   * winrates se comptent par défaut depuis la dernière sortie.
+   */
+  setReleases?: Record<string, string>;
 };
 
 export type ResolvedMetaSettings = Required<GameMetaSettings>;
@@ -21,7 +26,26 @@ export const DEFAULT_META_SETTINGS: ResolvedMetaSettings = {
   stapleThreshold: 0.75,
   minDecksPerDomain: 20,
   defaultPeriodDays: 30,
+  setReleases: {},
 };
+
+const SET_CODE = /^[A-Za-z0-9-]{1,12}$/;
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Les dates de sortie valides : un code d'extension, un jour qui existe. */
+export function cleanSetReleases(releases: unknown): Record<string, string> {
+  if (!releases || typeof releases !== "object") return {};
+  return Object.fromEntries(
+    Object.entries(releases as Record<string, unknown>).filter(
+      (entry): entry is [string, string] =>
+        SET_CODE.test(entry[0]) &&
+        typeof entry[1] === "string" &&
+        DAY.test(entry[1]) &&
+        !Number.isNaN(new Date(`${entry[1]}T00:00:00Z`).getTime()) &&
+        new Date(`${entry[1]}T00:00:00Z`).toISOString().startsWith(entry[1])
+    )
+  );
+}
 
 /** Les seuils proposés aux visiteurs à côté de celui du jeu. */
 export const STAPLE_THRESHOLD_CHOICES = [0.6, 0.75, 0.9] as const;
@@ -48,5 +72,6 @@ export function resolveMetaSettings(settings?: GameMetaSettings | null): Resolve
       typeof period === "number" && Number.isInteger(period) && period >= 0
         ? period
         : DEFAULT_META_SETTINGS.defaultPeriodDays,
+    setReleases: cleanSetReleases(settings?.setReleases),
   };
 }

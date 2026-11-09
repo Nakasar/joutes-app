@@ -604,7 +604,8 @@
         "together": "Giocate insieme",
         "sets": "Espansioni",
         "decks": "Mazzi",
-        "tournaments": "Tornei"
+        "tournaments": "Tornei",
+        "winrates": "Winrate"
       },
       "filters": {
         "period": "Periodo",
@@ -785,6 +786,118 @@
           "title": "{count, plural, one {Il mazzo} other {Tutti i # mazzi}}",
           "filter": "Filtra per leggenda",
           "all": "Tutte"
+        }
+      },
+      "matches": {
+        "summary": "{players, plural, one {# giocatore} other {# giocatori}} · {rounds, plural, one {# turno} other {# turni}} · {matches, plural, one {# partita} other {# partite}}",
+        "tabs": {
+          "label": "Viste del torneo",
+          "decks": "Mazzi e leggende",
+          "matchs": "Partite e winrate",
+          "classement": "Classifica"
+        },
+        "phase": {
+          "label": "Fasi contate",
+          "swiss": "Turni svizzeri",
+          "withTop": "Con la top 8"
+        },
+        "kpi": {
+          "bestLegend": "Miglior winrate",
+          "bestLegendHint": "su {matches} partite, mirror esclusi",
+          "lopsided": "Matchup più sbilanciato",
+          "lopsidedHint": "{matches} partite",
+          "bestDomain": "Dominio più vincente",
+          "bestDomainHint": "su {matches} partite",
+          "draws": "Pareggi",
+          "drawsHint": "{draws, plural, one {# partita} other {# partite}} · {byes, plural, one {# bye escluso} other {# bye esclusi}}",
+          "noRate": "Niente raggiunge ancora {min} partite"
+        },
+        "legends": {
+          "title": "Winrate per leggenda",
+          "legend": "Leggenda",
+          "players": "Giocatori",
+          "matches": "Partite",
+          "record": "V-S-P",
+          "rate": "Winrate",
+          "top8": "Top 8",
+          "few": "poche partite",
+          "mobileCounts": "{players} g. · {matches} p.",
+          "hint": "Un pareggio vale ½ vittoria, bye e mirror esclusi. La linea segna il 50%. In grigio: meno di {min} partite.",
+          "unknown": "{count, plural, one {# giocatore senza leggenda nota non conta.} other {# giocatori senza leggenda nota non contano.}}"
+        },
+        "domains": {
+          "title": "Winrate per dominio",
+          "rate": "{rate} · {matches} partite",
+          "hint": "Un mazzo conta per ciascuno dei suoi domini; due mazzi dello stesso dominio che si affrontano non contano per esso."
+        },
+        "matchups": {
+          "title": "Matchup",
+          "hint": "Winrate della riga contro la colonna · numero di partite in piccolo",
+          "against": "Contro →",
+          "mirror": "mirror",
+          "short": "{count} p.",
+          "unfavorable": "Sfavorevole",
+          "favorable": "Favorevole",
+          "few": "Casella chiara: meno di {min} partite",
+          "more": "Le {count} leggende più giocate; le altre sono nella tabella dei winrate.",
+          "pick": "Leggenda",
+          "versus": "contro"
+        },
+        "faced": {
+          "title": "Chi ha affrontato la top {count}",
+          "hint": "{matches} partite dei primi {players}, su tutto il torneo",
+          "legends": "Leggende incontrate",
+          "wins": "Vittorie",
+          "losses": "Sconfitte",
+          "draws": "Pareggi",
+          "record": "{matches} · {record}",
+          "rounds": "Turno per turno",
+          "roundsHint": "Una casella per turno: la leggenda avversaria, sottolineata in blu per una vittoria, in arancione per una sconfitta, in grigio per un pareggio."
+        },
+        "standings": {
+          "title": "Classifica",
+          "hint": "{count, plural, one {# giocatore} other {# giocatori}}, nomi come li pubblica il locator. Ogni riga porta al percorso del giocatore.",
+          "place": "{place}º"
+        },
+        "player": {
+          "back": "Classifica",
+          "metadataTitle": "{player} · {source} · Meta {gameName}",
+          "noPlace": "Non classificato",
+          "rounds": "Turni",
+          "roundShort": "T{round}",
+          "topRound": "Top · T{round}",
+          "bye": "Bye",
+          "byeShort": "BYE",
+          "unknownLegend": "Leggenda sconosciuta",
+          "faced": "Leggende affrontate",
+          "seeDeck": "Vedi il mazzo",
+          "results": {
+            "W": "Vittoria",
+            "L": "Sconfitta",
+            "D": "Pareggio",
+            "BYE": "Bye"
+          }
+        },
+        "winrates": {
+          "modes": {
+            "label": "Periodo dei winrate",
+            "set": "Per espansione",
+            "all": "Assoluto",
+            "dates": "Date scelte"
+          },
+          "sets": "Espansioni",
+          "sinceShort": "dal {from}",
+          "noReleases": "Nessuna data d'uscita impostata: i winrate coprono tutto lo storico.",
+          "from": "Dal",
+          "to": "Al",
+          "apply": "Mostra",
+          "between": "Dal {from} al {to}",
+          "since": "Dal {from}",
+          "until": "Fino al {to}",
+          "allTime": "Dal primo torneo",
+          "summary": "{events, plural, one {# torneo} other {# tornei}} · {matches, plural, one {# partita} other {# partite}}",
+          "empty": "Nessun torneo importato con le sue partite in questo periodo.",
+          "events": "{count, plural, one {Il torneo contato} other {I # tornei contati}}"
         }
       }
     },

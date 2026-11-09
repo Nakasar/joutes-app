@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,6 +38,7 @@ export function MetaDeckList({
   total,
   baseHref,
   metaPath,
+  sourceActions,
 }: {
   decks: MetaDeckRow[];
   sources: { source: string; decks: number; lastEventDate: string }[];
@@ -50,6 +51,8 @@ export function MetaDeckList({
   baseHref: string;
   /** La page Méta publique du jeu, d'où partent les pages de tournoi. */
   metaPath: string;
+  /** Sous le filtre d'une source : ce qu'on peut faire de tout son tournoi. */
+  sourceActions?: ReactNode;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState<Pending | null>(null);
@@ -104,6 +107,8 @@ export function MetaDeckList({
           </Button>
         </div>
       )}
+
+      {activeSource && sourceActions}
 
       {decks.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">

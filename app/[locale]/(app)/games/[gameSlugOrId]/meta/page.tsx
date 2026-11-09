@@ -11,6 +11,7 @@ import { BackLink } from "@/components/navigation/BackLink.tsx";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar.tsx";
 import { GameToolGridSkeleton, GameToolHeaderSkeleton } from "@/components/games/GameToolSkeletons.tsx";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
+import { loadMetaEventsMatches } from "@/lib/db/meta-events.ts";
 import { loadMetaSample } from "@/lib/meta/load.ts";
 import { META_TABS, metaHref, parseMetaPageParams, periodChoices, type MetaTab } from "@/lib/meta/page-params.ts";
 import { resolveMetaSettings } from "@/lib/meta/settings.ts";
@@ -29,6 +30,7 @@ import {
 import { listTournaments } from "@/lib/meta/tournaments.ts";
 import { cn } from "@/lib/utils.ts";
 import { MetaFilters } from "./MetaFilters.tsx";
+import { WinratesTab } from "./WinratesTab.tsx";
 import { CardsTab, DecksTab, OverviewTab, SetsTab, StaplesTab, TogetherTab, TournamentsTab, type MetaView } from "./sections.tsx";
 
 type GameParams = Promise<{ gameSlugOrId: string }>;
@@ -115,11 +117,12 @@ async function MetaHeader({ params }: { params: GameParams }) {
 async function MetaContent({ params, searchParams }: MetaPageProps) {
   const { gameSlugOrId } = await params;
   const game = await requireGameWithDecks(gameSlugOrId);
-  const [raw, t, locale, sample] = await Promise.all([
+  const [raw, t, locale, sample, matchEvents] = await Promise.all([
     searchParams,
     getTranslations("Games.meta"),
     getLocale(),
     loadMetaSample(game.id, game.slug),
+    loadMetaEventsMatches(game.id),
   ]);
 
   const settings = resolveMetaSettings(game.metaSettings);
@@ -191,7 +194,7 @@ async function MetaContent({ params, searchParams }: MetaPageProps) {
       </p>
 
       <nav aria-label={t("tabs.label")} className="-mx-4 flex gap-6 overflow-x-auto border-b border-border px-4 sm:mx-0 sm:px-0">
-        {META_TABS.map((tab) => (
+        {META_TABS.filter((tab) => tab !== "winrates" || matchEvents.length > 0).map((tab) => (
           <Link
             key={tab}
             href={metaHref(basePath, state, settings, {
@@ -214,24 +217,38 @@ async function MetaContent({ params, searchParams }: MetaPageProps) {
         ))}
       </nav>
 
-      <MetaFilters
-        basePath={basePath}
-        state={state}
-        settings={settings}
-        periods={periodChoices(settings)}
-        sources={state.tab === "tournaments" ? [] : sources}
-        legends={state.tab === "tournaments" ? [] : legends}
-        domains={state.tab === "tournaments" ? [] : domains}
-      />
-
-      {state.tab === "tournaments" ? (
-        <TournamentsTab view={view} tournaments={tournaments} />
-      ) : decks.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
-          {t("noMatch")}
-        </p>
+      {state.tab === "winrates" ? (
+        <WinratesTab
+          t={t}
+          locale={locale}
+          basePath={basePath}
+          raw={raw}
+          events={matchEvents}
+          releases={settings.setReleases}
+          setNames={sample.setNames}
+        />
       ) : (
-        <TabContent tab={state.tab} view={view} />
+        <>
+          <MetaFilters
+            basePath={basePath}
+            state={state}
+            settings={settings}
+            periods={periodChoices(settings)}
+            sources={state.tab === "tournaments" ? [] : sources}
+            legends={state.tab === "tournaments" ? [] : legends}
+            domains={state.tab === "tournaments" ? [] : domains}
+          />
+
+          {state.tab === "tournaments" ? (
+            <TournamentsTab view={view} tournaments={tournaments} />
+          ) : decks.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-border px-4 py-12 text-center text-muted-foreground">
+              {t("noMatch")}
+            </p>
+          ) : (
+            <TabContent tab={state.tab} view={view} />
+          )}
+        </>
       )}
     </div>
   );
