@@ -2,7 +2,7 @@ import cr from '@/data/riftbound/cr.json';
 import tr from '@/data/riftbound/tr.json';
 import fr_cr from '@/data/riftbound/fr/cr.json';
 import fr_tr from '@/data/riftbound/fr/tr.json';
-import { escapeRegex } from "@/lib/utils/regex";
+import { escapeRegex } from '@/lib/utils/regex';
 
 export type RuleDocument = 'TR' | 'CR';
 export type RuleLang = 'en' | 'fr';

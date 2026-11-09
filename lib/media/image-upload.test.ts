@@ -20,6 +20,8 @@ describe("sniffImageKind", () => {
     assert.equal(sniffImageKind(new Uint8Array(PNG)), "png");
     assert.equal(sniffImageKind(new Uint8Array(JPEG)), "jpeg");
     assert.equal(sniffImageKind(new Uint8Array(GIF)), "gif");
+    assert.equal(sniffImageKind(new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x37, 0x61, 0, 0])), "gif");
+    assert.equal(sniffImageKind(new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x30, 0x30, 0, 0])), null);
     assert.equal(sniffImageKind(new Uint8Array(WEBP)), "webp");
   });
 
