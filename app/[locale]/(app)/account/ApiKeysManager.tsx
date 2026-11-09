@@ -328,7 +328,7 @@ export default function ApiKeysManager() {
           
           <div>
             <h4 className="font-medium mb-2">Authentification</h4>
-            <p>Le MCP Joutes supporte l'authentification OAuth2 que nous recommandons pour plus de sécurité.</p>
+            <p>Le MCP Joutes supporte l&apos;authentification OAuth2 que nous recommandons pour plus de sécurité.</p>
             <p className="text-sm text-muted-foreground mb-2">
               Vous pouvez également utiliser vos clés API à la place dans l&apos;en-tête Authorization :
             </p>
@@ -346,8 +346,8 @@ export default function ApiKeysManager() {
               <li><strong>follow_lair</strong> : Suivre un lieu (auth requise)</li>
               <li><strong>add_game</strong> : Ajouter un jeu (auth requise)</li>
               <li><strong>list_games</strong> : Lister les jeux disponibles</li>
-              <li><strong>search_cards</strong>: Rechercher des cartes d'un jeu et leurs erratas</li>
-              <li><strong>search_rules</strong>: Rechercher dans les règles et politiques d'un jeu</li>
+              <li><strong>search_cards</strong>: Rechercher des cartes d&apos;un jeu et leurs erratas</li>
+              <li><strong>search_rules</strong>: Rechercher dans les règles et politiques d&apos;un jeu</li>
               <li><strong>get_rule</strong>: Récupérer une règle par son ID.</li>
               <li><strong>vote_errata</strong>: Voter pour un errata (auth requise)</li>
               <li><strong>create_errata</strong> : Proposer un errata, une clarification ou un ruling (auth requise)</li>
