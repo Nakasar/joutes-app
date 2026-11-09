@@ -801,7 +801,7 @@ async function authHandler(req: Request) {
                 req.auth = {
                     // `azp` nomme le client ; `aud` nomme la ressource, et c'est
                     // une liste dès que le jeton vaut aussi pour `userinfo`.
-                    clientId: String(payload.azp ?? payload.client_id ?? payload.aud),
+                    clientId: String(payload.azp ?? payload.client_id ?? [payload.aud].flat()[0] ?? ""),
                     scopes: payload.scope ? (payload.scope as string).split(" ") : [],
                     token: accessToken ?? "",
                     extra: {

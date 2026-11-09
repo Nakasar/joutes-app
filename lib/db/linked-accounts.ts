@@ -17,11 +17,19 @@ import { ObjectId } from "mongodb";
  * plusieurs, le plus récent l'emporte.
  */
 export async function findLinkedAccountId(userId: string, providerId: string): Promise<string | null> {
-  if (!ObjectId.isValid(userId)) return null;
+  if (!userId) return null;
+
+  // L'adaptateur MongoDB de better-auth range `userId` en `ObjectId`, mais une
+  // base migrée d'une version antérieure peut porter la chaîne : on accepte
+  // les deux formes, comme `findPatreonAccountId`.
+  const candidates: unknown[] = [userId];
+  if (ObjectId.isValid(userId)) {
+    candidates.push(new ObjectId(userId));
+  }
 
   const account = await db
-    .collection<{ userId: ObjectId; providerId: string; createdAt?: Date }>("account")
-    .findOne({ providerId, userId: new ObjectId(userId) }, { projection: { _id: 1 }, sort: { createdAt: -1 } });
+    .collection<{ userId: unknown; providerId: string; createdAt?: Date }>("account")
+    .findOne({ providerId, userId: { $in: candidates } }, { projection: { _id: 1 }, sort: { createdAt: -1 } });
 
   return account?._id.toString() ?? null;
 }
