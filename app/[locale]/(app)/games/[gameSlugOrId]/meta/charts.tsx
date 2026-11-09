@@ -1,6 +1,16 @@
 import { cn } from "@/lib/utils.ts";
 
-export type DonutPart = { label: string; value: number; color: string };
+/**
+ * Une part de camembert. `colors` (deux couleurs ou plus) la peint en dégradé
+ * sur son arc, à la place de `color`.
+ */
+export type DonutPart = { label: string; value: number; color: string; colors?: string[] };
+
+/** Un fond CSS pour une liste de couleurs : pleine s'il n'y en a qu'une, en dégradé sinon. */
+export function swatchBackground(colors: string[], fallback: string): string {
+  if (colors.length === 0) return fallback;
+  return colors.length === 1 ? colors[0] : `linear-gradient(135deg, ${colors.join(", ")})`;
+}
 
 /** Les couleurs des légendes dans les camemberts, la dernière pour « Autres ». */
 export const LEGEND_COLORS = ["#0b6d9e", "#e0892b", "#2f9a5b", "#8b4fd1", "#d64545", "#62b4e0", "#b8900f", "#d977a8", "#4f7a6b"];
@@ -32,7 +42,12 @@ export function Donut({
     .map((part) => {
       const from = (acc / total) * 100;
       acc += part.value;
-      return `${part.color} ${from.toFixed(2)}% ${((acc / total) * 100).toFixed(2)}%`;
+      const to = (acc / total) * 100;
+      const colors = part.colors && part.colors.length > 1 ? part.colors : undefined;
+      if (!colors) return `${part.color} ${from.toFixed(2)}% ${to.toFixed(2)}%`;
+      // Le dégradé tient dans l'arc : première couleur au début, dernière à la fin.
+      const step = (to - from) / (colors.length - 1);
+      return colors.map((color, index) => `${color} ${(from + step * index).toFixed(2)}%`).join(", ");
     });
   const label = `${title} : ${parts
     .filter((part) => part.value > 0)

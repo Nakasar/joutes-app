@@ -21,7 +21,7 @@ import {
   type TournamentStats,
 } from "@/lib/meta/tournaments.ts";
 import { cn } from "@/lib/utils.ts";
-import { Donut, DonutKey, LEGEND_COLORS, LegendThumb, OTHERS_COLOR, type DonutPart } from "../../../charts.tsx";
+import { Donut, DonutKey, LEGEND_COLORS, LegendThumb, OTHERS_COLOR, swatchBackground, type DonutPart } from "../../../charts.tsx";
 
 type Params = Promise<{ gameSlugOrId: string; date: string; slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -434,7 +434,11 @@ function CombosPanel({ t, stats, pct, hasTop }: { t: T; stats: TournamentStats; 
   const shown = stats.combos.slice(0, PIE_LEGENDS);
   const rest = stats.combos.slice(PIE_LEGENDS);
   const parts = (pick: "decks" | "topDecks"): DonutPart[] => {
-    const list = shown.map((combo, index) => ({ label: label(combo.domains), value: combo[pick], color: LEGEND_COLORS[index] }));
+    // Chaque groupe garde les couleurs de ses domaines, en dégradé : Fury + Order va du rouge au jaune.
+    const list = shown.map((combo) => {
+      const colors = combo.domains.map(domainColor);
+      return { label: label(combo.domains), value: combo[pick], color: swatchBackground(colors, OTHERS_COLOR), colors };
+    });
     const others = rest.reduce((sum, combo) => sum + combo[pick], 0);
     return others > 0 ? [...list, { label: t("tournament.legends.others"), value: others, color: OTHERS_COLOR }] : list;
   };
