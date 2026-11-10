@@ -105,6 +105,15 @@ export const TOOL_POLICIES = {
     list_play_groups: { access: "account", effect: "read" },
     create_play_group: { access: "account", effect: "create" },
     invite_to_play_group: { access: "account", effect: "create" },
+    list_play_group_decks: { access: "account", effect: "read" },
+    get_play_group_tournaments: { access: "account", effect: "read" },
+    get_play_group_meta: { access: "account", effect: "read" },
+
+    // Commentaires de deck et résultats de tournoi
+    get_deck_comments: { access: "account", effect: "read" },
+    add_deck_comment: { access: "account", effect: "create" },
+    list_my_tournament_results: { access: "account", effect: "read" },
+    declare_tournament_result: { access: "account", effect: "create" },
 
     // Tournois
     list_tournaments: { access: "account", effect: "read" },

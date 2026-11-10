@@ -90,10 +90,30 @@ async function openSpace(deckId: string, spaceValue: unknown, userId: string | n
   return { deck, space, key: spaceKey(space), context, group };
 }
 
+/**
+ * Le deck d'un fil où l'on peut écrire, sans lire le fil : la porte des outils
+ * qui doivent vérifier l'accès avant de dire quoi que ce soit du deck (ses
+ * cartes, par exemple).
+ */
+export async function openWritableSpace(
+  deckId: string,
+  spaceValue: unknown,
+  userId: string | null,
+): Promise<{ ok: true; deck: Deck } | Failure> {
+  const opened = await openSpace(deckId, spaceValue, userId);
+  if ("error" in opened) return opened;
+  if (!canWriteSpace(opened.context)) {
+    return { ok: false, error: "FORBIDDEN" };
+  }
+  return { ok: true, deck: opened.deck };
+}
+
 export type CommentAuthor = { name: string; avatar?: string };
 
 export type CommentThreadPayload = {
   deckId: string;
+  /** Le nom du deck, pour l'assistant et les écrans qui n'ont pas le deck sous la main. */
+  deckName: string;
   space: DeckCommentSpace;
   deckVersion: number;
   comments: DeckCommentView[];
@@ -139,6 +159,7 @@ export async function readCommentThread(
     ok: true,
     thread: {
       deckId,
+      deckName: opened.deck.name,
       space: opened.key,
       deckVersion: opened.deck.version ?? 1,
       comments: thread,

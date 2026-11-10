@@ -22,6 +22,7 @@ import { registerJoutesDataTools, withToolLogging } from "./tools";
 import { registerMetaTools } from "./tools-meta";
 import { registerJudgeTools } from "./tools-judge";
 import { registerNewsTools } from "./tools-news";
+import { registerPlayGroupGameTools } from "./tools-play-group-game";
 import { registerJoutesTool, requiresAccount, userIdFrom } from "./tool-policy";
 import { linkLine, mcpLinks } from "@/lib/mcp/links";
 import { nanoid } from "nanoid";
@@ -704,6 +705,7 @@ const handler = createMcpHandler(server => {
     registerMetaTools(server);
     registerJudgeTools(server);
     registerNewsTools(server);
+    registerPlayGroupGameTools(server);
 }, {
     // Partagé avec la carte du serveur : ce que dit la poignée de main et ce
     // que dit `/.well-known/mcp/server-card.json` ne peuvent pas diverger.
