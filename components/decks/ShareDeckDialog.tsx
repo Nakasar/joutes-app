@@ -22,7 +22,7 @@ const LINK_NOTES: Record<DeckVisibility, string> = {
   public: "Le deck apparaît dans la librairie publique et peut être copié.",
   unlisted:
     "Seules les personnes qui ont le lien y accèdent ; il reste absent de la librairie.",
-  private: "Personne d'autre que vous ne peut ouvrir ce deck.",
+  private: "Personne d'autre que vous ne peut ouvrir ce deck, hormis les membres des groupes où vous le partagez.",
 };
 
 /**
@@ -41,6 +41,7 @@ export function ShareDeckDialog({
   visibility,
   onVisibilityChangeAction,
   exportCode,
+  children,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -50,6 +51,8 @@ export function ShareDeckDialog({
   onVisibilityChangeAction: (visibility: DeckVisibility) => Promise<void> | void;
   /** Code d'export du jeu, quand il en a un. */
   exportCode?: string;
+  /** Une section de plus sous le lien et le code — les groupes de jeu, sur la fiche. */
+  children?: React.ReactNode;
 }) {
   const [selected, setSelected] = useState<DeckVisibility>(visibility);
   const [saving, setSaving] = useState(false);
@@ -173,6 +176,8 @@ export function ShareDeckDialog({
               </p>
             </div>
           )}
+
+          {children}
         </div>
 
         <DialogFooter>

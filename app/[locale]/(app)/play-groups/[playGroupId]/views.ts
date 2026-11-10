@@ -18,6 +18,7 @@ export const PLAY_GROUP_VIEWS = [
   "sessions",
   "announcements",
   "contents",
+  "decks",
   "lists",
   "members",
   "showcase",
@@ -40,7 +41,7 @@ export function readPlayGroupView(value: string | undefined): PlayGroupView {
 export function viewHref(
   playGroupId: string,
   view: PlayGroupView,
-  params: { contentId?: string; article?: string } = {},
+  params: { contentId?: string; article?: string; filters?: Record<string, string | undefined> } = {},
 ): string {
   const search = new URLSearchParams();
 
@@ -52,6 +53,13 @@ export function viewHref(
   }
   if (params.article) {
     search.set("article", params.article);
+  }
+  // Les filtres d'une vue (la bibliothèque de decks : `jeu`, `membre`…), dans
+  // l'ordre donné ; une valeur vide n'écrit rien.
+  for (const [key, value] of Object.entries(params.filters ?? {})) {
+    if (value) {
+      search.set(key, value);
+    }
   }
 
   const query = search.toString();

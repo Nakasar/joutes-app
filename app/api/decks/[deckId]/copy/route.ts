@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
+import { readDeckAccess } from "@/lib/decks/read-access";
 import { copyDeckForPlayer, getDeckById } from "@/lib/db/decks";
 import { deckIdSchema } from "@/lib/schemas/deck.schema";
 
@@ -35,7 +36,7 @@ export async function POST(request: Request, { params }: { params: Params }) {
       return NextResponse.json({ error: "Deck non trouvé" }, { status: 404 });
     }
 
-    if (source.visibility === "private" && source.playerId !== session.user.id) {
+    if (!(await readDeckAccess(source, session.user.id))) {
       return NextResponse.json(
         { error: "Vous n'avez pas l'autorisation de copier ce deck" },
         { status: 403 }

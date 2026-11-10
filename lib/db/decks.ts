@@ -2,6 +2,7 @@ import db from "@/lib/mongodb";
 import { Deck, DeckVisibility, toPublicDeckMeta, type DeckMeta } from "@/lib/types/Deck";
 import { ObjectId, WithId, Document } from "mongodb";
 import { getUsersByIds } from "@/lib/db/users";
+import { removeDeckFromPlayGroups } from "@/lib/db/play-group-decks";
 import { deriveDeckDomains, getDeckCardInfos } from "@/lib/db/deck-cards";
 import { deckVersionWrite } from "@/lib/db/deck-version";
 import { deckCardIds, type DeckCards } from "@/lib/decks/contents";
@@ -274,6 +275,26 @@ export async function getDeckById(deckId: string): Promise<Deck | null> {
 
   const creator = await getUsersByIds([deck.playerId]);
   return toDeck(deck, getUserDisplayName(creator[0]));
+}
+
+/**
+ * Plusieurs decks d'un coup, sans leur contenu : ce qu'une liste affiche — nom,
+ * légende, domaines, couverture, version — et rien de ce qui pèse (cartes,
+ * liste en texte, guide, notes). Ordre non garanti ; les identifiants
+ * invalides ou disparus sont ignorés.
+ */
+export async function getDeckSummariesByIds(deckIds: string[]): Promise<Deck[]> {
+  const ids = [...new Set(deckIds)].filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find({ _id: { $in: ids } }, { projection: { cards: 0, decklist: 0, guide: 0, notes: 0, matchups: 0, favoritedBy: 0 } })
+    .toArray();
+
+  return docs.map((doc) => toDeck(doc));
 }
 
 /**
@@ -758,6 +779,11 @@ export async function deleteDeck(deckId: string, playerId: string): Promise<bool
     playerId,
   });
 
+  if (result.deletedCount === 1) {
+    // Un deck supprimé n'a plus rien à faire dans les bibliothèques de groupes.
+    await removeDeckFromPlayGroups(deckId);
+  }
+
   return result.deletedCount === 1;
 }
 
@@ -856,5 +882,8 @@ export async function deleteDeckAsModerator(deckId: string): Promise<boolean> {
   }
 
   const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(deckId) });
+  if (result.deletedCount === 1) {
+    await removeDeckFromPlayGroups(deckId);
+  }
   return result.deletedCount === 1;
 }
