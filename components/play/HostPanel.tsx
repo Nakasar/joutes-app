@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Copy } from "lucide-react";
 import { useTranslations } from "next-intl";
+
+import { withDeckProblems } from "@/components/play/deck-problems";
 import { toast } from "sonner";
 
 import { resolveDeckAction } from "@/app/[locale]/(app)/games/riftbound/play/actions";
@@ -76,7 +78,7 @@ export function HostPanel({ mode, hostName, hostDeck, legends }: HostPanelProps)
         if (row.kind === "guest" && row.deck.trim()) {
           const resolved = await resolveDeckAction(row.deck.trim());
           if (!resolved.ok) {
-            throw new Error(`${name} : ${t(`error.${resolved.error}`)} ${(resolved.details ?? []).join(" ")}`);
+            throw new Error(withDeckProblems(t, `${name} : ${t(`error.${resolved.error}`)}`, resolved.details));
           }
           deck = resolved.list;
         } else {

@@ -3,7 +3,8 @@ import { z } from "zod";
 
 import { getGameTable } from "@/lib/db/game-tables";
 import { EngineError, judgeReview, judgeSimulate } from "@/lib/engine/server";
-import { engineServer } from "@/lib/engine/tables";
+import { engineGameId } from "@/lib/engine/results";
+import { engineServer, reconcileTable } from "@/lib/engine/tables";
 import { describeJudgeReport } from "@/lib/mcp/judge";
 import { joutesUrl } from "@/lib/mcp/links";
 
@@ -27,15 +28,17 @@ const ruleUrl = (rule: string) => joutesUrl(`/games/riftbound/rules/cr#rule-${ru
 const scenarioSchema = z
     .object({
         mode: z.enum(["duel", "ffa3", "ffa4", "teams"]).optional().describe("Mode de jeu (duel par défaut)"),
-        legends: z.array(z.string()).optional().describe("La légende de chaque joueur, par code (OGN-249) ou nom exact"),
-        battlefields: z.array(z.string()).optional().describe("Les champs de bataille en jeu"),
+        legends: z.array(z.string().max(80)).max(4).optional().describe("La légende de chaque joueur, par code (OGN-249) ou nom exact"),
+        battlefields: z.array(z.string().max(80)).max(12).optional().describe("Les champs de bataille en jeu"),
         turn: z.number().int().min(0).optional().describe("Le siège dont c'est le tour, en phase principale (0 par défaut)"),
         controllers: z
             .array(z.number().int().nullable())
+            .max(12)
             .optional()
             .describe("Qui contrôle chaque champ de bataille (siège ou null)"),
         players: z
             .array(z.looseObject({}))
+            .max(4)
             .optional()
             .describe(
                 "Un objet par joueur, tout est facultatif : name, points, hand (cartes), base (cartes), " +
@@ -48,7 +51,17 @@ const scenarioSchema = z
 
 type SimulateArgs = { scenario: z.infer<typeof scenarioSchema>; steps: number[] };
 
+/**
+ * Le moteur tourne dans le processus qui répond : ce qu'on lui donne à rejouer
+ * est borné. Une vraie partie tient dans quelques dizaines de kilo-octets.
+ */
+const MAX_SCENARIO = 20_000;
+const MAX_RECORD = 400_000;
+
 async function handleJudgeSimulate({ scenario, steps }: SimulateArgs): Promise<ToolResult> {
+    if (JSON.stringify(scenario).length > MAX_SCENARIO) {
+        return errorResult("Cette situation est trop longue : ne décrire que les cartes utiles à la question.");
+    }
     try {
         const report = judgeSimulate(scenario, steps);
         return textResult(describeJudgeReport(report, { ruleUrl, withChoices: true }));
@@ -63,7 +76,9 @@ async function handleJudgeSimulate({ scenario, steps }: SimulateArgs): Promise<T
 type ReviewArgs = { tableId?: string; record?: string; upto?: number; last: number };
 
 async function recordOfTable(tableId: string, userId: string | undefined): Promise<string | ToolResult> {
-    const table = await getGameTable(tableId.trim().toLowerCase());
+    const stored = await getGameTable(tableId.trim().toLowerCase());
+    // L'annonce de fin a pu se perdre : on demande au serveur de parties.
+    const table = stored && (await reconcileTable(stored));
     if (!table) return errorResult(`Aucune table en ligne avec le code « ${tableId} ».`);
     // Le journal d'une partie dit tout, mains comprises : pendant la partie, il
     // ferait un outil de triche. Une fois finie, il revient à ceux qui l'ont jouée.
@@ -75,7 +90,7 @@ async function recordOfTable(tableId: string, userId: string | undefined): Promi
     }
     const server = engineServer();
     if (!server) return errorResult("Le serveur de parties n'est pas configuré.");
-    const response = await fetch(`${server.url}/games/${table.id}/record`, {
+    const response = await fetch(`${server.url}/games/${engineGameId(table)}/record`, {
         headers: { authorization: `Bearer ${server.adminToken}` },
         signal: AbortSignal.timeout(10_000),
     });
@@ -135,7 +150,7 @@ export function registerJudgeTools(server: McpServer): void {
             "était joueur) ou `record` (le journal JSON d'une partie : configuration, graine, actions).",
         inputSchema: {
             tableId: z.string().optional().describe("Code de la table en ligne"),
-            record: z.string().max(2_000_000).optional().describe("Journal de la partie, en JSON"),
+            record: z.string().max(MAX_RECORD).optional().describe("Journal de la partie, en JSON"),
             upto: z.number().int().min(0).optional().describe("S'arrêter après ce nombre d'actions (toute la partie par défaut)"),
             last: z.number().int().min(1).max(200).default(30).describe("Nombre d'évènements à raconter avant ce point"),
         },

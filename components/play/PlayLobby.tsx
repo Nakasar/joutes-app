@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Bot, Globe, Server } from "lucide-react";
 import { useTranslations } from "next-intl";
+
+import { withDeckProblems } from "@/components/play/deck-problems";
 import { toast } from "sonner";
 
 import {
@@ -119,9 +121,7 @@ export function PlayLobby() {
       return;
     }
     setBusy(false);
-    toast.error(
-      result.details?.length ? `${t(`error.${result.error}`)} ${result.details.join(" ")}` : t(`error.${result.error}`),
-    );
+    toast.error(withDeckProblems(t, t(`error.${result.error}`), result.details));
   };
 
   const joinCode = code.trim().toLowerCase().split("id=").pop() ?? "";

@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { DeckChoice } from "@/lib/engine/tables";
+import type { TableCards } from "@/lib/engine/cards";
 import { BOT_LEVELS, type BotLevel } from "@/lib/engine/types";
 
 const POLL_MS = 3000;
@@ -40,23 +41,36 @@ export function OnlineRoom() {
   const [lobby, setLobby] = useState<Lobby | null>(null);
   const [choice, setChoice] = useState<DeckChoice | null>(null);
   const [busy, setBusy] = useState(false);
-  // L'adresse de la partie est gardée telle qu'elle a été reçue la première
+  // L'adresse d'une partie est gardée telle qu'elle a été reçue la première
   // fois : chaque lecture signe un nouveau ticket, et changer d'adresse
-  // couperait la connexion pour rien.
-  const [socketUrl, setSocketUrl] = useState<string | null>(null);
+  // couperait la connexion pour rien. Elle ne change que si la partie change
+  // (lancement raté puis repris) ou disparaît (table revenue en attente).
+  const [socket, setSocket] = useState<{ game: string; url: string } | null>(null);
+  // Vrai tant que la partie n'a rien montré : la table est alors relue, au cas
+  // où son lancement aurait échoué après coup.
+  const [silent, setSilent] = useState(true);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<TableState | null> => {
     const result = await readTableAction(id);
     if (!result.ok) {
       setFailure(result.error);
-      return;
+      return null;
     }
+    const { access } = result.state;
     setFailure(null);
     setState(result.state);
-    if (result.state.access) setSocketUrl((previous) => previous ?? result.state.access?.ws ?? null);
+    setSocket((previous) =>
+      access ? (previous?.game === access.game ? previous : { game: access.game, url: access.ws }) : null,
+    );
+    return result.state;
   }, [id]);
 
-  const waiting = state?.table.status === "waiting";
+  /** Un ticket neuf pour la même partie, quand la connexion ne revient pas. */
+  const renew = useCallback(async () => (await refresh())?.access?.ws ?? null, [refresh]);
+
+  const status = state?.table.status;
+  const waiting = status === "waiting";
+  const polling = waiting || (status === "playing" && silent);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- première lecture de la table au montage
@@ -64,10 +78,10 @@ export function OnlineRoom() {
   }, [refresh]);
 
   useEffect(() => {
-    if (!waiting) return;
+    if (!polling) return;
     const timer = window.setInterval(() => void refresh(), POLL_MS);
     return () => window.clearInterval(timer);
-  }, [waiting, refresh]);
+  }, [polling, refresh]);
 
   const needsDeck = waiting && state?.seat === null && state.signedIn;
   useEffect(() => {
@@ -80,8 +94,6 @@ export function OnlineRoom() {
       cancelled = true;
     };
   }, [needsDeck, lobby]);
-
-  const feed = useOnlineGame(socketUrl);
 
   const run = async (action: () => Promise<PlayResult>) => {
     setBusy(true);
@@ -124,43 +136,15 @@ export function OnlineRoom() {
   }
 
   if (table.status !== "waiting") {
-    if (feed.status === "error" && !feed.update) {
-      return (
-        <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center">
-          {table.status === "finished" && table.result ? (
-            <>
-              <p className="text-lg font-semibold">
-                {table.result.winners.length === 0
-                  ? t("result.draw")
-                  : t("result.winner", {
-                      names: table.result.winners.map((seat) => table.seats[seat]?.name ?? "?").join(", "),
-                    })}
-              </p>
-              <p className="text-sm text-muted-foreground">{table.result.reason}</p>
-            </>
-          ) : (
-            <>
-              <p>{t("remote.unreachable")}</p>
-              <p className="text-sm text-muted-foreground">{t("room.unreachableHint")}</p>
-            </>
-          )}
-          <Button asChild>
-            <Link href="/games/riftbound/play">{t("solo.toLobby")}</Link>
-          </Button>
-        </div>
-      );
-    }
+    // Une clé par partie : une table relancée repart d'un récit vide.
     return (
-      <GameTable
-        feed={feed}
+      <OnlineTable
+        key={socket?.game ?? "none"}
+        url={socket?.url ?? null}
+        renew={renew}
+        table={table}
         cards={cards}
-        afterResult={
-          <div className="flex flex-row flex-wrap gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/games/riftbound/play">{t("result.toLobby")}</Link>
-            </Button>
-          </div>
-        }
+        onSilent={setSilent}
       />
     );
   }
@@ -202,7 +186,7 @@ export function OnlineRoom() {
                   ? t("room.botSeat", { level: t(`level.${seat.bot}`) })
                   : (cards[seat.legend]?.name ?? seat.deckName)}
               </span>
-              {seat.userId === table.hostId && <Badge variant="secondary">{t("room.host")}</Badge>}
+              {seat.host && <Badge variant="secondary">{t("room.host")}</Badge>}
               {(state.isHost || state.seat === index) && (
                 <Button
                   variant="ghost"
@@ -211,7 +195,7 @@ export function OnlineRoom() {
                   disabled={busy}
                   onClick={() =>
                     run(async () => {
-                      const result = await leaveSeatAction(table.id, index);
+                      const result = await leaveSeatAction(table.id, index, seat.name);
                       if (result.ok && state.seat === index && state.isHost) router.push("/games/riftbound/play");
                       return result;
                     })
@@ -283,5 +267,68 @@ export function OnlineRoom() {
         </section>
       )}
     </div>
+  );
+}
+
+/** La partie d'une table lancée, sur le serveur de parties. */
+function OnlineTable({
+  url,
+  renew,
+  table,
+  cards,
+  onSilent,
+}: {
+  url: string | null;
+  renew: () => Promise<string | null>;
+  table: TableState["table"];
+  cards: TableCards;
+  onSilent: (silent: boolean) => void;
+}) {
+  const t = useTranslations("Games.Play");
+  const feed = useOnlineGame(url, renew);
+
+  const silent = !feed.update;
+  useEffect(() => {
+    onSilent(silent);
+  }, [silent, onSilent]);
+
+  if (feed.status === "error" && !feed.update) {
+    return (
+      <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center">
+        {table.status === "finished" && table.result ? (
+          <>
+            <p className="text-lg font-semibold">
+              {table.result.winners.length === 0
+                ? t("result.draw")
+                : t("result.winner", {
+                    names: table.result.winners.map((seat) => table.seats[seat]?.name ?? "?").join(", "),
+                  })}
+            </p>
+            <p className="text-sm text-muted-foreground">{table.result.reason}</p>
+          </>
+        ) : (
+          <>
+            <p>{t("remote.unreachable")}</p>
+            <p className="text-sm text-muted-foreground">{t("room.unreachableHint")}</p>
+          </>
+        )}
+        <Button asChild>
+          <Link href="/games/riftbound/play">{t("solo.toLobby")}</Link>
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <GameTable
+      feed={feed}
+      cards={cards}
+      afterResult={
+        <div className="flex flex-row flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/games/riftbound/play">{t("result.toLobby")}</Link>
+          </Button>
+        </div>
+      }
+    />
   );
 }

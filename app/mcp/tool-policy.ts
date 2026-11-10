@@ -72,7 +72,7 @@ export const TOOL_POLICIES = {
     get_rule: { access: "public", effect: "read" },
     check_deck: { access: "public", effect: "read", openWorld: true },
     riftbound_judge_simulate: { access: "public", effect: "read" },
-    riftbound_judge_review: { access: "optional", effect: "read" },
+    riftbound_judge_review: { access: "account", effect: "read" },
     create_errata: { access: "account", effect: "create" },
     update_errata: { access: "account", effect: "update" },
     vote_errata: { access: "account", effect: "update" },

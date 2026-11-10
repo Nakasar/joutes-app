@@ -45,14 +45,25 @@ trois façons de jouer : seule la source change (`useSoloGame`, `useOnlineGame`)
   WebSocket du serveur avec ce ticket. Un visiteur reçoit un ticket de
   spectateur.
 - À la fin, le serveur appelle `POST /api/engine/result`, signé avec le même
-  secret.
+  secret. Si cet appel se perd, la table est rapprochée du serveur à sa
+  prochaine lecture (`reconcileTable`) : finie, ou abandonnée si le serveur ne
+  connaît plus la partie.
+- S'asseoir, partir et lancer sont des écritures conditionnelles : deux
+  personnes qui agissent en même temps ne peuvent ni dépasser la capacité, ni
+  lancer une partie avec un siège parti.
+- Chaque lancement crée sa propre partie sur le serveur (`engineId`,
+  `<code>-<aléa>`) : un lancement raté puis repris ne retombe jamais sur une
+  partie créée avec d'anciens sièges.
+- Une personne n'a qu'une table en attente : en ouvrir une autre annule la
+  précédente. Les tables annulées sont effacées après une semaine.
 
 ## Arbitrage (MCP)
 
 `riftbound_judge_simulate` et `riftbound_judge_review` (`app/mcp/tools-judge.ts`)
 font tourner le moteur dans le processus du site. La relecture d'une table en
 ligne n'est ouverte qu'à ses joueurs, une fois la partie finie : le journal
-montre les mains.
+montre les mains. `riftbound_judge_review` demande un compte, et ce que le
+moteur rejoue est borné en taille.
 
 ## Limites connues
 

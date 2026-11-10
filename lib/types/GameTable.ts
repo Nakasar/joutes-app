@@ -15,8 +15,10 @@ export type GameTableSeat = {
 };
 
 /**
- * Une table de jeu en ligne. Son identifiant sert aussi de code d'invitation
- * et d'identifiant de partie sur le serveur de parties.
+ * Une table de jeu en ligne. Son identifiant sert aussi de code d'invitation.
+ * La partie sur le serveur de parties a son propre identifiant (`engineId`),
+ * tiré à chaque lancement : un lancement raté puis repris ne retombe jamais sur
+ * une partie créée avec d'anciens sièges.
  */
 export type GameTable = {
   id: string;
@@ -26,13 +28,15 @@ export type GameTable = {
   status: GameTableStatus;
   seats: GameTableSeat[];
   createdAt: string;
+  engineId?: string;
   startedAt?: string;
   finishedAt?: string;
   result?: { winners: number[]; reason: string; turns?: number; points?: number[] };
 };
 
 /** Ce que tout le monde peut voir d'une table : les decks n'en sortent pas. */
-export type GameTableSummary = Omit<GameTable, "seats"> & {
-  seats: Omit<GameTableSeat, "deck">[];
+export type GameTableSummary = Omit<GameTable, "seats" | "hostId" | "engineId"> & {
+  /** Sans identifiant de compte : la salle se lit sans être connecté. */
+  seats: (Omit<GameTableSeat, "deck" | "userId"> & { host: boolean })[];
   players: number;
 };

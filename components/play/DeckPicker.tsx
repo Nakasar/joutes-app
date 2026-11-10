@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 
+import { deckProblemText } from "@/components/play/deck-problems";
+
 import type { LobbyDeck } from "@/app/[locale]/(app)/games/riftbound/play/actions";
 import { Label } from "@/components/ui/label";
 import {
@@ -82,11 +84,7 @@ export function DeckPicker({ id, decks, legends, cards, value, onChange }: DeckP
                 <span className="font-medium text-foreground">{deck.name}</span>
                 <ul className="list-disc pl-5">
                   {deck.problems.slice(0, 4).map((problem, index) => (
-                    <li key={index}>
-                      {problem === "noLegend" || problem === "noChampion" || problem === "unknownCard"
-                        ? t(`deck.problem.${problem}`)
-                        : problem}
-                    </li>
+                    <li key={index}>{deckProblemText(t, problem)}</li>
                   ))}
                 </ul>
               </li>

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BookOpen, Crown, Flag, Hourglass, Layers, Trash2, WifiOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { Link } from "@/i18n/navigation";
+
 import { PlayCard } from "@/components/play/PlayCard";
 import type { GameFeed } from "@/components/play/game-feed";
 import { Badge } from "@/components/ui/badge";
@@ -771,7 +773,7 @@ function Journal({ entries }: { entries: EngineTold[] }) {
           <li key={index} className={cn("leading-snug", entry.text?.startsWith(" ") && "pl-4 text-muted-foreground")}>
             {entry.text?.trim()}
             {entry.rule && (
-              <a
+              <Link
                 href={`/games/riftbound/rules/cr#rule-${entry.rule}`}
                 target="_blank"
                 rel="noreferrer"
@@ -779,7 +781,7 @@ function Journal({ entries }: { entries: EngineTold[] }) {
                 className="ml-1.5 inline-block rounded border px-1 text-[0.65rem] text-muted-foreground hover:border-primary hover:text-primary"
               >
                 {entry.rule}
-              </a>
+              </Link>
             )}
           </li>
         ))}

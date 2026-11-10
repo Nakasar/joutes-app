@@ -308,7 +308,20 @@ export const USER_INDEXES: IndexDefinition[] = [
   {
     collection: "gameTables",
     keys: { id: 1 },
+    // Unique dès la création : la collection naît avec cet index.
+    options: { unique: true },
     why: "Une table par son code : salle d'attente, lancement, résultat",
+  },
+  {
+    collection: "gameTables",
+    keys: { hostId: 1, status: 1 },
+    why: "Fermer les tables en attente d'un hôte quand il en ouvre une autre",
+  },
+  {
+    collection: "gameTables",
+    keys: { purgeAt: 1 },
+    options: { expireAfterSeconds: 0 },
+    why: "Effacer les tables annulées une semaine après",
   },
   {
     collection: "gameTables",

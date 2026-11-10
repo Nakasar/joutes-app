@@ -36,11 +36,17 @@ export function RemoteGame() {
   const [url, setUrl] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.hash.slice(1));
-    const server = params.get("server");
-    const ticket = params.get("ticket");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- le fragment n'existe que dans le navigateur
-    setUrl(server && ticket ? remoteSocketUrl(server, ticket) : null);
+    const read = () => {
+      const params = new URLSearchParams(window.location.hash.slice(1));
+      const server = params.get("server");
+      const ticket = params.get("ticket");
+      setUrl(server && ticket ? remoteSocketUrl(server, ticket) : null);
+    };
+    // Le fragment n'existe que dans le navigateur ; coller une autre invitation
+    // dans le même onglet ne recharge pas la page.
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
   }, []);
 
   const feed = useOnlineGame(url ?? null);
@@ -66,16 +72,20 @@ export function RemoteGame() {
   }
 
   return (
-    <GameTable
-      feed={feed}
-      cards={cards}
-      afterResult={
-        <div className="flex flex-row flex-wrap gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/games/riftbound/play">{t("result.toLobby")}</Link>
-          </Button>
-        </div>
-      }
-    />
+    <div className="flex flex-col gap-2">
+      {/* Les noms et le récit de cette table viennent de ce serveur, pas de Joutes : on dit lequel. */}
+      {url && <p className="text-xs text-muted-foreground">{t("remote.server", { host: new URL(url).host })}</p>}
+      <GameTable
+        feed={feed}
+        cards={cards}
+        afterResult={
+          <div className="flex flex-row flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/games/riftbound/play">{t("result.toLobby")}</Link>
+            </Button>
+          </div>
+        }
+      />
+    </div>
   );
 }

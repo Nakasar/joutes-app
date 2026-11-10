@@ -17,6 +17,7 @@ import {
   isEngineMode,
   joinTable,
   leaveSeat,
+  reconcileTable,
   resolveDeck,
   startTable,
   summarize,
@@ -188,12 +189,15 @@ export async function addBotAction(id: unknown, level: unknown): Promise<PlayRes
   });
 }
 
-export async function leaveSeatAction(id: unknown, seat: unknown): Promise<PlayResult> {
+/** `name` : le nom affiché au siège visé, pour ne pas retirer quelqu'un d'autre si la salle a bougé. */
+export async function leaveSeatAction(id: unknown, seat: unknown, name: unknown): Promise<PlayResult> {
   return guarded(async () => {
     await playableGame();
     const seated = await requireViewer();
-    if (typeof seat !== "number" || !Number.isInteger(seat)) throw new TableFailure("INVALID");
-    await leaveSeat(seated.userId, parseTableId(id), seat);
+    if (typeof seat !== "number" || !Number.isInteger(seat) || typeof name !== "string") {
+      throw new TableFailure("INVALID");
+    }
+    await leaveSeat(seated.userId, parseTableId(id), seat, name);
     return {};
   });
 }
@@ -221,8 +225,9 @@ export async function readTableAction(id: unknown): Promise<PlayResult<{ state: 
   return guarded(async () => {
     await playableGame();
     const seated = await viewer();
-    const table = await getGameTable(parseTableId(id));
-    if (!table) throw new TableFailure("NOT_FOUND");
+    const stored = await getGameTable(parseTableId(id));
+    if (!stored) throw new TableFailure("NOT_FOUND");
+    const table = await reconcileTable(stored);
     const seat = seated ? table.seats.findIndex((candidate) => candidate.userId === seated.userId) : -1;
     return {
       state: {

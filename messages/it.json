@@ -753,6 +753,7 @@
       "remote": {
         "badLink": "Questo link di invito è incompleto.",
         "unreachable": "Impossibile raggiungere la partita.",
+        "server": "Partita ospitata da {host}, fuori da Joutes.",
         "unreachableHint": "Il server di chi ospita non risponde, oppure l'invito è scaduto. Da una pagina https, il browser rifiuta anche un server non cifrato (tranne sulla tua macchina)."
       },
       "host": {

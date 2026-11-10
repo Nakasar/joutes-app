@@ -753,6 +753,7 @@
       "remote": {
         "badLink": "Dieser Einladungslink ist unvollständig.",
         "unreachable": "Der Partie kann nicht beigetreten werden.",
+        "server": "Partie gehostet von {host}, außerhalb von Joutes.",
         "unreachableHint": "Der Server des Gastgebers antwortet nicht, oder die Einladung ist abgelaufen. Von einer https-Seite aus lehnt der Browser außerdem einen unverschlüsselten Server ab (außer auf deinem eigenen Rechner)."
       },
       "host": {

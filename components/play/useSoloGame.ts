@@ -18,7 +18,21 @@ export const SOLO_STORAGE_KEY = "joutes.play.solo";
 export function readSoloSave(): SoloSave | null {
   try {
     const raw = window.localStorage.getItem(SOLO_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as SoloSave) : null;
+    const save = raw ? (JSON.parse(raw) as Partial<SoloSave> | null) : null;
+    // Une sauvegarde d'une autre forme (ancienne version, valeur abîmée) est
+    // oubliée : la lire telle quelle ferait tomber la page à chaque visite.
+    if (
+      !save ||
+      typeof save.seat !== "number" ||
+      !Array.isArray(save.bots) ||
+      typeof save.record?.config?.mode !== "string" ||
+      !Array.isArray(save.record.config.players) ||
+      !Array.isArray(save.record.actions)
+    ) {
+      if (raw) window.localStorage.removeItem(SOLO_STORAGE_KEY);
+      return null;
+    }
+    return save as SoloSave;
   } catch {
     return null;
   }
@@ -57,12 +71,17 @@ export function useSoloGame(save: SoloSave | null): GameFeed {
   const refresh = useCallback(() => {
     const current = table.current;
     if (!current || !save) return;
-    const next = JSON.parse(current.update(seat, seen.current)) as EngineUpdate;
-    seen.current = next.seq;
-    setUpdate(next);
-    setJournal((previous) => appendJournal(previous, next.events));
-    writeSoloSave({ ...save, record: JSON.parse(current.record()) as EngineRecord });
-    setTick((value) => value + 1);
+    try {
+      const next = JSON.parse(current.update(seat, seen.current)) as EngineUpdate;
+      seen.current = next.seq;
+      setUpdate(next);
+      setJournal((previous) => appendJournal(previous, next.events));
+      writeSoloSave({ ...save, record: JSON.parse(current.record()) as EngineRecord });
+      setTick((value) => value + 1);
+    } catch (cause) {
+      // Le moteur a levé une erreur : la dire plutôt que de laisser la table figée.
+      setError(cause instanceof Error ? cause.message : String(cause));
+    }
   }, [save, seat]);
 
   useEffect(() => {
@@ -98,7 +117,12 @@ export function useSoloGame(save: SoloSave | null): GameFeed {
     if (next < 0 || !current.is_bot(next)) return;
     const timer = window.setTimeout(() => {
       if (table.current !== current) return;
-      current.bot_step();
+      try {
+        current.bot_step();
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : String(cause));
+        return;
+      }
       refresh();
     }, BOT_DELAY_MS);
     return () => window.clearTimeout(timer);

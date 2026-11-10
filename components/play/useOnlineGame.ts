@@ -14,13 +14,24 @@ type ServerMessage =
 
 const PING_MS = 25_000;
 const MAX_RETRY_MS = 15_000;
+/** Après autant d'échecs de suite, le ticket est peut-être périmé : on en demande un autre. */
+const RENEW_AFTER = 3;
 
 /**
  * Une partie sur un serveur de parties. `url` est l'adresse WebSocket complète,
  * ticket compris. La connexion se rétablit seule : le serveur renvoie alors
  * les évènements manqués depuis le dernier vu (`since`).
+ *
+ * `renew` rend une adresse fraîche (nouveau ticket) quand la connexion ne
+ * revient pas, ou `null` si la partie n'est plus joignable : un onglet resté
+ * ouvert plus longtemps que son ticket ne réessaie pas sans fin pour rien.
  */
-export function useOnlineGame(url: string | null): GameFeed {
+export function useOnlineGame(url: string | null, renew?: () => Promise<string | null>): GameFeed {
+  const renewRef = useRef(renew);
+  useEffect(() => {
+    renewRef.current = renew;
+  }, [renew]);
+
   const socket = useRef<WebSocket | null>(null);
   const seen = useRef(0);
   const [status, setStatus] = useState<GameFeed["status"]>("loading");
@@ -38,13 +49,14 @@ export function useOnlineGame(url: string | null): GameFeed {
     let retryTimer: number | undefined;
     let pingTimer: number | undefined;
 
+    let address = url;
+
     const connect = () => {
-      const separator = url.includes("?") ? "&" : "?";
-      const ws = new WebSocket(`${url}${separator}since=${seen.current}`);
+      const separator = address.includes("?") ? "&" : "?";
+      const ws = new WebSocket(`${address}${separator}since=${seen.current}`);
       socket.current = ws;
 
       ws.onopen = () => {
-        retry = 0;
         pingTimer = window.setInterval(() => {
           if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "ping" }));
         }, PING_MS);
@@ -59,6 +71,7 @@ export function useOnlineGame(url: string | null): GameFeed {
         }
         if (message.type === "welcome") {
           welcomed = true;
+          retry = 0;
           setSeat(message.seat);
           setStatus("ready");
           setError(null);
@@ -89,15 +102,11 @@ export function useOnlineGame(url: string | null): GameFeed {
         }
       };
 
-      ws.onclose = (event) => {
+      ws.onclose = () => {
         window.clearInterval(pingTimer);
         if (closed) return;
-        // 1008 : le serveur refuse le ticket. Réessayer ne changerait rien.
-        if (event.code === 1008) {
-          setStatus("error");
-          setError(event.reason || null);
-          return;
-        }
+        // Un ticket refusé l'est avant l'ouverture : le navigateur ne voit
+        // qu'une connexion qui échoue, sans la raison.
         setStatus((previous) => (previous === "ready" || previous === "reconnecting" ? "reconnecting" : previous));
         retry += 1;
         // Jamais entré après plusieurs essais : ticket refusé ou serveur
@@ -106,7 +115,23 @@ export function useOnlineGame(url: string | null): GameFeed {
           setStatus("error");
           return;
         }
-        retryTimer = window.setTimeout(connect, Math.min(MAX_RETRY_MS, 500 * 2 ** Math.min(retry, 5)));
+        const delay = Math.min(MAX_RETRY_MS, 500 * 2 ** Math.min(retry, 5));
+        const again = renewRef.current;
+        if (welcomed && again && retry % RENEW_AFTER === 0) {
+          retryTimer = window.setTimeout(() => {
+            void again().then((fresh) => {
+              if (closed) return;
+              if (!fresh) {
+                setStatus("error");
+                return;
+              }
+              address = fresh;
+              connect();
+            });
+          }, delay);
+          return;
+        }
+        retryTimer = window.setTimeout(connect, delay);
       };
     };
 

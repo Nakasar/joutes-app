@@ -753,6 +753,7 @@
       "remote": {
         "badLink": "Ce lien d'invitation est incomplet.",
         "unreachable": "Impossible de rejoindre la partie.",
+        "server": "Partie hébergée par {host}, hors de Joutes.",
         "unreachableHint": "Le serveur de l'hôte ne répond pas, ou l'invitation a expiré. Depuis une page https, le navigateur refuse aussi un serveur sans chiffrement (sauf sur votre propre machine)."
       },
       "host": {

@@ -753,6 +753,7 @@
       "remote": {
         "badLink": "This invitation link is incomplete.",
         "unreachable": "Unable to join the game.",
+        "server": "Game hosted by {host}, outside Joutes.",
         "unreachableHint": "The host's server is not answering, or the invitation has expired. From an https page, the browser also refuses an unencrypted server (except on your own machine)."
       },
       "host": {
