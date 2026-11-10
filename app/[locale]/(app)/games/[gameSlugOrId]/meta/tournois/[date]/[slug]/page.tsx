@@ -13,6 +13,7 @@ import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { loadMetaEventsMatches } from "@/lib/db/meta-events.ts";
 import { loadMetaSample } from "@/lib/meta/load.ts";
 import { domainColor } from "@/lib/meta/domains.ts";
+import { metaViewRobots } from "@/lib/meta/page-params.ts";
 import { legendKey, legendLabel, type MetaSample, type MetaSampleDeck } from "@/lib/meta/stats.ts";
 import {
   domainWinrates,
@@ -79,8 +80,8 @@ async function loadTournament(params: Params) {
   return { game, sample, decks, date, slug, matches, metaPath: `/games/${game.slug ?? game.id}/meta` };
 }
 
-export async function generateMetadata({ params }: TournamentPageProps): Promise<Metadata> {
-  const { gameSlugOrId, date, slug } = await params;
+export async function generateMetadata({ params, searchParams }: TournamentPageProps): Promise<Metadata> {
+  const [{ gameSlugOrId, date, slug }, raw] = await Promise.all([params, searchParams]);
   const game = await readGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games.meta");
   if (!game?.features?.meta) return { title: t("metadata.notFoundTitle") };
@@ -90,7 +91,12 @@ export async function generateMetadata({ params }: TournamentPageProps): Promise
 
   const title = t("tournament.metadataTitle", { source: decks[0].source, gameName: game.name });
   const description = t("tournament.metadataDescription", { source: decks[0].source, count: decks.length, date });
-  return { title, description, openGraph: { title, description, images: game.banner ? [game.banner] : [] } };
+  return {
+    title,
+    description,
+    robots: metaViewRobots(raw),
+    openGraph: { title, description, images: game.banner ? [game.banner] : [] },
+  };
 }
 
 /**
