@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { DateTime } from "luxon";
-import { ArrowLeft, Hammer, MessageSquare, Share2, Star } from "lucide-react";
+import { ArrowLeft, Hammer, MessageSquare, Share2, Star, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button.tsx";
@@ -13,6 +13,7 @@ import { DeckCardThumb } from "@/components/decks/DeckCardThumb.tsx";
 import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
 import { DeckZoneCards, DeckZonesSummary } from "@/components/decks/DeckZoneCards.tsx";
 import { ShareDeckDialog } from "@/components/decks/ShareDeckDialog.tsx";
+import { DeckTournamentResults, type DeckResultView } from "@/components/decks/DeckTournamentResults.tsx";
 import { DeckGroupsSection } from "./DeckGroupsSection.tsx";
 import { DeckCommentsStandalone } from "@/components/decks/comments/DeckComments.tsx";
 import type { CommentThreadPayload } from "@/lib/decks/comment-service.ts";
@@ -66,6 +67,7 @@ export function DeckSheet({
   exportCode,
   cardnexusOrder,
   comments,
+  results = [],
 }: {
   deck: Deck;
   gameName?: string;
@@ -75,6 +77,8 @@ export function DeckSheet({
   exportCode?: string;
   cardnexusOrder: DeckCardnexusOrder;
   comments?: DeckSheetComments;
+  /** Mes résultats en tournoi liés à ce deck. */
+  results?: DeckResultView[];
 }) {
   const router = useRouter();
   const [description, setDescription] = useState(deck.description ?? "");
@@ -244,6 +248,21 @@ export function DeckSheet({
         .sort((a, b) => a.name.localeCompare(b.name)),
     [cards, zones, cardsById]
   );
+  const resultsCard = (
+    <SheetCard
+      title="Résultats en tournoi"
+      className="gap-3 p-4"
+      meta={<Trophy className="size-3.5 text-muted-foreground" aria-hidden />}
+    >
+      <DeckTournamentResults results={results} showVisibility />
+      {results.length === 0 && (
+        <p className="text-xs text-muted-foreground">
+          Liez ce deck à un résultat depuis l&apos;onglet Tournois de vos groupes de jeu.
+        </p>
+      )}
+    </SheetCard>
+  );
+
   const commentsCard = comments && (
     <SheetCard title="Commentaires" meta={<span className="text-xs text-muted-foreground">Vos notes, visibles de vous seul</span>}>
       {comments.groups.length > 0 && (
@@ -386,6 +405,8 @@ export function DeckSheet({
           <SheetCard title="Courbe de coûts" className="gap-3 p-4">
             <CostCurve cards={cards} zones={zones} cardsById={cardsById} />
           </SheetCard>
+
+          {resultsCard}
         </aside>
       </div>
 
@@ -423,6 +444,7 @@ export function DeckSheet({
               <BuyDeckOnCardnexusHint order={cardnexusOrder} />
             </SheetCard>
             {matchupsCard}
+            {resultsCard}
           </div>
         )}
         {tab === "guide" && guideCard}

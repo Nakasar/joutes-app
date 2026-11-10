@@ -11,6 +11,7 @@ import {
   Library,
   Megaphone,
   Settings,
+  Trophy,
   Users,
 } from "lucide-react";
 
@@ -31,6 +32,7 @@ const ICONS = {
   announcements: Megaphone,
   contents: Library,
   decks: Layers,
+  tournaments: Trophy,
   lists: Heart,
   members: Users,
   showcase: Globe,
@@ -58,6 +60,7 @@ function entriesFor(playGroupId: string, pendingCount: number, unreadComments: n
     { key: "announcements", href: viewHref(playGroupId, "announcements") },
     { key: "contents", href: viewHref(playGroupId, "contents") },
     { key: "decks", href: viewHref(playGroupId, "decks"), section: "game", badge: unreadComments },
+    { key: "tournaments", href: viewHref(playGroupId, "tournaments"), section: "game" },
     { key: "lists", href: viewHref(playGroupId, "lists"), section: "group" },
     { key: "members", href: viewHref(playGroupId, "members"), section: "group" },
     { key: "showcase", href: viewHref(playGroupId, "showcase"), section: "aside" },

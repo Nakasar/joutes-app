@@ -19,6 +19,7 @@ export const PLAY_GROUP_VIEWS = [
   "announcements",
   "contents",
   "decks",
+  "tournaments",
   "lists",
   "members",
   "showcase",

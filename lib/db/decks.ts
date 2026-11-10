@@ -3,6 +3,7 @@ import { Deck, DeckVisibility, toPublicDeckMeta, type DeckMeta } from "@/lib/typ
 import { ObjectId, WithId, Document } from "mongodb";
 import { getUsersByIds } from "@/lib/db/users";
 import { deleteDeckCommentsForDeck } from "@/lib/db/deck-comments";
+import { unlinkDeckFromResults } from "@/lib/db/tournament-results";
 import { removeDeckFromPlayGroups } from "@/lib/db/play-group-decks";
 import { deriveDeckDomains, getDeckCardInfos } from "@/lib/db/deck-cards";
 import { deckVersionWrite } from "@/lib/db/deck-version";
@@ -784,6 +785,7 @@ export async function deleteDeck(deckId: string, playerId: string): Promise<bool
     // Un deck supprimé n'a plus rien à faire dans les bibliothèques de groupes.
     await removeDeckFromPlayGroups(deckId);
     await deleteDeckCommentsForDeck(deckId);
+    await unlinkDeckFromResults(deckId);
   }
 
   return result.deletedCount === 1;
@@ -887,6 +889,7 @@ export async function deleteDeckAsModerator(deckId: string): Promise<boolean> {
   if (result.deletedCount === 1) {
     await removeDeckFromPlayGroups(deckId);
     await deleteDeckCommentsForDeck(deckId);
+    await unlinkDeckFromResults(deckId);
   }
   return result.deletedCount === 1;
 }

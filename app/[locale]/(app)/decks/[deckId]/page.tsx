@@ -14,7 +14,9 @@ import { getDeckCollectionCounts } from "@/lib/decks/collection.ts";
 import { riftboundDeckCode } from "@/lib/decks/export-code.ts";
 import { getDeckZones } from "@/lib/decks/zones.ts";
 import { readDeckAccess } from "@/lib/decks/read-access.ts";
-import { isDeckIndexable } from "@/lib/types/Deck.ts";
+import { isDeckIndexable, type Deck } from "@/lib/types/Deck.ts";
+import { listVisibleDeckResults } from "@/lib/tournaments/result-service.ts";
+import { toDeckResultView, type DeckResultView } from "@/components/decks/DeckTournamentResults.tsx";
 import { hasPermission } from "@/lib/db/permissions.ts";
 import { META_DECKS_PERMISSION } from "@/lib/meta/permissions.ts";
 import { MetaDeckBanner } from "@/components/decks/MetaDeckBanner.tsx";
@@ -84,13 +86,15 @@ async function DeckPageContent({ params }: { params: Params }) {
 
   const game = await getGameById(deck.gameId);
   const zones = getDeckZones(game);
-  const [catalog, cardnexusOrder, canManageMeta] = await Promise.all([
+  const [catalog, cardnexusOrder, canManageMeta, results] = await Promise.all([
     getDeckCardInfos(deck.gameId, deckCardIds(deck.cards)),
     // Le lien « Acheter le deck sur CardNexus » : le deck entier.
     getDeckCardnexusOrder(deck, zones),
     // Le bandeau « Méta » ne sert qu'à un deck méta ou public : inutile de
     // lire les permissions pour un brouillon.
     session?.user?.id && (deck.meta || deck.visibility === "public") ? hasPermission(META_DECKS_PERMISSION) : false,
+    // Les résultats en tournoi liés au deck, ceux que le lecteur peut voir.
+    readDeckResults(deck, session?.user?.id ?? null),
   ]);
   const isFavorited = Boolean(session?.user && deck.favoritedBy?.includes(session.user.id));
 
@@ -143,6 +147,7 @@ async function DeckPageContent({ params }: { params: Params }) {
           isAuthenticated={Boolean(session?.user?.id)}
           ownedByCardId={ownedByCardId ? Object.fromEntries(ownedByCardId) : undefined}
           cardnexusOrder={cardnexusOrder}
+          results={results}
         />
       </div>
     );
@@ -160,9 +165,20 @@ async function DeckPageContent({ params }: { params: Params }) {
         exportCode={game?.slug === "riftbound" ? riftboundDeckCode(deck.cards) : undefined}
         cardnexusOrder={cardnexusOrder}
         comments={await readSheetComments(deck.id, session!.user.id)}
+        results={results}
       />
     </div>
   );
+}
+
+/** Un échec ne ferme pas la fiche : l'encart reste vide. */
+async function readDeckResults(deck: Deck, viewerId: string | null): Promise<DeckResultView[]> {
+  try {
+    return (await listVisibleDeckResults(deck, viewerId)).map((result) => toDeckResultView(result, viewerId));
+  } catch (error) {
+    console.error("Résultats du deck illisibles", error);
+    return [];
+  }
 }
 
 /**
