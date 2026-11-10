@@ -48,6 +48,24 @@ export function SoloGame() {
     setSave(next);
   };
 
+  // Une partie gardée que le moteur ne sait plus rouvrir (il a changé depuis) :
+  // on propose de la recommencer plutôt que de laisser un message sans issue.
+  if (feed.status === "error" && !feed.update) {
+    return (
+      <div className="flex flex-col items-center gap-4 rounded-xl border bg-card p-8 text-center">
+        <p className="text-muted-foreground">{t("solo.broken")}</p>
+        <div className="flex flex-row flex-wrap justify-center gap-2">
+          <Button onClick={replay}>{t("result.replay")}</Button>
+          <Button variant="outline" asChild>
+            <Link href="/games/riftbound/play" onClick={() => writeSoloSave(null)}>
+              {t("result.toLobby")}
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <GameTable
       feed={feed}

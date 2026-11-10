@@ -679,6 +679,7 @@
         "toLobby": "Zurück zur Spiellobby"
       },
       "solo": {
+        "broken": "Diese Partie kann nicht mehr fortgesetzt werden: Die Spiel-Engine wurde inzwischen aktualisiert.",
         "none": "Keine laufende Partie in diesem Browser.",
         "toLobby": "Partie wählen"
       },

@@ -679,6 +679,7 @@
         "toLobby": "Retour à l'accueil du jeu"
       },
       "solo": {
+        "broken": "Cette partie ne peut plus être reprise : le moteur de jeu a été mis à jour depuis.",
         "none": "Aucune partie en cours dans ce navigateur.",
         "toLobby": "Choisir une partie"
       },

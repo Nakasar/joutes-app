@@ -679,6 +679,7 @@
         "toLobby": "Torna alla sala di gioco"
       },
       "solo": {
+        "broken": "Questa partita non può più essere ripresa: il motore di gioco è stato aggiornato nel frattempo.",
         "none": "Nessuna partita in corso in questo browser.",
         "toLobby": "Scegli una partita"
       },

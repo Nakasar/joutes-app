@@ -679,6 +679,7 @@
         "toLobby": "Back to the play lobby"
       },
       "solo": {
+        "broken": "This game can no longer be resumed: the game engine has been updated since.",
         "none": "No game in progress in this browser.",
         "toLobby": "Choose a game"
       },
