@@ -96,12 +96,17 @@ export type GroupMetaResult = Pick<
   | "domains"
 >;
 
-/** Les résultats d'une période, bornes comprises (`AAAA-MM-JJ`). */
-export function resultsBetween<T extends Pick<TournamentResult, "date">>(results: T[], from?: string, to?: string): T[] {
-  return results.filter((result) => {
-    const day = result.date.slice(0, 10);
+/** Ce qui tombe dans une période, bornes comprises (`AAAA-MM-JJ`), d'après une date ISO. */
+export function between<T>(items: T[], dateOf: (item: T) => string, from?: string, to?: string): T[] {
+  return items.filter((item) => {
+    const day = dateOf(item).slice(0, 10);
     return (!from || day >= from) && (!to || day <= to);
   });
+}
+
+/** Les résultats (ou les matchs) d'une période, bornes comprises. */
+export function resultsBetween<T extends Pick<TournamentResult, "date">>(results: T[], from?: string, to?: string): T[] {
+  return between(results, (result) => result.date, from, to);
 }
 
 /**
@@ -198,7 +203,7 @@ export function metaReference(overview: MetaOverview): MetaReference {
     if (legend.cardId) byCard.set(legend.cardId, legend.share);
     byName.set(normalizeLegend(legend.name), legend.share);
     // « Kai'Sa, Daughter of the Void » et « Kai'Sa » sont la même légende.
-    const short = normalizeLegend(legend.name.split(",")[0]);
+    const short = legendShortKey(legend.name);
     if (!byName.has(short)) byName.set(short, legend.share);
   }
   const domains = new Map(overview.domains.map((domain) => [domain.domain, domain.share]));
@@ -207,7 +212,7 @@ export function metaReference(overview: MetaOverview): MetaReference {
     legendShare: ({ cardId, name }) =>
       (cardId ? byCard.get(cardId) : undefined) ??
       byName.get(normalizeLegend(name)) ??
-      byName.get(normalizeLegend(name.split(",")[0])) ??
+      byName.get(legendShortKey(name)) ??
       (overview.decks > 0 ? 0 : undefined),
     domainShare: (domain) => domains.get(domain) ?? (overview.decks > 0 ? 0 : undefined),
     ...(overview.topPair ? { pair: overview.topPair.domains } : {}),
@@ -288,7 +293,11 @@ export function computeGroupMeta(
   }));
 
   const byUser = new Map<string, GroupMetaResult[]>();
-  for (const result of results) byUser.set(result.userId, [...(byUser.get(result.userId) ?? []), result]);
+  for (const result of results) {
+    const list = byUser.get(result.userId) ?? [];
+    list.push(result);
+    byUser.set(result.userId, list);
+  }
   const members: GroupMemberRow[] = [...byUser]
     .map(([userId, own]) => {
       const record = emptyRecord();
@@ -427,6 +436,8 @@ export function joutesSides(
   const sides: GroupMatchSide[] = [];
   for (const match of matches) {
     if (match.status !== "completed" || match.players.length !== 2) continue;
+    // Un forfait ou une double défaite : aucune partie jouée, rien sur le matchup.
+    if (match.resolution && match.resolution !== "played") continue;
     const [first, second] = match.players.map((player) => player.playerId);
     for (const [mine, theirs] of [
       [first, second],
@@ -437,14 +448,7 @@ export function joutesSides(
       const theirUser = userOf.get(theirs);
       const legend = legendOf.get(mine);
       const opponent = legendOf.get(theirs);
-      const result =
-        match.resolution === "double-loss"
-          ? "L"
-          : match.winnerIds.length === 0
-            ? "D"
-            : match.winnerIds.includes(mine)
-              ? "W"
-              : "L";
+      const result = match.winnerIds.length === 0 ? "D" : match.winnerIds.includes(mine) ? "W" : "L";
       sides.push({
         userId,
         ...(legend ? { legend: legend.name, ...(legend.cardId ? { legendCardId: legend.cardId } : {}) } : {}),
@@ -535,5 +539,10 @@ export function groupMatchups(sides: GroupMatchSide[], userId?: string): GroupMa
     }
   }
 
-  return { counted: counted.length, known: mine.length, opponents: rows(opponents.values()), pairings: rows(pairings.values()) };
+  // Un match entre deux membres donne un côté à chacun : il ne compte qu'une
+  // fois parmi les matchs connus du groupe.
+  const family = mine.filter((side) => side.opponentIsMember).length;
+  const known = userId ? mine.length : mine.length - family + Math.ceil(family / 2);
+
+  return { counted: counted.length, known, opponents: rows(opponents.values()), pairings: rows(pairings.values()) };
 }

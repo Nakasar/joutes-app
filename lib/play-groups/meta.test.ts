@@ -179,7 +179,7 @@ describe("confrontations", () => {
     assert.deepEqual(sides, [{ userId: "u1", legend: "Kai'Sa", opponentLegend: "Riven", opponentIsMember: false, result: "W" }]);
   });
 
-  it("lit les matchs Joutes : double défaite, nul, adversaire membre", () => {
+  it("lit les matchs Joutes : nul, adversaire membre ; ni forfait ni double défaite", () => {
     const userOf = new Map([
       ["p1", "u1"],
       ["p2", "u2"],
@@ -191,6 +191,8 @@ describe("confrontations", () => {
         { players: [{ playerId: "p1" }, { playerId: "p3" }], winnerIds: [], status: "completed" },
         { players: [{ playerId: "p1" }, { playerId: "p2" }], winnerIds: ["p2"], status: "completed" },
         { players: [{ playerId: "p1" }, { playerId: "p3" }], winnerIds: [], status: "completed", resolution: "double-loss" },
+        { players: [{ playerId: "p1" }, { playerId: "p3" }], winnerIds: ["p1"], status: "completed", resolution: "forfeit" },
+        { players: [{ playerId: "p1" }, { playerId: "p3" }], winnerIds: ["p1"], status: "completed", resolution: "played" },
         { players: [{ playerId: "p1" }, { playerId: "p3" }], winnerIds: ["p1"], status: "in_progress" },
       ],
       userOf,
@@ -203,7 +205,7 @@ describe("confrontations", () => {
         ["u1", "D", false, "Riven"],
         ["u1", "L", true, undefined],
         ["u2", "W", true, undefined],
-        ["u1", "L", false, "Riven"],
+        ["u1", "W", false, "Riven"],
       ],
     );
   });
@@ -225,6 +227,7 @@ describe("confrontations", () => {
       side({ opponentLegend: undefined }),
       side({ userId: "u2", result: "D" }),
     ]);
+    // Le match entre membres ne donne ici qu'un côté : il compte pour un.
     assert.equal(matchups.known, 6);
     assert.equal(matchups.counted, 3);
     assert.deepEqual(
@@ -232,6 +235,10 @@ describe("confrontations", () => {
       [["Riven", 1, 1, 1]],
     );
     assert.equal(groupMatchups([side({}), side({ userId: "u2" })], "u2").counted, 1);
+    // Un match entre deux membres, vu de chacun : un seul match connu.
+    const family = [side({ opponentIsMember: true }), side({ userId: "u2", opponentIsMember: true, result: "L" })];
+    assert.equal(groupMatchups(family).known, 1);
+    assert.equal(groupMatchups(family, "u2").known, 1);
   });
 
   it("réunit une légende adverse lue avec sa carte (Joutes) et sans (locator)", () => {

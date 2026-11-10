@@ -31,13 +31,14 @@ export function GameIcon({ game, size }: { game?: GameInfo; size: "sm" | "lg" })
   );
 }
 
-export function LegendThumb({ image }: { image?: string }) {
+export function LegendThumb({ image, size = "sm" }: { image?: string; size?: "sm" | "lg" }) {
+  const box = size === "lg" ? "h-14 w-10 rounded" : "h-7 w-5 rounded-[3px]";
   if (!image) {
-    return <span aria-hidden className="inline-block h-7 w-5 shrink-0 rounded-[3px] border bg-muted" />;
+    return <span aria-hidden className={cn("inline-block shrink-0 border bg-muted", box)} />;
   }
 
   return (
-    <span className="inline-block h-7 w-5 shrink-0 overflow-hidden rounded-[3px] border">
+    <span className={cn("inline-block shrink-0 overflow-hidden border", box)}>
       {/* Les images de cartes viennent de plusieurs hôtes : `next/image` les refuserait. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={image} alt="" className="size-full object-cover object-top" loading="lazy" />

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
 
   try {
     const memberIds = gate.group.members.map((member) => member.userId);
-    const page = await readGroupMeta(memberIds, readGroupMetaParams(Object.fromEntries(request.nextUrl.searchParams)));
+    const page = await readGroupMeta(playGroupId, memberIds, readGroupMetaParams(Object.fromEntries(request.nextUrl.searchParams)));
     return NextResponse.json(page);
   } catch (error) {
     console.error("Error reading play-group meta:", error);

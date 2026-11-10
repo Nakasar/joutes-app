@@ -60,6 +60,7 @@ export default async function MetaView({
   ]);
   const params = readGroupMetaParams(searchParams);
   const page = await readGroupMeta(
+    playGroupId,
     members.map((member) => member.userId),
     params,
   );
@@ -421,7 +422,7 @@ function LegendRow({ view, legend, max }: { view: View; legend: GroupLegendRow; 
         page.compared ? "sm:grid-cols-[40px_minmax(0,1fr)_48px_64px_44px_52px]" : "sm:grid-cols-[40px_minmax(0,1fr)_48px_44px_52px]",
       )}
     >
-      <Thumb src={legend.image} />
+      <LegendThumb image={legend.image} size="lg" />
       <span className="flex min-w-0 flex-col gap-1">
         <span className="flex min-w-0 items-center gap-2">
           <span className="truncate text-sm font-semibold">{legend.name}</span>
@@ -452,18 +453,6 @@ function LegendRow({ view, legend, max }: { view: View; legend: GroupLegendRow; 
       <span className="hidden text-right font-mono text-sm sm:block">{legend.topCuts}</span>
       <span className="hidden text-right font-mono text-sm sm:block">{legendRate(view, legend)}</span>
     </li>
-  );
-}
-
-function Thumb({ src, small }: { src?: string; small?: boolean }) {
-  const size = small ? "h-7 w-5" : "h-14 w-10";
-  if (!src) return <span aria-hidden className={cn("shrink-0 rounded border bg-muted", size)} />;
-  return (
-    <span className={cn("shrink-0 overflow-hidden rounded border", size)}>
-      {/* Les images de cartes viennent de plusieurs hôtes : `next/image` les refuserait. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" loading="lazy" className="size-full object-cover object-top" />
-    </span>
   );
 }
 

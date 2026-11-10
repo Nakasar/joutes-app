@@ -8,6 +8,7 @@ import { TOURNAMENT_RESULTS_COLLECTION } from "@/lib/db/tournament-results";
 import { playableDomains } from "@/lib/decks/domains";
 import type { DeckCards } from "@/lib/decks/contents";
 import { readAllGames } from "@/lib/db/games-cached";
+import { listPlayGroupDecks } from "@/lib/db/play-group-decks";
 import { countedCards, knownGameSets, loadMetaSample } from "@/lib/meta/load";
 import { currentSetPeriod, setPeriods, type SetPeriod } from "@/lib/meta/set-periods";
 import { resolveMetaSettings } from "@/lib/meta/settings";
@@ -19,6 +20,7 @@ import type { TournamentResult } from "@/lib/types/TournamentResult";
 
 import {
   ALL_PERIODS,
+  between,
   computeGroupMeta,
   groupMatchups,
   harmonizeSides,
@@ -67,12 +69,12 @@ export type GroupMetaData = {
   sides: (GroupMatchSide & { date: string })[];
 };
 
-type DeckDoc = { _id: ObjectId; playerId: string; gameId: string; cards?: DeckCards };
+type DeckDoc = { _id: ObjectId; playerId: string; gameId: string; visibility?: string; cards?: DeckCards };
 type MetaEventDoc = { gameId: string; eventRef: string; eventDate: Date; players: MetaEventPlayer[]; matches: MetaEventMatch[] };
 type PlayerDoc = { _id: ObjectId; tournamentId: ObjectId; userId?: string };
 type MatchDoc = JoutesMatch & { tournamentId: ObjectId };
 
-export async function loadGroupMetaData(memberIds: string[], gameId: string): Promise<GroupMetaData> {
+export async function loadGroupMetaData(memberIds: string[], gameId: string, playGroupId: string): Promise<GroupMetaData> {
   if (memberIds.length === 0) return { results: [], deckCards: new Map(), cards: {}, sides: [] };
 
   const rows = await results()
@@ -104,18 +106,25 @@ export async function loadGroupMetaData(memberIds: string[], gameId: string): Pr
     Pick<TournamentResult, "sourceRef">)[];
 
   // Les decks liés : seuls ceux de l'auteur du résultat comptent (c'est toujours lui qui lie).
+  // Un deck privé ne compte que s'il est partagé dans le groupe : sinon ses
+  // cartes se liraient dans l'onglet Cartes (filtré sur ce seul membre).
   const owners = new Map(groupResults.flatMap((result) => (result.deckId ? [[result.deckId, result.userId] as const] : [])));
   const deckIds = [...owners.keys()].filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
-  const decks =
+  const [decks, groupDecks] =
     deckIds.length > 0
-      ? await db
-          .collection<DeckDoc>("decks")
-          .find({ _id: { $in: deckIds } }, { projection: { playerId: 1, gameId: 1, cards: 1 } })
-          .toArray()
-      : [];
+      ? await Promise.all([
+          db
+            .collection<DeckDoc>("decks")
+            .find({ _id: { $in: deckIds } }, { projection: { playerId: 1, gameId: 1, visibility: 1, cards: 1 } })
+            .toArray(),
+          listPlayGroupDecks(playGroupId),
+        ])
+      : [[], []];
+  const inGroup = new Set(groupDecks.map((link) => link.deckId));
   const deckCards = new Map(
     decks
       .filter((deck) => owners.get(deck._id.toString()) === deck.playerId && deck.gameId === gameId)
+      .filter((deck) => deck.visibility !== "private" || inGroup.has(deck._id.toString()))
       .map((deck) => [deck._id.toString(), countedCards(deck.cards)]),
   );
 
@@ -270,7 +279,12 @@ export type GroupMetaPage = {
  * cours par défaut, quand le jeu en date), le membre, et le repère de la
  * méta du jeu sur la même période.
  */
-export async function readGroupMeta(memberIds: string[], params: GroupMetaParams, now = new Date()): Promise<GroupMetaPage> {
+export async function readGroupMeta(
+  playGroupId: string,
+  memberIds: string[],
+  params: GroupMetaParams,
+  now = new Date(),
+): Promise<GroupMetaPage> {
   const [counts, allGames] = await Promise.all([countGroupResultsByGame(memberIds), readAllGames()]);
   const gameById = new Map(allGames.map((game) => [game.id, game]));
   const games = counts.flatMap(({ gameId, count }) => {
@@ -295,7 +309,12 @@ export async function readGroupMeta(memberIds: string[], params: GroupMetaParams
   };
   if (!chosen) return empty;
 
-  const data = await loadGroupMetaData(memberIds, chosen.id);
+  const hasMeta = Boolean(chosen.features?.meta);
+  // L'échantillon de la méta du jeu ne dépend que du jeu : il se lit en même temps.
+  const [data, sample] = await Promise.all([
+    loadGroupMetaData(memberIds, chosen.id, playGroupId),
+    hasMeta && params.compare ? loadMetaSample(chosen.id, chosen.slug) : undefined,
+  ]);
   const settings = resolveMetaSettings(chosen.metaSettings);
   const setNames = Object.fromEntries(knownGameSets(chosen.slug).map((set) => [set.setCode, set.name]));
   const periods = setPeriods(settings.setReleases, setNames);
@@ -305,18 +324,10 @@ export async function readGroupMeta(memberIds: string[], params: GroupMetaParams
 
   const inPeriod = resultsBetween(data.results, period?.from, period?.to);
   const shown = params.userId ? inPeriod.filter((result) => result.userId === params.userId) : inPeriod;
-  const hasMeta = Boolean(chosen.features?.meta);
 
-  let reference;
-  let sample;
-  if (hasMeta && params.compare) {
-    sample = await loadMetaSample(chosen.id, chosen.slug);
-    const decks = sample.decks.filter((deck) => {
-      const day = deck.eventDate.slice(0, 10);
-      return (!period?.from || day >= period.from) && (!period?.to || day <= period.to);
-    });
-    reference = metaReference(computeOverview(decks, sample.cards, []));
-  }
+  const reference = sample
+    ? metaReference(computeOverview(between(sample.decks, (deck) => deck.eventDate, period?.from, period?.to), sample.cards, []))
+    : undefined;
 
   // Les légendes connues donnent leur carte (et leur image) aux légendes des
   // matchs lues par leur seul nom.
@@ -332,10 +343,7 @@ export async function readGroupMeta(memberIds: string[], params: GroupMetaParams
     }
   }
 
-  const sidesInPeriod = sides.filter((side) => {
-    const day = side.date.slice(0, 10);
-    return (!period?.from || day >= period.from) && (!period?.to || day <= period.to);
-  });
+  const sidesInPeriod = resultsBetween(sides, period?.from, period?.to);
   const withDeck = shown.filter((result) => result.deckId && data.deckCards.has(result.deckId));
 
   return {
