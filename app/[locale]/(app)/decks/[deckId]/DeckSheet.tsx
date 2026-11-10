@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { DateTime } from "luxon";
-import { ArrowLeft, Hammer, Share2, Star } from "lucide-react";
+import { ArrowLeft, Hammer, MessageSquare, Share2, Star } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button.tsx";
@@ -14,6 +14,8 @@ import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
 import { DeckZoneCards, DeckZonesSummary } from "@/components/decks/DeckZoneCards.tsx";
 import { ShareDeckDialog } from "@/components/decks/ShareDeckDialog.tsx";
 import { DeckGroupsSection } from "./DeckGroupsSection.tsx";
+import { DeckCommentsStandalone } from "@/components/decks/comments/DeckComments.tsx";
+import type { CommentThreadPayload } from "@/lib/decks/comment-service.ts";
 import { BuyDeckOnCardnexusButton, BuyDeckOnCardnexusHint } from "@/components/decks/BuyDeckOnCardnexusButton.tsx";
 import { cn } from "@/lib/utils.ts";
 import { zoneEntries, type DeckCardInfo } from "@/lib/decks/contents.ts";
@@ -29,13 +31,21 @@ import {
 } from "./DeckSheetSections.tsx";
 import { BackLink } from "@/components/navigation/BackLink.tsx";
 
-type SheetTab = "description" | "guide" | "cards";
+type SheetTab = "description" | "guide" | "cards" | "comments";
 
 const TABS: { key: SheetTab; label: string }[] = [
   { key: "description", label: "Description" },
   { key: "guide", label: "Guide" },
   { key: "cards", label: "Cartes" },
+  { key: "comments", label: "Commentaires" },
 ];
+
+/** Les commentaires de la fiche : l'espace personnel, et le compte de chaque groupe où le deck est partagé. */
+export type DeckSheetComments = {
+  thread: CommentThreadPayload;
+  viewerId: string;
+  groups: { id: string; name: string; count: number }[];
+};
 
 /**
  * Fiche d'un deck, du point de vue de son auteur.
@@ -55,6 +65,7 @@ export function DeckSheet({
   isFavorited,
   exportCode,
   cardnexusOrder,
+  comments,
 }: {
   deck: Deck;
   gameName?: string;
@@ -63,6 +74,7 @@ export function DeckSheet({
   isFavorited: boolean;
   exportCode?: string;
   cardnexusOrder: DeckCardnexusOrder;
+  comments?: DeckSheetComments;
 }) {
   const router = useRouter();
   const [description, setDescription] = useState(deck.description ?? "");
@@ -223,6 +235,46 @@ export function DeckSheet({
     </SheetCard>
   );
 
+  // Les notes de l'auteur sur son deck, liées aux cartes. Les fils des groupes
+  // restent dans leur groupe : la fiche n'en montre que le compte, et y mène.
+  const commentOptions = useMemo(
+    () =>
+      [...new Set(zones.flatMap((zone) => zoneEntries(cards, zone.key).map((entry) => entry.cardId)))]
+        .map((id) => ({ id, name: cardsById.get(id)?.name ?? id }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [cards, zones, cardsById]
+  );
+  const commentsCard = comments && (
+    <SheetCard title="Commentaires" meta={<span className="text-xs text-muted-foreground">Vos notes, visibles de vous seul</span>}>
+      {comments.groups.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {comments.groups.map((group) => (
+            <li key={group.id}>
+              <Link
+                href={`/play-groups/${group.id}?view=decks&deck=${deck.id}`}
+                className="flex items-center gap-2 rounded-lg border bg-background/40 px-3 py-2 text-sm hover:bg-accent"
+              >
+                <MessageSquare className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="min-w-0 flex-1 truncate">
+                  {group.count === 0
+                    ? `Aucun commentaire dans ${group.name}`
+                    : `${group.count} commentaire${group.count > 1 ? "s" : ""} dans ${group.name}`}
+                </span>
+                <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">Ouvrir le fil</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      <DeckCommentsStandalone
+        initialThread={comments.thread}
+        viewerId={comments.viewerId}
+        deckOwnerId={deck.playerId}
+        cards={commentOptions}
+      />
+    </SheetCard>
+  );
+
   const matchupsCard = (
     <MatchupsSection
       matchups={matchups}
@@ -290,6 +342,7 @@ export function DeckSheet({
           {cardsCard}
           {guideCard}
           {matchupsCard}
+          {commentsCard}
         </div>
 
         <aside className="sticky top-4 flex flex-col gap-3">
@@ -374,6 +427,7 @@ export function DeckSheet({
         )}
         {tab === "guide" && guideCard}
         {tab === "cards" && cardsCard}
+        {tab === "comments" && commentsCard}
       </div>
 
       {/* Barre d'action basse : les trois gestes de la fiche, à portée de pouce.

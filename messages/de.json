@@ -3934,6 +3934,25 @@
         "error": "Dieser Inhalt konnte nicht gespeichert werden."
       },
       "decks": {
+        "pagination": "Seiten der Bibliothek",
+        "previous": "Vorherige Seite",
+        "next": "Nächste Seite",
+        "page": "Seite {page} von {count}",
+        "comments": "{count, plural, one {# Kommentar} other {# Kommentare}}",
+        "unread": "{count} neu",
+        "latestComments": "Neueste Kommentare",
+        "open": {
+          "back": "Decks der Gruppe",
+          "by": "von {owner}",
+          "you": "dir",
+          "edit": "Bauen",
+          "fullSheet": "Vollständige Deckseite",
+          "visibility": {
+            "public": "Öffentlich",
+            "unlisted": "Nicht gelistet",
+            "private": "Privat · für die Gruppe sichtbar"
+          }
+        },
         "title": "Decks der Gruppe",
         "metadataTitle": "Decks · {group}",
         "summary": "{decks, plural, one {# Deck geteilt} other {# Decks geteilt}} von {members, plural, one {# Mitglied} other {# Mitgliedern}}. Jedes Mitglied kann sie öffnen.",
@@ -6944,5 +6963,66 @@
     "filter": "Hervorgehoben",
     "filterHint": "Nur hervorgehobene Events anzeigen",
     "legendFriends": "Ein Freund angemeldet oder interessiert"
+  },
+  "DeckComments": {
+    "composerLabel": "Neuer Kommentar",
+    "composerPlaceholder": "Eine Anmerkung zum Deck oder zu den verknüpften Karten…",
+    "publish": "Veröffentlichen",
+    "unlink": "{card} lösen",
+    "linkCard": "Karte verknüpfen",
+    "linkThis": "{card} mit dem Kommentar verknüpfen",
+    "searchCard": "Karte im Deck suchen",
+    "noCard": "Keine passende Karte.",
+    "filterCard": "Zu {card}",
+    "clearFilter": "Filter entfernen",
+    "filter": {
+      "all": "Alle",
+      "general": "Allgemein",
+      "cards": "Zu Karten"
+    },
+    "empty": "Noch keine Kommentare. Der erste eröffnet die Diskussion.",
+    "emptyFiltered": "Hier gibt es keinen offenen Kommentar.",
+    "hideResolved": "Erledigte ausblenden",
+    "showResolved": "{count, plural, one {# erledigten anzeigen} other {# erledigte anzeigen}}",
+    "you": "Du",
+    "someone": "Ein ehemaliges Mitglied",
+    "deckAuthor": "Autor",
+    "edited": "bearbeitet",
+    "new": "Neu",
+    "resolvedIn": "Erledigt in v{version}",
+    "deleted": "Kommentar gelöscht.",
+    "general": "Allgemein",
+    "cardRemoved": "Karte inzwischen aus dem Deck entfernt",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "reply": "Antworten",
+    "replyPlaceholder": "Deine Antwort…",
+    "resolve": "Erledigen",
+    "reopen": "Wieder öffnen",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "deleteConfirm": "Diesen Kommentar löschen? Die Antworten bleiben sichtbar.",
+    "tabs": {
+      "cards": "Karten",
+      "comments": "Kommentare"
+    },
+    "cardsHint": "Klicke auf eine Karte, um den Verlauf zu filtern, oder verknüpfe sie mit deinem Kommentar.",
+    "removedCards": "Seit der Kommentierung entfernt",
+    "layout": {
+      "list": "Liste",
+      "grid": "Raster"
+    },
+    "errors": {
+      "UNAUTHENTICATED": "Melde dich an, um zu kommentieren.",
+      "INVALID": "Ungültige Anfrage.",
+      "NOT_FOUND": "Dieser Kommentar existiert nicht mehr.",
+      "FORBIDDEN": "Du hast keinen Zugriff auf diesen Verlauf.",
+      "EMPTY": "Der Kommentar ist leer.",
+      "TOO_LONG": "Der Kommentar ist länger als 2.000 Zeichen.",
+      "TOO_MANY_CARDS": "Höchstens zehn Karten pro Kommentar.",
+      "CARD_NOT_IN_DECK": "Diese Karte ist nicht mehr im Deck.",
+      "REPLY_WITH_CARDS": "Eine Antwort verknüpft keine Karten.",
+      "FAILED": "Ein Fehler ist aufgetreten, versuche es erneut."
+    }
   }
 }

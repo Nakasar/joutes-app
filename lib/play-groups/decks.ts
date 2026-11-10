@@ -148,3 +148,22 @@ export function filterGroupDecks<T extends GroupDeckEntry>(entries: T[], filters
     return new Date(b.deck.updatedAt).getTime() - new Date(a.deck.updatedAt).getTime();
   });
 }
+
+export const GROUP_DECKS_PAGE_SIZE = 24;
+
+/**
+ * Une page de la bibliothèque. La page vient de l'adresse (`?page=`) : une
+ * valeur absente, illisible ou hors bornes retombe sur la plus proche, pour
+ * qu'un lien gardé après le retrait de decks mène encore quelque part.
+ */
+export function pageGroupDecks<T>(
+  entries: T[],
+  pageValue: SearchParamValue,
+  size = GROUP_DECKS_PAGE_SIZE,
+): { items: T[]; page: number; pageCount: number } {
+  const pageCount = Math.max(1, Math.ceil(entries.length / size));
+  const asked = Number.parseInt(single(pageValue) ?? "", 10);
+  const page = Number.isFinite(asked) ? Math.min(Math.max(asked, 1), pageCount) : 1;
+
+  return { items: entries.slice((page - 1) * size, page * size), page, pageCount };
+}

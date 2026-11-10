@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  pageGroupDecks,
   canPinGroupDeck,
   canRemoveGroupDeck,
   filterGroupDecks,
@@ -148,5 +149,21 @@ describe("filterGroupDecks", () => {
       filterGroupDecks(decks, { query: "exile" }).map((item) => item.deck.name),
       ["Riven Calm"],
     );
+  });
+});
+
+describe("pageGroupDecks", () => {
+  const decks = Array.from({ length: 50 }, (_, index) => index);
+
+  it("découpe par pages de 24", () => {
+    assert.deepEqual(pageGroupDecks(decks, "2").items, decks.slice(24, 48));
+    assert.equal(pageGroupDecks(decks, undefined).pageCount, 3);
+  });
+
+  it("ramène une page illisible ou hors bornes à la plus proche", () => {
+    assert.equal(pageGroupDecks(decks, "abc").page, 1);
+    assert.equal(pageGroupDecks(decks, "0").page, 1);
+    assert.equal(pageGroupDecks(decks, "9").page, 3);
+    assert.deepEqual(pageGroupDecks([], "4"), { items: [], page: 1, pageCount: 1 });
   });
 });
