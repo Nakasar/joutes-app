@@ -7004,6 +7004,10 @@
     },
     "cardsHint": "Cliquez une carte pour filtrer le fil, ou liez-la au commentaire en cours.",
     "removedCards": "Retirées depuis les commentaires",
+    "layout": {
+      "list": "Liste",
+      "grid": "Grille"
+    },
     "errors": {
       "UNAUTHENTICATED": "Connectez-vous pour commenter.",
       "INVALID": "Demande invalide.",

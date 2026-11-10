@@ -7004,6 +7004,10 @@
     },
     "cardsHint": "Clicca una carta per filtrare la discussione, o collegala al commento che stai scrivendo.",
     "removedCards": "Rimosse dopo essere state commentate",
+    "layout": {
+      "list": "Elenco",
+      "grid": "Griglia"
+    },
     "errors": {
       "UNAUTHENTICATED": "Accedi per commentare.",
       "INVALID": "Richiesta non valida.",

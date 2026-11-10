@@ -7004,6 +7004,10 @@
     },
     "cardsHint": "Klicke auf eine Karte, um den Verlauf zu filtern, oder verknüpfe sie mit deinem Kommentar.",
     "removedCards": "Seit der Kommentierung entfernt",
+    "layout": {
+      "list": "Liste",
+      "grid": "Raster"
+    },
     "errors": {
       "UNAUTHENTICATED": "Melde dich an, um zu kommentieren.",
       "INVALID": "Ungültige Anfrage.",

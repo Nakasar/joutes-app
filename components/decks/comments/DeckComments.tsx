@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
-import { Check, CheckCircle2, CornerDownRight, Link2, Pencil, RotateCcw, Trash2, X } from "lucide-react";
+import { Check, CheckCircle2, CornerDownRight, LayoutGrid, Link2, List, Pencil, RotateCcw, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button.tsx";
@@ -25,6 +25,7 @@ import {
   type DeckCommentView,
 } from "@/lib/decks/comments.ts";
 import type { CommentThreadPayload } from "@/lib/decks/comment-service.ts";
+import { DeckCardThumb } from "@/components/decks/DeckCardThumb.tsx";
 import { cn } from "@/lib/utils.ts";
 
 /**
@@ -697,8 +698,19 @@ export function DeckCommentsStandalone(props: {
 export type WorkspaceZone = {
   key: string;
   label: string;
-  cards: { id: string; name: string; quantity: number }[];
+  cards: { id: string; name: string; quantity: number; image?: string; orientation?: "portrait" | "landscape" }[];
 };
+
+type CardLayout = "list" | "grid";
+const LAYOUT_KEY = "joutes:deck-comments-layout";
+
+function readLayout(): CardLayout {
+  try {
+    return window.localStorage.getItem(LAYOUT_KEY) === "grid" ? "grid" : "list";
+  } catch {
+    return "list";
+  }
+}
 
 /**
  * Le deck ouvert dans un groupe : ses cartes par zone à gauche, le fil à
@@ -722,6 +734,20 @@ export function DeckCommentsWorkspace({
   const [cardFilter, setCardFilter] = useState<string | null>(null);
   const [comments, setComments] = useState<DeckCommentView[]>(initialThread.comments);
   const [tab, setTab] = useState<"cards" | "comments">("comments");
+  // Liste ou vignettes : un choix de lecteur, gardé dans son navigateur.
+  const [layout, setLayout] = useState<CardLayout>("list");
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- le stockage n'existe qu'au navigateur
+    setLayout(readLayout());
+  }, []);
+  const chooseLayout = (next: CardLayout) => {
+    setLayout(next);
+    try {
+      window.localStorage.setItem(LAYOUT_KEY, next);
+    } catch {
+      // Navigation privée : le choix vaut pour cette visite.
+    }
+  };
 
   const counts = useMemo(() => countCommentsByCard(comments), [comments]);
   const removed = useMemo(() => removedCommentedCards(comments), [comments]);
@@ -786,6 +812,46 @@ export function DeckCommentsWorkspace({
     );
   };
 
+  const tile = (card: WorkspaceZone["cards"][number]) => {
+    const count = counts[card.id] ?? 0;
+    const active = cardFilter === card.id;
+
+    return (
+      <li key={card.id} className="relative">
+        <button
+          type="button"
+          onClick={() => filterOn(card.id)}
+          aria-pressed={active}
+          aria-label={`${card.quantity} × ${card.name}`}
+          className={cn(
+            "block w-full rounded-lg outline-offset-2",
+            active && "outline-2 outline-[var(--group-accent,var(--primary))]",
+          )}
+        >
+          <DeckCardThumb card={{ id: card.id, name: card.name, image: card.image, orientation: card.orientation }} />
+        </button>
+        <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/75 px-1.5 py-px font-mono text-[11px] text-white">
+          ×{card.quantity}
+        </span>
+        {count > 0 && (
+          <span className="pointer-events-none absolute top-1 right-1 rounded-full bg-[var(--group-accent,var(--primary))] px-1.5 py-px font-mono text-[11px] font-semibold text-[var(--group-accent-foreground,var(--primary-foreground))]">
+            {count}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => link(card.id)}
+          aria-label={t("linkThis", { card: card.name })}
+          title={t("linkThis", { card: card.name })}
+          disabled={draftCards.includes(card.id)}
+          className="absolute right-1 bottom-1 rounded-md bg-black/75 p-1 text-white hover:bg-black disabled:opacity-40"
+        >
+          <Link2 className="size-3.5" aria-hidden />
+        </button>
+      </li>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex rounded-lg border p-0.5 lg:hidden" role="tablist">
@@ -808,7 +874,27 @@ export function DeckCommentsWorkspace({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <section className={cn("flex flex-col gap-4", tab !== "cards" && "max-lg:hidden")} aria-label={t("tabs.cards")}>
-          <p className="text-xs text-muted-foreground">{t("cardsHint")}</p>
+          <div className="flex items-start gap-3">
+            <p className="min-w-0 flex-1 text-xs text-muted-foreground">{t("cardsHint")}</p>
+            <div className="flex shrink-0 rounded-md border p-0.5">
+              {(["list", "grid"] as const).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={layout === key}
+                  aria-label={t(`layout.${key}`)}
+                  title={t(`layout.${key}`)}
+                  onClick={() => chooseLayout(key)}
+                  className={cn(
+                    "rounded p-1.5 text-muted-foreground",
+                    layout === key && "bg-accent text-foreground",
+                  )}
+                >
+                  {key === "list" ? <List className="size-3.5" aria-hidden /> : <LayoutGrid className="size-3.5" aria-hidden />}
+                </button>
+              ))}
+            </div>
+          </div>
           {zones
             .filter((zone) => zone.cards.length > 0)
             .map((zone) => (
@@ -816,7 +902,11 @@ export function DeckCommentsWorkspace({
                 <h3 className="px-2 font-mono text-[11px] tracking-[.08em] text-muted-foreground uppercase">
                   {zone.label} · {zone.cards.reduce((total, card) => total + card.quantity, 0)}
                 </h3>
-                <ul className="flex flex-col">{zone.cards.map((card) => row(card))}</ul>
+                {layout === "grid" ? (
+                  <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">{zone.cards.map((card) => tile(card))}</ul>
+                ) : (
+                  <ul className="flex flex-col">{zone.cards.map((card) => row(card))}</ul>
+                )}
               </div>
             ))}
           {removed.length > 0 && (

@@ -7004,6 +7004,10 @@
     },
     "cardsHint": "Click a card to filter the thread, or link it to the comment you are writing.",
     "removedCards": "Removed since they were commented",
+    "layout": {
+      "list": "List",
+      "grid": "Grid"
+    },
     "errors": {
       "UNAUTHENTICATED": "Sign in to comment.",
       "INVALID": "Invalid request.",

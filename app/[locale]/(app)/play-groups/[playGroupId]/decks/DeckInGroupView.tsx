@@ -45,16 +45,21 @@ export default async function DeckInGroupView({ playGroupId, deckId }: { playGro
     notFound();
   }
 
-  const nameById = new Map(catalog.map((card) => [card.id, card.name]));
+  const cardById = new Map(catalog.map((card) => [card.id, card]));
   const zones: WorkspaceZone[] = getDeckZones(game).map((zone) => ({
     key: zone.key,
     label: zone.label,
     cards: zoneEntries(deck.cards, zone.key)
-      .map((entry) => ({
-        id: entry.cardId,
-        name: nameById.get(entry.cardId) ?? entry.cardId,
-        quantity: entry.quantity,
-      }))
+      .map((entry) => {
+        const card = cardById.get(entry.cardId);
+        return {
+          id: entry.cardId,
+          name: card?.name ?? entry.cardId,
+          quantity: entry.quantity,
+          image: card?.image,
+          orientation: card?.orientation,
+        };
+      })
       .sort((a, b) => a.name.localeCompare(b.name)),
   }));
 
