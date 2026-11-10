@@ -130,6 +130,7 @@ import { DECK_CHECK_VIEW_URI, type DeckCheckResult } from "@/mcp-apps/deck-check
 import { DECK_CHECK_VIEW_HTML } from "./apps/deck-check.generated";
 import { AUTH_REQUIRED, registerJoutesTool, ToolResult, userIdFrom } from "./tool-policy";
 import { escapeRegex } from "@/lib/utils/regex";
+import { syncJoutesTournamentResultsSafely } from "@/lib/tournaments/sync-results";
 
 type ToolExtra = ServerContext;
 
@@ -1176,6 +1177,9 @@ async function handleUpdateTournament(
         name: args.name,
         status: args.status,
     });
+    if (updated.status === "completed" || tournament.status === "completed") {
+        await syncJoutesTournamentResultsSafely(args.tournamentId);
+    }
 
     return textResult(
         `Tournoi **${updated.name}** mis à jour (statut : ${TOURNAMENT_STATUS_LABELS[updated.status] ?? updated.status}).` +

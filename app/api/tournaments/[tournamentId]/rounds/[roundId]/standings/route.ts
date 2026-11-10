@@ -6,6 +6,7 @@ import {
   requireTournament,
   validateRoundStandings,
 } from "@/lib/db/tournaments";
+import { syncJoutesTournamentResultsSafely } from "@/lib/tournaments/sync-results";
 import { tournamentErrorResponse, unauthorizedResponse } from "../../../../utils";
 
 type Params = { params: Promise<{ tournamentId: string; roundId: string }> };
@@ -27,6 +28,10 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     const round = await validateRoundStandings(tournamentId, roundId);
     await recordActivity(tournamentId, "round-validated", { round: round.number });
+    // Un classement corrigé après la clôture corrige aussi les résultats des joueurs.
+    if (tournament.status === "completed") {
+      await syncJoutesTournamentResultsSafely(tournamentId);
+    }
     return NextResponse.json(round);
   } catch (error) {
     return tournamentErrorResponse(error);

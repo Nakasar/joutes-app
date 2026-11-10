@@ -62,6 +62,14 @@ tags:
       Unlike most of the API, **no `/trades` route accepts an API key**: they
       resolve the session directly, so a personal `jts_...` key is rejected
       there.
+  - name: Tournament Results
+    description: >
+      A player's tournament results, from three sources: `joutes` (written
+      when a Joutes tournament completes, for each player with an account),
+      `locator` (the player recognised themselves in a tournament imported from
+      the Riftbound locator) and `declared` (entered by the player). A result
+      belongs to the player and shows in all their play groups; `public` ones
+      also show on the linked deck's page for everyone.
   - name: Upload
     description: Generic admin file upload to blob storage.
   - name: Users
@@ -2216,6 +2224,151 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /tournament-results:
+    get:
+      tags: [Tournament Results]
+      summary: My results, or search a tournament to declare
+      description: >
+        Without parameters, the caller's results, newest first. With `search`,
+        completed Joutes tournaments and imported locator tournaments whose name
+        contains it; for a locator tournament, `suggestions` lists the players
+        whose name looks like the caller's (a suggestion only, never a link).
+        With `event` (an imported tournament id), its players whose name
+        contains `player`.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: search, in: query, required: false, schema: { type: string, minLength: 2, maxLength: 80 } }
+        - { name: gameId, in: query, required: false, schema: { type: string } }
+        - { name: event, in: query, required: false, schema: { type: string } }
+        - { name: player, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: >
+            `{ results: TournamentResult[] }`, or `{ joutes, locator }` with
+            `search`, or `{ players }` with `event`. A locator player carries
+            `claimedBy: me | other` once recognised.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results: { type: array, items: { $ref: "#/components/schemas/TournamentResult" } }
+                  joutes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        date: { type: string, format: date-time }
+                        gameId: { type: string }
+                        place: { type: string }
+                        mine: { type: boolean }
+                  locator:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        eventRef: { type: string, example: "locator:1227032" }
+                        name: { type: string }
+                        date: { type: string, format: date-time }
+                        gameId: { type: string }
+                        playerCount: { type: integer }
+                        suggestions: { type: array, items: { $ref: "#/components/schemas/LocatorPlayer" } }
+                  players: { type: array, items: { $ref: "#/components/schemas/LocatorPlayer" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [Tournament Results]
+      summary: Declare a result, or claim a locator player
+      description: >
+        `kind: declared`: name, date and game are required, the rest optional;
+        with `joutesTournamentId` the completed Joutes tournament gives its
+        name, date and venue. `kind: locator`: `eventId` and `registrationId`
+        of an imported tournament; its place, record, legend and domains become
+        the result. A locator player can be claimed by one account only (409
+        `CLAIMED`), and a tournament appears once in a player's results (409
+        `DUPLICATE`). With `deckId` (one of the caller's decks, same game), its
+        current version is kept as the version played. Visibility defaults to
+        `groups`.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind]
+              properties:
+                kind: { type: string, enum: [declared, locator] }
+                name: { type: string, maxLength: 120 }
+                date: { type: string, format: date }
+                gameId: { type: string }
+                joutesTournamentId: { type: string }
+                place: { type: string, maxLength: 120 }
+                playerCount: { type: integer, minimum: 2 }
+                placement: { type: integer, minimum: 1 }
+                topCut: { type: integer, enum: [4, 8, 16, 32, 64] }
+                record:
+                  type: object
+                  properties: { wins: { type: integer }, losses: { type: integer }, draws: { type: integer } }
+                legendName: { type: string, maxLength: 120, description: Without a deck. }
+                eventId: { type: string }
+                registrationId: { type: integer }
+                deckId: { type: string }
+                visibility: { type: string, enum: [groups, public], default: groups }
+      responses:
+        "201":
+          description: The new result.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TournamentResult" }
+        "400": { description: "`INVALID`, `NAME`, `DATE`, `GAME`, `PLAYER_COUNT`, `PLACEMENT`, `TOP_CUT`, `RECORD`, `VISIBILITY` or `DECK`." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "`DUPLICATE` or `CLAIMED`." }
+    patch:
+      tags: [Tournament Results]
+      summary: Link one of my decks to a result, or change who sees it
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: id, in: query, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deckId: { type: string, nullable: true, description: "`null` unlinks the deck." }
+                visibility: { type: string, enum: [groups, public] }
+      responses:
+        "200":
+          description: The updated result.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TournamentResult" }
+        "400": { description: "`INVALID`, `VISIBILITY` or `DECK`." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Tournament Results]
+      summary: Delete a declared or claimed result
+      description: >
+        For the result's owner. A `joutes` result can't be deleted (it would
+        come back when the tournament is rewritten): restrict it to `groups`
+        instead. A meta admin (`metaDecks:manage`) can undo anyone's locator
+        claim.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: id, in: query, required: true, schema: { type: string } }
+      responses:
+        "200": { description: "`{ deleted: true }`" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /tournaments/playing:
     get:
       tags: [Tournaments]
@@ -4032,6 +4185,80 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /play-groups/{playGroupId}/tournaments:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Play Groups]
+      summary: The members' tournament timeline (members only)
+      description: >
+        Results of the group's current members (their whole history, from
+        before they joined too), grouped by tournament then by month, newest
+        first. A page holds whole months, at least 12 tournaments; `nextBefore`
+        is the month to pass as `avant` for the next page. `palmares` counts
+        wins, top 8s and tournaments per member; `upcoming` lists upcoming
+        Joutes tournaments members registered for.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: jeu, in: query, required: false, schema: { type: string }, description: Game id. }
+        - { name: membre, in: query, required: false, schema: { type: string }, description: Member user id. }
+        - { name: legende, in: query, required: false, schema: { type: string }, description: Legend name. }
+        - { name: top8, in: query, required: false, schema: { type: string, enum: ["1"] } }
+        - { name: avant, in: query, required: false, schema: { type: string, pattern: "^\\d{4}-\\d{2}$" } }
+      responses:
+        "200":
+          description: The timeline page.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  participations: { type: integer }
+                  tournaments: { type: integer }
+                  since: { type: string, example: "2025-03" }
+                  nextBefore: { type: string, example: "2026-09" }
+                  months:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        month: { type: string, example: "2026-11" }
+                        tournaments:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              key: { type: string }
+                              name: { type: string }
+                              date: { type: string, format: date-time }
+                              gameId: { type: string }
+                              place: { type: string }
+                              playerCount: { type: integer }
+                              source: { type: string, enum: [joutes, locator, declared] }
+                              results: { type: array, items: { $ref: "#/components/schemas/TournamentResult" } }
+                  palmares:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        userId: { type: string }
+                        wins: { type: integer }
+                        topEights: { type: integer }
+                        tournaments: { type: integer }
+                  upcoming:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tournamentId: { type: string }
+                        name: { type: string }
+                        date: { type: string, format: date-time }
+                        gameId: { type: string }
+                        place: { type: string }
+                        userIds: { type: array, items: { type: string } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /play-groups/{playGroupId}/decks:
     parameters:
       - { name: playGroupId, in: path, required: true, schema: { type: string } }
@@ -5644,6 +5871,41 @@ components:
       content: { application/json: { schema: { $ref: "#/components/schemas/NestedError" } } }
 
   schemas:
+    TournamentResult:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        gameId: { type: string }
+        source: { type: string, enum: [joutes, locator, declared] }
+        sourceRef: { type: string, example: "locator:1227032#5512" }
+        tournamentRef: { type: string, description: "`joutes:<id>` or `locator:<id>`; absent for a declared tournament, grouped by name and day." }
+        name: { type: string }
+        date: { type: string, format: date-time }
+        place: { type: string }
+        playerCount: { type: integer }
+        placement: { type: integer, description: 1 = winner. Absent = no final standing. }
+        topCut: { type: integer, description: Size of the top cut the player reached. }
+        record:
+          type: object
+          properties: { wins: { type: integer }, losses: { type: integer }, draws: { type: integer } }
+        deckId: { type: string }
+        deckVersion: { type: integer }
+        legendCardId: { type: string }
+        legendName: { type: string }
+        domains: { type: array, items: { type: string } }
+        visibility: { type: string, enum: [groups, public] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    LocatorPlayer:
+      type: object
+      properties:
+        registrationId: { type: integer }
+        name: { type: string }
+        place: { type: integer }
+        record: { type: string, example: "6-2-1" }
+        legend: { type: string }
+        claimedBy: { type: string, enum: [me, other] }
     DeckComment:
       type: object
       properties:

@@ -16,6 +16,7 @@ import ContentEditorView from "./contents/ContentEditorView.tsx";
 import ListsView from "./lists/ListsView.tsx";
 import DecksView, { type DeckSearchParams } from "./decks/DecksView.tsx";
 import DeckInGroupView from "./decks/DeckInGroupView.tsx";
+import TournamentsView from "./tournaments/TournamentsView.tsx";
 import MembersView from "./members/MembersView.tsx";
 import SettingsView from "./settings/SettingsView.tsx";
 import ShowcaseView from "./showcase/ShowcaseView.tsx";
@@ -108,6 +109,8 @@ export async function generateMetadata({
       return { title: t("contents.metadataTitle", { group: group.name }) };
     case "decks":
       return { title: t("decks.metadataTitle", { group: group.name }) };
+    case "tournaments":
+      return { title: t("tournaments.metadataTitle", { group: group.name }) };
     case "lists":
       return { title: t("lists.metadataTitle", { group: group.name }) };
     case "members":
@@ -209,6 +212,8 @@ function PlayGroupViewContent({
       ) : (
         <DecksView playGroupId={playGroupId} searchParams={search} />
       );
+    case "tournaments":
+      return <TournamentsView playGroupId={playGroupId} searchParams={search} />;
     case "lists":
       return <ListsView playGroupId={playGroupId} />;
     case "members":

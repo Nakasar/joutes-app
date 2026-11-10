@@ -4,6 +4,8 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import { customAlphabet } from "nanoid";
 import db from "@/lib/mongodb";
+import { deleteJoutesResults } from "@/lib/db/tournament-results";
+import { joutesSourceRef } from "@/lib/tournaments/results";
 import { ClientSession, ObjectId, WithId } from "mongodb";
 import {
   DEFAULT_FIXED_SCORING,
@@ -1279,6 +1281,8 @@ export async function deleteTournament(tournamentId: string): Promise<void> {
     db.collection(ACTIVITY).deleteMany({ tournamentId: _id }),
     db.collection(PUZZLE_RESULTS).deleteMany({ tournamentId: _id }),
     db.collection(PUZZLE_SEATS).deleteMany({ tournamentId: _id }),
+    // Les résultats des joueurs (timeline des groupes) n'ont plus de tournoi.
+    deleteJoutesResults(joutesSourceRef(tournamentId)),
   ]);
 }
 

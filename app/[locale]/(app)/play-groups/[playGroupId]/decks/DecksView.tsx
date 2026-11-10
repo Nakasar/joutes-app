@@ -1,11 +1,12 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { DateTime } from "luxon";
-import { ChevronLeft, ChevronRight, Info, Layers, MessageSquare, Pin } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, Layers, MessageSquare, Pin, Trophy } from "lucide-react";
 
 import { Link } from "@/i18n/navigation.ts";
 import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
 import { countDeckCommentsInSpace, listLatestCommentsInSpace, type DeckCommentCounts } from "@/lib/db/deck-comments.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
+import { listResultsForDecks } from "@/lib/db/tournament-results.ts";
 import { groupSpace } from "@/lib/decks/comments.ts";
 import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import { domainColor } from "@/lib/meta/domains.ts";
@@ -18,6 +19,7 @@ import {
   readGroupDeckFilters,
   type GroupDeckFilters,
 } from "@/lib/play-groups/decks.ts";
+import { bestRecentResult } from "@/lib/tournaments/results.ts";
 import { cn } from "@/lib/utils.ts";
 
 import { memberName, readGroupMembers, requirePlayGroupMember, type PlayGroupMemberProfile } from "../group-data.ts";
@@ -106,6 +108,23 @@ export default async function DecksView({
   // Les filtres ne portent pas la page : en changer ramène à la première.
   const { items: pageEntries, page, pageCount } = pageGroupDecks(entries, searchParams.page);
   const filtered = Object.values(params).some(Boolean);
+
+  // Le meilleur résultat récent de chaque deck de la page, lié par son auteur.
+  const deckResults = await listResultsForDecks(pageEntries.map((entry) => entry.deck.id));
+  const bestResult = new Map<string, string>();
+  for (const entry of pageEntries) {
+    const best = bestRecentResult(
+      deckResults.filter((result) => result.deckId === entry.deck.id && result.userId === entry.link.ownerId),
+    );
+    if (best) {
+      bestResult.set(
+        entry.deck.id,
+        best.placement
+          ? t("bestResult", { place: best.placement, tournament: best.name })
+          : t("bestResultUnranked", { tournament: best.name }),
+      );
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -208,6 +227,7 @@ export default async function DecksView({
                 canPin={canPinGroupDeck(viewer.role)}
                 locale={locale}
                 comments={commentCounts.get(entry.deck.id)}
+                bestResult={bestResult.get(entry.deck.id)}
                 labels={{
                   you: t("you"),
                   pinned: t("pinned"),
@@ -309,6 +329,7 @@ function GroupDeckCard({
   canPin,
   locale,
   comments,
+  bestResult,
   labels,
 }: {
   entry: GroupLibraryEntry;
@@ -320,6 +341,7 @@ function GroupDeckCard({
   canPin: boolean;
   locale: string;
   comments?: DeckCommentCounts;
+  bestResult?: string;
   labels: {
     you: string;
     pinned: string;
@@ -394,6 +416,16 @@ function GroupDeckCard({
             </Link>
           )}
         </div>
+
+        {bestResult && (
+          <Link
+            href={viewHref(playGroupId, "tournaments", { filters: { membre: link.ownerId } })}
+            className="inline-flex min-w-0 items-center gap-1.5 self-start text-xs font-medium text-[var(--group-accent-text)] hover:underline"
+          >
+            <Trophy className="size-3.5 shrink-0" aria-hidden />
+            <span className="truncate">{bestResult}</span>
+          </Link>
+        )}
 
         <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-1">
           {(deck.domains ?? []).map((domain) => (

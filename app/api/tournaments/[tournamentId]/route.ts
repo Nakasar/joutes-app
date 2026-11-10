@@ -17,6 +17,7 @@ import {
 } from "@/lib/db/tournaments";
 import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../utils";
 import { notifyTournamentStatus } from "@/lib/tournaments/notifications";
+import { syncJoutesTournamentResultsSafely } from "@/lib/tournaments/sync-results";
 import { isLeagueOrganizer } from "@/lib/db/leagues";
 import {
   LeagueLinkError,
@@ -129,6 +130,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       } catch (error) {
         console.error("Notification de statut de tournoi échouée", error);
       }
+    }
+
+    // La timeline des groupes : écrite à la clôture, retirée si le tournoi est rouvert.
+    if (updated && (updated.status === "completed" || tournament.status === "completed")) {
+      await syncJoutesTournamentResultsSafely(tournamentId);
     }
 
     // Contrairement à la notification, la contribution à la ligue n'est pas

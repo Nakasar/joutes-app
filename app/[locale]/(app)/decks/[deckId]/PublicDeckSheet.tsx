@@ -9,6 +9,7 @@ import { DeckVisibilityBadge, DeckSizeLabel } from "@/components/decks/DeckBadge
 import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
 import { DeckZoneCards } from "@/components/decks/DeckZoneCards.tsx";
 import { BuyDeckOnCardnexusButton, BuyDeckOnCardnexusHint } from "@/components/decks/BuyDeckOnCardnexusButton.tsx";
+import { DeckTournamentResults, type DeckResultView } from "@/components/decks/DeckTournamentResults.tsx";
 import { SheetCard } from "./DeckSheetSections.tsx";
 import type { DeckCardInfo } from "@/lib/decks/contents.ts";
 import type { DeckCardnexusOrder } from "@/lib/decks/cardnexus-order.ts";
@@ -33,6 +34,7 @@ export function PublicDeckSheet({
   isAuthenticated,
   ownedByCardId,
   cardnexusOrder,
+  results = [],
 }: {
   deck: Deck;
   gameName?: string;
@@ -42,6 +44,8 @@ export function PublicDeckSheet({
   isAuthenticated: boolean;
   ownedByCardId?: Record<string, number>;
   cardnexusOrder: DeckCardnexusOrder;
+  /** Les résultats liés au deck que le lecteur peut voir. */
+  results?: DeckResultView[];
 }) {
   const cardsById = new Map(catalog.map((card) => [card.id, card]));
   const cover = resolveDeckCover(deck, cardsById);
@@ -171,14 +175,7 @@ export function PublicDeckSheet({
           className="gap-3 p-4"
           meta={<Trophy className="size-3.5 text-muted-foreground" aria-hidden />}
         >
-          {/*
-            Les résultats se rattacheront aux tournois du site quand un deck
-            pourra y être inscrit. D'ici là, mieux vaut une phrase honnête
-            qu'un palmarès inventé.
-          */}
-          <p className="text-[13px] text-muted-foreground">
-            Aucun résultat enregistré pour cette liste.
-          </p>
+          <DeckTournamentResults results={results} />
         </SheetCard>
       </aside>
     </div>

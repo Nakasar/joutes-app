@@ -286,6 +286,42 @@ export const USER_INDEXES: IndexDefinition[] = [
     options: { unique: true },
     why: "Le dernier passage d'un lecteur sur un fil, pour les pastilles « nouveaux »",
   },
+  {
+    collection: "tournamentResults",
+    keys: { userId: 1, sourceRef: 1 },
+    options: { unique: true },
+    why: "Un résultat par joueur et par tournoi ; la réécriture d'un tournoi Joutes s'y appuie",
+  },
+  {
+    collection: "tournamentResults",
+    keys: { userId: 1, date: -1 },
+    why: "La timeline d'un groupe : les résultats de ses membres, du plus récent au plus ancien",
+  },
+  {
+    // Un joueur du locator ne peut être reconnu que par un seul compte.
+    collection: "tournamentResults",
+    keys: { sourceRef: 1 },
+    options: { unique: true, partialFilterExpression: { source: "locator" } },
+    why: "« C'est moi » : une inscription du locator, un seul compte",
+  },
+  {
+    collection: "tournamentResults",
+    keys: { tournamentRef: 1, userId: 1 },
+    options: { sparse: true },
+    why: "Les joueurs d'un tournoi : sa réécriture, et pas deux résultats d'un joueur au même tournoi",
+  },
+  {
+    collection: "tournamentResults",
+    keys: { deckId: 1, date: -1 },
+    options: { sparse: true },
+    why: "Les résultats d'un deck : sa fiche et sa carte dans la bibliothèque",
+  },
+  {
+    collection: "tournamentResults",
+    keys: { id: 1 },
+    options: { unique: true },
+    why: "Modifier ou supprimer un résultat",
+  },
 
   {
     collection: "stream_links",
