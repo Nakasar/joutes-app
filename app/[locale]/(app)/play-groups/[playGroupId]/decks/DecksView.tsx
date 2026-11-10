@@ -1,6 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { DateTime } from "luxon";
-import { Info, Layers, MessageSquare, Pin } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, Layers, MessageSquare, Pin } from "lucide-react";
 
 import { Link } from "@/i18n/navigation.ts";
 import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
@@ -14,6 +14,7 @@ import {
   canPinGroupDeck,
   canRemoveGroupDeck,
   filterGroupDecks,
+  pageGroupDecks,
   readGroupDeckFilters,
   type GroupDeckFilters,
 } from "@/lib/play-groups/decks.ts";
@@ -102,6 +103,8 @@ export default async function DecksView({
   const domains = [...new Set(inGame.flatMap((entry) => entry.deck.domains ?? []))];
 
   const entries = filterGroupDecks(library, filters);
+  // Les filtres ne portent pas la page : en changer ramène à la première.
+  const { items: pageEntries, page, pageCount } = pageGroupDecks(entries, searchParams.page);
   const filtered = Object.values(params).some(Boolean);
 
   return (
@@ -193,7 +196,7 @@ export default async function DecksView({
               latest.length > 0 ? "2xl:grid-cols-3" : "xl:grid-cols-3",
             )}
           >
-            {entries.map((entry) => (
+            {pageEntries.map((entry) => (
               <GroupDeckCard
                 key={entry.link.deckId}
                 entry={entry}
@@ -215,6 +218,20 @@ export default async function DecksView({
                 }}
               />
             ))}
+            {pageCount > 1 && (
+              <nav
+                aria-label={t("pagination")}
+                className="col-span-full flex flex-wrap items-center justify-center gap-3 pt-2 text-sm"
+              >
+                <PageLink href={page > 1 ? hrefWith({ page: String(page - 1) }) : undefined} label={t("previous")}>
+                  <ChevronLeft className="size-4" aria-hidden />
+                </PageLink>
+                <span className="text-muted-foreground">{t("page", { page, count: pageCount })}</span>
+                <PageLink href={page < pageCount ? hrefWith({ page: String(page + 1) }) : undefined} label={t("next")}>
+                  <ChevronRight className="size-4" aria-hidden />
+                </PageLink>
+              </nav>
+            )}
           </div>
           {latest.length > 0 && (
             <aside className="flex flex-col gap-3 self-start rounded-xl border bg-card/60 p-4">
@@ -415,5 +432,22 @@ function MemberDot({ name, avatar }: { name: string; avatar?: string }) {
     >
       {name.slice(0, 2).toUpperCase()}
     </span>
+  );
+}
+
+function PageLink({ href, label, children }: { href?: string; label: string; children: React.ReactNode }) {
+  const className = "inline-flex size-9 items-center justify-center rounded-full border";
+  if (!href) {
+    return (
+      <span aria-disabled className={cn(className, "opacity-40")} title={label}>
+        {children}
+      </span>
+    );
+  }
+
+  return (
+    <Link href={href} aria-label={label} title={label} className={cn(className, "hover:bg-accent")}>
+      {children}
+    </Link>
   );
 }

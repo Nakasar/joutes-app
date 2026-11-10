@@ -3112,6 +3112,10 @@
         "error": "This content could not be saved."
       },
       "decks": {
+        "pagination": "Library pages",
+        "previous": "Previous page",
+        "next": "Next page",
+        "page": "Page {page} of {count}",
         "comments": "{count, plural, one {# comment} other {# comments}}",
         "unread": "{count} new",
         "latestComments": "Latest comments",

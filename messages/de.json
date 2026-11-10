@@ -3934,6 +3934,10 @@
         "error": "Dieser Inhalt konnte nicht gespeichert werden."
       },
       "decks": {
+        "pagination": "Seiten der Bibliothek",
+        "previous": "Vorherige Seite",
+        "next": "Nächste Seite",
+        "page": "Seite {page} von {count}",
         "comments": "{count, plural, one {# Kommentar} other {# Kommentare}}",
         "unread": "{count} neu",
         "latestComments": "Neueste Kommentare",

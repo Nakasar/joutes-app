@@ -3112,6 +3112,10 @@
         "error": "Impossibile salvare questo contenuto."
       },
       "decks": {
+        "pagination": "Pagine della libreria",
+        "previous": "Pagina precedente",
+        "next": "Pagina successiva",
+        "page": "Pagina {page} di {count}",
         "comments": "{count, plural, one {# commento} other {# commenti}}",
         "unread": "{count, plural, one {# nuovo} other {# nuovi}}",
         "latestComments": "Ultimi commenti",

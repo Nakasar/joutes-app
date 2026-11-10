@@ -3112,6 +3112,10 @@
         "error": "Impossible d'enregistrer ce contenu."
       },
       "decks": {
+        "pagination": "Pages de la bibliothèque",
+        "previous": "Page précédente",
+        "next": "Page suivante",
+        "page": "Page {page} sur {count}",
         "comments": "{count, plural, one {# commentaire} other {# commentaires}}",
         "unread": "{count, plural, one {# nouveau} other {# nouveaux}}",
         "latestComments": "Derniers commentaires",
