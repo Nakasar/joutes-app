@@ -1,16 +1,15 @@
 import type { McpServer, ServerContext } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
-import { postComment, readCommentThread } from "@/lib/decks/comment-service";
+import { openWritableSpace, postComment, readCommentThread } from "@/lib/decks/comment-service";
 import { deckCardIds } from "@/lib/decks/contents";
-import { getDeckById } from "@/lib/db/decks";
 import { getDeckCardInfos } from "@/lib/db/deck-cards";
 import { readAllGames } from "@/lib/db/games-cached";
 import { getPlayGroupByIdAndUser } from "@/lib/db/play-groups";
 import { getUsersByIds } from "@/lib/db/users";
 import { linkLine, mcpLinks } from "@/lib/mcp/links";
-import { normalizeName, pickByName } from "@/lib/mcp/meta";
 import {
+    checkPeriod,
     commentErrorText,
     describeCommentThread,
     describeGroupDecks,
@@ -18,15 +17,22 @@ import {
     describeGroupTournaments,
     describeMyResults,
     describeResult,
+    matchDeckCards,
+    normalizeSetCode,
+    pageMyResults,
+    parseBefore,
+    pickGame,
+    pickMember,
     resultErrorText,
+    type Picked,
 } from "@/lib/mcp/play-group-game";
 import { readGroupDeckLibrary } from "@/lib/play-groups/deck-library";
-import { filterGroupDecks } from "@/lib/play-groups/decks";
+import { filterGroupDecks, pageGroupDecks } from "@/lib/play-groups/decks";
 import { readGroupMeta } from "@/lib/play-groups/meta-data";
 import { groupPalmares } from "@/lib/play-groups/tournaments";
 import { declareResult, listMyResults, readGroupTournaments } from "@/lib/tournaments/result-service";
 import { parseRecord } from "@/lib/tournaments/results";
-import type { Game } from "@/lib/types/Game";
+import type { Deck } from "@/lib/types/Deck";
 import type { PlayGroup } from "@/lib/types/PlayGroup";
 import { registerJoutesTool, userIdFrom, type ToolResult } from "./tool-policy";
 import { errorResult, textResult, withToolLogging } from "./tools";
@@ -57,24 +63,9 @@ async function openGroup(
     return { group, members, nameOf };
 }
 
-/** Un membre par son nom, « moi » compris. */
-function pickMember(members: Member[], query: string, userId: string): { userId: string } | { error: ToolResult } {
-    if (["moi", "me", "myself", "vous"].includes(normalizeName(query))) return { userId };
-    const match = pickByName(members, (member) => member.name, query);
-    if ("found" in match) return { userId: match.found.userId };
-    if ("ambiguous" in match) {
-        return { error: errorResult(`Plusieurs membres répondent à « ${query} » : ${match.ambiguous.map((m) => m.name).join(", ")}.`) };
-    }
-    return { error: errorResult(`Aucun membre « ${query} ». Membres : ${members.map((m) => m.name).join(", ")}.`) };
-}
-
-/** Un jeu par son nom, son slug ou son identifiant. */
-function pickGame(games: Game[], query: string): { game: Game } | { error: ToolResult } {
-    const exact = games.find((game) => game.id === query || game.slug === query);
-    if (exact) return { game: exact };
-    const match = pickByName(games, (game) => game.name, query);
-    if ("found" in match) return { game: match.found };
-    return { error: errorResult(`Jeu « ${query} » introuvable.`) };
+/** Le choix, ou l'erreur à rendre à l'assistant. */
+function asTool<T extends object>(value: Picked<T>): T | { error: ToolResult } {
+    return "error" in value ? { error: errorResult(value.error as string) } : value;
 }
 
 // ---------------------------------------------------------------------------
@@ -82,7 +73,7 @@ function pickGame(games: Game[], query: string): { game: Game } | { error: ToolR
 // ---------------------------------------------------------------------------
 
 async function handleListGroupDecks(
-    args: { playGroupId: string; gameName?: string; memberName?: string; query?: string },
+    args: { playGroupId: string; gameName?: string; memberName?: string; query?: string; page?: number },
     extra: ServerContext,
 ): Promise<ToolResult> {
     const userId = userIdFrom(extra)!;
@@ -92,12 +83,12 @@ async function handleListGroupDecks(
     const games = await readAllGames();
     const filters: { gameId?: string; ownerId?: string; query?: string } = {};
     if (args.gameName) {
-        const picked = pickGame(games, args.gameName);
+        const picked = asTool(pickGame(games, args.gameName));
         if ("error" in picked) return picked.error;
         filters.gameId = picked.game.id;
     }
     if (args.memberName) {
-        const picked = pickMember(opened.members, args.memberName, userId);
+        const picked = asTool(pickMember(opened.members, args.memberName, userId));
         if ("error" in picked) return picked.error;
         filters.ownerId = picked.userId;
     }
@@ -105,8 +96,9 @@ async function handleListGroupDecks(
 
     const library = await readGroupDeckLibrary(opened.group.id);
     const entries = filterGroupDecks(library, filters);
+    const shown = pageGroupDecks(entries, args.page ? String(args.page) : undefined);
     const gameName = new Map(games.map((game) => [game.id, game.name]));
-    const lines = entries.map(({ link, deck }) => ({
+    const lines = shown.items.map(({ link, deck }) => ({
         deckId: deck.id,
         name: deck.name,
         legendName: deck.legendName,
@@ -120,7 +112,11 @@ async function handleListGroupDecks(
     }));
 
     return textResult(
-        describeGroupDecks(opened.group.name, lines, library.length) +
+        describeGroupDecks(opened.group.name, lines, library.length, {
+            matched: entries.length,
+            page: shown.page,
+            pageCount: shown.pageCount,
+        }) +
             linkLine(`${mcpLinks.playGroup(opened.group.id)}?view=decks`),
     );
 }
@@ -143,7 +139,7 @@ async function spaceFor(
 function deckCommentsLink(deckId: string, groupId?: string): string {
     return groupId
         ? `${mcpLinks.playGroup(groupId)}?view=decks&deck=${encodeURIComponent(deckId)}`
-        : `${mcpLinks.deck(deckId)}?tab=comments`;
+        : `${mcpLinks.deck(deckId)}?tab=comments#comments`;
 }
 
 async function handleGetDeckComments(
@@ -156,38 +152,18 @@ async function handleGetDeckComments(
 
     const read = await readCommentThread(args.deckId, space.space, userId);
     if (!read.ok) return errorResult(commentErrorText(read.error));
-    const deck = await getDeckById(args.deckId);
 
     return textResult(
-        describeCommentThread(read.thread, deck?.name ?? "Deck", space.label) + linkLine(deckCommentsLink(args.deckId, space.groupId)),
+        describeCommentThread(read.thread, space.label) + linkLine(deckCommentsLink(args.deckId, space.groupId)),
     );
 }
 
-/**
- * Les cartes à lier, données par nom ou par identifiant, cherchées parmi
- * celles du deck seulement : « Jinx » désigne la Jinx du deck.
- */
-async function resolveDeckCards(deckId: string, wanted: string[]): Promise<{ cardIds: string[] } | { error: ToolResult }> {
+/** Les cartes à lier, parmi celles du deck, déjà ouvert : l'accès est vérifié. */
+async function resolveDeckCards(deck: Deck, wanted: string[]): Promise<{ cardIds: string[] } | { error: ToolResult }> {
     if (wanted.length === 0) return { cardIds: [] };
-    const deck = await getDeckById(deckId);
-    if (!deck) return { error: errorResult(commentErrorText("NOT_FOUND")) };
-
     const ids = deckCardIds(deck.cards);
-    const infos = await getDeckCardInfos(deck.gameId, ids);
-    const cards = ids.map((id) => ({ id, name: infos.find((info) => info.id === id)?.name ?? id }));
-    const cardIds: string[] = [];
-    for (const query of wanted) {
-        const byId = cards.find((card) => card.id === query);
-        const match = byId ? { found: byId } : pickByName(cards, (card) => card.name, query);
-        if ("found" in match) {
-            if (!cardIds.includes(match.found.id)) cardIds.push(match.found.id);
-        } else if ("ambiguous" in match) {
-            return { error: errorResult(`« ${query} » désigne plusieurs cartes du deck : ${match.ambiguous.map((c) => c.name).join(", ")}.`) };
-        } else {
-            return { error: errorResult(`Aucune carte « ${query} » dans ce deck.`) };
-        }
-    }
-    return { cardIds };
+    const infos = new Map((await getDeckCardInfos(deck.gameId, ids)).map((info) => [info.id, info.name]));
+    return asTool(matchDeckCards(ids.map((id) => ({ id, name: infos.get(id) ?? id })), wanted));
 }
 
 async function handleAddDeckComment(
@@ -198,11 +174,11 @@ async function handleAddDeckComment(
     const space = await spaceFor(args.playGroupId, userId);
     if ("error" in space) return space.error;
 
-    // Lire d'abord : l'accès au fil se vérifie avant de révéler quoi que ce soit des cartes du deck.
-    const read = await readCommentThread(args.deckId, space.space, userId);
-    if (!read.ok) return errorResult(commentErrorText(read.error));
+    // L'accès au fil se vérifie avant de révéler quoi que ce soit des cartes du deck.
+    const opened = await openWritableSpace(args.deckId, space.space, userId);
+    if (!opened.ok) return errorResult(commentErrorText(opened.error));
 
-    const resolved = await resolveDeckCards(args.deckId, args.cards ?? []);
+    const resolved = await resolveDeckCards(opened.deck, args.cards ?? []);
     if ("error" in resolved) return resolved.error;
 
     const posted = await postComment(args.deckId, space.space, userId, {
@@ -225,7 +201,7 @@ async function handleAddDeckComment(
 // Résultats de tournoi
 // ---------------------------------------------------------------------------
 
-async function handleListMyResults(args: { gameName?: string }, extra: ServerContext): Promise<ToolResult> {
+async function handleListMyResults(args: { gameName?: string; page?: number }, extra: ServerContext): Promise<ToolResult> {
     const userId = userIdFrom(extra)!;
     const listed = await listMyResults(userId);
     if (!listed.ok) return errorResult(resultErrorText(listed.error));
@@ -233,13 +209,20 @@ async function handleListMyResults(args: { gameName?: string }, extra: ServerCon
     const games = await readAllGames();
     let results = listed.results;
     if (args.gameName) {
-        const picked = pickGame(games, args.gameName);
+        const picked = asTool(pickGame(games, args.gameName));
         if ("error" in picked) return picked.error;
         results = results.filter((result) => result.gameId === picked.game.id);
     }
     const gameName = new Map(games.map((game) => [game.id, game.name]));
+    const page = pageMyResults(results, args.page);
 
-    return textResult(describeMyResults(results, (gameId) => (gameId ? gameName.get(gameId) : undefined)));
+    return textResult(
+        describeMyResults(page.items, (gameId) => (gameId ? gameName.get(gameId) : undefined), {
+            total: results.length,
+            page: page.page,
+            pageCount: page.pageCount,
+        }),
+    );
 }
 
 async function handleDeclareResult(
@@ -264,7 +247,7 @@ async function handleDeclareResult(
 
     let gameId: string | undefined;
     if (args.gameName) {
-        const picked = pickGame(games, args.gameName);
+        const picked = asTool(pickGame(games, args.gameName));
         if ("error" in picked) return picked.error;
         gameId = picked.game.id;
     } else if (!args.joutesTournamentId) {
@@ -311,18 +294,19 @@ async function handleGroupTournaments(
 
     const filters: { gameId?: string; userId?: string; before?: string } = {};
     if (args.gameName) {
-        const picked = pickGame(await readAllGames(), args.gameName);
+        const picked = asTool(pickGame(await readAllGames(), args.gameName));
         if ("error" in picked) return picked.error;
         filters.gameId = picked.game.id;
     }
     if (args.memberName) {
-        const picked = pickMember(opened.members, args.memberName, userId);
+        const picked = asTool(pickMember(opened.members, args.memberName, userId));
         if ("error" in picked) return picked.error;
         filters.userId = picked.userId;
     }
     if (args.before) {
-        if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(args.before)) return errorResult("before s'écrit AAAA-MM, par exemple 2026-09.");
-        filters.before = args.before;
+        const month = asTool(parseBefore(args.before));
+        if ("error" in month) return month.error;
+        filters.before = month.before;
     }
 
     const memberIds = opened.group.members.map((member) => member.userId);
@@ -345,18 +329,22 @@ async function handleGroupMeta(
 
     let gameId: string | undefined;
     if (args.gameName) {
-        const picked = pickGame(await readAllGames(), args.gameName);
+        const picked = asTool(pickGame(await readAllGames(), args.gameName));
         if ("error" in picked) return picked.error;
         gameId = picked.game.id;
     }
     let memberId: string | undefined;
     if (args.memberName) {
-        const picked = pickMember(opened.members, args.memberName, userId);
+        const picked = asTool(pickMember(opened.members, args.memberName, userId));
         if ("error" in picked) return picked.error;
         memberId = picked.userId;
     }
-    const ext = args.setCode?.trim();
-    if (ext && !/^[A-Za-z0-9_-]{1,24}$/.test(ext)) return errorResult("setCode : un code d'extension (ex. UNL) ou « tout ».");
+    let ext: string | undefined;
+    if (args.setCode?.trim()) {
+        const set = asTool(normalizeSetCode(args.setCode));
+        if ("error" in set) return set.error;
+        ext = set.ext;
+    }
 
     const memberIds = opened.group.members.map((member) => member.userId);
     const page = await readGroupMeta(opened.group.id, memberIds, {
@@ -369,6 +357,8 @@ async function handleGroupMeta(
     if (gameId && page.game?.id !== gameId) {
         return errorResult(`Aucun résultat des membres sur ce jeu. Jeux joués : ${page.games.map((entry) => entry.game.name).join(", ") || "aucun"}.`);
     }
+    const unknownSet = ext && page.game ? checkPeriod(ext, page) : undefined;
+    if (unknownSet) return errorResult(unknownSet);
 
     return textResult(
         describeGroupMeta(opened.group.name, page, opened.nameOf) + linkLine(`${mcpLinks.playGroup(opened.group.id)}?view=meta`),
@@ -384,8 +374,9 @@ export function registerPlayGroupGameTools(server: McpServer) {
         inputSchema: {
             playGroupId: z.string().describe("Identifiant du groupe (list_play_groups)"),
             gameName: z.string().optional(),
-            memberName: z.string().optional().describe("Nom d'un membre, ou « moi »"),
+            memberName: z.string().optional().describe("Nom d'un membre, son identifiant, ou « moi »"),
             query: z.string().optional(),
+            page: z.number().int().min(1).optional().describe("Page de 24 decks, 1 par défaut"),
         },
     }, withToolLogging("list_play_group_decks", handleListGroupDecks));
     registerJoutesTool(server, "get_deck_comments", {
@@ -416,9 +407,10 @@ export function registerPlayGroupGameTools(server: McpServer) {
         title: "List my tournament results",
         description:
             "Mes résultats de tournoi, toutes sources : tournois Joutes, joueurs du locator reconnus, résultats déclarés. " +
-            "Classement, bilan, légende, deck lié et visibilité.",
+            "Classement, bilan, légende, deck lié et visibilité. 30 par page, les plus récents d'abord.",
         inputSchema: {
             gameName: z.string().optional(),
+            page: z.number().int().min(1).optional().describe("Page de 30 résultats, 1 par défaut"),
         },
     }, withToolLogging("list_my_tournament_results", handleListMyResults));
     registerJoutesTool(server, "declare_tournament_result", {

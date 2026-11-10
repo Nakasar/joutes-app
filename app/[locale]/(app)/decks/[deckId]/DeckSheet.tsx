@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { DateTime } from "luxon";
 import { ArrowLeft, Hammer, MessageSquare, Share2, Star, Trophy } from "lucide-react";
 import { toast } from "sonner";
@@ -40,6 +41,11 @@ const TABS: { key: SheetTab; label: string }[] = [
   { key: "cards", label: "Cartes" },
   { key: "comments", label: "Commentaires" },
 ];
+
+/** L'onglet ouvert à l'arrivée : `?tab=comments` (lien de l'assistant, d'une notification) ouvre les commentaires. */
+function initialTab(value: string | null): SheetTab {
+  return TABS.find((entry) => entry.key === value)?.key ?? "description";
+}
 
 /** Les commentaires de la fiche : l'espace personnel, et le compte de chaque groupe où le deck est partagé. */
 export type DeckSheetComments = {
@@ -88,7 +94,8 @@ export function DeckSheet({
   const [favorited, setFavorited] = useState(isFavorited);
   const [favoritesCount, setFavoritesCount] = useState(deck.favoritesCount ?? 0);
   const [shareOpen, setShareOpen] = useState(false);
-  const [tab, setTab] = useState<SheetTab>("description");
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState<SheetTab>(() => initialTab(searchParams.get("tab")));
 
   const cardsById = useMemo(() => new Map(catalog.map((card) => [card.id, card])), [catalog]);
   // Le catalogue du deck est déjà là : la fiche montre donc l'illustration à
@@ -361,7 +368,8 @@ export function DeckSheet({
           {cardsCard}
           {guideCard}
           {matchupsCard}
-          {commentsCard}
+          {/* L'ancre de `?tab=comments#comments` sur grand écran, où tout est affiché. */}
+          {commentsCard && <div id="comments" className="scroll-mt-20">{commentsCard}</div>}
         </div>
 
         <aside className="sticky top-4 flex flex-col gap-3">

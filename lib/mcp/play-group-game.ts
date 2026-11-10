@@ -15,7 +15,7 @@ import type { GroupMetaPage } from "@/lib/play-groups/meta-data";
 import type { MemberPalmares } from "@/lib/play-groups/tournaments";
 import { formatRecord } from "@/lib/tournaments/results";
 import type { TournamentResult } from "@/lib/types/TournamentResult";
-import { day, percent, plural, points, rate } from "./meta";
+import { day, matchByName, normalizeName, percent, pickByName, plural, points, rate } from "./meta";
 
 /** « 1er », « 3e ». */
 export function placementLabel(placement: number): string {
@@ -64,6 +64,100 @@ export function resultErrorText(error: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Ce que l'assistant désigne par un nom
+// ---------------------------------------------------------------------------
+
+export type Picked<T> = T | { error: string };
+
+const SELF_NAMES = ["moi", "me", "myself", "vous"];
+
+/**
+ * Un membre par son nom, son identifiant ou « moi ». Deux membres du même nom
+ * sont deux personnes : on ne choisit pas pour l'assistant, on lui donne de
+ * quoi les distinguer.
+ */
+export function pickMember(
+    members: { userId: string; name: string }[],
+    query: string,
+    userId: string,
+): Picked<{ userId: string }> {
+    if (SELF_NAMES.includes(normalizeName(query))) return { userId };
+    const byId = members.find((member) => member.userId === query.trim());
+    if (byId) return { userId: byId.userId };
+
+    const found = matchByName(members, (member) => member.name, query);
+    const people = [...new Map(found.map((member) => [member.userId, member])).values()];
+    if (people.length === 1) return { userId: people[0].userId };
+    if (people.length > 1) {
+        return {
+            error:
+                `Plusieurs membres répondent à « ${query} » : ${people.map((m) => `${m.name} (id : ${m.userId})`).join(", ")}. ` +
+                "Redonnez l'identifiant du bon membre.",
+        };
+    }
+    return { error: `Aucun membre « ${query} ». Membres : ${members.map((m) => m.name).join(", ")}.` };
+}
+
+/** Un jeu par son nom, son slug ou son identifiant. */
+export function pickGame<G extends { id: string; slug?: string; name: string }>(games: G[], query: string): Picked<{ game: G }> {
+    const exact = games.find((game) => game.id === query || game.slug === query);
+    if (exact) return { game: exact };
+    const match = pickByName(games, (game) => game.name, query);
+    if ("found" in match) return { game: match.found };
+    if ("ambiguous" in match) {
+        return { error: `Plusieurs jeux répondent à « ${query} » : ${match.ambiguous.map((game) => game.name).join(", ")}. Précisez lequel.` };
+    }
+    return { error: `Jeu « ${query} » introuvable (list_games donne les noms).` };
+}
+
+/**
+ * Les cartes à lier, données par nom ou par identifiant, cherchées parmi
+ * celles du deck seulement : « Jinx » désigne la Jinx du deck.
+ */
+export function matchDeckCards(cards: { id: string; name: string }[], wanted: string[]): Picked<{ cardIds: string[] }> {
+    const cardIds: string[] = [];
+    for (const query of wanted) {
+        const byId = cards.find((card) => card.id === query);
+        const match = byId ? { found: byId } : pickByName(cards, (card) => card.name, query);
+        if ("found" in match) {
+            if (!cardIds.includes(match.found.id)) cardIds.push(match.found.id);
+        } else if ("ambiguous" in match) {
+            return { error: `« ${query} » désigne plusieurs cartes du deck : ${match.ambiguous.map((c) => c.name).join(", ")}.` };
+        } else {
+            return { error: `Aucune carte « ${query} » dans ce deck.` };
+        }
+    }
+    return { cardIds };
+}
+
+/** Un mois « AAAA-MM », pour remonter la timeline. */
+export function parseBefore(value: string): Picked<{ before: string }> {
+    const before = value.trim();
+    return /^\d{4}-(0[1-9]|1[0-2])$/.test(before) ? { before } : { error: "before s'écrit AAAA-MM, par exemple 2026-09." };
+}
+
+/**
+ * Le code d'extension tel que la page de méta l'attend : les codes du
+ * catalogue sont en majuscules, et « tout » couvre toute l'histoire.
+ */
+export function normalizeSetCode(value: string): Picked<{ ext: string }> {
+    const raw = value.trim();
+    if (["tout", "all", "toutes", "everything"].includes(normalizeName(raw))) return { ext: "tout" };
+    if (!/^[A-Za-z0-9_-]{1,24}$/.test(raw)) return { error: "setCode : un code d'extension (ex. UNL) ou « tout »." };
+    return { ext: raw.toUpperCase() };
+}
+
+/**
+ * La méta retombe sur l'extension en cours quand le code demandé n'existe pas :
+ * on le dit plutôt que de répondre à une autre question.
+ */
+export function checkPeriod(ext: string, page: Pick<GroupMetaPage, "period" | "periods">): string | undefined {
+    if (ext === "tout" || page.period?.setCode === ext) return undefined;
+    const known = page.periods.map((period) => `${period.setCode} (${period.name})`);
+    return `Extension « ${ext} » inconnue pour ce jeu. Extensions : ${known.join(", ") || "aucune date de sortie réglée"}, ou « tout ».`;
+}
+
+// ---------------------------------------------------------------------------
 // Bibliothèque de decks
 // ---------------------------------------------------------------------------
 
@@ -99,12 +193,25 @@ export function describeGroupDeck(line: GroupDeckLine): string {
     return `- **${line.name}** (deckId: ${line.deckId}) — ${details.join(" · ")}${pin}`;
 }
 
-export function describeGroupDecks(groupName: string, lines: GroupDeckLine[], total: number): string {
+/**
+ * Une page de la bibliothèque. `matched` compte les decks qui répondent aux
+ * filtres, `total` toute la bibliothèque.
+ */
+export function describeGroupDecks(
+    groupName: string,
+    lines: GroupDeckLine[],
+    total: number,
+    paging: { matched: number; page: number; pageCount: number } = { matched: lines.length, page: 1, pageCount: 1 },
+): string {
     if (total === 0) return `Aucun deck partagé dans « ${groupName} ».`;
-    if (lines.length === 0) return `Aucun deck de « ${groupName} » ne répond à ces filtres (${plural(total, "deck")} au total).`;
-    const filtered = lines.length < total ? ` sur ${total}` : "";
+    if (paging.matched === 0) return `Aucun deck de « ${groupName} » ne répond à ces filtres (${plural(total, "deck")} au total).`;
+    const filtered = paging.matched < total ? ` sur ${total}` : "";
+    const pageLine =
+        paging.pageCount > 1
+            ? ` Page ${paging.page}/${paging.pageCount}` + (paging.page < paging.pageCount ? ` : page = ${paging.page + 1} pour la suite.` : ".")
+            : "";
     return (
-        `${plural(lines.length, "deck")}${filtered} dans la bibliothèque de « ${groupName} », épinglés d'abord :\n\n` +
+        `${plural(paging.matched, "deck")}${filtered} dans la bibliothèque de « ${groupName} », épinglés d'abord.${pageLine}\n\n` +
         lines.map(describeGroupDeck).join("\n") +
         "\n\nLe fil de commentaires d'un deck dans ce groupe : get_deck_comments avec le deckId et le playGroupId."
     );
@@ -134,12 +241,15 @@ function describeComment(comment: DeckCommentView, thread: CommentThreadPayload,
     return `${head} :\n${body}${cards}${resolved}`;
 }
 
-export function describeCommentThread(thread: CommentThreadPayload, deckName: string, spaceLabel: string): string {
+export function describeCommentThread(thread: CommentThreadPayload, spaceLabel: string): string {
+    const deckName = thread.deckName;
     const roots = thread.comments;
     if (roots.length === 0) {
         return `Aucun commentaire sur « ${deckName} » (${spaceLabel}). add_deck_comment pour écrire le premier.`;
     }
+    // Un commentaire supprimé ne garde sa place que pour ses réponses : il n'est plus ouvert, et on n'y répond plus.
     const open = roots.filter((comment) => !comment.resolvedAt);
+    const openCount = open.filter((comment) => !comment.deleted).length;
     const resolved = roots.filter((comment) => comment.resolvedAt);
     const block = (comments: DeckCommentView[]) =>
         comments
@@ -149,12 +259,13 @@ export function describeCommentThread(thread: CommentThreadPayload, deckName: st
             .join("\n\n");
 
     return (
-        `« ${deckName} » (v${thread.deckVersion}) — ${spaceLabel} : ${plural(open.length, "commentaire ouvert", "commentaires ouverts")}` +
+        `« ${deckName} » (v${thread.deckVersion}) — ${spaceLabel} : ${plural(openCount, "commentaire ouvert", "commentaires ouverts")}` +
         (resolved.length ? `, ${plural(resolved.length, "résolu")}` : "") +
         ", les plus récents d'abord.\n\n" +
         (open.length ? block(open) : "Rien d'ouvert.") +
         (resolved.length ? `\n\nRésolus :\n\n${block(resolved)}` : "") +
-        "\n\nRépondre : add_deck_comment avec parentId = l'identifiant entre crochets."
+        "\n\nRépondre : add_deck_comment avec parentId = l'identifiant entre crochets d'un commentaire de premier niveau " +
+        "(pas d'une réponse, ni d'un commentaire supprimé)."
     );
 }
 
@@ -188,12 +299,37 @@ export function describeResult(result: TournamentResult, gameName?: string, who?
     return `- ${day(result.date)} — ${who ? `${who} — ` : ""}**${result.name}** : ${details.join(" · ")}`;
 }
 
-export function describeMyResults(results: TournamentResult[], gameNameOf: (gameId?: string) => string | undefined): string {
+export const MY_RESULTS_PAGE_SIZE = 30;
+
+/**
+ * Une page de résultats, les plus récents d'abord. Une page plutôt qu'une date
+ * de départ : deux tournois le même jour ne se perdent pas entre deux pages.
+ */
+export function pageMyResults<R extends Pick<TournamentResult, "date">>(
+    results: R[],
+    page = 1,
+    size = MY_RESULTS_PAGE_SIZE,
+): { items: R[]; page: number; pageCount: number } {
+    const sorted = [...results].sort((a, b) => b.date.localeCompare(a.date));
+    const pageCount = Math.max(1, Math.ceil(sorted.length / size));
+    const shown = Math.min(Math.max(Math.trunc(page) || 1, 1), pageCount);
+    return { items: sorted.slice((shown - 1) * size, shown * size), page: shown, pageCount };
+}
+
+export function describeMyResults(
+    results: TournamentResult[],
+    gameNameOf: (gameId?: string) => string | undefined,
+    paging: { total: number; page: number; pageCount: number } = { total: results.length, page: 1, pageCount: 1 },
+): string {
     if (results.length === 0) {
         return "Aucun résultat de tournoi. declare_tournament_result pour en ajouter un.";
     }
+    const pageLine =
+        paging.pageCount > 1
+            ? ` Page ${paging.page}/${paging.pageCount}` + (paging.page < paging.pageCount ? ` : page = ${paging.page + 1} pour les plus anciens.` : ".")
+            : "";
     return (
-        `${plural(results.length, "résultat")} de tournoi, les plus récents d'abord :\n\n` +
+        `${plural(paging.total, "résultat")} de tournoi, les plus récents d'abord.${pageLine}\n\n` +
         results.map((result) => describeResult(result, gameNameOf(result.gameId))).join("\n")
     );
 }
@@ -284,7 +420,7 @@ export function describeGroupMeta(groupName: string, page: GroupMetaPage, nameOf
 
     const legendLines = legends.slice(0, 10).map((legend) => {
         const details = [
-            `${percent(legend.share)} (${plural(legend.decks, "deck")})`,
+            `${percent(legend.share)} (${plural(legend.decks, "participation")})`,
             legend.metaShare !== undefined ? `${points(legend.share - legend.metaShare)} vs méta` : undefined,
             legend.rate !== undefined ? `${rate(legend.rate)} de victoires` : undefined,
             legend.topCuts ? `${legend.topCuts} top 8` : undefined,
@@ -305,7 +441,7 @@ export function describeGroupMeta(groupName: string, page: GroupMetaPage, nameOf
         const details = [
             plural(row.tournaments, "tournoi"),
             row.best ? `meilleur : ${placementLabel(row.best)}` : undefined,
-            row.rate !== undefined ? rate(row.rate) : undefined,
+            row.rate !== undefined ? `${rate(row.rate)} de victoires` : undefined,
             row.legends.length ? row.legends.slice(0, 3).map((key) => legendName.get(key) ?? key).join(", ") : undefined,
         ].filter(Boolean);
         return `- ${nameOf(row.userId)} : ${details.join(" · ")}`;
