@@ -19,6 +19,13 @@ import type { DeckMeta } from "@/lib/types/Deck";
  */
 const UNCOUNTED_ZONES = new Set(["legend", "runes", "sideboard"]);
 
+/** Les cartes d'un deck qui se comptent dans la méta : ni la légende, ni les runes, ni la réserve. */
+export function countedCards(cards: DeckCards | undefined): MetaSampleDeck["cards"] {
+  return Object.entries(cards ?? {})
+    .filter(([zone]) => !UNCOUNTED_ZONES.has(zone))
+    .flatMap(([, entries]) => entries ?? []);
+}
+
 const SET_NAMES_BY_GAME: Record<string, { setCode: string; name: string }[]> = {
   riftbound: riftboundSets,
 };
@@ -77,9 +84,7 @@ export async function loadMetaSample(gameId: string, gameSlug?: string): Promise
     ...(doc.meta.placement ? { placement: doc.meta.placement } : {}),
     ...(doc.meta.imported ? { pilot: doc.meta.pilot || META_IMPORT_AUTHOR } : {}),
     ...(doc.coverImage ? { coverImage: doc.coverImage } : {}),
-    cards: Object.entries(doc.cards ?? {})
-      .filter(([zone]) => !UNCOUNTED_ZONES.has(zone))
-      .flatMap(([, entries]) => entries ?? []),
+    cards: countedCards(doc.cards),
   }));
 
   // La fiche des légendes aussi : leur image et leurs domaines s'affichent.

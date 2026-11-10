@@ -1,6 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { DateTime } from "luxon";
-import { CalendarClock, ChevronDown, Gamepad2, Info, Lock, Medal as MedalIcon, Trophy } from "lucide-react";
+import { CalendarClock, ChevronDown, Info, Lock, Medal as MedalIcon, Trophy } from "lucide-react";
 
 import { Link } from "@/i18n/navigation.ts";
 import { getDeckCardInfos } from "@/lib/db/deck-cards.ts";
@@ -26,6 +26,7 @@ import type { TournamentResult } from "@/lib/types/TournamentResult";
 import { cn } from "@/lib/utils.ts";
 
 import { readGroupMembers, requirePlayGroupMember, type PlayGroupMemberProfile } from "../group-data.ts";
+import { FilterChip, GameIcon, LegendThumb, MemberDot, type GameInfo } from "../game-ui.tsx";
 import { viewHref } from "../views.ts";
 import { DeclareResultDialog } from "./DeclareResultDialog.tsx";
 import { MyResultMenu } from "./MyResultMenu.tsx";
@@ -34,7 +35,6 @@ import { TournamentFilterBar } from "./TournamentFilterBar.tsx";
 export type TournamentSearchParams = Record<string, string | string[] | undefined>;
 
 type DeckLink = { name: string; href: string };
-type GameInfo = { name: string; icon?: string };
 
 /**
  * Les couleurs du podium. Une pastille pleine porte un texte sombre : elle se
@@ -612,72 +612,3 @@ function StatTile({ label, value, medal }: { label: string; value: number; medal
   );
 }
 
-/** L'icône d'un jeu, ou une manette quand le jeu n'en a pas. */
-function GameIcon({ game, size }: { game?: GameInfo; size: "sm" | "lg" }) {
-  const box = size === "lg" ? "size-10 rounded-lg" : "size-5 rounded";
-  if (game?.icon) {
-    return (
-      <span className={cn("flex shrink-0 items-center justify-center overflow-hidden", box, size === "lg" && "border bg-background/60 p-1")}>
-        {/* L'icône d'un jeu vient de la base : hôte non déclaré. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={game.icon} alt={size === "lg" ? game.name : ""} title={game.name} className="size-full object-contain" />
-      </span>
-    );
-  }
-
-  return (
-    <span className={cn("flex shrink-0 items-center justify-center bg-muted", box)} title={game?.name}>
-      <Gamepad2 className={cn("text-muted-foreground", size === "lg" ? "size-5" : "size-3")} aria-hidden />
-    </span>
-  );
-}
-
-function LegendThumb({ image }: { image?: string }) {
-  if (!image) {
-    return <span aria-hidden className="h-7 w-5 shrink-0 rounded-[3px] border bg-muted" />;
-  }
-
-  return (
-    <span className="h-7 w-5 shrink-0 overflow-hidden rounded-[3px] border">
-      {/* Les images de cartes viennent de plusieurs hôtes : `next/image` les refuserait. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={image} alt="" className="size-full object-cover object-top" loading="lazy" />
-    </span>
-  );
-}
-
-function FilterChip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "true" : undefined}
-      className={cn(
-        "inline-flex h-[34px] items-center gap-[7px] rounded-full border px-[13px] text-[13px] transition-colors",
-        active ? "border-[var(--group-accent)] bg-[var(--group-accent-14)] text-[var(--group-accent-text)]" : "hover:bg-accent",
-      )}
-    >
-      {children}
-    </Link>
-  );
-}
-
-function MemberDot({ name, avatar }: { name: string; avatar?: string }) {
-  if (avatar) {
-    return (
-      <span className="size-6 shrink-0 overflow-hidden rounded-full">
-        {/* `next/image` refuserait l'hôte : les avatars viennent de fournisseurs externes. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={avatar} alt="" className="size-full object-cover" />
-      </span>
-    );
-  }
-
-  return (
-    <span
-      aria-hidden
-      className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--group-accent-16)] text-[10px] font-bold text-[var(--group-accent-text)]"
-    >
-      {name.slice(0, 2).toUpperCase()}
-    </span>
-  );
-}

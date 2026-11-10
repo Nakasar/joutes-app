@@ -4259,6 +4259,121 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /play-groups/{playGroupId}/meta:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Play Groups]
+      summary: The group meta (members only)
+      description: >
+        What the current members play, from their tournament results (their
+        whole history). The game defaults to the one with the most results;
+        the period defaults to the current set when the game has set release
+        dates. When the game has a meta (`hasMeta`) and `comparer` is not `0`,
+        legend and domain rows carry `metaShare`, the share in the game's meta
+        over the same period. A winrate (`rate`, 0 to 1) is only given from 10
+        matches. `matchups` counts known matches (Joutes and locator
+        tournaments) against non-members, without mirrors.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: jeu, in: query, required: false, schema: { type: string }, description: Game id. }
+        - { name: ext, in: query, required: false, schema: { type: string }, description: "Set code of the period, or `tout` for all periods." }
+        - { name: membre, in: query, required: false, schema: { type: string }, description: Member user id. }
+        - { name: comparer, in: query, required: false, schema: { type: string, enum: ["0"] }, description: "`0` turns the comparison with the game's meta off." }
+      responses:
+        "200":
+          description: The group meta.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  games:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        game: { type: object, properties: { id: { type: string }, name: { type: string }, slug: { type: string }, icon: { type: string } } }
+                        count: { type: integer }
+                        hasMeta: { type: boolean }
+                  game: { type: object, properties: { id: { type: string }, name: { type: string }, slug: { type: string }, icon: { type: string } } }
+                  hasMeta: { type: boolean }
+                  compared: { type: boolean }
+                  periods:
+                    type: array
+                    items: { type: object, properties: { setCode: { type: string }, name: { type: string }, from: { type: string, format: date }, to: { type: string, format: date } } }
+                  period: { type: object, properties: { setCode: { type: string }, name: { type: string }, from: { type: string, format: date }, to: { type: string, format: date } } }
+                  memberIds: { type: array, items: { type: string } }
+                  meta:
+                    type: object
+                    properties:
+                      totals:
+                        type: object
+                        properties:
+                          participations: { type: integer }
+                          tournaments: { type: integer }
+                          members: { type: integer }
+                          topEights: { type: integer }
+                          wins: { type: integer }
+                          losses: { type: integer }
+                          draws: { type: integer }
+                          matches: { type: integer }
+                          rate: { type: number }
+                          latest: { type: string, format: date-time }
+                      legends:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key: { type: string }
+                            name: { type: string }
+                            cardId: { type: string }
+                            decks: { type: integer }
+                            share: { type: number }
+                            topCuts: { type: integer }
+                            metaShare: { type: number }
+                            wins: { type: integer }
+                            losses: { type: integer }
+                            draws: { type: integer }
+                            matches: { type: integer }
+                            rate: { type: number }
+                            userIds: { type: array, items: { type: string } }
+                      domains:
+                        type: array
+                        items: { type: object, properties: { domain: { type: string }, decks: { type: integer }, share: { type: number }, metaShare: { type: number } } }
+                      members:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            userId: { type: string }
+                            tournaments: { type: integer }
+                            topEights: { type: integer }
+                            best: { type: integer }
+                            wins: { type: integer }
+                            losses: { type: integer }
+                            draws: { type: integer }
+                            matches: { type: integer }
+                            rate: { type: number }
+                            legends: { type: array, items: { type: string } }
+                            last: { type: object, properties: { name: { type: string }, date: { type: string, format: date-time }, placement: { type: integer } } }
+                      overview: { type: object, description: "The same overview as the game meta (`/games/{gameId}/meta`), computed on the members' results." }
+                  matchups:
+                    type: object
+                    properties:
+                      known: { type: integer }
+                      counted: { type: integer }
+                      opponents:
+                        type: array
+                        items: { type: object, properties: { legend: { type: string }, cardId: { type: string }, wins: { type: integer }, losses: { type: integer }, draws: { type: integer }, matches: { type: integer }, rate: { type: number } } }
+                      pairings:
+                        type: array
+                        items: { type: object, properties: { legend: { type: string }, legendCardId: { type: string }, opponent: { type: string }, opponentCardId: { type: string }, wins: { type: integer }, losses: { type: integer }, draws: { type: integer }, matches: { type: integer }, rate: { type: number } } }
+                  cardStats: { type: array, items: { type: object }, description: "Most played cards, over participations with a linked deck." }
+                  withCards: { type: integer }
+                  cards: { type: object, additionalProperties: { type: object }, description: "Card sheets by id (name, image, domains)." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /play-groups/{playGroupId}/decks:
     parameters:
       - { name: playGroupId, in: path, required: true, schema: { type: string } }

@@ -3745,6 +3745,7 @@
         "contents": "Inhalte",
         "decks": "Decks",
         "tournaments": "Turniere",
+        "meta": "Meta",
         "sectionGame": "Spiel",
         "sectionGroup": "Gruppe",
         "lists": "Wünsche & Verkäufe",
@@ -4171,6 +4172,100 @@
           "RECORD": "Die Bilanz ist ungültig.",
           "VISIBILITY": "Wähle, wer dieses Ergebnis sieht.",
           "FAILED": "Ein Fehler ist aufgetreten. Bitte versuch es erneut."
+        }
+      },
+      "meta": {
+        "metadataTitle": "Meta · {group}",
+        "title": "Meta der Gruppe",
+        "subtitle": "Was die Mitglieder von {group} in {game} spielen.",
+        "subtitleCompared": "Was die Mitglieder von {group} in {game} spielen, verglichen mit <link>der Meta des Spiels</link> im selben Zeitraum.",
+        "you": "Du",
+        "emptyTitle": "Noch keine Meta",
+        "emptyBody": "Die Meta der Gruppe entsteht aus den Turnierergebnissen der Mitglieder. Sobald ein Mitglied ein Ergebnis hat, erscheint sie hier.",
+        "emptyLink": "Turniere der Gruppe ansehen",
+        "noResultsInPeriod": "Keine Ergebnisse der Mitglieder in diesem Zeitraum.",
+        "showAllPeriods": "Alle Zeiträume ansehen",
+        "since": "seit {date}",
+        "allPeriods": "Alle",
+        "compare": "Mit der Meta des Spiels vergleichen",
+        "memberFilter": "Mitglied",
+        "allMembers": "Alle Mitglieder",
+        "points": "{points} Pkt.",
+        "placement": "{place}.",
+        "summary": "{participations, plural, one {# Teilnahme} other {# Teilnahmen}} an {tournaments, plural, one {# Turnier} other {# Turnieren}}",
+        "latest": "zuletzt am {date}",
+        "knownMatches": "{count, plural, one {# bekanntes Match} other {# bekannte Matches}}",
+        "tabs": {
+          "label": "Bereiche der Meta",
+          "overview": "Überblick",
+          "legends": "Legenden",
+          "members": "Mitglieder",
+          "matchups": "Matchups",
+          "cards": "Karten"
+        },
+        "kpi": {
+          "participations": "Teilnahmen",
+          "participationsHint": "{count, plural, one {# Mitglied} other {# Mitglieder}} von {total}",
+          "legends": "Gespielte Legenden",
+          "legendsHint": "die ersten 3 machen {share} aus",
+          "topEights": "Top 8",
+          "topEightsHint": "{share} der Teilnahmen",
+          "winrate": "Winrate der Gruppe",
+          "winrateHint": "aus {count, plural, one {# Match} other {# Matches}}",
+          "winrateNone": "keine Bilanz eingetragen"
+        },
+        "legends": {
+          "title": "Legenden der Mitglieder",
+          "marker": "Marke: Meta des Spiels",
+          "none": "Keine Legende in diesem Zeitraum eingetragen.",
+          "share": "Anteil",
+          "group": "Gruppe",
+          "vsMeta": "vs. Meta",
+          "topEights": "Top 8",
+          "winrate": "Winrate",
+          "more": "{count, plural, one {# weitere Legende} other {# weitere Legenden}}",
+          "detail": "{count, plural, one {# Deck} other {# Decks}} · {players}",
+          "topEightsShort": "{count} Top 8"
+        },
+        "domains": {
+          "title": "Domänen",
+          "hint": "Anteil der Teilnahmen, die jede Domäne spielen",
+          "topPair": "Meistgespieltes Paar: <strong>{pair}</strong> ({share})"
+        },
+        "matchups": {
+          "title": "Gegen wen die Gruppe gewinnt",
+          "hint": "Matches gegen Spieler außerhalb der Gruppe",
+          "none": "Noch nicht genug bekannte Matches gegen Spieler außerhalb der Gruppe.",
+          "footnote": "Winrate ab 10 Matches angezeigt. Matches aus Joutes- und Locator-Turnieren; keine Spiegel, keine Matches zwischen Mitgliedern.",
+          "more": "{count, plural, one {# weiterer Gegner} other {# weitere Gegner}}",
+          "matches": "{count, plural, one {# Match} other {# Matches}}",
+          "emptyTab": "Matchups werden aus den Matches der Joutes-Turniere und der aus dem Locator importierten Turniere gelesen. Kein bekanntes Match in diesem Zeitraum.",
+          "opponentsTitle": "Nach gegnerischer Legende",
+          "counted": "{count, plural, one {# Match gezählt} other {# Matches gezählt}}",
+          "pairingsTitle": "Nach gespielter Legende",
+          "pairingsHint": "was das Mitglied spielt, gegen was es antritt",
+          "mine": "Gespielte Legende",
+          "theirs": "Gegner",
+          "record": "Bilanz"
+        },
+        "members": {
+          "title": "Mitglieder",
+          "onPeriod": "in {period}",
+          "allTime": "über alle Zeiträume",
+          "member": "Mitglied",
+          "tournaments": "Turniere",
+          "topEights": "Top 8",
+          "best": "Beste",
+          "last": "Letztes Turnier",
+          "legends": "Legenden",
+          "unranked": "ohne Platzierung",
+          "more": "{count, plural, one {# weiteres Mitglied} other {# weitere Mitglieder}}"
+        },
+        "cards": {
+          "empty": "Karten werden bei Teilnahmen mit verknüpftem Deck gezählt. Kein verknüpftes Deck in diesem Zeitraum.",
+          "title": "Meistgespielte Karten",
+          "hint": "aus {count, plural, one {# Teilnahme mit Deck} other {# Teilnahmen mit Deck}}",
+          "copies": "Ø {copies} Ex."
         }
       },
       "lists": {

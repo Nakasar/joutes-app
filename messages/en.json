@@ -2923,6 +2923,7 @@
         "contents": "Content",
         "decks": "Decks",
         "tournaments": "Tournaments",
+        "meta": "Meta",
         "sectionGame": "Play",
         "sectionGroup": "Group",
         "lists": "Wishes & sales",
@@ -3349,6 +3350,100 @@
           "RECORD": "The record isn't valid.",
           "VISIBILITY": "Choose who sees this result.",
           "FAILED": "Something went wrong. Please try again."
+        }
+      },
+      "meta": {
+        "metadataTitle": "Meta · {group}",
+        "title": "Group meta",
+        "subtitle": "What the members of {group} play in {game}.",
+        "subtitleCompared": "What the members of {group} play in {game}, compared with <link>the game's meta</link> over the same period.",
+        "you": "You",
+        "emptyTitle": "No meta yet",
+        "emptyBody": "The group meta is built from the members' tournament results. As soon as a member has a result, it shows up here.",
+        "emptyLink": "See the group's tournaments",
+        "noResultsInPeriod": "No member results in this period.",
+        "showAllPeriods": "See all periods",
+        "since": "since {date}",
+        "allPeriods": "All",
+        "compare": "Compare with the game's meta",
+        "memberFilter": "Member",
+        "allMembers": "All members",
+        "points": "{points} pts",
+        "placement": "{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+        "summary": "{participations, plural, one {# participation} other {# participations}} in {tournaments, plural, one {# tournament} other {# tournaments}}",
+        "latest": "latest on {date}",
+        "knownMatches": "{count, plural, one {# known match} other {# known matches}}",
+        "tabs": {
+          "label": "Meta sections",
+          "overview": "Overview",
+          "legends": "Legends",
+          "members": "Members",
+          "matchups": "Matchups",
+          "cards": "Cards"
+        },
+        "kpi": {
+          "participations": "Participations",
+          "participationsHint": "{count, plural, one {# member} other {# members}} out of {total}",
+          "legends": "Legends played",
+          "legendsHint": "the top 3 make up {share}",
+          "topEights": "Top 8",
+          "topEightsHint": "{share} of participations",
+          "winrate": "Group winrate",
+          "winrateHint": "over {count, plural, one {# match} other {# matches}}",
+          "winrateNone": "no record entered"
+        },
+        "legends": {
+          "title": "Members' legends",
+          "marker": "marker: game meta",
+          "none": "No legend entered in this period.",
+          "share": "Share",
+          "group": "Group",
+          "vsMeta": "vs meta",
+          "topEights": "Top 8",
+          "winrate": "Winrate",
+          "more": "{count, plural, one {# more legend} other {# more legends}}",
+          "detail": "{count, plural, one {# deck} other {# decks}} · {players}",
+          "topEightsShort": "{count} top 8"
+        },
+        "domains": {
+          "title": "Domains",
+          "hint": "share of participations playing each domain",
+          "topPair": "Most played pair: <strong>{pair}</strong> ({share})"
+        },
+        "matchups": {
+          "title": "Who the group beats",
+          "hint": "matches against players outside the group",
+          "none": "Not enough known matches against players outside the group yet.",
+          "footnote": "Winrate shown from 10 matches. Matches from Joutes and locator tournaments; no mirrors, no matches between members.",
+          "more": "{count, plural, one {# more opponent} other {# more opponents}}",
+          "matches": "{count, plural, one {# match} other {# matches}}",
+          "emptyTab": "Matchups are read from the matches of Joutes tournaments and tournaments imported from the locator. No known match in this period.",
+          "opponentsTitle": "By opposing legend",
+          "counted": "{count, plural, one {# match counted} other {# matches counted}}",
+          "pairingsTitle": "By legend played",
+          "pairingsHint": "what the member plays, against what they face",
+          "mine": "Legend played",
+          "theirs": "Opponent",
+          "record": "Record"
+        },
+        "members": {
+          "title": "Members",
+          "onPeriod": "in {period}",
+          "allTime": "across all periods",
+          "member": "Member",
+          "tournaments": "Tournaments",
+          "topEights": "Top 8",
+          "best": "Best",
+          "last": "Last tournament",
+          "legends": "Legends",
+          "unranked": "unranked",
+          "more": "{count, plural, one {# more member} other {# more members}}"
+        },
+        "cards": {
+          "empty": "Cards are counted on participations with a linked deck. No linked deck in this period.",
+          "title": "Most played cards",
+          "hint": "over {count, plural, one {# participation with a deck} other {# participations with a deck}}",
+          "copies": "{copies} avg. copies"
         }
       },
       "lists": {
