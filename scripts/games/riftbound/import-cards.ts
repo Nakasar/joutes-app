@@ -9,6 +9,7 @@ import {importedCardSearchDocument} from "../../../lib/cards/import-search.ts";
 import {readCardTranslations, type CardTranslations} from "../../../lib/cards/translations.ts";
 import type {CardPrinting} from "../../../lib/types/card.ts";
 import {riftboundCardName} from "../../../lib/cards/riftbound-name.ts";
+import {applyRiftboundCorrection} from "../../../lib/cards/riftbound-corrections.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -129,7 +130,8 @@ async function main() {
 
     const types = card.cardType.type?.map((type) => type.label).filter(Boolean);
 
-    return {
+    // Type et domaine faux ou vides dans la galerie : voir riftbound-corrections.ts.
+    return applyRiftboundCorrection({
       id: `${match.groups?.set}${match.groups?.cn}`,
       name: riftboundCardName(card),
       type: card.cardType.type[0]?.label,
@@ -154,7 +156,7 @@ async function main() {
       // l'administration (`source: 'manual'`).
       source: 'import',
       gameId: RIFTBOUND_GAME_ID,
-    };
+    });
   });
 
   // La base d'abord : c'est elle qui fait foi, et c'est en la relisant qu'on
