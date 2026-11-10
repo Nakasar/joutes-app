@@ -207,6 +207,11 @@ export async function searchDecks(options: SearchDecksOptions): Promise<Paginate
     query["meta.source"] = metaSource;
   } else if (metaOnly) {
     query.meta = { $exists: true };
+  } else if (query.playerId) {
+    // Un deck méta importé est rangé sous le compte qui l'a importé, mais ce
+    // n'est pas son deck : il n'a rien à faire dans « Mes decks », ni sur son
+    // profil. Un deck de joueur simplement marqué méta reste le sien.
+    query["meta.imported"] = { $ne: true };
   }
 
   if (search) {
@@ -668,7 +673,13 @@ export async function getFeaturedDecks(
   limit = 3,
 ): Promise<Deck[]> {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const query: Record<string, unknown> = { visibility: "public", updatedAt: { $gte: since } };
+  // Seulement ce que les joueurs ont construit : un deck méta importé est une
+  // liste de tournoi, pas une création de la communauté.
+  const query: Record<string, unknown> = {
+    visibility: "public",
+    "meta.imported": { $ne: true },
+    updatedAt: { $gte: since },
+  };
 
   // Un jeu, ou plusieurs : le fil de l'accueil demande les jeux qu'on suit.
   // Une liste vide ne filtre rien, comme une valeur absente.
