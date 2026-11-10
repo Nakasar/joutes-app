@@ -150,6 +150,12 @@ export type EngineUpdate = {
 
 /** Le journal d'une partie : de quoi la rejouer à l'identique. */
 export type EngineRecord = {
+  /**
+   * La version du moteur qui a écrit le journal. Le moteur la pose lui-même ;
+   * un journal neuf écrit ici, sans action, n'en a pas besoin. Un journal d'une
+   * autre version est refusé à la reprise.
+   */
+  version?: number;
   config: EngineConfig;
   seed: number;
   actions: [number, EngineAction][];
