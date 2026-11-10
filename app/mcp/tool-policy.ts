@@ -117,6 +117,23 @@ export const TOOL_POLICIES = {
     update_tournament_player: { access: "account", effect: "update" },
     control_tournament_timer: { access: "account", effect: "update" },
     send_tournament_announcement: { access: "account", effect: "create" },
+
+    // Méta des decks (page /games/[jeu]/meta)
+    get_meta_overview: { access: "public", effect: "read" },
+    get_meta_cards: { access: "public", effect: "read" },
+    get_meta_staples: { access: "public", effect: "read" },
+    get_meta_winrates: { access: "public", effect: "read" },
+    list_meta_tournaments: { access: "public", effect: "read" },
+    get_meta_tournament: { access: "public", effect: "read" },
+    get_meta_deck: { access: "public", effect: "read" },
+    // Lit des liens Piltover Archive ou des decks du locator : hors de Joutes.
+    import_meta_decks: { access: "account", effect: "create", openWorld: true },
+
+    // Actualités
+    list_news: { access: "public", effect: "read" },
+    get_news: { access: "public", effect: "read" },
+    create_news: { access: "account", effect: "create" },
+    update_news: { access: "account", effect: "update" },
 } as const satisfies Record<string, ToolPolicy>;
 
 export type JoutesToolName = keyof typeof TOOL_POLICIES;

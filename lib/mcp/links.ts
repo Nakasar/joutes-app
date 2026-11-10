@@ -43,6 +43,18 @@ export const mcpLinks = {
     tournamentLive: (tournamentId: string, env?: Env) => joutesUrl(`/tournaments/${segment(tournamentId)}/organizer/live`, env),
     tournamentPlayers: (tournamentId: string, env?: Env) =>
         joutesUrl(`/tournaments/${segment(tournamentId)}/organizer/players`, env),
+    /** La page Méta d'un jeu, avec les filtres de l'adresse (onglet, période, légende…). */
+    meta: (gameSlugOrId: string, query: Record<string, string | undefined> = {}, env?: Env) => {
+        const params = new URLSearchParams(
+            Object.entries(query).filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1] !== ""),
+        ).toString();
+        return joutesUrl(`/games/${segment(gameSlugOrId)}/meta${params ? `?${params}` : ""}`, env);
+    },
+    metaTournament: (gameSlugOrId: string, date: string, slug: string, env?: Env) =>
+        joutesUrl(`/games/${segment(gameSlugOrId)}/meta/tournois/${segment(date)}/${segment(slug)}`, env),
+    deck: (deckId: string, env?: Env) => joutesUrl(`/decks/${segment(deckId)}`, env),
+    /** Une actualité ; `path` vient de `newsPath`, qui choisit l'adresse de la langue. */
+    news: (path: string, env?: Env) => joutesUrl(path, env),
     /**
      * Un errata n'a pas de page à lui : il s'affiche sur la fiche de chacune de
      * ses cartes. Le lien mène à la première, avec une ancre sur l'errata.

@@ -155,16 +155,16 @@ export function withToolLogging<Args extends unknown[]>(
     };
 }
 
-function textResult(text: string): ToolResult {
+export function textResult(text: string): ToolResult {
     return { content: [{ type: "text", text }] };
 }
 
-function errorResult(text: string): ToolResult {
+export function errorResult(text: string): ToolResult {
     return { content: [{ type: "text", text }], isError: true };
 }
 
 /** Résout un jeu par nom ou slug (insensible à la casse pour le nom). */
-async function resolveGame(gameName: string): Promise<(Game & { _id: ObjectId }) | null> {
+export async function resolveGame(gameName: string): Promise<(Game & { _id: ObjectId }) | null> {
     return db.collection<Game & { _id: ObjectId }>("games").findOne({
         $or: [
             { slug: gameName.toLowerCase() },
@@ -1209,7 +1209,7 @@ async function handleAddTournamentPlayer(
 
 // --- Deck checker ---
 
-function formatDeckSection(title: string, cards: DeckListCard[]): string {
+export function formatDeckSection(title: string, cards: DeckListCard[]): string {
     if (cards.length === 0) return "";
     const lines = cards.map(card => {
         const flags = [
@@ -1295,7 +1295,7 @@ async function handleCheckDeck(args: { deckList: string; gameName?: string }): P
  * Le deck tel que la vue l'affiche : des erratas, seulement ce qu'elle en lit
  * (pas les traductions, votes ni auteurs), pour garder la réponse légère.
  */
-function deckForView(deck: DeckList): DeckViewList {
+export function deckForView(deck: DeckList): DeckViewList {
     const section = (cards: DeckListCard[]): DeckViewCard[] => cards.map(card => ({
         ...card,
         erratas: card.erratas?.map(errata => ({
