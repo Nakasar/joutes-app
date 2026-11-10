@@ -13,6 +13,7 @@ import { deckCardIds } from "@/lib/decks/contents.ts";
 import { getDeckCollectionCounts } from "@/lib/decks/collection.ts";
 import { riftboundDeckCode } from "@/lib/decks/export-code.ts";
 import { getDeckZones } from "@/lib/decks/zones.ts";
+import { readDeckAccess } from "@/lib/decks/read-access.ts";
 import { isDeckIndexable } from "@/lib/types/Deck.ts";
 import { hasPermission } from "@/lib/db/permissions.ts";
 import { META_DECKS_PERMISSION } from "@/lib/meta/permissions.ts";
@@ -69,9 +70,10 @@ async function DeckPageContent({ params }: { params: Params }) {
   }
 
   // Un deck non répertorié s'ouvre comme un deck public : c'est le lien qui
-  // fait l'autorisation. Seul le privé se referme sur son auteur.
+  // fait l'autorisation. Le privé se referme sur son auteur et sur les
+  // membres des groupes où il l'a partagé.
   const isOwner = deck.playerId === session?.user?.id;
-  if (deck.visibility === "private" && !isOwner) {
+  if (!(await readDeckAccess(deck, session?.user?.id))) {
     redirect("/decks");
   }
 

@@ -6,6 +6,7 @@ import {
   toggleDeckFavorite,
 } from "@/lib/db/decks";
 import { auth } from "@/lib/auth";
+import { readDeckAccess } from "@/lib/decks/read-access";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { deckUpdateSchema, deckIdSchema } from "@/lib/schemas/deck.schema";
@@ -32,7 +33,7 @@ export async function GET(
       );
     }
 
-    if (deck.visibility === "private" && deck.playerId !== session?.user?.id) {
+    if (!(await readDeckAccess(deck, session?.user?.id))) {
       return NextResponse.json(
         { error: "Vous n'avez pas l'autorisation de voir ce deck" },
         { status: 403 }
@@ -84,7 +85,7 @@ export async function PATCH(
         return NextResponse.json({ error: "Deck non trouvé" }, { status: 404 });
       }
 
-      if (deck.visibility === "private" && deck.playerId !== session.user.id) {
+      if (!(await readDeckAccess(deck, session.user.id))) {
         return NextResponse.json(
           { error: "Vous n'avez pas l'autorisation de modifier ce favori" },
           { status: 403 }

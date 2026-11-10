@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Globe,
   Heart,
+  Layers,
   LayoutDashboard,
   Library,
   Megaphone,
@@ -29,6 +30,7 @@ const ICONS = {
   sessions: Calendar,
   announcements: Megaphone,
   contents: Library,
+  decks: Layers,
   lists: Heart,
   members: Users,
   showcase: Globe,
@@ -39,9 +41,15 @@ type RailEntry = {
   key: PlayGroupView;
   href: string;
   badge?: number;
-  /** Les deux dernières entrées vivent sous un séparateur : elles sortent du hub. */
-  aside?: boolean;
+  /**
+   * La section du rail. `game` et `group` portent un intitulé (« Jeu »,
+   * « Groupe ») ; `aside` vit sous un séparateur, parce que ses entrées sortent
+   * du hub ; sans section, l'entrée est en tête.
+   */
+  section?: RailSection;
 };
+
+type RailSection = "game" | "group" | "aside";
 
 function entriesFor(playGroupId: string, pendingCount: number, canManage: boolean): RailEntry[] {
   return [
@@ -49,10 +57,13 @@ function entriesFor(playGroupId: string, pendingCount: number, canManage: boolea
     { key: "sessions", href: viewHref(playGroupId, "sessions"), badge: pendingCount },
     { key: "announcements", href: viewHref(playGroupId, "announcements") },
     { key: "contents", href: viewHref(playGroupId, "contents") },
-    { key: "lists", href: viewHref(playGroupId, "lists") },
-    { key: "members", href: viewHref(playGroupId, "members") },
-    { key: "showcase", href: viewHref(playGroupId, "showcase"), aside: true },
-    ...(canManage ? [{ key: "settings" as const, href: viewHref(playGroupId, "settings"), aside: true }] : []),
+    { key: "decks", href: viewHref(playGroupId, "decks"), section: "game" },
+    { key: "lists", href: viewHref(playGroupId, "lists"), section: "group" },
+    { key: "members", href: viewHref(playGroupId, "members"), section: "group" },
+    { key: "showcase", href: viewHref(playGroupId, "showcase"), section: "aside" },
+    ...(canManage
+      ? [{ key: "settings" as const, href: viewHref(playGroupId, "settings"), section: "aside" as const }]
+      : []),
   ];
 }
 
@@ -100,15 +111,28 @@ export default function PlayGroupRail({
 
         <div className="flex flex-col gap-0.5">
           {entries
-            .filter((entry) => !entry.aside)
+            .filter((entry) => !entry.section)
             .map((entry) => (
               <RailLink key={entry.key} entry={entry} active={active} label={t(entry.key)} />
             ))}
         </div>
 
+        {(["game", "group"] as const).map((section) => (
+          <div key={section} className="flex flex-col gap-0.5">
+            <p className="px-3 pt-1.5 pb-0.5 text-[10px] tracking-[.08em] text-muted-foreground uppercase">
+              {t(section === "game" ? "sectionGame" : "sectionGroup")}
+            </p>
+            {entries
+              .filter((entry) => entry.section === section)
+              .map((entry) => (
+                <RailLink key={entry.key} entry={entry} active={active} label={t(entry.key)} />
+              ))}
+          </div>
+        ))}
+
         <div className="flex flex-col gap-0.5 border-t pt-4">
           {entries
-            .filter((entry) => entry.aside)
+            .filter((entry) => entry.section === "aside")
             .map((entry) => (
               <RailLink key={entry.key} entry={entry} active={active} label={t(entry.key)} />
             ))}

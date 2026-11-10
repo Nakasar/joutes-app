@@ -14,6 +14,7 @@ import AnnouncementsView from "./announcements/AnnouncementsView.tsx";
 import ContentsView from "./contents/ContentsView.tsx";
 import ContentEditorView from "./contents/ContentEditorView.tsx";
 import ListsView from "./lists/ListsView.tsx";
+import DecksView, { type DeckSearchParams } from "./decks/DecksView.tsx";
 import MembersView from "./members/MembersView.tsx";
 import SettingsView from "./settings/SettingsView.tsx";
 import ShowcaseView from "./showcase/ShowcaseView.tsx";
@@ -22,7 +23,9 @@ import { readGroupViewer } from "./group-data.ts";
 import { readPlayGroupView, type PlayGroupView } from "./views.ts";
 
 type GroupParams = Promise<{ playGroupId: string }>;
-type GroupSearchParams = Promise<{ view?: string; contentId?: string; article?: string }>;
+type GroupSearchParams = Promise<
+  { view?: string; contentId?: string; article?: string } & DeckSearchParams
+>;
 
 export async function generateMetadata({
   params,
@@ -102,6 +105,8 @@ export async function generateMetadata({
       return { title: t("announcements.metadataTitle", { group: group.name }) };
     case "contents":
       return { title: t("contents.metadataTitle", { group: group.name }) };
+    case "decks":
+      return { title: t("decks.metadataTitle", { group: group.name }) };
     case "lists":
       return { title: t("lists.metadataTitle", { group: group.name }) };
     case "members":
@@ -167,7 +172,7 @@ async function PlayGroupRouter({
 
   return (
     <PlayGroupShell playGroupId={playGroupId} active={view}>
-      <PlayGroupViewContent playGroupId={playGroupId} view={view} contentId={search.contentId} />
+      <PlayGroupViewContent playGroupId={playGroupId} view={view} contentId={search.contentId} search={search} />
     </PlayGroupShell>
   );
 }
@@ -176,10 +181,12 @@ function PlayGroupViewContent({
   playGroupId,
   view,
   contentId,
+  search,
 }: {
   playGroupId: string;
   view: PlayGroupView;
   contentId?: string;
+  search: DeckSearchParams;
 }) {
   switch (view) {
     case "sessions":
@@ -194,6 +201,8 @@ function PlayGroupViewContent({
       ) : (
         <ContentsView playGroupId={playGroupId} />
       );
+    case "decks":
+      return <DecksView playGroupId={playGroupId} searchParams={search} />;
     case "lists":
       return <ListsView playGroupId={playGroupId} />;
     case "members":

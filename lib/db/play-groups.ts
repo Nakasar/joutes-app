@@ -2,6 +2,7 @@ import db from "@/lib/mongodb";
 import { Filter, ObjectId, UpdateFilter, WithId } from "mongodb";
 import { purgeStreamTarget } from "@/lib/db/stream-links";
 import { readRollFilter } from "@/lib/play-groups/access";
+import { removeOwnerPlayGroupDecks } from "@/lib/db/play-group-decks";
 import type {
   PlayGroup,
   PlayGroupAnnouncement,
@@ -474,6 +475,12 @@ export async function removePlayGroupMember(playGroupId: string, userId: string)
     $set: { updatedAt: now },
   };
   const result = await playGroupsCollection.updateOne(filter, update);
+
+  if (result.modifiedCount > 0) {
+    // Un membre qui part emporte ses decks : le groupe ne garde pas ouverte
+    // une liste privée dont l'auteur n'est plus là.
+    await removeOwnerPlayGroupDecks(playGroupId, userId);
+  }
 
   return result.modifiedCount > 0;
 }

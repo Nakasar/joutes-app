@@ -251,6 +251,19 @@ export const USER_INDEXES: IndexDefinition[] = [
     options: { unique: true },
     why: "Une séance par identifiant",
   },
+  {
+    // Collection neuve : l'unicité peut être posée d'emblée, et l'ajout s'y
+    // appuie (un upsert par deck, qui ne doit jamais dédoubler un partage).
+    collection: "playGroupDecks",
+    keys: { playGroupId: 1, deckId: 1 },
+    options: { unique: true },
+    why: "La bibliothèque de decks d'un groupe, et un deck n'y entre qu'une fois",
+  },
+  {
+    collection: "playGroupDecks",
+    keys: { deckId: 1 },
+    why: "Les groupes où un deck est partagé : ouvrir un deck privé à un membre, nettoyer à la suppression",
+  },
 
   {
     collection: "stream_links",

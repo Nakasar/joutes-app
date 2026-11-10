@@ -13,6 +13,7 @@ import { DeckCardThumb } from "@/components/decks/DeckCardThumb.tsx";
 import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
 import { DeckZoneCards, DeckZonesSummary } from "@/components/decks/DeckZoneCards.tsx";
 import { ShareDeckDialog } from "@/components/decks/ShareDeckDialog.tsx";
+import { DeckGroupsSection } from "./DeckGroupsSection.tsx";
 import { BuyDeckOnCardnexusButton, BuyDeckOnCardnexusHint } from "@/components/decks/BuyDeckOnCardnexusButton.tsx";
 import { cn } from "@/lib/utils.ts";
 import { zoneEntries, type DeckCardInfo } from "@/lib/decks/contents.ts";
@@ -417,7 +418,9 @@ export function DeckSheet({
             toast.success("Visibilité mise à jour");
           }
         }}
-      />
+      >
+        <DeckGroupsSection deckId={deck.id} open={shareOpen} />
+      </ShareDeckDialog>
     </div>
   );
 }

@@ -3922,6 +3922,113 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /play-groups/{playGroupId}/decks:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Play Groups]
+      summary: List the group's deck library (members only)
+      description: >
+        Decks the members shared with the group, pinned ones first (most
+        recently pinned on top), then by last update. A private deck shared with
+        the group is readable by every member, and by nobody else. Each entry
+        carries the deck summary (no card list) and `canRemove` for the caller.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: jeu, in: query, required: false, schema: { type: string }, description: Game id. }
+        - { name: legende, in: query, required: false, schema: { type: string }, description: Legend card id. }
+        - { name: membre, in: query, required: false, schema: { type: string }, description: Owner user id. }
+        - { name: domaine, in: query, required: false, schema: { type: string }, description: A domain the deck covers. }
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 80 }, description: Searched in the deck name and legend name, ignoring case and accents. }
+      responses:
+        "200":
+          description: The library.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  decks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        playGroupId: { type: string }
+                        deckId: { type: string }
+                        gameId: { type: string }
+                        ownerId: { type: string }
+                        addedBy: { type: string }
+                        addedAt: { type: string, format: date-time }
+                        pinnedAt: { type: string, format: date-time }
+                        pinNote: { type: string }
+                        deck: { type: object, description: Deck summary (name, legend, domains, cover, visibility…), without cards. }
+                        canRemove: { type: boolean }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    post:
+      tags: [Play Groups]
+      summary: Share some of my decks with the group (members only)
+      description: >
+        Only the caller's own decks enter, for a game the group enabled, and
+        never an imported meta deck. A deck already in the group is left as is.
+        Refused decks are listed with their reason.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deckIds]
+              properties:
+                deckIds: { type: array, minItems: 1, maxItems: 50, items: { type: string } }
+      responses:
+        "201": { description: At least one deck added., content: { application/json: { schema: { $ref: "#/components/schemas/PlayGroupDecksAddOutcome" } } } }
+        "200": { description: Nothing added., content: { application/json: { schema: { $ref: "#/components/schemas/PlayGroupDecksAddOutcome" } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    patch:
+      tags: [Play Groups]
+      summary: Pin or unpin a deck at the top of the library (owner/admin only)
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deckId, pinned]
+              properties:
+                deckId: { type: string }
+                pinned: { type: boolean }
+                note: { type: string, maxLength: 60, description: Why it is pinned, shown on the card. }
+      responses:
+        "200": { description: Updated., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Play Groups]
+      summary: Remove a deck from the library (its author, or an owner/admin)
+      description: The deck itself is not deleted.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: deckId, in: query, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Removed., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /play-groups/{playGroupId}/collection:
     parameters:
       - { name: playGroupId, in: path, required: true, schema: { type: string } }
@@ -6833,6 +6940,17 @@ components:
           items: { type: object, required: [startsAt], properties: { startsAt: { type: string, format: date-time } } }
         pollClosesAt: { type: string, format: date-time }
 
+    PlayGroupDecksAddOutcome:
+      type: object
+      properties:
+        added: { type: integer, description: Decks actually added (already present ones do not count). }
+        refused:
+          type: array
+          items:
+            type: object
+            properties:
+              deckId: { type: string }
+              reason: { type: string, enum: [NOT_FOUND, NOT_MEMBER, NOT_OWNER, GAME_DISABLED, META_IMPORTED] }
     PlayGroupAnnouncementInput:
       type: object
       required: [title, scope]
