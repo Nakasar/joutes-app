@@ -90,6 +90,6 @@ export function applyRiftboundCorrection<T extends CorrectableCard>(card: T): T 
 export function riftboundCorrectionFields(cardId: string): Pick<CorrectableCard, "type" | "types" | "domain"> | undefined {
   const correction = RIFTBOUND_CORRECTIONS[cardId];
   if (!correction) return undefined;
-  const { type, types, domain } = applyRiftboundCorrection({ id: cardId });
+  const { type, types, domain } = applyRiftboundCorrection<CorrectableCard>({ id: cardId });
   return { ...(type ? { type, types } : {}), ...(domain ? { domain } : {}) };
 }
