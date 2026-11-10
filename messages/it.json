@@ -2923,6 +2923,7 @@
         "contents": "Contenuti",
         "decks": "Mazzi",
         "tournaments": "Tornei",
+        "meta": "Meta",
         "sectionGame": "Gioco",
         "sectionGroup": "Gruppo",
         "lists": "Desideri e vendite",
@@ -3349,6 +3350,100 @@
           "RECORD": "Il bilancio non è valido.",
           "VISIBILITY": "Scegli chi vede questo risultato.",
           "FAILED": "Si è verificato un errore. Riprova."
+        }
+      },
+      "meta": {
+        "metadataTitle": "Meta · {group}",
+        "title": "Meta del gruppo",
+        "subtitle": "Cosa giocano i membri di {group} a {game}.",
+        "subtitleCompared": "Cosa giocano i membri di {group} a {game}, confrontato con <link>la meta del gioco</link> nello stesso periodo.",
+        "you": "Tu",
+        "emptyTitle": "Ancora nessuna meta",
+        "emptyBody": "La meta del gruppo si costruisce dai risultati in torneo dei membri. Appena un membro ha un risultato, compare qui.",
+        "emptyLink": "Vedi i tornei del gruppo",
+        "noResultsInPeriod": "Nessun risultato dei membri in questo periodo.",
+        "showAllPeriods": "Vedi tutti i periodi",
+        "since": "dal {date}",
+        "allPeriods": "Tutto",
+        "compare": "Confronta con la meta del gioco",
+        "memberFilter": "Membro",
+        "allMembers": "Tutti i membri",
+        "points": "{points} pt",
+        "placement": "{place}º",
+        "summary": "{participations, plural, one {# partecipazione} other {# partecipazioni}} a {tournaments, plural, one {# torneo} other {# tornei}}",
+        "latest": "l'ultimo il {date}",
+        "knownMatches": "{count, plural, one {# partita nota} other {# partite note}}",
+        "tabs": {
+          "label": "Sezioni della meta",
+          "overview": "Panoramica",
+          "legends": "Leggende",
+          "members": "Membri",
+          "matchups": "Scontri",
+          "cards": "Carte"
+        },
+        "kpi": {
+          "participations": "Partecipazioni",
+          "participationsHint": "{count, plural, one {# membro} other {# membri}} su {total}",
+          "legends": "Leggende giocate",
+          "legendsHint": "le prime 3 fanno {share}",
+          "topEights": "Top 8",
+          "topEightsHint": "{share} delle partecipazioni",
+          "winrate": "Winrate del gruppo",
+          "winrateHint": "su {count, plural, one {# partita} other {# partite}}",
+          "winrateNone": "nessun bilancio inserito"
+        },
+        "legends": {
+          "title": "Leggende dei membri",
+          "marker": "riferimento: meta del gioco",
+          "none": "Nessuna leggenda inserita in questo periodo.",
+          "share": "Quota",
+          "group": "Gruppo",
+          "vsMeta": "vs meta",
+          "topEights": "Top 8",
+          "winrate": "Winrate",
+          "more": "{count, plural, one {# altra leggenda} other {# altre leggende}}",
+          "detail": "{count, plural, one {# mazzo} other {# mazzi}} · {players}",
+          "topEightsShort": "{count} top 8"
+        },
+        "domains": {
+          "title": "Domini",
+          "hint": "quota di partecipazioni che giocano ogni dominio",
+          "topPair": "Coppia più giocata: <strong>{pair}</strong> ({share})"
+        },
+        "matchups": {
+          "title": "Contro chi vince il gruppo",
+          "hint": "partite contro giocatori esterni al gruppo",
+          "none": "Non ci sono ancora abbastanza partite note contro giocatori esterni al gruppo.",
+          "footnote": "Winrate mostrato da 10 partite. Partite dei tornei Joutes e del locator; né specchi, né partite tra membri.",
+          "more": "{count, plural, one {# altro avversario} other {# altri avversari}}",
+          "matches": "{count, plural, one {# partita} other {# partite}}",
+          "emptyTab": "Gli scontri si leggono dalle partite dei tornei Joutes e dei tornei importati dal locator. Nessuna partita nota in questo periodo.",
+          "opponentsTitle": "Per leggenda avversaria",
+          "counted": "{count, plural, one {# partita contata} other {# partite contate}}",
+          "pairingsTitle": "Per leggenda giocata",
+          "pairingsHint": "cosa gioca il membro, contro cosa affronta",
+          "mine": "Leggenda giocata",
+          "theirs": "Avversario",
+          "record": "Bilancio"
+        },
+        "members": {
+          "title": "Membri",
+          "onPeriod": "in {period}",
+          "allTime": "su tutti i periodi",
+          "member": "Membro",
+          "tournaments": "Tornei",
+          "topEights": "Top 8",
+          "best": "Migliore",
+          "last": "Ultimo torneo",
+          "legends": "Leggende",
+          "unranked": "non classificato",
+          "more": "{count, plural, one {# altro membro} other {# altri membri}}"
+        },
+        "cards": {
+          "empty": "Le carte si contano sulle partecipazioni con un mazzo collegato. Nessun mazzo collegato in questo periodo.",
+          "title": "Carte più giocate",
+          "hint": "su {count, plural, one {# partecipazione con mazzo} other {# partecipazioni con mazzo}}",
+          "copies": "{copies} copie in media"
         }
       },
       "lists": {
