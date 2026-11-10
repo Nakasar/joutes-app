@@ -31,6 +31,7 @@ import {
   getMatches,
   deleteMatch,
 } from "@/lib/db/matches";
+import { DISPLAY_AVATAR_EXPRESSION } from "@/lib/users/document";
 
 const COLLECTION_NAME = "leagues";
 const PARTICIPANTS_COLLECTION = "league-participants";
@@ -293,7 +294,7 @@ export async function getLeagueById(
                   username: 1,
                   displayName: 1,
                   discriminator: 1,
-                  avatar: 1,
+                  avatar: DISPLAY_AVATAR_EXPRESSION,
                 },
               },
             ],
@@ -1619,7 +1620,7 @@ export async function getLeagueRanking(
                 username: 1,
                 displayName: 1,
                 discriminator: 1,
-                avatar: 1,
+                avatar: DISPLAY_AVATAR_EXPRESSION,
               },
             },
           ],
@@ -1789,7 +1790,7 @@ export async function getLeagueRanking(
               username: 1,
               displayName: 1,
               discriminator: 1,
-              avatar: 1,
+              avatar: DISPLAY_AVATAR_EXPRESSION,
             },
           },
         ],

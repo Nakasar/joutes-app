@@ -5,6 +5,7 @@ import { getLairFollowState } from "./lair-notification-prefs";
 import { followerNotificationBranches, type StoredLairNotificationPref } from "@/lib/lairs/notification-prefs";
 import { schedulePushFanout } from "@/lib/push/dispatch";
 import { scheduleDiscordFanout } from "@/lib/notifications/discord-dispatch";
+import { DISPLAY_AVATAR_EXPRESSION } from "@/lib/users/document";
 
 const COLLECTION_NAME = "notifications";
 
@@ -186,7 +187,7 @@ export async function getUserNotifications(
                 username: 1,
                 displayName: 1,
                 discriminator: 1,
-                avatar: 1,
+                avatar: DISPLAY_AVATAR_EXPRESSION,
               }
             }
           ],

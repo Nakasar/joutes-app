@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ObjectId } from "mongodb";
 import type { User } from "@/lib/types/User";
-import { toUser } from "./document";
+import { displayAvatar, toUser } from "./document";
 
 /**
  * Tests de la conversion d'un document `user`.
@@ -135,5 +135,29 @@ describe("toUser", () => {
         `le champ « ${field} » du type User n'est pas rendu par toUser`
       );
     }
+  });
+});
+
+describe("displayAvatar", () => {
+  const uploaded = "https://abc.public.blob.vercel-storage.com/users/1/photo.png";
+  const discord = "https://cdn.discordapp.com/avatars/42/ancien.png";
+
+  it("préfère la photo téléversée à l'avatar Discord", () => {
+    // Le cas qui a fait le bogue : une photo téléversée, et l'ancien avatar
+    // Discord toujours dans `image`, montré partout sauf sur le profil.
+    assert.equal(displayAvatar({ profileImage: uploaded, image: discord }), uploaded);
+    assert.equal(toUser(document({ profileImage: uploaded, image: discord })).avatar, uploaded);
+  });
+
+  it("retombe sur l'image du fournisseur, puis sur le champ historique", () => {
+    assert.equal(displayAvatar({ image: discord, avatar: "https://example.test/a.png" }), discord);
+    assert.equal(displayAvatar({ avatar: "https://example.test/a.png" }), "https://example.test/a.png");
+  });
+
+  it("tient une chaîne vide pour une absence", () => {
+    // Retirer sa photo enregistre `""`.
+    assert.equal(displayAvatar({ profileImage: "", image: discord }), discord);
+    assert.equal(displayAvatar({ profileImage: "", image: "" }), undefined);
+    assert.equal(displayAvatar(null), undefined);
   });
 });

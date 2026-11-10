@@ -1,7 +1,8 @@
 import db from "@/lib/mongodb";
 import { User, UserShowcase } from "@/lib/types/User";
 import { ObjectId, type Document } from "mongodb";
-import { toUser } from "@/lib/users/document";
+import { displayAvatar, toUser } from "@/lib/users/document";
+import { shouldRefreshDiscordImage } from "@/lib/users/discord-avatar";
 import { generateFriendCode } from "@/lib/utils/friend-codes";
 import {
   type AdminUserSummary,
@@ -72,7 +73,7 @@ export async function getUserDisplayAvatar(userId: string): Promise<string | und
       { projection: { profileImage: 1, image: 1, avatar: 1 } }
     );
 
-  return doc?.profileImage || doc?.image || doc?.avatar || undefined;
+  return displayAvatar(doc);
 }
 
 export async function getUserByEmail(email: string): Promise<User | null> {
@@ -261,7 +262,7 @@ export function toPublicUserProfile(user: User): PublicUserProfile {
     username: user.username,
     displayName: user.displayName,
     discriminator: user.discriminator,
-    avatar: user.profileImage || user.avatar,
+    avatar: user.profileImage || user.avatar || undefined,
     description: user.description ?? null,
     website: user.website ?? null,
     socialLinks: user.socialLinks ?? [],
@@ -534,6 +535,32 @@ export async function updateUserProfileImage(
 }
 
 /**
+ * Recopie l'avatar Discord à jour sur le compte lié à cet identifiant Discord,
+ * si l'image qu'il tient est un ancien avatar Discord (voir
+ * `lib/users/discord-avatar.ts`). Ne fait rien pour un compte pas encore créé.
+ *
+ * @returns true si l'image a été remplacée
+ */
+export async function refreshDiscordImage(discordId: string, image: string): Promise<boolean> {
+  const account = await db
+    .collection<{ userId: ObjectId }>("account")
+    .findOne({ providerId: "discord", accountId: discordId }, { projection: { userId: 1 } });
+  if (!account?.userId) return false;
+
+  const userId = new ObjectId(account.userId.toString());
+  const user = await db.collection(COLLECTION_NAME).findOne({ _id: userId }, { projection: { image: 1 } });
+  if (!user || !shouldRefreshDiscordImage(user.image, image)) return false;
+
+  // L'ancienne image dans le filtre : une écriture concurrente (une autre
+  // connexion, une modification) n'est pas écrasée par celle-ci.
+  const result = await db
+    .collection(COLLECTION_NAME)
+    .updateOne({ _id: userId, image: user.image }, { $set: { image, updatedAt: new Date() } });
+
+  return result.modifiedCount > 0;
+}
+
+/**
  * `place` porte la localité d'où viennent les coordonnées, quand elles ont été
  * choisies dans une liste de villes. Une position relevée au GPS n'en a pas :
  * la localisation est alors enregistrée sans nom, comme avant.
@@ -676,6 +703,7 @@ const ADMIN_USER_PROJECTION = {
   username: 1,
   displayName: 1,
   discriminator: 1,
+  profileImage: 1,
   image: 1,
   avatar: 1,
   isPublicProfile: 1,
@@ -687,7 +715,7 @@ function toAdminUserSummary(doc: Document): AdminUserSummary {
     username: doc.name || doc.username || "",
     displayName: doc.displayName || undefined,
     discriminator: doc.discriminator || undefined,
-    avatar: doc.image || doc.avatar || undefined,
+    avatar: displayAvatar(doc),
     isPublicProfile: doc.isPublicProfile === true,
   };
 }
@@ -989,7 +1017,7 @@ export async function getUserCardsByIds(
         {
           id,
           displayName: doc.displayName || doc.username || doc.name || "?",
-          avatar: doc.profileImage || doc.image || doc.avatar || undefined,
+          avatar: displayAvatar(doc),
         },
       ];
     }),
