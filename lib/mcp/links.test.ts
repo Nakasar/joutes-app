@@ -37,6 +37,20 @@ describe("liens des outils MCP", () => {
         assert.equal(mcpLinks.wishlist("a b/c", env), "https://joutes.test/wishlists/a%20b%2Fc");
     });
 
+    it("mène à la méta d'un jeu avec ses filtres, sans les valeurs vides", () => {
+        assert.equal(mcpLinks.meta("riftbound", {}, env), "https://joutes.test/games/riftbound/meta");
+        assert.equal(
+            mcpLinks.meta("riftbound", { tab: "together", card: "Cloth Armor", legend: undefined, period: "" }, env),
+            "https://joutes.test/games/riftbound/meta?tab=together&card=Cloth+Armor",
+        );
+        assert.equal(
+            mcpLinks.metaTournament("riftbound", "2026-11-01", "rc-europe", env),
+            "https://joutes.test/games/riftbound/meta/tournois/2026-11-01/rc-europe",
+        );
+        assert.equal(mcpLinks.deck("d1", env), "https://joutes.test/decks/d1");
+        assert.equal(mcpLinks.news("/news/n1/en", env), "https://joutes.test/news/n1/en");
+    });
+
     it("forme la ligne ajoutée au texte", () => {
         assert.equal(linkLine("https://joutes.test/x"), "\n\nLien : https://joutes.test/x");
     });
