@@ -304,4 +304,15 @@ export const USER_INDEXES: IndexDefinition[] = [
     keys: { gameId: 1, hiddenAt: 1, publishedAt: -1 },
     why: "La lecture des vitrines et le tri de la purge, qui posent la même question",
   },
+  // Tables de jeu en ligne (`lib/db/game-tables.ts`).
+  {
+    collection: "gameTables",
+    keys: { id: 1 },
+    why: "Une table par son code : salle d'attente, lancement, résultat",
+  },
+  {
+    collection: "gameTables",
+    keys: { memberIds: 1, createdAt: -1 },
+    why: "Mes tables, les plus récentes d'abord (page Jouer)",
+  },
 ];

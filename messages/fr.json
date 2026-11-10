@@ -542,6 +542,240 @@
     }
   },
   "Games": {
+    "Play": {
+      "title": "Jouer à Riftbound",
+      "description": "Jouez à Riftbound dans votre navigateur : contre l'IA, en ligne avec vos decks, ou sur le serveur d'un organisateur. Le moteur applique les règles et cite chacune d'elles.",
+      "back": "Retour au portail du jeu",
+      "backToLobby": "Retour à l'accueil du jeu",
+      "status": {
+        "loading": "Chargement de la table…",
+        "error": "La table n'a pas pu être chargée.",
+        "reconnecting": "Connexion perdue, nouvelle tentative…"
+      },
+      "mode": {
+        "duel": "Duel",
+        "ffa3": "Chacun pour soi à 3",
+        "ffa4": "Chacun pour soi à 4",
+        "teams": "Équipes 2 contre 2"
+      },
+      "modeHint": {
+        "duel": "2 joueurs, 8 points",
+        "ffa3": "3 joueurs, 3 champs de bataille",
+        "ffa4": "4 joueurs, 3 champs de bataille",
+        "teams": "2 équipes de 2, 11 points"
+      },
+      "level": {
+        "easy": "Facile",
+        "normal": "Normal",
+        "hard": "Difficile"
+      },
+      "kind": {
+        "unit": "Unité",
+        "gear": "Équipement",
+        "spell": "Sort",
+        "rune": "Rune",
+        "legend": "Légende",
+        "battlefield": "Champ de bataille"
+      },
+      "domain": {
+        "fury": "Fureur",
+        "calm": "Calme",
+        "mind": "Esprit",
+        "body": "Corps",
+        "chaos": "Chaos",
+        "order": "Ordre"
+      },
+      "tableStatus": {
+        "waiting": "En attente",
+        "playing": "En cours",
+        "finished": "Terminée",
+        "cancelled": "Annulée"
+      },
+      "error": {
+        "UNAUTHENTICATED": "Connectez-vous pour faire cela.",
+        "OFFLINE": "Le jeu en ligne n'est pas disponible pour le moment.",
+        "NOT_FOUND": "Cette table n'existe pas.",
+        "FORBIDDEN": "Seul l'hôte de la table peut faire cela.",
+        "INVALID": "Demande invalide.",
+        "INVALID_DECK": "Ce deck ne peut pas être joué.",
+        "FULL": "La table est complète.",
+        "ALREADY_SEATED": "Vous êtes déjà assis à cette table.",
+        "NOT_FULL": "Il reste des sièges libres.",
+        "NOT_WAITING": "La partie a déjà été lancée.",
+        "SERVER": "Le serveur de parties n'a pas répondu. Réessayez dans un instant."
+      },
+      "card": {
+        "hidden": "Carte cachée",
+        "hiddenHint": "Vous ne voyez pas cette carte.",
+        "inspect": "Voir {name}",
+        "attacker": "Attaquant",
+        "defender": "Défenseur",
+        "stunned": "Étourdie",
+        "exhausted": "Épuisée",
+        "buffed": "Porte un bonus",
+        "might": "Puissance {might}, dégâts subis {damage}",
+        "unsupported": "Le moteur ne sait pas encore jouer cette carte."
+      },
+      "zone": {
+        "baseOf": "Base de {name}",
+        "myBase": "Ma base",
+        "hand": "Ma main",
+        "champion": "Champion",
+        "emptyHand": "Votre main est vide.",
+        "trashOf": "Défausse de {name}",
+        "trashHint": "Les cartes défaussées, de la plus ancienne à la plus récente.",
+        "banish": "Cartes bannies",
+        "empty": "Aucune carte."
+      },
+      "bf": {
+        "controlled": "Contrôlé par {name}",
+        "contested": "Contesté par {name}",
+        "free": "Libre",
+        "showdown": "Face-à-face"
+      },
+      "player": {
+        "you": "vous",
+        "turn": "Son tour",
+        "deciding": "Réfléchit",
+        "away": "Déconnecté",
+        "points": "{points} / {max} points",
+        "hand": "Main",
+        "deck": "Deck",
+        "runes": "Runes",
+        "runesReady": "{ready} prêtes sur {total}",
+        "runeDeck": "Deck de runes",
+        "pool": "Réserve",
+        "energy": "{count} Énergie",
+        "trash": "Défausse ({count})"
+      },
+      "prompt": {
+        "onTable": "Choisissez sur la table : ce qui est entouré est permis.",
+        "mulligan": "Cliquez les cartes à mettre de côté ({count} sur {max}).",
+        "keepHand": "Garder ma main",
+        "setAside": "{count, plural, one {Mettre # carte de côté} other {Mettre # cartes de côté}}",
+        "waiting": "En attente…",
+        "waitingFor": "En attente de {name}…"
+      },
+      "chain": {
+        "title": "Chaîne",
+        "pending": "en cours de déclaration"
+      },
+      "journal": {
+        "title": "Journal",
+        "empty": "La partie commence.",
+        "rule": "Ouvrir la règle {rule}"
+      },
+      "concede": {
+        "action": "Abandonner",
+        "confirm": "Abandonner la partie ?",
+        "yes": "Oui, abandonner",
+        "no": "Continuer"
+      },
+      "result": {
+        "won": "Victoire !",
+        "winner": "Victoire de {names}",
+        "draw": "Partie nulle",
+        "replay": "Rejouer",
+        "toLobby": "Retour à l'accueil du jeu"
+      },
+      "solo": {
+        "none": "Aucune partie en cours dans ce navigateur.",
+        "toLobby": "Choisir une partie"
+      },
+      "deck": {
+        "label": "Deck",
+        "placeholder": "Choisir un deck",
+        "mine": "Mes decks",
+        "auto": "Deck automatique autour d'une légende",
+        "refused": "{count, plural, one {# deck ne peut pas être joué} other {# decks ne peuvent pas être joués}}",
+        "problem": {
+          "noLegend": "Il manque la légende.",
+          "noChampion": "Il manque le champion choisi.",
+          "unknownCard": "Une carte n'est pas reconnue."
+        }
+      },
+      "lobby": {
+        "you": "Joueur",
+        "botName": "IA {number}",
+        "signIn": "Se connecter",
+        "resumeTitle": "Partie en cours contre l'IA",
+        "resumeHint": "{mode}, {moves} coups joués.",
+        "resume": "Reprendre",
+        "discard": "Abandonner cette partie",
+        "modeTitle": "1. Mode de jeu",
+        "deckTitle": "2. Votre deck",
+        "opponentTitle": "3. Adversaire",
+        "signInForDecks": "Connectez-vous pour jouer avec vos propres decks.",
+        "sets": "Le moteur joue les extensions Origins (OGN) et Proving Grounds (OGS).",
+        "ai": "IA",
+        "aiHint": "Tout de suite, dans votre navigateur.",
+        "online": "En ligne",
+        "onlineHint": "Créez une table et invitez par lien.",
+        "host": "Mon serveur",
+        "hostHint": "Une partie hébergée par vous ou un organisateur.",
+        "level": "Niveau",
+        "startSolo": "Lancer la partie",
+        "replaces": "Lancer une partie remplace celle en cours contre l'IA.",
+        "offline": "Le jeu en ligne n'est pas encore ouvert sur Joutes. Vous pouvez jouer contre l'IA ou sur votre propre serveur.",
+        "signInForOnline": "Connectez-vous pour créer ou rejoindre une table.",
+        "createTable": "Créer une table",
+        "joinLabel": "Rejoindre une table",
+        "joinPlaceholder": "Code ou lien de la table",
+        "join": "Rejoindre",
+        "tablesTitle": "Mes tables",
+        "noTables": "Aucune table en ligne pour l'instant.",
+        "aboutTitle": "Comment ça marche",
+        "about": "Le moteur de Joutes connaît les règles : il ne vous propose que ce qui est permis, résout les effets et raconte chaque évènement en citant la règle appliquée. Les textes du moteur sont en français pour l'instant."
+      },
+      "room": {
+        "title": "Table en ligne · {mode}",
+        "code": "Code {code}",
+        "invite": "Partagez le lien de cette page pour inviter des joueurs. Une fois la partie lancée, le même lien permet de la regarder.",
+        "copy": "Copier le lien",
+        "copied": "Lien copié",
+        "seats": "Sièges ({taken} sur {total})",
+        "host": "Hôte",
+        "freeSeat": "Siège libre",
+        "botSeat": "IA, niveau {level}",
+        "addBot": "Ajouter une IA ({level})",
+        "start": "Lancer la partie",
+        "waitingPlayers": "{count, plural, one {Encore # siège libre} other {Encore # sièges libres}}",
+        "waitingHost": "En attente du lancement par l'hôte.",
+        "cancel": "Annuler la table",
+        "leave": "Quitter",
+        "remove": "Retirer",
+        "cancelled": "Cette table a été annulée.",
+        "join": "S'asseoir à cette table",
+        "signIn": "Connectez-vous pour vous asseoir.",
+        "sit": "S'asseoir",
+        "unreachableHint": "La partie est lancée, mais le serveur de parties ne répond pas. Rechargez la page dans un instant."
+      },
+      "remote": {
+        "badLink": "Ce lien d'invitation est incomplet.",
+        "unreachable": "Impossible de rejoindre la partie.",
+        "unreachableHint": "Le serveur de l'hôte ne répond pas, ou l'invitation a expiré. Depuis une page https, le navigateur refuse aussi un serveur sans chiffrement (sauf sur votre propre machine)."
+      },
+      "host": {
+        "intro": "Lancez le serveur de parties (joutes-server host) sur une machine, puis donnez ici son adresse et son code d'organisateur. Chaque joueur reçoit un lien d'invitation. Joutes ne voit ni l'adresse ni le code.",
+        "server": "Adresse du serveur",
+        "token": "Code d'organisateur",
+        "seat": "Siège {number}",
+        "guest": "Invité",
+        "guestName": "Invité {number}",
+        "guestNameLabel": "Nom du joueur",
+        "guestDeck": "Lien d'un deck Joutes (vide : deck automatique)",
+        "needDeck": "Choisissez d'abord votre deck, à l'étape 2.",
+        "create": "Créer la partie",
+        "refused": "Le serveur a refusé la demande ({status}).",
+        "unreachable": "Serveur injoignable. Vérifiez l'adresse, et qu'elle est en https si cette page l'est.",
+        "created": "La partie est créée. Envoyez à chacun son lien : il donne accès à son siège, et à lui seul.",
+        "open": "Ouvrir ma table",
+        "another": "Créer une autre partie",
+        "spectators": "Spectateurs",
+        "spectator": "Spectateur",
+        "tls": "Depuis joutes.app (https), le navigateur n'accepte qu'un serveur en https, ou lancé sur votre propre machine (localhost)."
+      }
+    },
     "Developers": {
       "metadata": {
         "title": "Joutes pour développeurs Riftbound | MCP, Discord et API",
@@ -902,6 +1136,7 @@
       }
     },
     "nav": {
+      "play": "Jouer",
       "products": "Produits",
       "tools": "Outils",
       "cards": "Cartes",
@@ -932,6 +1167,10 @@
       }
     },
     "detail": {
+      "toolsPlay": {
+        "title": "Jouer",
+        "description": "Affrontez l'IA ou vos amis en ligne : le moteur applique les règles pour vous."
+      },
       "back": "Retour aux jeux",
       "viewEvents": "Voir les événements",
       "findLair": "Trouver un lieu",

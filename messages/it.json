@@ -542,6 +542,240 @@
     }
   },
   "Games": {
+    "Play": {
+      "title": "Gioca a Riftbound",
+      "description": "Gioca a Riftbound nel browser: contro l'IA, online con i tuoi mazzi o sul server di un organizzatore. Il motore applica le regole e cita ciascuna di esse.",
+      "back": "Torna al portale del gioco",
+      "backToLobby": "Torna alla sala di gioco",
+      "status": {
+        "loading": "Caricamento del tavolo…",
+        "error": "Impossibile caricare il tavolo.",
+        "reconnecting": "Connessione persa, nuovo tentativo…"
+      },
+      "mode": {
+        "duel": "Duello",
+        "ffa3": "Tutti contro tutti a 3",
+        "ffa4": "Tutti contro tutti a 4",
+        "teams": "Squadre 2 contro 2"
+      },
+      "modeHint": {
+        "duel": "2 giocatori, 8 punti",
+        "ffa3": "3 giocatori, 3 campi di battaglia",
+        "ffa4": "4 giocatori, 3 campi di battaglia",
+        "teams": "2 squadre da 2, 11 punti"
+      },
+      "level": {
+        "easy": "Facile",
+        "normal": "Normale",
+        "hard": "Difficile"
+      },
+      "kind": {
+        "unit": "Unità",
+        "gear": "Equipaggiamento",
+        "spell": "Magia",
+        "rune": "Runa",
+        "legend": "Leggenda",
+        "battlefield": "Campo di battaglia"
+      },
+      "domain": {
+        "fury": "Furia",
+        "calm": "Calma",
+        "mind": "Mente",
+        "body": "Corpo",
+        "chaos": "Caos",
+        "order": "Ordine"
+      },
+      "tableStatus": {
+        "waiting": "In attesa",
+        "playing": "In corso",
+        "finished": "Terminata",
+        "cancelled": "Annullata"
+      },
+      "error": {
+        "UNAUTHENTICATED": "Accedi per farlo.",
+        "OFFLINE": "Il gioco online non è disponibile al momento.",
+        "NOT_FOUND": "Questo tavolo non esiste.",
+        "FORBIDDEN": "Solo chi ospita il tavolo può farlo.",
+        "INVALID": "Richiesta non valida.",
+        "INVALID_DECK": "Questo mazzo non può essere giocato.",
+        "FULL": "Il tavolo è al completo.",
+        "ALREADY_SEATED": "Sei già seduto a questo tavolo.",
+        "NOT_FULL": "Ci sono ancora posti liberi.",
+        "NOT_WAITING": "La partita è già iniziata.",
+        "SERVER": "Il server di gioco non ha risposto. Riprova tra un momento."
+      },
+      "card": {
+        "hidden": "Carta nascosta",
+        "hiddenHint": "Non puoi vedere questa carta.",
+        "inspect": "Vedi {name}",
+        "attacker": "Attaccante",
+        "defender": "Difensore",
+        "stunned": "Stordita",
+        "exhausted": "Esaurita",
+        "buffed": "Ha un potenziamento",
+        "might": "Potenza {might}, danni subiti {damage}",
+        "unsupported": "Il motore non sa ancora giocare questa carta."
+      },
+      "zone": {
+        "baseOf": "Base di {name}",
+        "myBase": "La mia base",
+        "hand": "La mia mano",
+        "champion": "Campione",
+        "emptyHand": "La tua mano è vuota.",
+        "trashOf": "Scarti di {name}",
+        "trashHint": "Le carte scartate, dalla più vecchia alla più recente.",
+        "banish": "Carte esiliate",
+        "empty": "Nessuna carta."
+      },
+      "bf": {
+        "controlled": "Controllato da {name}",
+        "contested": "Conteso da {name}",
+        "free": "Libero",
+        "showdown": "Confronto"
+      },
+      "player": {
+        "you": "tu",
+        "turn": "Il suo turno",
+        "deciding": "Sta pensando",
+        "away": "Disconnesso",
+        "points": "{points} / {max} punti",
+        "hand": "Mano",
+        "deck": "Mazzo",
+        "runes": "Rune",
+        "runesReady": "{ready} pronte su {total}",
+        "runeDeck": "Mazzo delle rune",
+        "pool": "Riserva",
+        "energy": "{count} Energia",
+        "trash": "Scarti ({count})"
+      },
+      "prompt": {
+        "onTable": "Scegli sul tavolo: ciò che è evidenziato è permesso.",
+        "mulligan": "Clicca le carte da mettere da parte ({count} su {max}).",
+        "keepHand": "Tengo la mano",
+        "setAside": "{count, plural, one {Metti # carta da parte} other {Metti # carte da parte}}",
+        "waiting": "In attesa…",
+        "waitingFor": "In attesa di {name}…"
+      },
+      "chain": {
+        "title": "Catena",
+        "pending": "in dichiarazione"
+      },
+      "journal": {
+        "title": "Registro",
+        "empty": "La partita comincia.",
+        "rule": "Apri la regola {rule}"
+      },
+      "concede": {
+        "action": "Arrenditi",
+        "confirm": "Abbandonare la partita?",
+        "yes": "Sì, mi arrendo",
+        "no": "Continua"
+      },
+      "result": {
+        "won": "Vittoria!",
+        "winner": "Vittoria di {names}",
+        "draw": "Pareggio",
+        "replay": "Gioca ancora",
+        "toLobby": "Torna alla sala di gioco"
+      },
+      "solo": {
+        "none": "Nessuna partita in corso in questo browser.",
+        "toLobby": "Scegli una partita"
+      },
+      "deck": {
+        "label": "Mazzo",
+        "placeholder": "Scegli un mazzo",
+        "mine": "I miei mazzi",
+        "auto": "Mazzo automatico attorno a una leggenda",
+        "refused": "{count, plural, one {# mazzo non può essere giocato} other {# mazzi non possono essere giocati}}",
+        "problem": {
+          "noLegend": "Manca la leggenda.",
+          "noChampion": "Manca il campione scelto.",
+          "unknownCard": "Una carta non è riconosciuta."
+        }
+      },
+      "lobby": {
+        "you": "Giocatore",
+        "botName": "IA {number}",
+        "signIn": "Accedi",
+        "resumeTitle": "Partita in corso contro l'IA",
+        "resumeHint": "{mode}, {moves} mosse giocate.",
+        "resume": "Riprendi",
+        "discard": "Abbandona questa partita",
+        "modeTitle": "1. Modalità di gioco",
+        "deckTitle": "2. Il tuo mazzo",
+        "opponentTitle": "3. Avversario",
+        "signInForDecks": "Accedi per giocare con i tuoi mazzi.",
+        "sets": "Il motore gioca le espansioni Origins (OGN) e Proving Grounds (OGS).",
+        "ai": "IA",
+        "aiHint": "Subito, nel tuo browser.",
+        "online": "Online",
+        "onlineHint": "Crea un tavolo e invita con un link.",
+        "host": "Il mio server",
+        "hostHint": "Una partita ospitata da te o da un organizzatore.",
+        "level": "Livello",
+        "startSolo": "Avvia la partita",
+        "replaces": "Avviare una partita sostituisce quella in corso contro l'IA.",
+        "offline": "Il gioco online non è ancora aperto su Joutes. Puoi giocare contro l'IA o sul tuo server.",
+        "signInForOnline": "Accedi per creare o raggiungere un tavolo.",
+        "createTable": "Crea un tavolo",
+        "joinLabel": "Unisciti a un tavolo",
+        "joinPlaceholder": "Codice o link del tavolo",
+        "join": "Unisciti",
+        "tablesTitle": "I miei tavoli",
+        "noTables": "Nessun tavolo online per ora.",
+        "aboutTitle": "Come funziona",
+        "about": "Il motore di Joutes conosce le regole: ti propone solo ciò che è permesso, risolve gli effetti e racconta ogni evento citando la regola applicata. I testi del motore sono in francese per ora."
+      },
+      "room": {
+        "title": "Tavolo online · {mode}",
+        "code": "Codice {code}",
+        "invite": "Condividi il link di questa pagina per invitare giocatori. A partita avviata, lo stesso link permette di guardarla.",
+        "copy": "Copia il link",
+        "copied": "Link copiato",
+        "seats": "Posti ({taken} su {total})",
+        "host": "Ospite",
+        "freeSeat": "Posto libero",
+        "botSeat": "IA, livello {level}",
+        "addBot": "Aggiungi un'IA ({level})",
+        "start": "Avvia la partita",
+        "waitingPlayers": "{count, plural, one {Ancora # posto libero} other {Ancora # posti liberi}}",
+        "waitingHost": "In attesa dell'avvio da parte di chi ospita.",
+        "cancel": "Annulla il tavolo",
+        "leave": "Esci",
+        "remove": "Rimuovi",
+        "cancelled": "Questo tavolo è stato annullato.",
+        "join": "Siediti a questo tavolo",
+        "signIn": "Accedi per sederti.",
+        "sit": "Siediti",
+        "unreachableHint": "La partita è avviata, ma il server di gioco non risponde. Ricarica la pagina tra un momento."
+      },
+      "remote": {
+        "badLink": "Questo link di invito è incompleto.",
+        "unreachable": "Impossibile raggiungere la partita.",
+        "unreachableHint": "Il server di chi ospita non risponde, oppure l'invito è scaduto. Da una pagina https, il browser rifiuta anche un server non cifrato (tranne sulla tua macchina)."
+      },
+      "host": {
+        "intro": "Avvia il server di gioco (joutes-server host) su una macchina, poi indica qui il suo indirizzo e il codice organizzatore. Ogni giocatore riceve un link di invito. Joutes non vede né l'indirizzo né il codice.",
+        "server": "Indirizzo del server",
+        "token": "Codice organizzatore",
+        "seat": "Posto {number}",
+        "guest": "Invitato",
+        "guestName": "Invitato {number}",
+        "guestNameLabel": "Nome del giocatore",
+        "guestDeck": "Link di un mazzo Joutes (vuoto: mazzo automatico)",
+        "needDeck": "Scegli prima il tuo mazzo, al passo 2.",
+        "create": "Crea la partita",
+        "refused": "Il server ha rifiutato la richiesta ({status}).",
+        "unreachable": "Server irraggiungibile. Controlla l'indirizzo, e che sia in https se questa pagina lo è.",
+        "created": "La partita è creata. Invia a ciascuno il suo link: dà accesso al suo posto, e solo a quello.",
+        "open": "Apri il mio tavolo",
+        "another": "Crea un'altra partita",
+        "spectators": "Spettatori",
+        "spectator": "Spettatore",
+        "tls": "Da joutes.app (https), il browser accetta solo un server in https, o avviato sulla tua macchina (localhost)."
+      }
+    },
     "Developers": {
       "metadata": {
         "title": "Joutes per sviluppatori Riftbound | MCP, Discord e API",
@@ -902,6 +1136,7 @@
       }
     },
     "nav": {
+      "play": "Gioca",
       "products": "Prodotti",
       "tools": "Strumenti",
       "cards": "Carte",
@@ -932,6 +1167,10 @@
       }
     },
     "detail": {
+      "toolsPlay": {
+        "title": "Gioca",
+        "description": "Sfida l'IA o i tuoi amici online: il motore applica le regole per te."
+      },
       "back": "Torna ai giochi",
       "viewEvents": "Vedi gli eventi",
       "findLair": "Trova un luogo",

@@ -47,6 +47,11 @@ export const GAME_FEATURES = {
     description:
       "Statistiques des decks de tournoi relevés pour le jeu : cartes et staples, légendes, extensions et page de chaque tournoi. Les decks s'importent depuis « Gérer la méta » (/decks/meta/manage).",
   },
+  play: {
+    label: "Jouer",
+    description:
+      "Table de jeu : parties contre l'IA dans le navigateur, et parties en ligne si un serveur de parties est configuré (JOUTES_ENGINE_URL). Réservé aux jeux que le moteur sait jouer : Riftbound aujourd'hui.",
+  },
   news: {
     label: "Actualités",
     description: "Fil d'actualités du jeu, sur sa fiche et sur sa propre page.",

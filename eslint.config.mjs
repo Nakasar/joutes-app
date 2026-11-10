@@ -36,6 +36,9 @@ const eslintConfig = defineConfig([
     // Fichiers produits par scripts/build-mcp-apps.mjs.
     'app/mcp/apps/*.generated.ts',
     'design/**',
+    // Moteur de jeu compilé (dépôt joutes-engine) et son binaire en base64.
+    'lib/engine/pkg/**',
+    'lib/engine/wasm.generated.ts',
   ]),
 ])
  

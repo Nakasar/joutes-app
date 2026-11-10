@@ -73,6 +73,13 @@ export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string
             </Link>
           </Button>
         }
+        {game.features?.play && currentTab !== 'play' &&
+          <Button variant="secondary" asChild>
+            <Link href={`/games/${gameSlug}/play`} className="hover:underline">
+              {t("play")}
+            </Link>
+          </Button>
+        }
         {game.features?.news && currentTab !== 'news' &&
           <Button variant="secondary" asChild>
             <Link href={`/games/${gameSlug}/news`} className="hover:underline">
@@ -178,6 +185,13 @@ export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string
               <DropdownMenuItem asChild>
                 <Link href={`/games/${gameSlug}/meta`}>
                   {t("meta")}
+                </Link>
+              </DropdownMenuItem>
+            }
+            {game.features?.play &&
+              <DropdownMenuItem asChild>
+                <Link href={`/games/${gameSlug}/play`}>
+                  {t("play")}
                 </Link>
               </DropdownMenuItem>
             }

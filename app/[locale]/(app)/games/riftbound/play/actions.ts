@@ -1,0 +1,255 @@
+"use server";
+
+import { headers } from "next/headers";
+
+import { auth } from "@/lib/auth.ts";
+import { searchDecks } from "@/lib/db/decks.ts";
+import { getGameTable, listGameTablesOf } from "@/lib/db/game-tables.ts";
+import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
+import { toEngineDeck } from "@/lib/engine/deck.ts";
+import { validateEngineDeck } from "@/lib/engine/server.ts";
+import {
+  addBot,
+  autoDeckLegends,
+  createTable,
+  engineServer,
+  isBotLevel,
+  isEngineMode,
+  joinTable,
+  leaveSeat,
+  resolveDeck,
+  startTable,
+  summarize,
+  tableAccess,
+  TableFailure,
+  type DeckChoice,
+  type Seated,
+  type TableAccess,
+  type TableError,
+} from "@/lib/engine/tables.ts";
+import type { EngineDeckList } from "@/lib/engine/types.ts";
+import type { GameTableSummary } from "@/lib/types/GameTable.ts";
+
+/**
+ * Les échecs sortent en codes, pas en phrases : ces actions ne savent pas dans
+ * quelle langue la page est rendue. `details` porte les refus du moteur pour un
+ * deck, qui eux n'existent qu'en français pour l'instant.
+ */
+export type PlayResult<T = object> = ({ ok: true } & T) | { ok: false; error: TableError; details?: string[] };
+
+export type LobbyDeck = {
+  id: string;
+  name: string;
+  /** Code moteur de la légende, pour la vignette. */
+  legend: string | null;
+  /** Absente si le deck ne peut pas être joué ; `problems` dit pourquoi. */
+  list: EngineDeckList | null;
+  problems: string[];
+};
+
+export type Lobby = {
+  signedIn: boolean;
+  name: string | null;
+  /** Faux si aucun serveur de parties n'est configuré : seule l'IA est proposée. */
+  online: boolean;
+  decks: LobbyDeck[];
+  tables: GameTableSummary[];
+  /** Légendes (codes du moteur) autour desquelles un deck automatique existe. */
+  legends: string[];
+};
+
+const GAME_SLUG = "riftbound";
+
+async function viewer(): Promise<Seated | null> {
+  const session = await auth.api.getSession({ headers: await headers() });
+  const user = session?.user;
+  if (!user?.id) return null;
+  const displayName = (user as { displayName?: string }).displayName;
+  return { userId: user.id, name: (displayName || user.name || "Joueur").slice(0, 40) };
+}
+
+async function playableGame(): Promise<{ id: string; slug: string }> {
+  const game = await readGameBySlugOrId(GAME_SLUG);
+  if (!game?.features?.play) throw new TableFailure("NOT_FOUND");
+  return { id: game.id, slug: game.slug ?? GAME_SLUG };
+}
+
+async function guarded<T extends object>(run: () => Promise<T>): Promise<PlayResult<T>> {
+  try {
+    return { ok: true, ...(await run()) };
+  } catch (error) {
+    if (error instanceof TableFailure) {
+      return { ok: false, error: error.code, ...(error.details.length ? { details: error.details } : {}) };
+    }
+    console.error("Table de jeu :", error);
+    return { ok: false, error: "SERVER" };
+  }
+}
+
+async function requireViewer(): Promise<Seated> {
+  const seated = await viewer();
+  if (!seated) throw new TableFailure("UNAUTHENTICATED");
+  return seated;
+}
+
+function parseChoice(choice: unknown): DeckChoice {
+  const value = choice as { kind?: unknown; deckId?: unknown; legend?: unknown } | null;
+  if (value?.kind === "deck" && typeof value.deckId === "string") {
+    return { kind: "deck", deckId: value.deckId };
+  }
+  if (value?.kind === "auto" && typeof value.legend === "string") {
+    return { kind: "auto", legend: value.legend };
+  }
+  throw new TableFailure("INVALID");
+}
+
+function parseTableId(id: unknown): string {
+  if (typeof id !== "string" || !/^[a-z0-9]{4,32}$/.test(id)) throw new TableFailure("NOT_FOUND");
+  return id;
+}
+
+/** Ce dont la page Jouer a besoin : mes decks (vérifiés par le moteur) et mes tables. */
+export async function loadLobby(): Promise<PlayResult<{ lobby: Lobby }>> {
+  return guarded(async () => {
+    const game = await playableGame();
+    const seated = await viewer();
+    const online = engineServer() !== null;
+    if (!seated) {
+      return { lobby: { signedIn: false, name: null, online, decks: [], tables: [], legends: autoDeckLegends() } };
+    }
+
+    const [{ decks }, tables] = await Promise.all([
+      searchDecks({
+        playerId: seated.userId,
+        viewerId: seated.userId,
+        gameId: game.id,
+        scope: "mine",
+        sortBy: "updatedAt",
+        sortOrder: "desc",
+        limit: 100,
+      }),
+      online ? listGameTablesOf(seated.userId, 10) : Promise.resolve([]),
+    ]);
+
+    const lobbyDecks = decks.map((deck): LobbyDeck => {
+      const { list, problems } = toEngineDeck(deck.cards);
+      if (!list) {
+        return { id: deck.id, name: deck.name, legend: null, list: null, problems: problems.map((p) => p.kind) };
+      }
+      const refused = validateEngineDeck(list);
+      return {
+        id: deck.id,
+        name: deck.name,
+        legend: list.legend,
+        list: refused.length === 0 ? list : null,
+        problems: refused,
+      };
+    });
+
+    return {
+      lobby: {
+        signedIn: true,
+        name: seated.name,
+        online,
+        decks: lobbyDecks,
+        tables: tables.map(summarize),
+        legends: autoDeckLegends(),
+      },
+    };
+  });
+}
+
+export async function createTableAction(mode: unknown, choice: unknown): Promise<PlayResult<{ id: string }>> {
+  return guarded(async () => {
+    const game = await playableGame();
+    const seated = await requireViewer();
+    if (!isEngineMode(mode)) throw new TableFailure("INVALID");
+    const table = await createTable(seated, mode, parseChoice(choice), game);
+    return { id: table.id };
+  });
+}
+
+export async function joinTableAction(id: unknown, choice: unknown): Promise<PlayResult> {
+  return guarded(async () => {
+    const game = await playableGame();
+    const seated = await requireViewer();
+    await joinTable(seated, parseTableId(id), parseChoice(choice), game.id);
+    return {};
+  });
+}
+
+export async function addBotAction(id: unknown, level: unknown): Promise<PlayResult> {
+  return guarded(async () => {
+    await playableGame();
+    const seated = await requireViewer();
+    if (!isBotLevel(level)) throw new TableFailure("INVALID");
+    await addBot(seated.userId, parseTableId(id), level);
+    return {};
+  });
+}
+
+export async function leaveSeatAction(id: unknown, seat: unknown): Promise<PlayResult> {
+  return guarded(async () => {
+    await playableGame();
+    const seated = await requireViewer();
+    if (typeof seat !== "number" || !Number.isInteger(seat)) throw new TableFailure("INVALID");
+    await leaveSeat(seated.userId, parseTableId(id), seat);
+    return {};
+  });
+}
+
+export async function startTableAction(id: unknown): Promise<PlayResult> {
+  return guarded(async () => {
+    await playableGame();
+    const seated = await requireViewer();
+    await startTable(seated.userId, parseTableId(id));
+    return {};
+  });
+}
+
+export type TableState = {
+  table: GameTableSummary;
+  /** Mon siège à cette table, ou `null` si je n'y suis pas assis. */
+  seat: number | null;
+  isHost: boolean;
+  signedIn: boolean;
+  /** L'entrée à la partie, une fois lancée. Un visiteur entre en spectateur. */
+  access: TableAccess | null;
+};
+
+export async function readTableAction(id: unknown): Promise<PlayResult<{ state: TableState }>> {
+  return guarded(async () => {
+    await playableGame();
+    const seated = await viewer();
+    const table = await getGameTable(parseTableId(id));
+    if (!table) throw new TableFailure("NOT_FOUND");
+    const seat = seated ? table.seats.findIndex((candidate) => candidate.userId === seated.userId) : -1;
+    return {
+      state: {
+        table: summarize(table),
+        seat: seat >= 0 ? seat : null,
+        isHost: seated?.userId === table.hostId,
+        signedIn: seated !== null,
+        access: tableAccess(table, seated),
+      },
+    };
+  });
+}
+
+/**
+ * Le deck d'un invité en mode hôte, donné par son lien ou son identifiant
+ * Joutes. Seuls les decks que le demandeur peut voir sont lus.
+ */
+export async function resolveDeckAction(
+  reference: unknown,
+): Promise<PlayResult<{ name: string; list: EngineDeckList }>> {
+  return guarded(async () => {
+    const game = await playableGame();
+    const seated = await viewer();
+    if (typeof reference !== "string") throw new TableFailure("INVALID");
+    const deckId = /[a-f0-9]{24}/i.exec(reference)?.[0];
+    if (!deckId) throw new TableFailure("INVALID_DECK");
+    const { deck, deckName } = await resolveDeck({ kind: "deck", deckId }, seated?.userId ?? null, game.id);
+    return { name: deckName, list: deck };
+  });
+}

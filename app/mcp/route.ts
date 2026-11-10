@@ -20,6 +20,7 @@ import { MCP_TOKEN } from "@/lib/well-known/auth-md";
 import { MCP_SERVER_INFO } from "@/lib/well-known/mcp-server-card";
 import { registerJoutesDataTools, withToolLogging } from "./tools";
 import { registerMetaTools } from "./tools-meta";
+import { registerJudgeTools } from "./tools-judge";
 import { registerNewsTools } from "./tools-news";
 import { registerJoutesTool, requiresAccount, userIdFrom } from "./tool-policy";
 import { linkLine, mcpLinks } from "@/lib/mcp/links";
@@ -701,6 +702,7 @@ const handler = createMcpHandler(server => {
     }, withToolLogging("get_rule", handleGetRule));
     registerJoutesDataTools(server);
     registerMetaTools(server);
+    registerJudgeTools(server);
     registerNewsTools(server);
 }, {
     // Partagé avec la carte du serveur : ce que dit la poignée de main et ce
