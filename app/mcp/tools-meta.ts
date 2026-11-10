@@ -92,8 +92,9 @@ type MetaGame = {
 
 /** Le jeu, s'il a la méta ouverte ; Riftbound par défaut. */
 async function resolveMetaGame(gameName?: string): Promise<MetaGame | { error: ToolResult }> {
-    const game = await resolveGame(gameName?.trim() || "riftbound");
-    if (!game) return { error: errorResult(`Jeu « ${gameName} » introuvable.`) };
+    const wanted = gameName?.trim() || "riftbound";
+    const game = await resolveGame(wanted);
+    if (!game) return { error: errorResult(`Jeu « ${wanted} » introuvable.`) };
     if (!game.features?.meta) return { error: errorResult(`La méta des decks n'est pas ouverte pour ${game.name}.`) };
     const gameId = game._id.toString();
     return { gameId, name: game.name, slug: game.slug ?? gameId, settings: resolveMetaSettings(game.metaSettings) };

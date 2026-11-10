@@ -101,6 +101,20 @@ function sourceFrom(args: NewsFields): { source?: { name: string; url: string } 
     return { source: { name, url } };
 }
 
+/**
+ * Une bannière s'affiche en image sur le site : comme pour la source, http(s)
+ * et rien d'autre (`url()` du schéma accepte aussi `javascript:` et `data:`).
+ */
+function invalidBanner(banner: string | undefined): ToolResult | null {
+    if (!banner) return null;
+    try {
+        if (/^https?:$/.test(new URL(banner).protocol)) return null;
+    } catch {
+        // Pas une URL : refusée ci-dessous.
+    }
+    return errorResult("banner doit être une adresse http(s).");
+}
+
 function cleanTags(tags: string[] | undefined): string[] | undefined {
     return tags ? [...new Set(tags.map((tag) => tag.trim().replace(/^#/, "")).filter(Boolean))] : undefined;
 }
@@ -113,6 +127,8 @@ async function handleCreateNews(args: NewsFields & { title: string; summary: str
     if ("error" in games) return games.error;
     const source = sourceFrom(args);
     if ("error" in source) return source.error;
+    const badBanner = invalidBanner(args.banner);
+    if (badBanner) return badBanner;
 
     const parsed = createNewsSchema.safeParse({
         title: args.title,
@@ -149,6 +165,8 @@ async function handleUpdateNews(
     const source = sourceFrom(args);
     if ("error" in source) return source.error;
     if (args.removeSource && source.source) return errorResult("removeSource et une nouvelle source s'excluent.");
+    const badBanner = invalidBanner(args.banner);
+    if (badBanner) return badBanner;
 
     const parsed = updateNewsSchema.safeParse({
         ...(args.title !== undefined ? { title: args.title } : {}),
