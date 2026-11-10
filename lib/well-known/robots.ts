@@ -14,13 +14,12 @@
 export const CONTENT_SIGNAL = "search=yes, ai-input=yes, ai-train=yes";
 
 /**
- * Les vues filtrées de la méta (onglet, période, légende, domaine, carte,
- * seuil, page…) se combinent sans fin : un robot qui suit tous les liens
- * recalcule la méta à chaque adresse. PerplexityBot en a tiré 117 000 en deux
- * jours (9-10 nov. 2026, ~15 Go sortis de nos fonctions). Seule la vue sans
- * paramètre s'explore ; la règle la plus longue l'emporte sur `Allow: /`.
+ * La méta (`/games/:jeu/meta` et ses sous-pages) est fermée aux robots : ses
+ * filtres se combinent sans fin et chaque adresse recalcule les statistiques.
+ * PerplexityBot en a tiré 117 000 en deux jours (9-10 nov. 2026, ~15 Go sortis
+ * de nos fonctions). Le proxy les refuse aussi (`lib/net/meta-bots.ts`).
  */
-export const META_QUERY_DISALLOWS = ["/*/meta?", "/*/meta/*?"];
+export const META_DISALLOWS = ["/games/*/meta", "/*/games/*/meta"];
 
 /**
  * Robots sans intérêt pour Joutes, qui parcourent tout le site : SE Ranking
@@ -46,7 +45,7 @@ User-Agent: *
 Content-Signal: ${CONTENT_SIGNAL}
 Allow: /
 Disallow: /admin/
-${META_QUERY_DISALLOWS.map((path) => `Disallow: ${path}`).join("\n")}
+${META_DISALLOWS.map((path) => `Disallow: ${path}`).join("\n")}
 
 ${BLOCKED_AGENTS.map((agent) => `User-Agent: ${agent}\nDisallow: /`).join("\n\n")}
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { BLOCKED_AGENTS, buildRobotsTxt, CONTENT_SIGNAL, META_QUERY_DISALLOWS } from "./robots";
+import { BLOCKED_AGENTS, buildRobotsTxt, CONTENT_SIGNAL, META_DISALLOWS } from "./robots";
 
 /**
  * `robots.txt` et ses Content Signals.
@@ -63,13 +63,12 @@ describe("buildRobotsTxt", () => {
     assert.ok(lines.includes("Sitemap: https://www.joutes.app/sitemap_index.xml"));
   });
 
-  it("ferme les vues filtrées de la méta, pas la méta elle-même", () => {
+  it("ferme la méta aux robots", () => {
     const lines = directives(buildRobotsTxt());
     const wildcard = lines.indexOf("User-Agent: *");
     const nextGroup = lines.findIndex((line, index) => index > wildcard && line.startsWith("User-Agent:"));
     const group = lines.slice(wildcard, nextGroup === -1 ? undefined : nextGroup);
-    for (const path of META_QUERY_DISALLOWS) assert.ok(group.includes(`Disallow: ${path}`), `${path} absent du groupe *`);
-    assert.ok(!group.includes("Disallow: /*/meta"), "la méta sans filtre doit rester ouverte");
+    for (const path of META_DISALLOWS) assert.ok(group.includes(`Disallow: ${path}`), `${path} absent du groupe *`);
   });
 
   it("donne aux robots bloqués leur propre groupe", () => {

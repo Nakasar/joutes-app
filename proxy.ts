@@ -4,6 +4,7 @@ import createIntlProxy from 'next-intl/middleware'
 
 import { routing } from '@/i18n/routing'
 import { isCredentialedOrigin } from '@/lib/net/own-origins'
+import { isBlockedMetaBot } from '@/lib/net/meta-bots'
 
 const intlProxy = createIntlProxy(routing);
 
@@ -43,6 +44,15 @@ export function proxy(request: NextRequest) {
     res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
     return res;
+  }
+
+  // Les robots n'ont rien à faire sur la méta, qui recalcule ses statistiques
+  // à chaque adresse (`lib/net/meta-bots.ts`) : refus avant tout rendu.
+  if (isBlockedMetaBot(request.nextUrl.pathname, request.headers.get("user-agent"))) {
+    return new NextResponse("Robots non admis sur cette page.", {
+      status: 403,
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Robots-Tag": "noindex, nofollow" },
+    });
   }
 
   // Hors API, seule reste la négociation de langue : `next-intl` lit le
