@@ -20,13 +20,20 @@ import { listMyGroupsForDeck, setDeckInGroupAction, type MyGroupForDeck } from "
 export function DeckGroupsSection({ deckId, open }: { deckId: string; open: boolean }) {
   const t = useTranslations("PlayGroups.hub.decks.share");
   const [groups, setGroups] = useState<MyGroupForDeck[] | null>(null);
+  // Un échec de lecture n'est pas « aucun groupe » : le dire autrement
+  // inviterait à rejoindre un groupe dont on est peut-être déjà membre.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     listMyGroupsForDeck(deckId).then((result) => {
-      if (!cancelled) setGroups(result.success ? result.groups : []);
+      if (cancelled) return;
+      setLoadFailed(!result.success);
+      setGroups(result.success ? result.groups : []);
+    }).catch(() => {
+      if (!cancelled) setLoadFailed(true);
     });
 
     return () => {
@@ -50,7 +57,9 @@ export function DeckGroupsSection({ deckId, open }: { deckId: string; open: bool
   return (
     <div className="flex flex-col gap-2">
       <span className="text-sm font-semibold">{t("title")}</span>
-      {groups === null ? (
+      {loadFailed ? (
+        <p className="text-xs text-destructive">{t("loadError")}</p>
+      ) : groups === null ? (
         <div className="h-12 animate-pulse rounded-lg border bg-muted/40" aria-hidden />
       ) : groups.length === 0 ? (
         <p className="text-xs text-muted-foreground">

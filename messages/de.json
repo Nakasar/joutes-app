@@ -4009,6 +4009,7 @@
           "empty": "Du bist in keiner Gruppe. <link>Eine Gruppe finden</link>",
           "added": "Deck mit {group} geteilt",
           "removed": "Deck aus {group} entfernt",
+          "loadError": "Deine Gruppen konnten nicht geladen werden. Öffne das Fenster erneut, um es noch einmal zu versuchen.",
           "error": "Die Freigabe wurde nicht geändert.",
           "refusal": {
             "NOT_MEMBER": "Nur für Mitglieder",

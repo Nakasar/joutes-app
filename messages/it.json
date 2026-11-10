@@ -3187,6 +3187,7 @@
           "empty": "Non fai parte di nessun gruppo. <link>Trova un gruppo</link>",
           "added": "Mazzo condiviso con {group}",
           "removed": "Mazzo tolto da {group}",
+          "loadError": "Impossibile caricare i tuoi gruppi. Riapri la finestra per riprovare.",
           "error": "La condivisione non è stata modificata.",
           "refusal": {
             "NOT_MEMBER": "Solo per i membri",

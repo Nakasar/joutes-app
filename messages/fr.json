@@ -3187,6 +3187,7 @@
           "empty": "Vous n'êtes membre d'aucun groupe. <link>Trouver un groupe</link>",
           "added": "Deck partagé à {group}",
           "removed": "Deck retiré de {group}",
+          "loadError": "Impossible de charger vos groupes. Rouvrez la fenêtre pour réessayer.",
           "error": "Le partage n'a pas été modifié.",
           "refusal": {
             "NOT_MEMBER": "Réservé aux membres",

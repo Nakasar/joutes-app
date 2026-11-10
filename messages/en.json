@@ -3187,6 +3187,7 @@
           "empty": "You are not a member of any group. <link>Find a group</link>",
           "added": "Deck shared with {group}",
           "removed": "Deck removed from {group}",
+          "loadError": "Your groups could not be loaded. Reopen this window to try again.",
           "error": "Sharing was not changed.",
           "refusal": {
             "NOT_MEMBER": "Members only",
