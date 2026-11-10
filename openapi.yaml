@@ -1565,6 +1565,116 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /decks/{deckId}/comments:
+    parameters:
+      - { name: deckId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-fA-F]{24}$" } }
+    get:
+      tags: [Decks]
+      summary: Read a deck's comment thread in one space
+      description: >
+        Comments live in a **space**: `personal` (the deck author alone, for
+        now) or `group:<playGroupId>` (every member of the group, as long as the
+        deck is in its library; removing the deck closes the thread without
+        erasing it). A comment posted in a group stays in that group. Roots come
+        newest first, each with its replies in order (one level). A card linked
+        to a comment and since removed from the deck is flagged `removed`, with
+        its name kept. A deleted root with replies stays, emptied.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: space, in: query, required: true, schema: { type: string, example: "group:65f0c0ffee" } }
+        - { name: markRead, in: query, required: false, schema: { type: string, enum: ["1"] }, description: Records the caller's visit; `lastReadAt` still returns the previous one. }
+      responses:
+        "200":
+          description: The thread.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deckId: { type: string }
+                  space: { type: string }
+                  deckVersion: { type: integer }
+                  lastReadAt: { type: string, format: date-time, description: The caller's previous visit, absent the first time. }
+                  authors:
+                    type: object
+                    additionalProperties: { type: object, properties: { name: { type: string }, avatar: { type: string } } }
+                  comments:
+                    type: array
+                    items: { $ref: "#/components/schemas/DeckComment" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [Decks]
+      summary: Comment on a deck, or reply to a root comment
+      description: >
+        Up to 2000 characters and 10 cards, each in the deck at the time of
+        writing; a reply (`parentId`) links no card. Posting marks the thread
+        read. In a group, the deck author is notified of every new comment and
+        reply but their own.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [space, body]
+              properties:
+                space: { type: string }
+                body: { type: string, maxLength: 2000 }
+                cardIds: { type: array, maxItems: 10, items: { type: string } }
+                parentId: { type: string }
+      responses:
+        "201": { description: The new comment. }
+        "400": { description: "`INVALID`, `EMPTY`, `TOO_LONG`, `TOO_MANY_CARDS`, `CARD_NOT_IN_DECK` or `REPLY_WITH_CARDS`." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Decks]
+      summary: Edit a comment, or resolve / reopen it
+      description: >
+        Editing is for the comment's author. Resolving (roots only) is for the
+        comment's author or the deck author, and records the deck version.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [commentId, body]
+                  properties:
+                    commentId: { type: string }
+                    body: { type: string, maxLength: 2000 }
+                    cardIds: { type: array, maxItems: 10, items: { type: string } }
+                - type: object
+                  required: [commentId, resolved]
+                  properties:
+                    commentId: { type: string }
+                    resolved: { type: boolean }
+      responses:
+        "200": { description: Updated. }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Decks]
+      summary: Delete a comment
+      description: For the comment's author, the deck author, or an owner or admin of the group.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: commentId, in: query, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   /decks/{deckId}/cover:
     parameters:
       - { name: deckId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-fA-F]{24}$" } }
@@ -5534,6 +5644,25 @@ components:
       content: { application/json: { schema: { $ref: "#/components/schemas/NestedError" } } }
 
   schemas:
+    DeckComment:
+      type: object
+      properties:
+        id: { type: string }
+        authorId: { type: string }
+        body: { type: string, description: Empty for a deleted root kept for its replies. }
+        cards:
+          type: array
+          items: { type: object, properties: { id: { type: string }, name: { type: string }, removed: { type: boolean } } }
+        deckVersion: { type: integer, description: Deck version when the comment was written. }
+        createdAt: { type: string, format: date-time }
+        editedAt: { type: string, format: date-time }
+        resolvedAt: { type: string, format: date-time }
+        resolvedVersion: { type: integer }
+        deleted: { type: boolean }
+        permissions:
+          type: object
+          properties: { canEdit: { type: boolean }, canDelete: { type: boolean }, canResolve: { type: boolean } }
+        replies: { type: array, items: { $ref: "#/components/schemas/DeckComment" } }
     Notification:
       type: object
       properties:

@@ -1,10 +1,12 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { DateTime } from "luxon";
-import { Info, Layers, Pin } from "lucide-react";
+import { Info, Layers, MessageSquare, Pin } from "lucide-react";
 
 import { Link } from "@/i18n/navigation.ts";
 import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
+import { countDeckCommentsInSpace, listLatestCommentsInSpace, type DeckCommentCounts } from "@/lib/db/deck-comments.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
+import { groupSpace } from "@/lib/decks/comments.ts";
 import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import { domainColor } from "@/lib/meta/domains.ts";
 import { readGroupDeckLibrary, type GroupLibraryEntry } from "@/lib/play-groups/deck-library.ts";
@@ -17,7 +19,7 @@ import {
 } from "@/lib/play-groups/decks.ts";
 import { cn } from "@/lib/utils.ts";
 
-import { readGroupMembers, requirePlayGroupMember, type PlayGroupMemberProfile } from "../group-data.ts";
+import { memberName, readGroupMembers, requirePlayGroupMember, type PlayGroupMemberProfile } from "../group-data.ts";
 import { viewHref } from "../views.ts";
 import { AddDecksDialog } from "./AddDecksDialog.tsx";
 import { DeckFilterBar } from "./DeckFilterBar.tsx";
@@ -58,6 +60,20 @@ export default async function DecksView({
     getTranslations("PlayGroups.hub.decks"),
     getLocale(),
   ]);
+
+  // Les commentaires du fil du groupe : le compte de chaque deck, et ce qui
+  // s'y est dit en dernier. Un membre arrivé hier ne voit pas tout
+  // l'historique comme neuf : ses non-lus partent de son arrivée.
+  const space = groupSpace(playGroupId);
+  const joinedAt = members.find((member) => member.userId === viewer.userId)?.joinedAt;
+  const [commentCounts, latestComments] = await Promise.all([
+    viewer.userId ? countDeckCommentsInSpace(space, viewer.userId, joinedAt) : new Map<string, DeckCommentCounts>(),
+    listLatestCommentsInSpace(space, 12),
+  ]);
+  const deckName = new Map(library.map((entry) => [entry.deck.id, entry.deck.name]));
+  // Le fil d'un deck retiré du groupe se referme : ses commentaires ne se
+  // montrent plus ici non plus.
+  const latest = latestComments.filter((comment) => deckName.has(comment.deckId)).slice(0, 3);
 
   const filters = readGroupDeckFilters(searchParams);
   const params = filterParams(filters);
@@ -103,14 +119,25 @@ export default async function DecksView({
       {library.length > 0 && (
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-2">
-            <FilterChip href={hrefWith({ jeu: undefined, legende: undefined, domaine: undefined })} active={!filters.gameId}>
+            <FilterChip
+              href={hrefWith({
+                jeu: undefined,
+                legende: undefined,
+                domaine: undefined,
+              })}
+              active={!filters.gameId}
+            >
               {t("allGames")}
               <span className="font-mono text-[11px] text-muted-foreground">{library.length}</span>
             </FilterChip>
             {[...gameCounts].map(([gameId, count]) => (
               <FilterChip
                 key={gameId}
-                href={hrefWith({ jeu: gameId, legende: undefined, domaine: undefined })}
+                href={hrefWith({
+                  jeu: gameId,
+                  legende: undefined,
+                  domaine: undefined,
+                })}
                 active={filters.gameId === gameId}
               >
                 {gameName.get(gameId) ?? gameId}
@@ -119,19 +146,16 @@ export default async function DecksView({
             ))}
           </div>
 
-          <DeckFilterBar
-            playGroupId={playGroupId}
-            params={params}
-            legends={legends}
-            owners={owners}
-          />
+          <DeckFilterBar playGroupId={playGroupId} params={params} legends={legends} owners={owners} />
 
           {domains.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {domains.map((domain) => (
                 <FilterChip
                   key={domain}
-                  href={hrefWith({ domaine: filters.domain === domain ? undefined : domain })}
+                  href={hrefWith({
+                    domaine: filters.domain === domain ? undefined : domain,
+                  })}
                   active={filters.domain === domain}
                 >
                   <span className="size-2 rounded-full" style={{ background: domainColor(domain) }} aria-hidden />
@@ -153,32 +177,74 @@ export default async function DecksView({
         <section className="flex flex-col items-center gap-2 rounded-xl border bg-card/60 px-6 py-10 text-center">
           <p className="text-sm text-muted-foreground">{t("noMatch")}</p>
           {filtered && (
-            <Link href={viewHref(playGroupId, "decks")} className="text-sm font-medium text-[var(--group-accent-text)] hover:underline">
+            <Link
+              href={viewHref(playGroupId, "decks")}
+              className="text-sm font-medium text-[var(--group-accent-text)] hover:underline"
+            >
               {t("resetFilters")}
             </Link>
           )}
         </section>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {entries.map((entry) => (
-            <GroupDeckCard
-              key={entry.link.deckId}
-              entry={entry}
-              owner={members.find((member) => member.userId === entry.link.ownerId)}
-              isMine={entry.link.ownerId === viewer.userId}
-              gameName={filters.gameId ? undefined : gameName.get(entry.deck.gameId)}
-              playGroupId={playGroupId}
-              canRemove={Boolean(viewer.userId) && canRemoveGroupDeck(entry.link, viewer.userId!, viewer.role)}
-              canPin={canPinGroupDeck(viewer.role)}
-              locale={locale}
-              labels={{
-                you: t("you"),
-                pinned: t("pinned"),
-                visibility: t(`visibility.${entry.deck.visibility}`),
-                updated: (relative: string) => t("updated", { relative }),
-              }}
-            />
-          ))}
+        <div className={cn("grid gap-5", latest.length > 0 && "xl:grid-cols-[minmax(0,1fr)_300px]")}>
+          <div
+            className={cn(
+              "grid content-start gap-4 sm:grid-cols-2",
+              latest.length > 0 ? "2xl:grid-cols-3" : "xl:grid-cols-3",
+            )}
+          >
+            {entries.map((entry) => (
+              <GroupDeckCard
+                key={entry.link.deckId}
+                entry={entry}
+                owner={members.find((member) => member.userId === entry.link.ownerId)}
+                isMine={entry.link.ownerId === viewer.userId}
+                gameName={filters.gameId ? undefined : gameName.get(entry.deck.gameId)}
+                playGroupId={playGroupId}
+                canRemove={Boolean(viewer.userId) && canRemoveGroupDeck(entry.link, viewer.userId!, viewer.role)}
+                canPin={canPinGroupDeck(viewer.role)}
+                locale={locale}
+                comments={commentCounts.get(entry.deck.id)}
+                labels={{
+                  you: t("you"),
+                  pinned: t("pinned"),
+                  visibility: t(`visibility.${entry.deck.visibility}`),
+                  updated: (relative: string) => t("updated", { relative }),
+                  comments: (count: number) => t("comments", { count }),
+                  unread: (count: number) => t("unread", { count }),
+                }}
+              />
+            ))}
+          </div>
+          {latest.length > 0 && (
+            <aside className="flex flex-col gap-3 self-start rounded-xl border bg-card/60 p-4">
+              <h2 className="flex items-center gap-2 text-sm font-semibold">
+                <MessageSquare className="size-4 text-[var(--group-accent-text)]" aria-hidden />
+                {t("latestComments")}
+              </h2>
+              <ul className="flex flex-col gap-3">
+                {latest.map((comment) => (
+                  <li key={comment.id}>
+                    <Link
+                      href={viewHref(playGroupId, "decks", {
+                        filters: { deck: comment.deckId },
+                      })}
+                      className="flex flex-col gap-1 rounded-lg p-1.5 -m-1.5 hover:bg-accent"
+                    >
+                      <span className="truncate text-xs text-muted-foreground">
+                        {comment.authorId === viewer.userId ? t("you") : memberName(members, comment.authorId)} ·{" "}
+                        {deckName.get(comment.deckId)}
+                      </span>
+                      <span className="line-clamp-2 text-[13px]">{comment.body}</span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {DateTime.fromISO(comment.createdAt).setLocale(locale).toRelative()}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          )}
         </div>
       )}
 
@@ -225,6 +291,7 @@ function GroupDeckCard({
   canRemove,
   canPin,
   locale,
+  comments,
   labels,
 }: {
   entry: GroupLibraryEntry;
@@ -235,10 +302,19 @@ function GroupDeckCard({
   canRemove: boolean;
   canPin: boolean;
   locale: string;
-  labels: { you: string; pinned: string; visibility: string; updated: (relative: string) => string };
+  comments?: DeckCommentCounts;
+  labels: {
+    you: string;
+    pinned: string;
+    visibility: string;
+    updated: (relative: string) => string;
+    comments: (count: number) => string;
+    unread: (count: number) => string;
+  };
 }) {
   const { link, deck } = entry;
   const ownerName = isMine ? labels.you : (owner?.displayName ?? link.ownerId);
+  const href = viewHref(playGroupId, "decks", { filters: { deck: deck.id } });
   const relative = DateTime.fromJSDate(new Date(deck.updatedAt)).setLocale(locale).toRelative() ?? "";
 
   return (
@@ -249,7 +325,7 @@ function GroupDeckCard({
       )}
     >
       <div className="relative">
-        <Link href={`/decks/${deck.id}`} aria-hidden tabIndex={-1} className="block">
+        <Link href={href} aria-hidden tabIndex={-1} className="block">
           <DeckCoverImage cover={resolveDeckCover(deck)} name={deck.name} className="aspect-[16/7] w-full" />
         </Link>
         {link.pinnedAt && (
@@ -263,7 +339,7 @@ function GroupDeckCard({
       <div className="flex flex-1 flex-col gap-2.5 p-4">
         <div className="flex items-start gap-2">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <Link href={`/decks/${deck.id}`} className="truncate text-[17px] font-semibold hover:underline">
+            <Link href={href} className="truncate text-[17px] font-semibold hover:underline">
               {deck.name}
             </Link>
             {(deck.legendName || gameName) && (
@@ -288,6 +364,18 @@ function GroupDeckCard({
           <span className="min-w-0 truncate">
             {ownerName} · {labels.updated(relative)}
           </span>
+          {comments && comments.total > 0 && (
+            <Link href={href} className="ml-auto inline-flex shrink-0 items-center gap-1 hover:text-foreground">
+              <MessageSquare className="size-3.5" aria-hidden />
+              <span className="sr-only">{labels.comments(comments.total)}</span>
+              <span aria-hidden>{comments.total}</span>
+              {comments.unread > 0 && (
+                <span className="rounded-full bg-[var(--group-accent)] px-1.5 py-px text-[10px] font-semibold text-[var(--group-accent-foreground)]">
+                  {labels.unread(comments.unread)}
+                </span>
+              )}
+            </Link>
+          )}
         </div>
 
         <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-1">

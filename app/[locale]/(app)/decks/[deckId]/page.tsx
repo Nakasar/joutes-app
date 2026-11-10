@@ -18,6 +18,11 @@ import { isDeckIndexable } from "@/lib/types/Deck.ts";
 import { hasPermission } from "@/lib/db/permissions.ts";
 import { META_DECKS_PERMISSION } from "@/lib/meta/permissions.ts";
 import { MetaDeckBanner } from "@/components/decks/MetaDeckBanner.tsx";
+import { countDeckCommentsBySpace } from "@/lib/db/deck-comments.ts";
+import { listPlayGroupIdsForDeck } from "@/lib/db/play-group-decks.ts";
+import { getPlayGroupById } from "@/lib/db/play-groups.ts";
+import { readCommentThread } from "@/lib/decks/comment-service.ts";
+import { groupSpace } from "@/lib/decks/comments.ts";
 import { DeckSheet } from "./DeckSheet.tsx";
 import { PublicDeckSheet } from "./PublicDeckSheet.tsx";
 
@@ -154,9 +159,39 @@ async function DeckPageContent({ params }: { params: Params }) {
         isFavorited={isFavorited}
         exportCode={game?.slug === "riftbound" ? riftboundDeckCode(deck.cards) : undefined}
         cardnexusOrder={cardnexusOrder}
+        comments={await readSheetComments(deck.id, session!.user.id)}
       />
     </div>
   );
+}
+
+/**
+ * Les commentaires de la fiche de l'auteur : son espace personnel, et le
+ * compte des fils des groupes où le deck est partagé. Un échec ne doit pas
+ * fermer la fiche : la section disparaît, le reste s'affiche.
+ */
+async function readSheetComments(deckId: string, userId: string) {
+  try {
+    const [thread, groupIds, counts] = await Promise.all([
+      readCommentThread(deckId, "personal", userId),
+      listPlayGroupIdsForDeck(deckId),
+      countDeckCommentsBySpace(deckId),
+    ]);
+    if (!thread.ok) return undefined;
+
+    const groups = await Promise.all(groupIds.map((id) => getPlayGroupById(id)));
+
+    return {
+      thread: thread.thread,
+      viewerId: userId,
+      groups: groups.flatMap((group) =>
+        group ? [{ id: group.id, name: group.name, count: counts.get(groupSpace(group.id)) ?? 0 }] : []
+      ),
+    };
+  } catch (error) {
+    console.error("Error reading deck sheet comments:", error);
+    return undefined;
+  }
 }
 
 /**

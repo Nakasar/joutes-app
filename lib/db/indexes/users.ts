@@ -264,6 +264,28 @@ export const USER_INDEXES: IndexDefinition[] = [
     keys: { deckId: 1 },
     why: "Les groupes où un deck est partagé : ouvrir un deck privé à un membre, nettoyer à la suppression",
   },
+  {
+    collection: "deckComments",
+    keys: { deckId: 1, space: 1, createdAt: 1 },
+    why: "Le fil de commentaires d'un deck dans un espace (groupe ou personnel)",
+  },
+  {
+    collection: "deckComments",
+    keys: { space: 1, createdAt: -1 },
+    why: "Les derniers commentaires et les non lus d'un groupe, tous decks confondus",
+  },
+  {
+    collection: "deckComments",
+    keys: { id: 1 },
+    why: "Modifier, résoudre ou supprimer un commentaire",
+  },
+  {
+    // Collection neuve : l'upsert du passage d'un lecteur s'appuie sur l'unicité.
+    collection: "deckCommentReads",
+    keys: { userId: 1, space: 1, deckId: 1 },
+    options: { unique: true },
+    why: "Le dernier passage d'un lecteur sur un fil, pour les pastilles « nouveaux »",
+  },
 
   {
     collection: "stream_links",

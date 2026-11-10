@@ -15,6 +15,7 @@ import ContentsView from "./contents/ContentsView.tsx";
 import ContentEditorView from "./contents/ContentEditorView.tsx";
 import ListsView from "./lists/ListsView.tsx";
 import DecksView, { type DeckSearchParams } from "./decks/DecksView.tsx";
+import DeckInGroupView from "./decks/DeckInGroupView.tsx";
 import MembersView from "./members/MembersView.tsx";
 import SettingsView from "./settings/SettingsView.tsx";
 import ShowcaseView from "./showcase/ShowcaseView.tsx";
@@ -202,7 +203,12 @@ function PlayGroupViewContent({
         <ContentsView playGroupId={playGroupId} />
       );
     case "decks":
-      return <DecksView playGroupId={playGroupId} searchParams={search} />;
+      // `deck` ouvre un deck de la bibliothèque, avec le fil du groupe.
+      return typeof search.deck === "string" && search.deck ? (
+        <DeckInGroupView playGroupId={playGroupId} deckId={search.deck} />
+      ) : (
+        <DecksView playGroupId={playGroupId} searchParams={search} />
+      );
     case "lists":
       return <ListsView playGroupId={playGroupId} />;
     case "members":

@@ -3112,6 +3112,21 @@
         "error": "Impossible d'enregistrer ce contenu."
       },
       "decks": {
+        "comments": "{count, plural, one {# commentaire} other {# commentaires}}",
+        "unread": "{count, plural, one {# nouveau} other {# nouveaux}}",
+        "latestComments": "Derniers commentaires",
+        "open": {
+          "back": "Decks du groupe",
+          "by": "par {owner}",
+          "you": "vous",
+          "edit": "Construire",
+          "fullSheet": "Fiche complète",
+          "visibility": {
+            "public": "Public",
+            "unlisted": "Non répertorié",
+            "private": "Privé · visible du groupe"
+          }
+        },
         "title": "Decks du groupe",
         "metadataTitle": "Decks · {group}",
         "summary": "{decks, plural, one {# deck partagé} other {# decks partagés}} par {members, plural, one {# membre} other {# membres}}. Tout membre peut les ouvrir.",
@@ -6944,5 +6959,62 @@
     "filter": "Mis en avant",
     "filterHint": "N'afficher que les événements mis en avant",
     "legendFriends": "Un ami inscrit ou intéressé"
+  },
+  "DeckComments": {
+    "composerLabel": "Nouveau commentaire",
+    "composerPlaceholder": "Une remarque sur le deck, ou sur les cartes liées…",
+    "publish": "Publier",
+    "unlink": "Délier {card}",
+    "linkCard": "Lier une carte",
+    "linkThis": "Lier {card} au commentaire",
+    "searchCard": "Chercher une carte du deck",
+    "noCard": "Aucune carte ne correspond.",
+    "filterCard": "Sur {card}",
+    "clearFilter": "Retirer le filtre",
+    "filter": {
+      "all": "Tous",
+      "general": "Général",
+      "cards": "Sur des cartes"
+    },
+    "empty": "Aucun commentaire pour l'instant. Le premier lance la discussion.",
+    "emptyFiltered": "Aucun commentaire ouvert ici.",
+    "hideResolved": "Masquer les résolus",
+    "showResolved": "{count, plural, one {Voir # résolu} other {Voir # résolus}}",
+    "you": "Vous",
+    "someone": "Un ancien membre",
+    "deckAuthor": "Auteur",
+    "edited": "modifié",
+    "new": "Nouveau",
+    "resolvedIn": "Résolu en v{version}",
+    "deleted": "Commentaire supprimé.",
+    "general": "Général",
+    "cardRemoved": "Carte retirée du deck depuis",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "reply": "Répondre",
+    "replyPlaceholder": "Votre réponse…",
+    "resolve": "Résoudre",
+    "reopen": "Rouvrir",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "deleteConfirm": "Supprimer ce commentaire ? Ses réponses resteront visibles.",
+    "tabs": {
+      "cards": "Cartes",
+      "comments": "Commentaires"
+    },
+    "cardsHint": "Cliquez une carte pour filtrer le fil, ou liez-la au commentaire en cours.",
+    "removedCards": "Retirées depuis les commentaires",
+    "errors": {
+      "UNAUTHENTICATED": "Connectez-vous pour commenter.",
+      "INVALID": "Demande invalide.",
+      "NOT_FOUND": "Ce commentaire n'existe plus.",
+      "FORBIDDEN": "Vous n'avez pas accès à ce fil.",
+      "EMPTY": "Le commentaire est vide.",
+      "TOO_LONG": "Le commentaire dépasse 2 000 caractères.",
+      "TOO_MANY_CARDS": "Dix cartes au plus par commentaire.",
+      "CARD_NOT_IN_DECK": "Cette carte n'est plus dans le deck.",
+      "REPLY_WITH_CARDS": "Une réponse ne lie pas de carte.",
+      "FAILED": "Une erreur est survenue, réessayez."
+    }
   }
 }

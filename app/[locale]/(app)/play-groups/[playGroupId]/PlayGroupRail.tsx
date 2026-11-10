@@ -51,13 +51,13 @@ type RailEntry = {
 
 type RailSection = "game" | "group" | "aside";
 
-function entriesFor(playGroupId: string, pendingCount: number, canManage: boolean): RailEntry[] {
+function entriesFor(playGroupId: string, pendingCount: number, unreadComments: number, canManage: boolean): RailEntry[] {
   return [
     { key: "hub", href: viewHref(playGroupId, "hub") },
     { key: "sessions", href: viewHref(playGroupId, "sessions"), badge: pendingCount },
     { key: "announcements", href: viewHref(playGroupId, "announcements") },
     { key: "contents", href: viewHref(playGroupId, "contents") },
-    { key: "decks", href: viewHref(playGroupId, "decks"), section: "game" },
+    { key: "decks", href: viewHref(playGroupId, "decks"), section: "game", badge: unreadComments },
     { key: "lists", href: viewHref(playGroupId, "lists"), section: "group" },
     { key: "members", href: viewHref(playGroupId, "members"), section: "group" },
     { key: "showcase", href: viewHref(playGroupId, "showcase"), section: "aside" },
@@ -81,6 +81,7 @@ export default function PlayGroupRail({
   logo,
   memberCount,
   pendingCount,
+  unreadComments = 0,
   canManage,
   active,
   roleLabel,
@@ -90,12 +91,14 @@ export default function PlayGroupRail({
   logo?: string;
   memberCount: number;
   pendingCount: number;
+  /** Les commentaires d'autrui non lus dans le fil des decks du groupe. */
+  unreadComments?: number;
   canManage: boolean;
   active: PlayGroupView;
   roleLabel: string;
 }) {
   const t = useTranslations("PlayGroups.hub.rail");
-  const entries = entriesFor(playGroupId, pendingCount, canManage);
+  const entries = entriesFor(playGroupId, pendingCount, unreadComments, canManage);
   const activeEntry = entries.find((entry) => entry.key === active);
 
   return (

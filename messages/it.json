@@ -3112,6 +3112,21 @@
         "error": "Impossibile salvare questo contenuto."
       },
       "decks": {
+        "comments": "{count, plural, one {# commento} other {# commenti}}",
+        "unread": "{count, plural, one {# nuovo} other {# nuovi}}",
+        "latestComments": "Ultimi commenti",
+        "open": {
+          "back": "Mazzi del gruppo",
+          "by": "di {owner}",
+          "you": "te",
+          "edit": "Costruisci",
+          "fullSheet": "Scheda completa",
+          "visibility": {
+            "public": "Pubblico",
+            "unlisted": "Non elencato",
+            "private": "Privato · visibile al gruppo"
+          }
+        },
         "title": "Mazzi del gruppo",
         "metadataTitle": "Mazzi · {group}",
         "summary": "{decks, plural, one {# mazzo condiviso} other {# mazzi condivisi}} da {members, plural, one {# membro} other {# membri}}. Ogni membro può aprirli.",
@@ -6944,5 +6959,62 @@
     "filter": "In evidenza",
     "filterHint": "Mostra solo gli eventi in evidenza",
     "legendFriends": "Un amico iscritto o interessato"
+  },
+  "DeckComments": {
+    "composerLabel": "Nuovo commento",
+    "composerPlaceholder": "Una nota sul mazzo o sulle carte collegate…",
+    "publish": "Pubblica",
+    "unlink": "Scollega {card}",
+    "linkCard": "Collega una carta",
+    "linkThis": "Collega {card} al commento",
+    "searchCard": "Cerca una carta del mazzo",
+    "noCard": "Nessuna carta corrispondente.",
+    "filterCard": "Su {card}",
+    "clearFilter": "Rimuovi il filtro",
+    "filter": {
+      "all": "Tutti",
+      "general": "Generale",
+      "cards": "Sulle carte"
+    },
+    "empty": "Ancora nessun commento. Il primo avvia la discussione.",
+    "emptyFiltered": "Nessun commento aperto qui.",
+    "hideResolved": "Nascondi i risolti",
+    "showResolved": "{count, plural, one {Mostra # risolto} other {Mostra # risolti}}",
+    "you": "Tu",
+    "someone": "Un ex membro",
+    "deckAuthor": "Autore",
+    "edited": "modificato",
+    "new": "Nuovo",
+    "resolvedIn": "Risolto nella v{version}",
+    "deleted": "Commento eliminato.",
+    "general": "Generale",
+    "cardRemoved": "Carta poi rimossa dal mazzo",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "reply": "Rispondi",
+    "replyPlaceholder": "La tua risposta…",
+    "resolve": "Risolvi",
+    "reopen": "Riapri",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "deleteConfirm": "Eliminare questo commento? Le risposte resteranno visibili.",
+    "tabs": {
+      "cards": "Carte",
+      "comments": "Commenti"
+    },
+    "cardsHint": "Clicca una carta per filtrare la discussione, o collegala al commento che stai scrivendo.",
+    "removedCards": "Rimosse dopo essere state commentate",
+    "errors": {
+      "UNAUTHENTICATED": "Accedi per commentare.",
+      "INVALID": "Richiesta non valida.",
+      "NOT_FOUND": "Questo commento non esiste più.",
+      "FORBIDDEN": "Non hai accesso a questa discussione.",
+      "EMPTY": "Il commento è vuoto.",
+      "TOO_LONG": "Il commento supera i 2.000 caratteri.",
+      "TOO_MANY_CARDS": "Al massimo dieci carte per commento.",
+      "CARD_NOT_IN_DECK": "Questa carta non è più nel mazzo.",
+      "REPLY_WITH_CARDS": "Una risposta non collega carte.",
+      "FAILED": "Si è verificato un errore, riprova."
+    }
   }
 }

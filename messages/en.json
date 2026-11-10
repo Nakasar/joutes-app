@@ -3112,6 +3112,21 @@
         "error": "This content could not be saved."
       },
       "decks": {
+        "comments": "{count, plural, one {# comment} other {# comments}}",
+        "unread": "{count} new",
+        "latestComments": "Latest comments",
+        "open": {
+          "back": "Group decks",
+          "by": "by {owner}",
+          "you": "you",
+          "edit": "Build",
+          "fullSheet": "Full deck page",
+          "visibility": {
+            "public": "Public",
+            "unlisted": "Unlisted",
+            "private": "Private · visible to the group"
+          }
+        },
         "title": "Group decks",
         "metadataTitle": "Decks · {group}",
         "summary": "{decks, plural, one {# deck shared} other {# decks shared}} by {members, plural, one {# member} other {# members}}. Every member can open them.",
@@ -6944,5 +6959,62 @@
     "filter": "Featured",
     "filterHint": "Only show featured events",
     "legendFriends": "A friend registered or interested"
+  },
+  "DeckComments": {
+    "composerLabel": "New comment",
+    "composerPlaceholder": "A note on the deck, or on the linked cards…",
+    "publish": "Post",
+    "unlink": "Unlink {card}",
+    "linkCard": "Link a card",
+    "linkThis": "Link {card} to the comment",
+    "searchCard": "Search a card in the deck",
+    "noCard": "No matching card.",
+    "filterCard": "On {card}",
+    "clearFilter": "Clear filter",
+    "filter": {
+      "all": "All",
+      "general": "General",
+      "cards": "On cards"
+    },
+    "empty": "No comments yet. The first one starts the discussion.",
+    "emptyFiltered": "No open comment here.",
+    "hideResolved": "Hide resolved",
+    "showResolved": "{count, plural, one {Show # resolved} other {Show # resolved}}",
+    "you": "You",
+    "someone": "A former member",
+    "deckAuthor": "Author",
+    "edited": "edited",
+    "new": "New",
+    "resolvedIn": "Resolved in v{version}",
+    "deleted": "Comment deleted.",
+    "general": "General",
+    "cardRemoved": "Card since removed from the deck",
+    "cancel": "Cancel",
+    "save": "Save",
+    "reply": "Reply",
+    "replyPlaceholder": "Your reply…",
+    "resolve": "Resolve",
+    "reopen": "Reopen",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this comment? Its replies will stay visible.",
+    "tabs": {
+      "cards": "Cards",
+      "comments": "Comments"
+    },
+    "cardsHint": "Click a card to filter the thread, or link it to the comment you are writing.",
+    "removedCards": "Removed since they were commented",
+    "errors": {
+      "UNAUTHENTICATED": "Sign in to comment.",
+      "INVALID": "Invalid request.",
+      "NOT_FOUND": "This comment no longer exists.",
+      "FORBIDDEN": "You don't have access to this thread.",
+      "EMPTY": "The comment is empty.",
+      "TOO_LONG": "The comment is longer than 2,000 characters.",
+      "TOO_MANY_CARDS": "Ten cards at most per comment.",
+      "CARD_NOT_IN_DECK": "This card is no longer in the deck.",
+      "REPLY_WITH_CARDS": "A reply doesn't link cards.",
+      "FAILED": "Something went wrong, try again."
+    }
   }
 }
