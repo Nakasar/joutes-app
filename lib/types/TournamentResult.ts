@@ -49,8 +49,15 @@ export type TournamentResult = {
   deckVersion?: number;
   legendCardId?: string;
   legendName?: string;
+  /** La légende et les domaines viennent du deck lié : ils le suivent quand il change. */
+  legendFromDeck?: boolean;
   domains: string[];
   visibility: TournamentResultVisibility;
+  /**
+   * Un tournoi Joutes rouvert : son classement n'est plus final, le résultat
+   * est caché jusqu'à la clôture mais garde le deck et la visibilité choisis.
+   */
+  provisional?: boolean;
   createdAt: string;
   updatedAt: string;
 };

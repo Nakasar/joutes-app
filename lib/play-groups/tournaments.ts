@@ -1,5 +1,10 @@
-import { groupByMonth, groupByTournament, summarizeResults, type TimelineTournament } from "@/lib/tournaments/results";
-import type { TournamentResult } from "@/lib/types/TournamentResult";
+import {
+  groupByMonth,
+  groupByTournament,
+  summarizeResults,
+  type ResultSummary,
+  type TimelineTournament,
+} from "@/lib/tournaments/results";
 
 /**
  * La vue Tournois d'un groupe (`?view=tournaments`), en fonctions pures : les
@@ -55,7 +60,7 @@ export function groupTournamentFilterParams(filters: GroupTournamentFilters): Re
   };
 }
 
-export function filterGroupResults<T extends TournamentResult>(results: T[], filters: GroupTournamentFilters): T[] {
+export function filterGroupResults<T extends ResultSummary>(results: T[], filters: GroupTournamentFilters): T[] {
   return results.filter(
     (result) =>
       (!filters.gameId || result.gameId === filters.gameId) &&
@@ -71,7 +76,7 @@ export function previousMonth(month: string): string {
   return index === 1 ? `${year - 1}-12` : `${year}-${String(index - 1).padStart(2, "0")}`;
 }
 
-export type GroupTimeline<T extends TournamentResult> = {
+export type GroupTimeline<T extends ResultSummary> = {
   months: { month: string; tournaments: TimelineTournament<T>[] }[];
   /** Le mois où reprend la page suivante, s'il reste des tournois plus anciens. */
   nextBefore?: string;
@@ -86,7 +91,7 @@ export type GroupTimeline<T extends TournamentResult> = {
  * moins (un mois n'est jamais coupé). Les totaux portent sur tous les
  * résultats filtrés, pas sur la page.
  */
-export function buildGroupTimeline<T extends TournamentResult>(
+export function buildGroupTimeline<T extends ResultSummary>(
   results: T[],
   filters: GroupTournamentFilters,
   pageSize = 12,
@@ -116,8 +121,8 @@ export function buildGroupTimeline<T extends TournamentResult>(
 export type MemberPalmares = { userId: string } & ReturnType<typeof summarizeResults>;
 
 /** Le palmarès de chaque membre classé, par victoires, puis top 8, puis tournois. */
-export function groupPalmares(results: TournamentResult[]): MemberPalmares[] {
-  const byUser = new Map<string, TournamentResult[]>();
+export function groupPalmares(results: ResultSummary[]): MemberPalmares[] {
+  const byUser = new Map<string, ResultSummary[]>();
   for (const result of results) byUser.set(result.userId, [...(byUser.get(result.userId) ?? []), result]);
 
   return [...byUser]
@@ -129,11 +134,31 @@ export function groupPalmares(results: TournamentResult[]): MemberPalmares[] {
 }
 
 /** Les légendes jouées par les membres, pour le filtre, de la plus jouée à la moins jouée. */
-export function groupLegends(results: TournamentResult[]): { name: string; count: number }[] {
+export function groupLegends(results: ResultSummary[]): { name: string; count: number }[] {
   const counts = new Map<string, number>();
   for (const result of results) {
     if (result.legendName) counts.set(result.legendName, (counts.get(result.legendName) ?? 0) + 1);
   }
 
   return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+/** La page de la timeline avec les résultats complets, lus pour elle seule. */
+export function fillGroupTimeline<T extends ResultSummary>(
+  timeline: GroupTimeline<ResultSummary>,
+  full: Map<string, T>,
+): GroupTimeline<T> {
+  return {
+    ...timeline,
+    months: timeline.months.map((month) => ({
+      month: month.month,
+      tournaments: month.tournaments.map((tournament) => ({
+        ...tournament,
+        results: tournament.results.flatMap((result) => {
+          const found = full.get(result.id);
+          return found ? [found] : [];
+        }),
+      })),
+    })),
+  };
 }

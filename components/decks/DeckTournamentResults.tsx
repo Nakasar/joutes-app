@@ -11,8 +11,12 @@ export type DeckResultView = Pick<
   "id" | "source" | "name" | "date" | "placement" | "playerCount" | "topCut" | "deckVersion" | "visibility"
 > & { record?: string; tournamentHref?: string };
 
-export function toDeckResultView(result: TournamentResult): DeckResultView {
-  const joutesId = result.tournamentRef?.startsWith("joutes:") ? result.tournamentRef.slice("joutes:".length) : undefined;
+export function toDeckResultView(result: TournamentResult, viewerId: string | null): DeckResultView {
+  // La page d'un tournoi Joutes ne s'ouvre qu'à ses joueurs : le lien n'est que pour l'auteur du résultat.
+  const joutesId =
+    result.userId === viewerId && result.tournamentRef?.startsWith("joutes:")
+      ? result.tournamentRef.slice("joutes:".length)
+      : undefined;
   const record = formatRecord(result.record);
 
   return {
@@ -26,7 +30,7 @@ export function toDeckResultView(result: TournamentResult): DeckResultView {
     ...(result.topCut ? { topCut: result.topCut } : {}),
     ...(result.deckVersion ? { deckVersion: result.deckVersion } : {}),
     ...(record ? { record } : {}),
-    ...(joutesId ? { tournamentHref: `/tournaments/${joutesId}` } : {}),
+    ...(joutesId ? { tournamentHref: `/tournaments/${joutesId}/player` } : {}),
   };
 }
 

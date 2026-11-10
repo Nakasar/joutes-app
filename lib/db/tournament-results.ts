@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 
 import db from "@/lib/mongodb";
-import type { JoutesResultDraft } from "@/lib/tournaments/results";
+import type { JoutesResultDraft, ResultSummary } from "@/lib/tournaments/results";
 import type { TournamentResult } from "@/lib/types/TournamentResult";
 
 /**
@@ -28,20 +28,40 @@ function toResult(doc: ResultDoc): TournamentResult {
 /**
  * Écrit les résultats d'un tournoi Joutes. Réécrire est sans risque : le
  * classement et le bilan sont remplacés, le deck lié et la visibilité choisis
- * par le joueur sont gardés. Un joueur qui n'est plus classé perd son résultat.
+ * par le joueur sont gardés, même après une réouverture (voir
+ * `hideJoutesResults`). Un joueur qui n'est plus classé perd son résultat.
+ *
+ * Un joueur qui avait déclaré ce tournoi à la main (la synchro avait échoué)
+ * n'y figure pas deux fois : sa déclaration est remplacée, son deck et sa
+ * visibilité passent au résultat Joutes.
  */
 export async function upsertJoutesResults(sourceRef: string, drafts: JoutesResultDraft[]): Promise<number> {
   const now = new Date().toISOString();
+  const userIds = drafts.map((draft) => draft.userId);
+
+  const declared = await results()
+    .find({ tournamentRef: sourceRef, source: "declared", userId: { $in: userIds } })
+    .toArray();
+  const carried = new Map(declared.map((doc) => [doc.userId, doc]));
+  // Avant l'écriture : l'index unique { tournamentRef, userId } refuserait le résultat Joutes.
+  if (declared.length > 0) await results().deleteMany({ _id: { $in: declared.map((doc) => doc._id!) } });
 
   for (const draft of drafts) {
     const { domains, ...fields } = draft;
+    const previous = carried.get(draft.userId);
     const unset = (["topCut", "record", "place", "gameId"] as const).filter((key) => fields[key] === undefined);
     await results().updateOne(
       { userId: draft.userId, sourceRef },
       {
         $set: { ...fields, updatedAt: now },
-        $setOnInsert: { id: new ObjectId().toString(), domains, visibility: "public", createdAt: now },
-        ...(unset.length > 0 ? { $unset: Object.fromEntries(unset.map((key) => [key, ""])) } : {}),
+        $setOnInsert: {
+          id: new ObjectId().toString(),
+          domains,
+          visibility: previous?.visibility ?? "public",
+          ...(previous?.deckId ? { deckId: previous.deckId, deckVersion: previous.deckVersion ?? 1 } : {}),
+          createdAt: now,
+        },
+        $unset: { provisional: "", ...Object.fromEntries(unset.map((key) => [key, ""])) },
       },
       { upsert: true },
     );
@@ -50,15 +70,24 @@ export async function upsertJoutesResults(sourceRef: string, drafts: JoutesResul
   const removed = await results().deleteMany({
     tournamentRef: sourceRef,
     source: "joutes",
-    userId: { $nin: drafts.map((draft) => draft.userId) },
+    userId: { $nin: userIds },
   });
 
-  return drafts.length + removed.deletedCount;
+  return drafts.length + declared.length + removed.deletedCount;
 }
 
 /**
- * Le tournoi Joutes supprimé ou rouvert : les résultats qu'il a écrits
- * disparaissent jusqu'à sa clôture. Ceux qu'un joueur a déclarés restent.
+ * Le tournoi Joutes rouvert : ses résultats se cachent jusqu'à la clôture,
+ * sans perdre le deck lié ni la visibilité choisis par les joueurs.
+ */
+export async function hideJoutesResults(tournamentRef: string): Promise<number> {
+  const hidden = await results().updateMany({ tournamentRef, source: "joutes" }, { $set: { provisional: true } });
+  return hidden.modifiedCount;
+}
+
+/**
+ * Le tournoi Joutes supprimé : les résultats qu'il a écrits disparaissent.
+ * Ceux qu'un joueur a déclarés restent.
  */
 export async function deleteJoutesResults(tournamentRef: string): Promise<number> {
   const removed = await results().deleteMany({ tournamentRef, source: "joutes" });
@@ -114,7 +143,52 @@ export async function deleteTournamentResult(id: string): Promise<boolean> {
 /** Les résultats de plusieurs joueurs, du plus récent au plus ancien : la timeline d'un groupe. */
 export async function listResultsForUsers(userIds: string[], limit = 3000): Promise<TournamentResult[]> {
   if (userIds.length === 0) return [];
-  const docs = await results().find({ userId: { $in: userIds } }).sort({ date: -1 }).limit(limit).toArray();
+  const docs = await results()
+    .find({ userId: { $in: userIds }, provisional: { $ne: true } })
+    .sort({ date: -1 })
+    .limit(limit)
+    .toArray();
+
+  return docs.map(toResult);
+}
+
+/**
+ * Tous les résultats de plusieurs joueurs, réduits à ce que la timeline d'un
+ * groupe et ses totaux lisent : pas de plafond, le palmarès et « depuis »
+ * portent sur tout l'historique.
+ */
+export async function listResultSummariesForUsers(userIds: string[]): Promise<ResultSummary[]> {
+  if (userIds.length === 0) return [];
+  const docs = await results()
+    .find(
+      { userId: { $in: userIds }, provisional: { $ne: true } },
+      {
+        projection: {
+          _id: 0,
+          id: 1,
+          userId: 1,
+          gameId: 1,
+          source: 1,
+          tournamentRef: 1,
+          name: 1,
+          date: 1,
+          place: 1,
+          playerCount: 1,
+          placement: 1,
+          legendName: 1,
+        },
+      },
+    )
+    .sort({ date: -1 })
+    .toArray();
+
+  return docs as ResultSummary[];
+}
+
+/** Des résultats complets par id : la page affichée de la timeline. */
+export async function listResultsByIds(ids: string[]): Promise<TournamentResult[]> {
+  if (ids.length === 0) return [];
+  const docs = await results().find({ id: { $in: ids } }).toArray();
 
   return docs.map(toResult);
 }
@@ -122,7 +196,11 @@ export async function listResultsForUsers(userIds: string[], limit = 3000): Prom
 /** Les résultats qui pointent un deck : l'encart de sa fiche, la carte de la bibliothèque. */
 export async function listResultsForDecks(deckIds: string[]): Promise<TournamentResult[]> {
   if (deckIds.length === 0) return [];
-  const docs = await results().find({ deckId: { $in: deckIds } }).sort({ date: -1 }).limit(500).toArray();
+  const docs = await results()
+    .find({ deckId: { $in: deckIds }, provisional: { $ne: true } })
+    .sort({ date: -1 })
+    .limit(500)
+    .toArray();
 
   return docs.map(toResult);
 }

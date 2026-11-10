@@ -322,7 +322,17 @@ export function tournamentKey(result: Pick<TournamentResult, "tournamentRef" | "
   return result.tournamentRef ?? `named:${normalizeName(result.name)}|${result.date.slice(0, 10)}`;
 }
 
-export type TimelineTournament<T extends TournamentResult = TournamentResult> = {
+/**
+ * Ce qu'il faut d'un résultat pour bâtir la timeline et ses totaux : la vue
+ * d'un groupe lit ces champs pour tous les résultats des membres, et le
+ * résultat complet seulement pour la page affichée.
+ */
+export type ResultSummary = Pick<
+  TournamentResult,
+  "id" | "userId" | "gameId" | "source" | "tournamentRef" | "name" | "date" | "place" | "playerCount" | "placement" | "legendName"
+>;
+
+export type TimelineTournament<T extends ResultSummary = TournamentResult> = {
   key: string;
   name: string;
   date: string;
@@ -338,7 +348,7 @@ export type TimelineTournament<T extends TournamentResult = TournamentResult> = 
  * Les résultats réunis par tournoi, du plus récent au plus ancien. Le nom,
  * le lieu et le nombre de joueurs viennent du résultat le plus complet.
  */
-export function groupByTournament<T extends TournamentResult>(results: T[]): TimelineTournament<T>[] {
+export function groupByTournament<T extends ResultSummary>(results: T[]): TimelineTournament<T>[] {
   const byKey = new Map<string, T[]>();
   for (const result of results) {
     const key = tournamentKey(result);

@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 
 import db from "@/lib/mongodb";
-import { deleteJoutesResults, upsertJoutesResults } from "@/lib/db/tournament-results";
+import { deleteJoutesResults, hideJoutesResults, upsertJoutesResults } from "@/lib/db/tournament-results";
 import {
   buildJoutesResults,
   finalPlacements,
@@ -109,8 +109,13 @@ export async function readJoutesTournamentResults(
 export async function syncJoutesTournamentResults(tournamentId: string): Promise<SyncOutcome> {
   const read = await readJoutesTournamentResults(tournamentId);
   if (read.status !== "ready") {
-    // Rouvert, supprimé ou privé de jeu : un classement qui n'est plus final ne s'affiche pas.
-    await deleteJoutesResults(joutesSourceRef(tournamentId));
+    // Rouvert : le classement n'est plus final, les résultats se cachent en gardant
+    // deck et visibilité. Supprimé ou privé de jeu : ils disparaissent.
+    if (read.status === "skipped" && read.reason === "not-completed") {
+      await hideJoutesResults(joutesSourceRef(tournamentId));
+    } else {
+      await deleteJoutesResults(joutesSourceRef(tournamentId));
+    }
     return read;
   }
 

@@ -15,11 +15,14 @@ import {
   isDuplicateKeyError,
   listClaimedSourceRefs,
   listResultsForDecks,
+  listResultsByIds,
+  listResultSummariesForUsers,
   listResultsForUsers,
   newTournamentResultId,
   updateTournamentResult,
 } from "@/lib/db/tournament-results";
 import { getUsersByIds } from "@/lib/db/users";
+import { buildGroupTimeline, fillGroupTimeline, type GroupTournamentFilters } from "@/lib/play-groups/tournaments";
 import { META_DECKS_PERMISSION } from "@/lib/meta/permissions";
 import { escapeRegex } from "@/lib/utils/regex";
 import type { Deck } from "@/lib/types/Deck";
@@ -114,6 +117,29 @@ type TournamentRow = {
 
 const tournaments = () => db.collection<TournamentRow>("tournaments");
 
+/**
+ * Les tournois Joutes que je peux lire, comme `assertCanReadTournament` :
+ * ceux où je suis inscrit, et ceux que j'organise ou arbitre. Les autres
+ * restent invisibles à la recherche et à la déclaration.
+ */
+async function readableTournamentsFilter(userId: string): Promise<Record<string, unknown>> {
+  const registrations = await db
+    .collection<{ tournamentId: ObjectId; userId?: string }>("tournament-players")
+    .find({ userId }, { projection: { tournamentId: 1 } })
+    .sort({ _id: -1 })
+    .limit(1000)
+    .toArray();
+
+  return {
+    $or: [
+      { _id: { $in: registrations.map((row) => row.tournamentId) } },
+      { createdBy: userId },
+      { organizerIds: userId },
+      { judgeIds: userId },
+    ],
+  };
+}
+
 export type JoutesTournamentSuggestion = {
   id: string;
   name: string;
@@ -182,6 +208,7 @@ export async function searchResultTournaments(
   if (text.length < 2) return { ok: true, joutes: [], locator: [] };
 
   const filter: Record<string, unknown> = {
+    ...(await readableTournamentsFilter(userId)),
     status: "completed",
     name: { $regex: escapeRegex(text), $options: "i" },
     gameId: gameId ? gameId : { $exists: true, $nin: [null, ""] },
@@ -254,7 +281,7 @@ export async function searchLocatorPlayers(
 
 /**
  * Déclarer un résultat. Avec `joutesTournamentId`, le tournoi Joutes donne son
- * nom, sa date et son lieu (un joueur inscrit sans compte s'y rattache ainsi).
+ * nom, sa date et son lieu ; seulement un tournoi que je peux lire (inscrit ou staff).
  * Avec un deck, la version jouée, la légende et les domaines viennent du deck.
  */
 export async function declareResult(
@@ -267,7 +294,11 @@ export async function declareResult(
   let tournamentRef: string | undefined;
   if (typeof input.joutesTournamentId === "string" && input.joutesTournamentId) {
     if (!ObjectId.isValid(input.joutesTournamentId)) return { ok: false, error: "NOT_FOUND" };
-    const row = await tournaments().findOne({ _id: new ObjectId(input.joutesTournamentId), status: "completed" });
+    const row = await tournaments().findOne({
+      ...(await readableTournamentsFilter(userId)),
+      _id: new ObjectId(input.joutesTournamentId),
+      status: "completed",
+    });
     if (!row?.gameId) return { ok: false, error: "NOT_FOUND" };
     tournamentRef = joutesSourceRef(row._id.toString());
     values = {
@@ -312,9 +343,10 @@ export async function declareResult(
     ...(value.placement ? { placement: value.placement } : {}),
     ...(value.topCut ? { topCut: value.topCut } : {}),
     ...(value.record ? { record: value.record } : {}),
-    ...(value.legendName && !fromDeck ? { legendName: value.legendName } : {}),
+    ...(value.legendName && !fromDeck?.legendName ? { legendName: value.legendName } : {}),
     domains: [],
     ...(fromDeck ?? {}),
+    ...(fromDeck?.legendName ? { legendFromDeck: true } : {}),
     visibility: value.visibility,
   });
 
@@ -404,19 +436,31 @@ export async function updateMyResult(
     set.visibility = input.visibility;
   }
 
+  // La légende suit le deck quand elle en vient, ou quand le résultat n'en a pas.
+  // Celle du locator, de Joutes ou saisie à la main reste.
+  const legendFollowsDeck = !result.legendName || Boolean(result.legendFromDeck);
   if (input.deckId === null) {
     unset.push("deckId", "deckVersion");
+    if (result.legendFromDeck) {
+      unset.push("legendName", "legendCardId", "legendFromDeck");
+      set.domains = [];
+    }
   } else if (typeof input.deckId === "string") {
     const deck = await readLinkableDeck(input.deckId, userId, result.gameId);
     if (!deck) return { ok: false, error: "DECK" };
     const fields = deckFields(deck);
     set.deckId = fields.deckId;
     set.deckVersion = fields.deckVersion;
-    // Le locator et Joutes ont leur légende ; un résultat déclaré sans légende prend celle du deck.
-    if (!result.legendName && fields.legendName) {
+    if (legendFollowsDeck && fields.legendName) {
       set.legendName = fields.legendName;
-      if (fields.legendCardId) set.legendCardId = fields.legendCardId;
+      set.legendFromDeck = true;
       set.domains = fields.domains;
+      if (fields.legendCardId) set.legendCardId = fields.legendCardId;
+      else unset.push("legendCardId");
+    } else if (result.legendFromDeck) {
+      // Le nouveau deck n'a pas de légende : celle de l'ancien ne vaut plus.
+      unset.push("legendName", "legendCardId", "legendFromDeck");
+      set.domains = [];
     }
   } else if (input.deckId !== undefined) {
     return { ok: false, error: "INVALID" };
@@ -456,6 +500,21 @@ export async function deleteResult(userId: string | null, resultId: string): Pro
 export async function listMyResults(userId: string | null): Promise<Success<{ results: TournamentResult[] }> | Failure> {
   if (!userId) return { ok: false, error: "UNAUTHENTICATED" };
   return { ok: true, results: await listResultsForUsers([userId], 500) };
+}
+
+/**
+ * La vue Tournois d'un groupe : les résumés de tous les résultats des membres
+ * (totaux, palmarès, filtres) et la page de la timeline en résultats complets.
+ */
+export async function readGroupTournaments(memberIds: string[], filters: GroupTournamentFilters) {
+  const summaries = await listResultSummariesForUsers(memberIds);
+  const page = buildGroupTimeline(summaries, filters);
+  const shownIds = page.months.flatMap((month) =>
+    month.tournaments.flatMap((tournament) => tournament.results.map((result) => result.id)),
+  );
+  const full = new Map((await listResultsByIds(shownIds)).map((result) => [result.id, result]));
+
+  return { summaries, timeline: fillGroupTimeline(page, full) };
 }
 
 /** Deux comptes ont-ils un groupe de jeu en commun ? */

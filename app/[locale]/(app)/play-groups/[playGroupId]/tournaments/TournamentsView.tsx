@@ -7,16 +7,14 @@ import { getDeckCardInfos } from "@/lib/db/deck-cards.ts";
 import { getDeckSummariesByIds } from "@/lib/db/decks.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
 import { listPlayGroupDecks } from "@/lib/db/play-group-decks.ts";
-import { listResultsForUsers } from "@/lib/db/tournament-results.ts";
 import {
-  buildGroupTimeline,
   filterGroupResults,
   groupLegends,
   groupPalmares,
   groupTournamentFilterParams,
   readGroupTournamentFilters,
 } from "@/lib/play-groups/tournaments.ts";
-import { listUpcomingRegistrations } from "@/lib/tournaments/result-service.ts";
+import { listUpcomingRegistrations, readGroupTournaments } from "@/lib/tournaments/result-service.ts";
 import {
   formatRecord,
   medalFor,
@@ -35,7 +33,7 @@ import { TournamentFilterBar } from "./TournamentFilterBar.tsx";
 
 export type TournamentSearchParams = Record<string, string | string[] | undefined>;
 
-type DeckLink = { name: string; href?: string };
+type DeckLink = { name: string; href: string };
 type GameInfo = { name: string; icon?: string };
 
 /**
@@ -72,13 +70,13 @@ export default async function TournamentsView({
   ]);
 
   const memberIds = members.map((member) => member.userId);
-  const [results, upcoming, groupDecks] = await Promise.all([
-    listResultsForUsers(memberIds),
+  const filters = readGroupTournamentFilters(searchParams);
+  const [{ summaries: results, timeline }, upcoming, groupDecks] = await Promise.all([
+    readGroupTournaments(memberIds, filters),
     listUpcomingRegistrations(memberIds),
     listPlayGroupDecks(playGroupId),
   ]);
 
-  const filters = readGroupTournamentFilters(searchParams);
   const params = groupTournamentFilterParams(filters);
   const hrefWith = (patch: Record<string, string | undefined>) =>
     viewHref(playGroupId, "tournaments", { filters: { ...params, avant: undefined, ...patch } });
@@ -89,7 +87,6 @@ export default async function TournamentsView({
     if (result.gameId) gameCounts.set(result.gameId, (gameCounts.get(result.gameId) ?? 0) + 1);
   }
   const inGame = filters.gameId ? results.filter((result) => result.gameId === filters.gameId) : results;
-  const timeline = buildGroupTimeline(results, filters);
   const totals = summarizeResults(filterGroupResults(results, filters));
   const palmares = groupPalmares(inGame).slice(0, 5);
   const memberById = new Map(members.map((member) => [member.userId, member]));
@@ -112,14 +109,13 @@ export default async function TournamentsView({
   const inGroup = new Set(groupDecks.map((link) => link.deckId));
   const deckLink = new Map<string, DeckLink>();
   for (const deck of decks) {
-    deckLink.set(deck.id, {
-      name: deck.name,
-      href: inGroup.has(deck.id)
-        ? viewHref(playGroupId, "decks", { filters: { deck: deck.id } })
-        : deck.visibility !== "private" || deck.playerId === viewer.userId
-          ? `/decks/${deck.id}`
-          : undefined,
-    });
+    const href = inGroup.has(deck.id)
+      ? viewHref(playGroupId, "decks", { filters: { deck: deck.id } })
+      : deck.visibility !== "private" || deck.playerId === viewer.userId
+        ? `/decks/${deck.id}`
+        : undefined;
+    // Un deck privé hors du groupe : son nom ne quitte pas le serveur.
+    if (href) deckLink.set(deck.id, { name: deck.name, href });
   }
 
   const memberOptions = members
@@ -315,12 +311,16 @@ export default async function TournamentsView({
                       <span className="flex min-w-0 flex-col gap-0.5">
                         <span className="flex min-w-0 items-center gap-1.5">
                           {tournament.gameId && <GameIcon game={gameById.get(tournament.gameId)} size="sm" />}
-                          <Link
-                            href={`/tournaments/${tournament.tournamentId}`}
-                            className="truncate text-[13px] font-medium hover:underline"
-                          >
-                            {tournament.name}
-                          </Link>
+                          {viewer.userId && tournament.userIds.includes(viewer.userId) ? (
+                            <Link
+                              href={`/tournaments/${tournament.tournamentId}/player`}
+                              className="truncate text-[13px] font-medium hover:underline"
+                            >
+                              {tournament.name}
+                            </Link>
+                          ) : (
+                            <span className="truncate text-[13px] font-medium">{tournament.name}</span>
+                          )}
                         </span>
                         <span className="truncate text-xs text-muted-foreground">
                           {t("upcomingMembers", {
@@ -380,7 +380,12 @@ function TournamentCard({
   const best = ranked.find((result) => result.placement !== undefined);
   const medal = medalFor(best?.placement);
   const topEight = !medal && best?.placement !== undefined && best.placement <= 8;
-  const joutesId = tournament.key.startsWith("joutes:") ? tournament.key.slice("joutes:".length) : undefined;
+  // La page d'un tournoi Joutes ne s'ouvre qu'à ses joueurs (et son staff) : le lien
+  // n'apparaît que si j'y ai un résultat, donc que j'y étais inscrit.
+  const joutesId =
+    tournament.key.startsWith("joutes:") && tournament.results.some((result) => result.userId === viewerId)
+      ? tournament.key.slice("joutes:".length)
+      : undefined;
   const source =
     tournament.source === "joutes"
       ? t("sourceJoutes")
@@ -415,7 +420,7 @@ function TournamentCard({
           {/* Sur téléphone, le titre prend toute la ligne : la pastille du meilleur résultat passe dessous. */}
           <div className="flex min-w-0 flex-1 basis-[calc(100%-52px)] flex-col gap-0.5 sm:basis-0">
             {joutesId ? (
-              <Link href={`/tournaments/${joutesId}`} className="font-semibold break-words hover:underline">
+              <Link href={`/tournaments/${joutesId}/player`} className="font-semibold break-words hover:underline">
                 {tournament.name}
               </Link>
             ) : (
@@ -510,9 +515,11 @@ function ResultRow({
           )}
         </span>
         {/* Sur téléphone, la légende et le deck passent sous le nom plutôt qu'en colonnes. */}
-        {(result.legendName || deck) && (
+        {(result.legendName || result.deckId) && (
           <span className="truncate pl-8 text-xs text-muted-foreground sm:hidden">
-            {[result.legendName, deck?.name].filter(Boolean).join(" · ")}
+            {[result.legendName, result.deckId ? (deck?.name ?? t("deckNotShared")) : undefined]
+              .filter(Boolean)
+              .join(" · ")}
           </span>
         )}
       </span>

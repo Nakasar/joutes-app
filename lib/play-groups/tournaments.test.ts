@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   buildGroupTimeline,
+  fillGroupTimeline,
   groupLegends,
   groupPalmares,
   previousMonth,
@@ -107,5 +108,32 @@ describe("timeline du groupe", () => {
       { name: "Kai'Sa", count: 2 },
       { name: "Jinx", count: 1 },
     ]);
+  });
+});
+
+describe("page de la timeline en résultats complets", () => {
+  it("remplace les résumés par les résultats lus, et écarte ceux qui ont disparu entre-temps", () => {
+    const summaries = [
+      result({ id: "a", userId: "u1", placement: 1 }),
+      result({ id: "b", userId: "u2", placement: 2 }),
+    ].map(({ id, userId, gameId, source, tournamentRef, name, date, placement }) => ({
+      id,
+      userId,
+      gameId,
+      source,
+      tournamentRef,
+      name,
+      date,
+      placement,
+    }));
+    const page = buildGroupTimeline(summaries, {});
+    const full = new Map([["a", result({ id: "a", userId: "u1", placement: 1, deckId: "d1" })]]);
+
+    const filled = fillGroupTimeline(page, full);
+    assert.deepEqual(
+      filled.months[0].tournaments[0].results.map((entry) => [entry.id, entry.deckId]),
+      [["a", "d1"]],
+    );
+    assert.equal(filled.participations, 2);
   });
 });

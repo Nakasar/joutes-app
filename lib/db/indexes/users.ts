@@ -307,7 +307,7 @@ export const USER_INDEXES: IndexDefinition[] = [
   {
     collection: "tournamentResults",
     keys: { tournamentRef: 1, userId: 1 },
-    options: { sparse: true },
+    options: { unique: true, partialFilterExpression: { tournamentRef: { $exists: true } } },
     why: "Les joueurs d'un tournoi : sa réécriture, et pas deux résultats d'un joueur au même tournoi",
   },
   {

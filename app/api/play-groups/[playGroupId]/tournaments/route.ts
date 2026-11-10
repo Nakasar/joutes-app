@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { readPlayGroupViewer } from "@/lib/api/play-groups";
-import { listResultsForUsers } from "@/lib/db/tournament-results";
-import { buildGroupTimeline, groupPalmares, readGroupTournamentFilters } from "@/lib/play-groups/tournaments";
-import { listUpcomingRegistrations } from "@/lib/tournaments/result-service";
+import { groupPalmares, readGroupTournamentFilters } from "@/lib/play-groups/tournaments";
+import { listUpcomingRegistrations, readGroupTournaments } from "@/lib/tournaments/result-service";
 
 type Params = Promise<{ playGroupId: string }>;
 
@@ -20,13 +19,12 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
 
   try {
     const memberIds = gate.group.members.map((member) => member.userId);
-    const [results, upcoming] = await Promise.all([
-      listResultsForUsers(memberIds),
+    const filters = readGroupTournamentFilters(Object.fromEntries(request.nextUrl.searchParams));
+    const [{ summaries, timeline }, upcoming] = await Promise.all([
+      readGroupTournaments(memberIds, filters),
       listUpcomingRegistrations(memberIds),
     ]);
-    const filters = readGroupTournamentFilters(Object.fromEntries(request.nextUrl.searchParams));
-    const timeline = buildGroupTimeline(results, filters);
-    const inGame = filters.gameId ? results.filter((result) => result.gameId === filters.gameId) : results;
+    const inGame = filters.gameId ? summaries.filter((result) => result.gameId === filters.gameId) : summaries;
 
     return NextResponse.json({ ...timeline, palmares: groupPalmares(inGame), upcoming });
   } catch (error) {

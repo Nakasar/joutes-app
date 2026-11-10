@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { ArrowLeft, Check, Plus, Search, UserRound } from "lucide-react";
@@ -73,6 +73,9 @@ export function DeclareResultDialog({
   );
   const [decks, setDecks] = useState<MyDeckForResult[] | null>(null);
   const [searching, startSearching] = useTransition();
+  const searchSeq = useRef(0);
+  const playerSeq = useRef(0);
+  const playerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, startSaving] = useTransition();
 
   // Le formulaire libre.
@@ -125,20 +128,30 @@ export function DeclareResultDialog({
     // Trop court : rien ne part, et la liste se masque au rendu.
     if (text.length < 2) return;
     const timer = setTimeout(() => {
+      const seq = ++searchSeq.current;
       startSearching(async () => {
         const result = await searchResultTournamentsAction(text, gameId || undefined);
+        // Une réponse plus ancienne que la saisie courante est ignorée.
+        if (seq !== searchSeq.current) return;
         setFound(result.success ? { joutes: result.joutes, locator: result.locator } : { joutes: [], locator: [] });
       });
     }, 300);
     return () => clearTimeout(timer);
   }, [query, gameId, open, step.kind]);
 
+  // Même règle pour les joueurs d'un tournoi : on attend la fin de la frappe,
+  // et seule la réponse à la dernière saisie remplit la liste.
   const searchPlayers = (eventId: string, text: string) => {
     setPlayerSearch((current) => ({ eventId, query: text, players: current?.eventId === eventId ? current.players : [] }));
-    startSearching(async () => {
-      const result = await searchLocatorPlayersAction(eventId, text);
-      setPlayerSearch({ eventId, query: text, players: result.success ? result.players : [] });
-    });
+    if (playerTimer.current) clearTimeout(playerTimer.current);
+    const seq = ++playerSeq.current;
+    playerTimer.current = setTimeout(() => {
+      startSearching(async () => {
+        const result = await searchLocatorPlayersAction(eventId, text);
+        if (seq !== playerSeq.current) return;
+        setPlayerSearch({ eventId, query: text, players: result.success ? result.players : [] });
+      });
+    }, 250);
   };
 
   const gameDecks = (decks ?? []).filter((deck) => deck.gameId === gameId);

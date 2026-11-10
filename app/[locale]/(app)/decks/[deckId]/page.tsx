@@ -174,7 +174,7 @@ async function DeckPageContent({ params }: { params: Params }) {
 /** Un échec ne ferme pas la fiche : l'encart reste vide. */
 async function readDeckResults(deck: Deck, viewerId: string | null): Promise<DeckResultView[]> {
   try {
-    return (await listVisibleDeckResults(deck, viewerId)).map(toDeckResultView);
+    return (await listVisibleDeckResults(deck, viewerId)).map((result) => toDeckResultView(result, viewerId));
   } catch (error) {
     console.error("Résultats du deck illisibles", error);
     return [];
