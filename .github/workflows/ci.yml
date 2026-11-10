@@ -31,6 +31,8 @@ jobs:
       # et `next-env.d.ts` déclare les imports d'images : sans eux, la
       # vérification des types échoue sur des fichiers absents.
       - run: npm run build:mcp-apps
+      # Même raison pour le moteur de jeu : `lib/engine/wasm.generated.ts`.
+      - run: npm run build:engine
       - run: npx next typegen
 
       - run: npx tsc --noEmit

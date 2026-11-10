@@ -542,6 +542,242 @@
     }
   },
   "Games": {
+    "Play": {
+      "title": "Play Riftbound",
+      "description": "Play Riftbound in your browser: against the AI, online with your decks, or on an organizer's server. The engine applies the rules and cites each one.",
+      "back": "Back to the game portal",
+      "backToLobby": "Back to the play lobby",
+      "status": {
+        "loading": "Loading the table…",
+        "error": "The table could not be loaded.",
+        "reconnecting": "Connection lost, retrying…"
+      },
+      "mode": {
+        "duel": "Duel",
+        "ffa3": "3-player free-for-all",
+        "ffa4": "4-player free-for-all",
+        "teams": "2v2 teams"
+      },
+      "modeHint": {
+        "duel": "2 players, 8 points",
+        "ffa3": "3 players, 3 battlefields",
+        "ffa4": "4 players, 3 battlefields",
+        "teams": "2 teams of 2, 11 points"
+      },
+      "level": {
+        "easy": "Easy",
+        "normal": "Normal",
+        "hard": "Hard"
+      },
+      "kind": {
+        "unit": "Unit",
+        "gear": "Gear",
+        "spell": "Spell",
+        "rune": "Rune",
+        "legend": "Legend",
+        "battlefield": "Battlefield"
+      },
+      "domain": {
+        "fury": "Fury",
+        "calm": "Calm",
+        "mind": "Mind",
+        "body": "Body",
+        "chaos": "Chaos",
+        "order": "Order"
+      },
+      "tableStatus": {
+        "waiting": "Waiting",
+        "playing": "In progress",
+        "finished": "Finished",
+        "cancelled": "Cancelled"
+      },
+      "error": {
+        "UNAUTHENTICATED": "Sign in to do this.",
+        "OFFLINE": "Online play is not available right now.",
+        "NOT_FOUND": "This table does not exist.",
+        "FORBIDDEN": "Only the table host can do this.",
+        "INVALID": "Invalid request.",
+        "INVALID_DECK": "This deck cannot be played.",
+        "FULL": "The table is full.",
+        "ALREADY_SEATED": "You are already seated at this table.",
+        "NOT_FULL": "Some seats are still free.",
+        "NOT_WAITING": "The game has already started.",
+        "SERVER": "The game server did not answer. Try again in a moment."
+      },
+      "card": {
+        "hidden": "Hidden card",
+        "hiddenHint": "You cannot see this card.",
+        "inspect": "View {name}",
+        "attacker": "Attacker",
+        "defender": "Defender",
+        "stunned": "Stunned",
+        "exhausted": "Exhausted",
+        "buffed": "Has a buff",
+        "might": "Might {might}, damage taken {damage}",
+        "unsupported": "The engine cannot play this card yet."
+      },
+      "zone": {
+        "baseOf": "{name}'s base",
+        "myBase": "My base",
+        "hand": "My hand",
+        "champion": "Champion",
+        "emptyHand": "Your hand is empty.",
+        "trashOf": "{name}'s trash",
+        "trashHint": "Discarded cards, oldest first.",
+        "banish": "Banished cards",
+        "empty": "No cards."
+      },
+      "bf": {
+        "controlled": "Controlled by {name}",
+        "contested": "Contested by {name}",
+        "free": "Uncontrolled",
+        "showdown": "Showdown"
+      },
+      "player": {
+        "you": "you",
+        "turn": "Their turn",
+        "deciding": "Thinking",
+        "away": "Disconnected",
+        "points": "{points} / {max} points",
+        "hand": "Hand",
+        "deck": "Deck",
+        "runes": "Runes",
+        "runesReady": "{ready} ready of {total}",
+        "runeDeck": "Rune deck",
+        "pool": "Pool",
+        "energy": "{count} Energy",
+        "trash": "Trash ({count})"
+      },
+      "prompt": {
+        "onTable": "Choose on the table: whatever is outlined is allowed.",
+        "mulligan": "Click the cards to set aside ({count} of {max}).",
+        "keepHand": "Keep my hand",
+        "setAside": "{count, plural, one {Set # card aside} other {Set # cards aside}}",
+        "waiting": "Waiting…",
+        "waitingFor": "Waiting for {name}…"
+      },
+      "chain": {
+        "title": "Chain",
+        "pending": "being declared"
+      },
+      "journal": {
+        "title": "Log",
+        "empty": "The game begins.",
+        "rule": "Open rule {rule}"
+      },
+      "concede": {
+        "action": "Concede",
+        "confirm": "Concede the game?",
+        "yes": "Yes, concede",
+        "no": "Keep playing"
+      },
+      "result": {
+        "won": "Victory!",
+        "winner": "{names} won",
+        "draw": "Draw",
+        "replay": "Play again",
+        "toLobby": "Back to the play lobby"
+      },
+      "solo": {
+        "broken": "This game can no longer be resumed: the game engine has been updated since.",
+        "none": "No game in progress in this browser.",
+        "toLobby": "Choose a game"
+      },
+      "deck": {
+        "label": "Deck",
+        "placeholder": "Choose a deck",
+        "mine": "My decks",
+        "auto": "Automatic deck around a legend",
+        "refused": "{count, plural, one {# deck cannot be played} other {# decks cannot be played}}",
+        "problem": {
+          "noLegend": "The legend is missing.",
+          "noChampion": "The chosen champion is missing.",
+          "unknownCard": "A card is not recognised."
+        }
+      },
+      "lobby": {
+        "you": "Player",
+        "botName": "AI {number}",
+        "signIn": "Sign in",
+        "resumeTitle": "Game in progress against the AI",
+        "resumeHint": "{mode}, {moves} moves played.",
+        "resume": "Resume",
+        "discard": "Abandon this game",
+        "modeTitle": "1. Game mode",
+        "deckTitle": "2. Your deck",
+        "opponentTitle": "3. Opponent",
+        "signInForDecks": "Sign in to play with your own decks.",
+        "sets": "The engine plays the Origins (OGN) and Proving Grounds (OGS) sets.",
+        "ai": "AI",
+        "aiHint": "Right now, in your browser.",
+        "online": "Online",
+        "onlineHint": "Create a table and invite by link.",
+        "host": "My server",
+        "hostHint": "A game hosted by you or an organizer.",
+        "level": "Level",
+        "startSolo": "Start the game",
+        "replaces": "Starting a game replaces the one in progress against the AI.",
+        "offline": "Online play is not open on Joutes yet. You can play against the AI or on your own server.",
+        "signInForOnline": "Sign in to create or join a table.",
+        "createTable": "Create a table",
+        "joinLabel": "Join a table",
+        "joinPlaceholder": "Table code or link",
+        "join": "Join",
+        "tablesTitle": "My tables",
+        "noTables": "No online table yet.",
+        "aboutTitle": "How it works",
+        "about": "The Joutes engine knows the rules: it only offers what is allowed, resolves effects and narrates every event, citing the rule applied. Engine texts are in French for now."
+      },
+      "room": {
+        "title": "Online table · {mode}",
+        "code": "Code {code}",
+        "invite": "Share this page's link to invite players. Once the game has started, the same link lets people watch it.",
+        "copy": "Copy link",
+        "copied": "Link copied",
+        "seats": "Seats ({taken} of {total})",
+        "host": "Host",
+        "freeSeat": "Free seat",
+        "botSeat": "AI, {level} level",
+        "addBot": "Add an AI ({level})",
+        "start": "Start the game",
+        "waitingPlayers": "{count, plural, one {# seat still free} other {# seats still free}}",
+        "waitingHost": "Waiting for the host to start.",
+        "cancel": "Cancel the table",
+        "leave": "Leave",
+        "remove": "Remove",
+        "cancelled": "This table was cancelled.",
+        "join": "Sit at this table",
+        "signIn": "Sign in to take a seat.",
+        "sit": "Take a seat",
+        "unreachableHint": "The game has started, but the game server is not answering. Reload the page in a moment."
+      },
+      "remote": {
+        "badLink": "This invitation link is incomplete.",
+        "unreachable": "Unable to join the game.",
+        "server": "Game hosted by {host}, outside Joutes.",
+        "unreachableHint": "The host's server is not answering, or the invitation has expired. From an https page, the browser also refuses an unencrypted server (except on your own machine)."
+      },
+      "host": {
+        "intro": "Start the game server (joutes-server host) on a machine, then enter its address and organizer code here. Each player gets an invitation link. Joutes sees neither the address nor the code.",
+        "server": "Server address",
+        "token": "Organizer code",
+        "seat": "Seat {number}",
+        "guest": "Guest",
+        "guestName": "Guest {number}",
+        "guestNameLabel": "Player name",
+        "guestDeck": "Link to a Joutes deck (empty: automatic deck)",
+        "needDeck": "Choose your deck first, in step 2.",
+        "create": "Create the game",
+        "refused": "The server refused the request ({status}).",
+        "unreachable": "Server unreachable. Check the address, and that it uses https if this page does.",
+        "created": "The game is created. Send each player their link: it gives access to their seat, and theirs only.",
+        "open": "Open my table",
+        "another": "Create another game",
+        "spectators": "Spectators",
+        "spectator": "Spectator",
+        "tls": "From joutes.app (https), the browser only accepts a server over https, or one running on your own machine (localhost)."
+      }
+    },
     "Developers": {
       "metadata": {
         "title": "Joutes for Riftbound developers | MCP, Discord and API",
@@ -902,6 +1138,7 @@
       }
     },
     "nav": {
+      "play": "Play",
       "products": "Products",
       "tools": "Tools",
       "cards": "Cards",
@@ -932,6 +1169,10 @@
       }
     },
     "detail": {
+      "toolsPlay": {
+        "title": "Play",
+        "description": "Face the AI or your friends online: the engine applies the rules for you."
+      },
       "back": "Back to games",
       "viewEvents": "View events",
       "findLair": "Find a venue",

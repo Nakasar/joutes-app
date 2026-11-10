@@ -63,3 +63,6 @@ next-env.d.ts
 
 # vues MCP App empaquetées (scripts/build-mcp-apps.mjs, avant dev et build)
 /app/mcp/apps/*.generated.ts
+
+# moteur de jeu en base64 pour le serveur (scripts/build-engine.mjs, avant dev et build)
+/lib/engine/wasm.generated.ts

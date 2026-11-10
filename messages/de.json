@@ -542,6 +542,242 @@
     }
   },
   "Games": {
+    "Play": {
+      "title": "Riftbound spielen",
+      "description": "Spiele Riftbound im Browser: gegen die KI, online mit deinen Decks oder auf dem Server eines Veranstalters. Die Engine wendet die Regeln an und nennt jede einzelne.",
+      "back": "Zurück zum Spielportal",
+      "backToLobby": "Zurück zur Spiellobby",
+      "status": {
+        "loading": "Tisch wird geladen…",
+        "error": "Der Tisch konnte nicht geladen werden.",
+        "reconnecting": "Verbindung verloren, neuer Versuch…"
+      },
+      "mode": {
+        "duel": "Duell",
+        "ffa3": "Jeder gegen jeden zu dritt",
+        "ffa4": "Jeder gegen jeden zu viert",
+        "teams": "Teams 2 gegen 2"
+      },
+      "modeHint": {
+        "duel": "2 Spieler, 8 Punkte",
+        "ffa3": "3 Spieler, 3 Schlachtfelder",
+        "ffa4": "4 Spieler, 3 Schlachtfelder",
+        "teams": "2 Zweierteams, 11 Punkte"
+      },
+      "level": {
+        "easy": "Leicht",
+        "normal": "Normal",
+        "hard": "Schwer"
+      },
+      "kind": {
+        "unit": "Einheit",
+        "gear": "Ausrüstung",
+        "spell": "Zauber",
+        "rune": "Rune",
+        "legend": "Legende",
+        "battlefield": "Schlachtfeld"
+      },
+      "domain": {
+        "fury": "Zorn",
+        "calm": "Ruhe",
+        "mind": "Geist",
+        "body": "Körper",
+        "chaos": "Chaos",
+        "order": "Ordnung"
+      },
+      "tableStatus": {
+        "waiting": "Wartet",
+        "playing": "Läuft",
+        "finished": "Beendet",
+        "cancelled": "Abgesagt"
+      },
+      "error": {
+        "UNAUTHENTICATED": "Melde dich an, um das zu tun.",
+        "OFFLINE": "Das Online-Spiel ist derzeit nicht verfügbar.",
+        "NOT_FOUND": "Diesen Tisch gibt es nicht.",
+        "FORBIDDEN": "Das kann nur der Gastgeber des Tisches.",
+        "INVALID": "Ungültige Anfrage.",
+        "INVALID_DECK": "Dieses Deck kann nicht gespielt werden.",
+        "FULL": "Der Tisch ist voll.",
+        "ALREADY_SEATED": "Du sitzt bereits an diesem Tisch.",
+        "NOT_FULL": "Es sind noch Plätze frei.",
+        "NOT_WAITING": "Die Partie wurde bereits gestartet.",
+        "SERVER": "Der Spielserver hat nicht geantwortet. Versuche es gleich noch einmal."
+      },
+      "card": {
+        "hidden": "Verdeckte Karte",
+        "hiddenHint": "Du kannst diese Karte nicht sehen.",
+        "inspect": "{name} ansehen",
+        "attacker": "Angreifer",
+        "defender": "Verteidiger",
+        "stunned": "Betäubt",
+        "exhausted": "Erschöpft",
+        "buffed": "Trägt einen Bonus",
+        "might": "Macht {might}, erlittener Schaden {damage}",
+        "unsupported": "Die Engine kann diese Karte noch nicht spielen."
+      },
+      "zone": {
+        "baseOf": "Basis von {name}",
+        "myBase": "Meine Basis",
+        "hand": "Meine Hand",
+        "champion": "Champion",
+        "emptyHand": "Deine Hand ist leer.",
+        "trashOf": "Ablage von {name}",
+        "trashHint": "Die abgelegten Karten, von der ältesten zur neuesten.",
+        "banish": "Verbannte Karten",
+        "empty": "Keine Karten."
+      },
+      "bf": {
+        "controlled": "Kontrolliert von {name}",
+        "contested": "Umkämpft von {name}",
+        "free": "Frei",
+        "showdown": "Showdown"
+      },
+      "player": {
+        "you": "du",
+        "turn": "Am Zug",
+        "deciding": "Überlegt",
+        "away": "Getrennt",
+        "points": "{points} / {max} Punkte",
+        "hand": "Hand",
+        "deck": "Deck",
+        "runes": "Runen",
+        "runesReady": "{ready} von {total} bereit",
+        "runeDeck": "Runendeck",
+        "pool": "Vorrat",
+        "energy": "{count} Energie",
+        "trash": "Ablage ({count})"
+      },
+      "prompt": {
+        "onTable": "Wähle auf dem Tisch: Was umrandet ist, ist erlaubt.",
+        "mulligan": "Klicke die Karten an, die du beiseitelegst ({count} von {max}).",
+        "keepHand": "Hand behalten",
+        "setAside": "{count, plural, one {# Karte beiseitelegen} other {# Karten beiseitelegen}}",
+        "waiting": "Warten…",
+        "waitingFor": "Warten auf {name}…"
+      },
+      "chain": {
+        "title": "Kette",
+        "pending": "wird angesagt"
+      },
+      "journal": {
+        "title": "Protokoll",
+        "empty": "Die Partie beginnt.",
+        "rule": "Regel {rule} öffnen"
+      },
+      "concede": {
+        "action": "Aufgeben",
+        "confirm": "Die Partie aufgeben?",
+        "yes": "Ja, aufgeben",
+        "no": "Weiterspielen"
+      },
+      "result": {
+        "won": "Sieg!",
+        "winner": "Sieg für {names}",
+        "draw": "Unentschieden",
+        "replay": "Noch einmal spielen",
+        "toLobby": "Zurück zur Spiellobby"
+      },
+      "solo": {
+        "broken": "Diese Partie kann nicht mehr fortgesetzt werden: Die Spiel-Engine wurde inzwischen aktualisiert.",
+        "none": "Keine laufende Partie in diesem Browser.",
+        "toLobby": "Partie wählen"
+      },
+      "deck": {
+        "label": "Deck",
+        "placeholder": "Deck wählen",
+        "mine": "Meine Decks",
+        "auto": "Automatisches Deck um eine Legende",
+        "refused": "{count, plural, one {# Deck kann nicht gespielt werden} other {# Decks können nicht gespielt werden}}",
+        "problem": {
+          "noLegend": "Die Legende fehlt.",
+          "noChampion": "Der gewählte Champion fehlt.",
+          "unknownCard": "Eine Karte wird nicht erkannt."
+        }
+      },
+      "lobby": {
+        "you": "Spieler",
+        "botName": "KI {number}",
+        "signIn": "Anmelden",
+        "resumeTitle": "Laufende Partie gegen die KI",
+        "resumeHint": "{mode}, {moves} Züge gespielt.",
+        "resume": "Fortsetzen",
+        "discard": "Diese Partie verwerfen",
+        "modeTitle": "1. Spielmodus",
+        "deckTitle": "2. Dein Deck",
+        "opponentTitle": "3. Gegner",
+        "signInForDecks": "Melde dich an, um mit deinen eigenen Decks zu spielen.",
+        "sets": "Die Engine spielt die Sets Origins (OGN) und Proving Grounds (OGS).",
+        "ai": "KI",
+        "aiHint": "Sofort, in deinem Browser.",
+        "online": "Online",
+        "onlineHint": "Erstelle einen Tisch und lade per Link ein.",
+        "host": "Mein Server",
+        "hostHint": "Eine Partie, die du oder ein Veranstalter hostet.",
+        "level": "Stufe",
+        "startSolo": "Partie starten",
+        "replaces": "Eine neue Partie ersetzt die laufende Partie gegen die KI.",
+        "offline": "Das Online-Spiel ist auf Joutes noch nicht geöffnet. Du kannst gegen die KI oder auf deinem eigenen Server spielen.",
+        "signInForOnline": "Melde dich an, um einen Tisch zu erstellen oder ihm beizutreten.",
+        "createTable": "Tisch erstellen",
+        "joinLabel": "Einem Tisch beitreten",
+        "joinPlaceholder": "Code oder Link des Tisches",
+        "join": "Beitreten",
+        "tablesTitle": "Meine Tische",
+        "noTables": "Noch kein Online-Tisch.",
+        "aboutTitle": "So funktioniert es",
+        "about": "Die Joutes-Engine kennt die Regeln: Sie bietet dir nur an, was erlaubt ist, wickelt Effekte ab und erzählt jedes Ereignis mit der angewandten Regel. Die Texte der Engine sind vorerst auf Französisch."
+      },
+      "room": {
+        "title": "Online-Tisch · {mode}",
+        "code": "Code {code}",
+        "invite": "Teile den Link dieser Seite, um Spieler einzuladen. Nach dem Start kann man die Partie über denselben Link verfolgen.",
+        "copy": "Link kopieren",
+        "copied": "Link kopiert",
+        "seats": "Plätze ({taken} von {total})",
+        "host": "Gastgeber",
+        "freeSeat": "Freier Platz",
+        "botSeat": "KI, Stufe {level}",
+        "addBot": "KI hinzufügen ({level})",
+        "start": "Partie starten",
+        "waitingPlayers": "{count, plural, one {Noch # Platz frei} other {Noch # Plätze frei}}",
+        "waitingHost": "Warten auf den Start durch den Gastgeber.",
+        "cancel": "Tisch absagen",
+        "leave": "Verlassen",
+        "remove": "Entfernen",
+        "cancelled": "Dieser Tisch wurde abgesagt.",
+        "join": "An diesen Tisch setzen",
+        "signIn": "Melde dich an, um Platz zu nehmen.",
+        "sit": "Platz nehmen",
+        "unreachableHint": "Die Partie ist gestartet, aber der Spielserver antwortet nicht. Lade die Seite gleich neu."
+      },
+      "remote": {
+        "badLink": "Dieser Einladungslink ist unvollständig.",
+        "unreachable": "Der Partie kann nicht beigetreten werden.",
+        "server": "Partie gehostet von {host}, außerhalb von Joutes.",
+        "unreachableHint": "Der Server des Gastgebers antwortet nicht, oder die Einladung ist abgelaufen. Von einer https-Seite aus lehnt der Browser außerdem einen unverschlüsselten Server ab (außer auf deinem eigenen Rechner)."
+      },
+      "host": {
+        "intro": "Starte den Spielserver (joutes-server host) auf einem Rechner und gib hier seine Adresse und den Veranstaltercode an. Jeder Spieler erhält einen Einladungslink. Joutes sieht weder Adresse noch Code.",
+        "server": "Serveradresse",
+        "token": "Veranstaltercode",
+        "seat": "Platz {number}",
+        "guest": "Gast",
+        "guestName": "Gast {number}",
+        "guestNameLabel": "Name des Spielers",
+        "guestDeck": "Link zu einem Joutes-Deck (leer: automatisches Deck)",
+        "needDeck": "Wähle zuerst dein Deck, in Schritt 2.",
+        "create": "Partie erstellen",
+        "refused": "Der Server hat die Anfrage abgelehnt ({status}).",
+        "unreachable": "Server nicht erreichbar. Prüfe die Adresse, und dass sie https nutzt, wenn diese Seite es tut.",
+        "created": "Die Partie ist erstellt. Schicke jedem seinen Link: Er gibt Zugang zu seinem Platz, und nur zu diesem.",
+        "open": "Meinen Tisch öffnen",
+        "another": "Weitere Partie erstellen",
+        "spectators": "Zuschauer",
+        "spectator": "Zuschauer",
+        "tls": "Von joutes.app (https) aus akzeptiert der Browser nur einen Server über https oder einen auf deinem eigenen Rechner (localhost)."
+      }
+    },
     "Developers": {
       "metadata": {
         "title": "Joutes für Riftbound-Entwickler | MCP, Discord und API",
@@ -902,6 +1138,7 @@
       }
     },
     "nav": {
+      "play": "Spielen",
       "products": "Produkte",
       "tools": "Werkzeuge",
       "cards": "Karten",
@@ -932,6 +1169,10 @@
       }
     },
     "detail": {
+      "toolsPlay": {
+        "title": "Spielen",
+        "description": "Tritt gegen die KI oder online gegen Freunde an: Die Engine wendet die Regeln für dich an."
+      },
       "back": "Zurück zu den Spielen",
       "viewEvents": "Events ansehen",
       "findLair": "Einen Ort finden",
