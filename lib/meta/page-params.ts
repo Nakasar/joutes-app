@@ -95,3 +95,12 @@ export function metaHref(
   const query = params.toString();
   return query ? `${basePath}?${query}` : basePath;
 }
+
+/**
+ * Consigne aux robots pour une vue de la méta : seule la vue sans paramètre
+ * s'indexe et s'explore. Les vues filtrées se combinent sans fin et chacune
+ * recalcule la méta ; `robots.txt` les ferme aussi (`lib/well-known/robots.ts`).
+ */
+export function metaViewRobots(raw: RawParams): { index: false; follow: false } | undefined {
+  return Object.values(raw).some((value) => first(value) !== undefined) ? { index: false, follow: false } : undefined;
+}

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildRobotsTxt, CONTENT_SIGNAL } from "./robots";
+import { BLOCKED_AGENTS, buildRobotsTxt, CONTENT_SIGNAL, META_DISALLOWS } from "./robots";
 
 /**
  * `robots.txt` et ses Content Signals.
@@ -61,5 +61,22 @@ describe("buildRobotsTxt", () => {
     assert.ok(lines.includes("Disallow: /admin/"));
     assert.ok(lines.includes("Sitemap: https://www.joutes.app/sitemap.xml"));
     assert.ok(lines.includes("Sitemap: https://www.joutes.app/sitemap_index.xml"));
+  });
+
+  it("ferme la méta aux robots", () => {
+    const lines = directives(buildRobotsTxt());
+    const wildcard = lines.indexOf("User-Agent: *");
+    const nextGroup = lines.findIndex((line, index) => index > wildcard && line.startsWith("User-Agent:"));
+    const group = lines.slice(wildcard, nextGroup === -1 ? undefined : nextGroup);
+    for (const path of META_DISALLOWS) assert.ok(group.includes(`Disallow: ${path}`), `${path} absent du groupe *`);
+  });
+
+  it("donne aux robots bloqués leur propre groupe", () => {
+    const lines = directives(buildRobotsTxt());
+    for (const agent of BLOCKED_AGENTS) {
+      const opener = lines.indexOf(`User-Agent: ${agent}`);
+      assert.notEqual(opener, -1, `${agent} absent`);
+      assert.equal(lines[opener + 1], "Disallow: /");
+    }
   });
 });

@@ -13,6 +13,20 @@
 /** Préférences déclarées, dans l'ordre où la spécification les présente. */
 export const CONTENT_SIGNAL = "search=yes, ai-input=yes, ai-train=yes";
 
+/**
+ * La méta (`/games/:jeu/meta` et ses sous-pages) est fermée aux robots : ses
+ * filtres se combinent sans fin et chaque adresse recalcule les statistiques.
+ * PerplexityBot en a tiré 117 000 en deux jours (9-10 nov. 2026, ~15 Go sortis
+ * de nos fonctions). Le proxy les refuse aussi (`lib/net/meta-bots.ts`).
+ */
+export const META_DISALLOWS = ["/games/*/meta", "/*/games/*/meta"];
+
+/**
+ * Robots sans intérêt pour Joutes, qui parcourent tout le site : SE Ranking
+ * (outil d'analyse de liens) a pesé ~1,5 Go les mêmes jours.
+ */
+export const BLOCKED_AGENTS = ["SERankingBacklinksBot"];
+
 const SITEMAPS = [
   "https://www.joutes.app/sitemap.xml",
   "https://www.joutes.app/sitemap_index.xml",
@@ -31,6 +45,9 @@ User-Agent: *
 Content-Signal: ${CONTENT_SIGNAL}
 Allow: /
 Disallow: /admin/
+${META_DISALLOWS.map((path) => `Disallow: ${path}`).join("\n")}
+
+${BLOCKED_AGENTS.map((agent) => `User-Agent: ${agent}\nDisallow: /`).join("\n\n")}
 
 ${SITEMAPS.map((sitemap) => `Sitemap: ${sitemap}`).join("\n")}`;
 }

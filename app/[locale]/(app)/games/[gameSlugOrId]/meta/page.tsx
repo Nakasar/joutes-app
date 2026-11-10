@@ -13,7 +13,7 @@ import { GameToolGridSkeleton, GameToolHeaderSkeleton } from "@/components/games
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { loadMetaEventsMatches } from "@/lib/db/meta-events.ts";
 import { loadMetaSample } from "@/lib/meta/load.ts";
-import { META_TABS, metaHref, parseMetaPageParams, periodChoices, type MetaTab } from "@/lib/meta/page-params.ts";
+import { META_TABS, metaHref, metaViewRobots, parseMetaPageParams, periodChoices, type MetaTab } from "@/lib/meta/page-params.ts";
 import { resolveMetaSettings } from "@/lib/meta/settings.ts";
 import {
   computeAssociations,
@@ -48,8 +48,8 @@ async function requireGameWithDecks(gameSlugOrId: string) {
   return game;
 }
 
-export async function generateMetadata({ params }: MetaPageProps): Promise<Metadata> {
-  const { gameSlugOrId } = await params;
+export async function generateMetadata({ params, searchParams }: MetaPageProps): Promise<Metadata> {
+  const [{ gameSlugOrId }, raw] = await Promise.all([params, searchParams]);
   const game = await readGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games.meta");
   if (!game?.features?.meta) return { title: t("metadata.notFoundTitle") };
@@ -59,6 +59,7 @@ export async function generateMetadata({ params }: MetaPageProps): Promise<Metad
   return {
     title,
     description,
+    robots: metaViewRobots(raw),
     openGraph: {
       url: `https://joutes.app/games/${game.slug ?? gameSlugOrId}/meta`,
       title,
