@@ -3251,6 +3251,18 @@
         "palmaresWinsHint": "Tornei vinti",
         "palmaresTopEights": "Top 8",
         "palmaresTournaments": "Tornei",
+        "statWins": "Vittorie",
+        "statPodiums": "Podi",
+        "statTopEights": "Top 8",
+        "statTournaments": "Tornei",
+        "monthSummary": "{tournaments, plural, one {# torneo} other {# tornei}}{podiums, plural, =0 {} one { · # podio} other { · # podi}}",
+        "highlight": {
+          "gold": "Vittoria di {member}",
+          "silver": "2º posto · {member}",
+          "bronze": "3º posto · {member}"
+        },
+        "highlightTop": "Top 8 · {member}",
+        "palmaresLegend": "Vittorie, podi / tornei giocati.",
         "upcoming": "Prossimi tornei",
         "upcomingEmpty": "Nessun membro è iscritto a un prossimo torneo Joutes.",
         "upcomingMembers": "{count, plural, one {# membro iscritto} other {# membri iscritti}}: {names}",

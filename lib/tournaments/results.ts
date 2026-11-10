@@ -383,12 +383,20 @@ export function groupByMonth<T extends { date: string }>(tournaments: T[]): { mo
   return months;
 }
 
-export type Palmares = { wins: number; topEights: number; tournaments: number };
+export type Palmares = { wins: number; podiums: number; topEights: number; tournaments: number };
 
-/** Victoires, top 8 et tournois joués, sur un ensemble de résultats. */
+/** La médaille d'une place : or, argent, bronze, ou rien au-delà du podium. */
+export type Medal = "gold" | "silver" | "bronze";
+
+export function medalFor(placement: number | undefined): Medal | undefined {
+  return placement === 1 ? "gold" : placement === 2 ? "silver" : placement === 3 ? "bronze" : undefined;
+}
+
+/** Victoires, podiums, top 8 et tournois joués, sur un ensemble de résultats. */
 export function summarizeResults(results: Pick<TournamentResult, "placement" | "tournamentRef" | "name" | "date">[]): Palmares {
   return {
     wins: results.filter((result) => result.placement === 1).length,
+    podiums: results.filter((result) => result.placement !== undefined && result.placement <= 3).length,
     topEights: results.filter((result) => result.placement !== undefined && result.placement <= 8).length,
     tournaments: new Set(results.map(tournamentKey)).size,
   };

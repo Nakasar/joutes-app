@@ -122,7 +122,10 @@ export function groupPalmares(results: TournamentResult[]): MemberPalmares[] {
 
   return [...byUser]
     .map(([userId, own]) => ({ userId, ...summarizeResults(own) }))
-    .sort((a, b) => b.wins - a.wins || b.topEights - a.topEights || b.tournaments - a.tournaments);
+    .sort(
+      (a, b) =>
+        b.wins - a.wins || b.podiums - a.podiums || b.topEights - a.topEights || b.tournaments - a.tournaments,
+    );
 }
 
 /** Les légendes jouées par les membres, pour le filtre, de la plus jouée à la moins jouée. */

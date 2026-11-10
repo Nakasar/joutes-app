@@ -187,7 +187,7 @@ describe("summarizeResults / bestRecentResult", () => {
         { placement: 6, tournamentRef: "a", name: "", date: "" },
         { placement: 12, tournamentRef: "b", name: "", date: "" },
       ]),
-      { wins: 1, topEights: 2, tournaments: 2 },
+      { wins: 1, podiums: 1, topEights: 2, tournaments: 2 },
     );
   });
 
