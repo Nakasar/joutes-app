@@ -789,7 +789,7 @@ async function authHandler(req: Request) {
                 // Rien de ce qui suit ne journalise le jeton : un porteur écrit
                 // en clair dans les journaux vaut le compte qu'il ouvre, et il
                 // survit à la session dans les exports et la rétention.
-                const payload = await serverClient.verifyAccessToken(
+                const payload = await serverClient.verifyBearerToken(
                     accessToken, {
                     jwksUrl: MCP_TOKEN.jwksUri,
                     verifyOptions: {
@@ -799,7 +799,9 @@ async function authHandler(req: Request) {
                 });
 
                 req.auth = {
-                    clientId: payload.aud as string,
+                    // `azp` nomme le client ; `aud` nomme la ressource, et c'est
+                    // une liste dès que le jeton vaut aussi pour `userinfo`.
+                    clientId: String(payload.azp ?? payload.client_id ?? [payload.aud].flat()[0] ?? ""),
                     scopes: payload.scope ? (payload.scope as string).split(" ") : [],
                     token: accessToken ?? "",
                     extra: {

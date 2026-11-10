@@ -29,7 +29,8 @@ async function AccountSecurityContent() {
   const discordSocialAccount = socialAccounts.find(a => a.providerId === 'discord');
   const discordInfo = discordSocialAccount ? await auth.api.accountInfo({
     query: {
-      accountId: discordSocialAccount.accountId,
+      // L'identifiant de la ligne `account`, pas celui du compte Discord.
+      accountId: discordSocialAccount.id,
     },
     headers: await headers(),
   }).catch(err => {
@@ -96,7 +97,7 @@ async function AccountSecurityContent() {
 
                       await auth.api.unlinkAccount({
                         body: {
-                          providerId: 'discord',
+                          accountId: discordSocialAccount.id,
                         },
                         headers: await headers(),
                       })

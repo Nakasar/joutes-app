@@ -14,10 +14,13 @@
     "decks:domains": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --conditions=react-server --import ./scripts/ts-paths-hook.mjs scripts/db/recompute-deck-domains.ts",
     "test": "node --import ./scripts/ts-paths-hook.mjs --test \"lib/**/*.test.ts\""
   },
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "@ai-sdk/openai": "2.0.114",
-    "@better-auth/oauth-provider": "1.6.24",
-    "@better-auth/passkey": "1.6.24",
+    "@better-auth/oauth-provider": "1.7.18",
+    "@better-auth/passkey": "1.7.18",
     "@discordjs/builders": "^1.14.1",
     "@discordjs/rest": "^2.6.1",
     "@formatjs/intl-localematcher": "^0.8.10",
@@ -39,7 +42,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.3.3",
     "ai": "5.0.218",
-    "better-auth": "1.6.24",
+    "better-auth": "1.7.18",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

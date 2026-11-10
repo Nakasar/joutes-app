@@ -12,6 +12,7 @@ import { syncSubscription, teardownLink } from "@/lib/streams/subscriptions.ts";
 import { addTarget, removeTarget } from "@/lib/streams/targets.ts";
 import { streamTargetSchema } from "@/lib/schemas/stream-link.schema.ts";
 import type { StreamPlatform } from "@/lib/types/StreamLink";
+import { findLinkedAccountId } from "@/lib/db/linked-accounts";
 
 /**
  * Les destinations d'un direct, gérées depuis « Connexions et comptes ».
@@ -156,10 +157,14 @@ export async function unlinkStreamAccount(platform: StreamPlatform): Promise<Str
       await deleteStreamLink(link.id);
     }
 
-    await auth.api.unlinkAccount({
-      body: { providerId: STREAM_PROVIDER_IDS[platform] },
-      headers: await headers(),
-    });
+    // Sans ligne `account`, il n'y a plus rien à délier chez better-auth.
+    const accountId = await findLinkedAccountId(userId, STREAM_PROVIDER_IDS[platform]);
+    if (accountId) {
+      await auth.api.unlinkAccount({
+        body: { accountId },
+        headers: await headers(),
+      });
+    }
 
     revalidateSecurity();
     return { success: true };

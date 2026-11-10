@@ -96,8 +96,8 @@ export function LinkPatreonButton({ configured }: { configured: boolean }) {
       onClick={async () => {
         setPending(true);
         try {
-          await authClient.oauth2.link({
-            providerId: "patreon",
+          await authClient.linkSocial({
+            provider: "patreon",
             // Le marqueur que `SyncAfterLink` attend : better-auth n'écrit que
             // la ligne `account`, personne n'irait lire l'abonnement chez
             // Patreon sans lui.

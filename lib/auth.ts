@@ -254,7 +254,22 @@ export const auth = betterAuth({
       consentPage: "/oauth/consent",
       allowDynamicClientRegistration: true,
       allowUnauthenticatedClientRegistration: true,
-      validAudiences: [`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000"}/`],
+      // Depuis better-auth 1.7, un client qui s'enregistre sans dire son type
+      // est tenu pour une application web, à qui `http://localhost` et les
+      // schémas propres (`cursor://…`) sont refusés. Or c'est exactement ce
+      // qu'envoient les clients MCP de bureau, sans `application_type`.
+      // « infer » les classe comme applications natives d'après leurs adresses
+      // de retour, et laisse les clients web (https) inchangés.
+      clientRegistrationDefaultApplicationType: "infer",
+      // La ressource pour laquelle les jetons sont émis : le serveur MCP, que
+      // ses clients nomment dans le paramètre `resource`. better-auth 1.7 en
+      // fait une entité enregistrée (collection `oauthResource`, semée au
+      // démarrage) là où la 1.6 se contentait d'une liste `validAudiences`.
+      resources: [`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000"}/`],
+      // Tout client enregistré peut demander cette ressource, comme avant :
+      // par défaut la 1.7 exige un lien client ↔ ressource que les clients
+      // déjà enregistrés n'ont pas, et ils seraient tous refusés.
+      enforcePerClientResources: false,
       silenceWarnings: {
         oauthAuthServerConfig: true,
       },

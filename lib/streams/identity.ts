@@ -9,6 +9,7 @@ import { getYouTubeChannelForToken } from "@/lib/streams/youtube-api";
 import { twitchChannelUrl } from "@/lib/streams/twitch-eventsub";
 import { youtubeChannelUrl } from "@/lib/streams/youtube-websub";
 import type { StreamLink, StreamPlatform } from "@/lib/types/StreamLink";
+import { findLinkedAccountId } from "@/lib/db/linked-accounts";
 
 /**
  * Du compte social lié à la chaîne qu'il désigne.
@@ -63,8 +64,11 @@ async function readYouTubeIdentity(userId: string): Promise<StreamIdentity | nul
   let accessToken: string | undefined;
 
   try {
+    const accountId = await findLinkedAccountId(userId, STREAM_PROVIDER_IDS.youtube);
+    if (!accountId) return null;
+
     const token = await auth.api.getAccessToken({
-      body: { providerId: STREAM_PROVIDER_IDS.youtube, userId },
+      body: { accountId, userId },
       headers: await headers(),
     });
     accessToken = token?.accessToken;

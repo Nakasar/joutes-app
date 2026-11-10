@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth.ts";
 import { clearProviderLink } from "@/lib/db/subscriptions.ts";
 import { PATREON_PROVIDER_ID, syncFromUserToken } from "@/lib/patreon/sync.ts";
+import { findLinkedAccountId } from "@/lib/db/linked-accounts";
 
 /**
  * Les actions de l'écran « mon abonnement ».
@@ -58,10 +59,14 @@ export async function unlinkPatreonAction(): Promise<ActionResult> {
   }
 
   try {
-    await auth.api.unlinkAccount({
-      body: { providerId: PATREON_PROVIDER_ID },
-      headers: await headers(),
-    });
+    // Sans ligne `account`, il n'y a plus rien à délier chez better-auth.
+    const accountId = await findLinkedAccountId(userId, PATREON_PROVIDER_ID);
+    if (accountId) {
+      await auth.api.unlinkAccount({
+        body: { accountId },
+        headers: await headers(),
+      });
+    }
   } catch (error) {
     console.error("Impossible de délier Patreon:", error);
     return { success: false, error: "unlink-failed" };

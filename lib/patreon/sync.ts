@@ -12,6 +12,7 @@ import { fetchIdentity, fetchMember, type PatreonResult } from "./api";
 import { patreonConfig, patreonPlanMapping } from "./config";
 import { plansFromSnapshot, resolveMembership } from "./resolve";
 import type { MembershipSnapshot, PatreonDocument } from "./types";
+import { findLinkedAccountId } from "@/lib/db/linked-accounts";
 
 /**
  * La synchronisation : lire chez Patreon, résoudre, écrire la projection.
@@ -73,8 +74,13 @@ export async function syncFromUserToken(userId: User['id'], source: Subscription
   let accessToken: string | undefined;
 
   try {
+    const accountId = await findLinkedAccountId(userId, PATREON_PROVIDER_ID);
+    if (!accountId) {
+      return { ok: false, reason: "not-linked" };
+    }
+
     const token = await auth.api.getAccessToken({
-      body: { providerId: PATREON_PROVIDER_ID, userId },
+      body: { accountId, userId },
       headers: await headers(),
     });
     accessToken = token?.accessToken;
