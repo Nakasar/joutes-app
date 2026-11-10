@@ -1,5 +1,6 @@
 import type { Document, WithId } from "mongodb";
 import { escapeRegex } from "@/lib/utils/regex";
+import { displayAvatar } from "@/lib/users/document";
 
 /**
  * La lecture de ce que le registre demande.
@@ -189,7 +190,7 @@ export function toRegistryUser(doc: WithId<Document>): RegistryUser {
     username: doc.name || doc.username || "",
     displayName: doc.displayName || undefined,
     discriminator: doc.discriminator || undefined,
-    avatar: doc.profileImage || doc.image || doc.avatar || undefined,
+    avatar: displayAvatar(doc),
     description: doc.description || undefined,
     city: showCity ? doc.location?.city || undefined : undefined,
     games: Array.isArray(doc.games) ? doc.games : [],

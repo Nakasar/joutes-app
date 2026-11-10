@@ -7,7 +7,7 @@ import { passkey } from "@better-auth/passkey";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import db from "@/lib/mongodb";
 import { getOwnBadges, NO_BADGES } from "@/lib/db/user-badges";
-import { getUserDisplayAvatar } from "@/lib/db/users";
+import { getUserDisplayAvatar, refreshDiscordImage } from "@/lib/db/users";
 import {customAlphabet} from "nanoid";
 
 const generateOTP = customAlphabet("0123456789", 6);
@@ -199,9 +199,20 @@ export const auth = betterAuth({
     discord: {
       clientId: process.env.DISCORD_CLIENT_ID!,
       clientSecret: process.env.DISCORD_CLIENT_SECRET!,
-      mapProfileToUser: (profile) => ({
-        email: profile.email ?? `${profile.id}@discord.placeholder.local`,
-      }),
+      mapProfileToUser: async (profile) => {
+        // Appelé à chaque connexion avec le profil Discord frais : c'est le
+        // seul moment où l'on connaît le nouvel avatar. better-auth ne le
+        // recopie pas sur un compte existant (voir lib/users/discord-avatar.ts),
+        // et une photo changée sur Discord laissait une image cassée.
+        // Un échec ici ne doit jamais empêcher la connexion.
+        await refreshDiscordImage(profile.id, profile.image_url).catch((error) => {
+          console.error("Erreur lors de la mise à jour de l'avatar Discord:", error);
+        });
+
+        return {
+          email: profile.email ?? `${profile.id}@discord.placeholder.local`,
+        };
+      },
     },
     ...streamSocialProviders(),
   },

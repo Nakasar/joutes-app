@@ -16,6 +16,39 @@ import { USER_SHOWCASE_SECTION_KEYS, type UserShowcaseSectionKey } from "@/lib/u
  * Séparé de `lib/db/users.ts`, qui ouvre une connexion MongoDB au chargement et
  * ne peut donc pas être importé par un test.
  */
+/**
+ * L'avatar à afficher pour un compte, d'après son document.
+ *
+ * L'ordre est une règle : l'image téléversée sur Joutes (`profileImage`)
+ * d'abord — c'est la seule que la personne a choisie —, puis celle du
+ * fournisseur d'identité (`image`, écrite par better-auth à l'inscription),
+ * puis le champ historique (`avatar`). Lire `image` en premier montrait
+ * l'ancien avatar Discord à qui avait téléversé une photo, et une image
+ * cassée dès que cet avatar changeait sur Discord.
+ *
+ * Une chaîne vide vaut absence : retirer sa photo enregistre `""`.
+ */
+export function displayAvatar(doc: Document | null | undefined): string | undefined {
+  for (const value of [doc?.profileImage, doc?.image, doc?.avatar]) {
+    if (typeof value === "string" && value.length > 0) return value;
+  }
+  return undefined;
+}
+
+/**
+ * La même règle qu'en `displayAvatar`, en expression d'agrégation MongoDB,
+ * pour les `$project` qui joignent des comptes.
+ */
+export const DISPLAY_AVATAR_EXPRESSION = {
+  $switch: {
+    branches: ["$profileImage", "$image"].map((field) => ({
+      case: { $gt: [{ $strLenCP: { $ifNull: [field, ""] } }, 0] },
+      then: field,
+    })),
+    default: "$avatar",
+  },
+};
+
 export function toUser(doc: WithId<Document>): User {
   return {
     id: doc.id || doc._id.toString(),
@@ -24,7 +57,7 @@ export function toUser(doc: WithId<Document>): User {
     discriminator: doc.discriminator || undefined,
     email: doc.email,
     discordId: doc.discordId || "",
-    avatar: doc.image || doc.avatar || "",
+    avatar: displayAvatar(doc) ?? "",
     // better-auth pose une `Date` ; la vitrine veut une chaîne comparable et
     // sérialisable jusqu'au composant client.
     createdAt:
