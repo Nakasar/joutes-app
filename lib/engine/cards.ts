@@ -22,7 +22,7 @@ export function toCatalogId(engineCode: string): string {
 }
 
 /** Extensions que le moteur sait jouer. */
-export const ENGINE_SETS = ["OGS", "OGN"] as const;
+export const ENGINE_SETS = ["OGS", "OGN", "SFD", "UNL", "VEN", "RAD"] as const;
 
 /** Ce que la table affiche d'une carte : catalogue Joutes et moteur réunis. */
 export type TableCard = {
