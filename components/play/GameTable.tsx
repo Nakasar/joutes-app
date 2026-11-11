@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
 import { PlayCard } from "@/components/play/PlayCard";
+import { HandFan, PointRails, TableScene } from "@/components/play/TableScene";
 import type { GameFeed } from "@/components/play/game-feed";
 import { usePacedFeed, type Ghost, type PacedFeed } from "@/components/play/usePacedFeed";
 import { Badge } from "@/components/ui/badge";
@@ -19,11 +20,13 @@ import {
   actorOf,
   battlefieldOf,
   codeOf,
+  combatInFocus,
   damageOf,
   eventType,
   objectsOf,
   PACE_SPEEDS,
   revealsCard,
+  TABLE_VIEWS,
   type Ack,
 } from "@/lib/engine/pacing";
 import type {
@@ -158,6 +161,14 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
   const myHand = spectator ? [] : (mine.hand ?? []);
   const waitingFor = view.pending && view.pending.seat !== feed.seat ? view.players[view.pending.seat] : null;
 
+  // En relief, la caméra s'approche du combat raconté ; jamais pendant qu'on choisit.
+  const relief = paced.pace.view === "3d";
+  const dive =
+    relief && paced.pace.camera && paced.pace.speed !== "instant" && (paced.busy || paced.ack?.kind === "combat")
+      ? // Entre deux évènements racontés, la caméra reste sur le dernier.
+        combatInFocus(paced.journal, paced.current ?? { index: paced.journal.length - 1 }, paced.ack)
+      : null;
+
   const toggleMulligan = (id: number) =>
     setMulliganState({
       key: promptKey,
@@ -167,6 +178,91 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
           ? [...mulligan, id]
           : mulligan,
     });
+
+  const handCard = (obj: EngineObj) =>
+    mulliganing ? (
+      <PlayCard
+        key={obj.id}
+        obj={obj}
+        card={cardOf(obj)}
+        size="lg"
+        choices={[{ action: { type: "mulligan" }, label: cardOf(obj)?.name ?? obj.name ?? "" }]}
+        onAct={() => toggleMulligan(obj.id)}
+        onInspect={() => setInspected({ obj, card: cardOf(obj) })}
+        selected={mulligan.includes(obj.id)}
+      />
+    ) : (
+      renderObj(obj, "lg")
+    );
+  const handItems = [
+    ...(mine.champion && !spectator
+      ? [
+          {
+            key: "champion",
+            node: (
+              <div className="flex flex-col items-center gap-1">
+                {renderObj(mine.champion, "lg")}
+                <span className="play-engrave text-[0.6rem] uppercase">{t("zone.champion")}</span>
+              </div>
+            ),
+          },
+        ]
+      : []),
+    ...myHand.map((obj) => ({ key: obj.id, node: handCard(obj) })),
+  ];
+
+  const board = (
+    <>
+      {others.map((player) => (
+        <BaseStrip
+          key={player.seat}
+          title={t("zone.baseOf", { name: player.name })}
+          choices={choicesOn(`base:${player.seat}`)}
+          onAct={act}
+          relief={relief}
+        >
+          {view.bases[player.seat].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "sm"))}
+          {ghostsAt("base", player.seat).map((ghost) => renderGhost(ghost, "sm"))}
+          <Runes objs={view.bases[player.seat].filter(isRune)} cards={cards} choicesOn={choicesOn} onAct={act} />
+        </BaseStrip>
+      ))}
+
+      <div
+        className="grid gap-3"
+        style={{ gridTemplateColumns: `repeat(${view.battlefields.length}, minmax(0, 1fr))` }}
+      >
+        {view.battlefields.map((bf) => (
+          <BattlefieldColumn
+            key={bf.index}
+            bf={bf}
+            view={view}
+            me={me}
+            showdown={view.showdown?.bf === bf.index}
+            focus={focusBf === bf.index}
+            ghosts={ghostsAt("bf", bf.index)}
+            renderGhost={renderGhost}
+            choices={choicesOn(`bf:${bf.index}`)}
+            onAct={act}
+            card={renderObj(bf.card, "md")}
+            renderObj={renderObj}
+            relief={relief}
+          />
+        ))}
+      </div>
+
+      <BaseStrip
+        title={spectator ? t("zone.baseOf", { name: mine.name }) : t("zone.myBase")}
+        choices={choicesOn(`base:${me}`)}
+        onAct={act}
+        mine
+        relief={relief}
+      >
+        {view.bases[me].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "md"))}
+        {ghostsAt("base", me).map((ghost) => renderGhost(ghost))}
+        <Runes objs={view.bases[me].filter(isRune)} cards={cards} choicesOn={choicesOn} onAct={act} />
+      </BaseStrip>
+    </>
+  );
 
   return (
     <div className="flex flex-col gap-3 max-lg:pb-48 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)_21rem] lg:items-start">
@@ -196,85 +292,56 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
         <Narration paced={paced} />
         <StepOverlay paced={paced} view={view} cards={cards} me={feed.seat} />
 
-        {others.map((player) => (
-          <BaseStrip
-            key={player.seat}
-            title={t("zone.baseOf", { name: player.name })}
-            choices={choicesOn(`base:${player.seat}`)}
-            onAct={act}
+        {relief ? (
+          <TableScene
+            dive={dive}
+            rails={
+              <PointRails
+                players={view.players}
+                me={spectator ? null : me}
+                max={view.victory_score}
+                label={(player) =>
+                  `${player.name} · ${t("player.points", { points: player.points, max: view.victory_score })}`
+                }
+              />
+            }
+            hand={
+              spectator ? null : (
+                <section aria-label={t("zone.hand")}>
+                  {myHand.length === 0 && !mine.champion ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">{t("zone.emptyHand")}</p>
+                  ) : (
+                    <HandFan items={handItems} />
+                  )}
+                </section>
+              )
+            }
           >
-            {view.bases[player.seat].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "sm"))}
-            {ghostsAt("base", player.seat).map((ghost) => renderGhost(ghost, "sm"))}
-            <Runes objs={view.bases[player.seat].filter(isRune)} cards={cards} choicesOn={choicesOn} onAct={act} />
-          </BaseStrip>
-        ))}
-
-        <div
-          className="grid gap-3"
-          style={{ gridTemplateColumns: `repeat(${view.battlefields.length}, minmax(0, 1fr))` }}
-        >
-          {view.battlefields.map((bf) => (
-            <BattlefieldColumn
-              key={bf.index}
-              bf={bf}
-              view={view}
-              me={me}
-              showdown={view.showdown?.bf === bf.index}
-              focus={focusBf === bf.index}
-              ghosts={ghostsAt("bf", bf.index)}
-              renderGhost={renderGhost}
-              choices={choicesOn(`bf:${bf.index}`)}
-              onAct={act}
-              card={renderObj(bf.card, "md")}
-              renderObj={renderObj}
-            />
-          ))}
-        </div>
-
-        <BaseStrip
-          title={spectator ? t("zone.baseOf", { name: mine.name }) : t("zone.myBase")}
-          choices={choicesOn(`base:${me}`)}
-          onAct={act}
-          mine
-        >
-          {view.bases[me].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "md"))}
-          {ghostsAt("base", me).map((ghost) => renderGhost(ghost))}
-          <Runes objs={view.bases[me].filter(isRune)} cards={cards} choicesOn={choicesOn} onAct={act} />
-        </BaseStrip>
-
-        {!spectator && (
-          <section aria-label={t("zone.hand")} className="rounded-xl border bg-card p-3">
-            <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {t("zone.hand")} · {myHand.length}
-            </h3>
-            <div className="flex items-end gap-2 overflow-x-auto px-1 pb-2 pt-2">
-              {mine.champion && (
-                <div className="flex shrink-0 flex-col items-center gap-1 border-r pr-3">
-                  {renderObj(mine.champion, "lg")}
-                  <span className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-                    {t("zone.champion")}
-                  </span>
+            {board}
+          </TableScene>
+        ) : (
+          <>
+            {board}
+            {!spectator && (
+              <section aria-label={t("zone.hand")} className="rounded-xl border bg-card p-3">
+                <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {t("zone.hand")} · {myHand.length}
+                </h3>
+                <div className="flex items-end gap-2 overflow-x-auto px-1 pb-2 pt-2">
+                  {mine.champion && (
+                    <div className="flex shrink-0 flex-col items-center gap-1 border-r pr-3">
+                      {renderObj(mine.champion, "lg")}
+                      <span className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">
+                        {t("zone.champion")}
+                      </span>
+                    </div>
+                  )}
+                  {myHand.length === 0 && <p className="py-6 text-sm text-muted-foreground">{t("zone.emptyHand")}</p>}
+                  {myHand.map(handCard)}
                 </div>
-              )}
-              {myHand.length === 0 && <p className="py-6 text-sm text-muted-foreground">{t("zone.emptyHand")}</p>}
-              {myHand.map((obj) =>
-                mulliganing ? (
-                  <PlayCard
-                    key={obj.id}
-                    obj={obj}
-                    card={cardOf(obj)}
-                    size="lg"
-                    choices={[{ action: { type: "mulligan" }, label: cardOf(obj)?.name ?? obj.name ?? "" }]}
-                    onAct={() => toggleMulligan(obj.id)}
-                    onInspect={() => setInspected({ obj, card: cardOf(obj) })}
-                    selected={mulligan.includes(obj.id)}
-                  />
-                ) : (
-                  renderObj(obj, "lg")
-                ),
-              )}
-            </div>
-          </section>
+              </section>
+            )}
+          </>
         )}
       </main>
 
@@ -282,6 +349,7 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
       <aside className="flex flex-col gap-3 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)]">
         <section
           aria-live="polite"
+          data-play-sheet
           className="flex flex-col gap-3 rounded-xl border bg-card p-4 max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-30 max-lg:max-h-[45dvh] max-lg:overflow-y-auto max-lg:rounded-b-none max-lg:shadow-2xl"
         >
           {feed.status === "reconnecting" && (
@@ -724,17 +792,30 @@ type BaseStripProps = {
   choices: EngineChoice[];
   onAct: (action: EngineAction) => void;
   mine?: boolean;
+  /** Sur la table en relief : un cartouche gravé dans le feutre. */
+  relief?: boolean;
   children: ReactNode;
 };
 
-function BaseStrip({ title, choices, onAct, mine = false, children }: BaseStripProps) {
+function BaseStrip({ title, choices, onAct, mine = false, relief = false, children }: BaseStripProps) {
   return (
     <section
-      className={cn("rounded-xl border bg-card p-3", choices.length > 0 && "ring-2 ring-primary")}
+      className={cn(
+        "rounded-xl border p-3",
+        relief ? "play-zone" : "bg-card",
+        choices.length > 0 && "ring-2 ring-primary",
+      )}
       aria-label={title}
     >
       <div className="mb-2 flex flex-row flex-wrap items-center justify-between gap-2">
-        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</h3>
+        <h3
+          className={cn(
+            "text-xs uppercase tracking-wide",
+            relief ? "play-engrave" : "font-medium text-muted-foreground",
+          )}
+        >
+          {title}
+        </h3>
         {choices.map((choice, index) => (
           <Button key={index} size="sm" className="h-7 px-2 text-xs" onClick={() => onAct(choice.action)}>
             {choice.label}
@@ -807,6 +888,8 @@ type BattlefieldColumnProps = {
   onAct: (action: EngineAction) => void;
   card: ReactNode;
   renderObj: (obj: EngineObj, size?: "xs" | "sm" | "md" | "lg") => ReactNode;
+  /** Sur la table en relief : le contrôle se lit au fanion. */
+  relief?: boolean;
 };
 
 function BattlefieldColumn({
@@ -821,6 +904,7 @@ function BattlefieldColumn({
   onAct,
   card,
   renderObj,
+  relief = false,
 }: BattlefieldColumnProps) {
   const t = useTranslations("Games.Play");
   const mineHere = bf.units.filter((obj) => obj.controller === me);
@@ -842,15 +926,25 @@ function BattlefieldColumn({
         ? t("bf.controlled", { name: view.players[bf.controller].name })
         : t("bf.free");
 
+  const control =
+    bf.contested_by !== null ? "contested" : bf.controller === null ? "free" : bf.controller === me ? "me" : "other";
   return (
     <section
+      data-bf={bf.index}
+      aria-label={status}
       className={cn(
-        "flex min-w-0 flex-col items-center gap-2 rounded-xl border bg-card p-2 transition-colors duration-300 sm:p-3",
+        "relative flex min-w-0 flex-col items-center gap-2 rounded-xl border p-2 transition-colors duration-300 sm:p-3",
+        relief ? "play-zone" : "bg-card",
         showdown && "border-amber-500",
         focus && "border-amber-400",
         choices.length > 0 && "ring-2 ring-primary",
       )}
     >
+      {relief && (
+        <span className="play-pennant self-start" data-control={control}>
+          {status}
+        </span>
+      )}
       <div className="flex min-h-20 w-full flex-col items-center justify-end gap-1">
         {theirs.map((group) => (
           <div key={group.player.seat} className="flex w-full flex-col items-center gap-1">
@@ -866,12 +960,14 @@ function BattlefieldColumn({
       <div className="flex flex-col items-center gap-1">
         {card}
         <div className="flex flex-row flex-wrap justify-center gap-1">
-          <Badge
-            variant={bf.controller === me ? "default" : "secondary"}
-            className={cn(bf.contested_by !== null && "bg-amber-500 text-black")}
-          >
-            {status}
-          </Badge>
+          {!relief && (
+            <Badge
+              variant={bf.controller === me ? "default" : "secondary"}
+              className={cn(bf.contested_by !== null && "bg-amber-500 text-black")}
+            >
+              {status}
+            </Badge>
+          )}
           {showdown && <Badge variant="outline">{t("bf.showdown")}</Badge>}
         </div>
         {bf.facedown.length > 0 && (
@@ -1024,6 +1120,34 @@ function PaceSettings({ paced }: { paced: PacedFeed }) {
           <span>
             {t("pace.stops")}
             <span className="block text-xs text-muted-foreground">{t("pace.stopsHint")}</span>
+          </span>
+        </label>
+        <p className="text-sm font-medium">{t("pace.view")}</p>
+        <div className="flex flex-row flex-wrap gap-1" role="group" aria-label={t("pace.view")}>
+          {TABLE_VIEWS.map((view) => (
+            <Button
+              key={view}
+              size="sm"
+              variant={paced.pace.view === view ? "default" : "outline"}
+              aria-pressed={paced.pace.view === view}
+              className="h-7 px-2 text-xs"
+              onClick={() => paced.setPace({ ...paced.pace, view })}
+            >
+              {t(`pace.views.${view}`)}
+            </Button>
+          ))}
+        </div>
+        <label className={cn("flex items-start gap-2 text-sm", paced.pace.view !== "3d" && "opacity-50")}>
+          <input
+            type="checkbox"
+            className="mt-0.5 accent-[var(--primary)]"
+            checked={paced.pace.camera}
+            disabled={paced.pace.view !== "3d"}
+            onChange={(event) => paced.setPace({ ...paced.pace, camera: event.target.checked })}
+          />
+          <span>
+            {t("pace.camera")}
+            <span className="block text-xs text-muted-foreground">{t("pace.cameraHint")}</span>
           </span>
         </label>
       </PopoverContent>

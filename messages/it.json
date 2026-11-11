@@ -682,6 +682,13 @@
         },
         "stops": "Fermati nei momenti chiave",
         "stopsHint": "Carta giocata da un avversario, fine del combattimento, punti segnati, inizio del tuo turno.",
+        "view": "Tavolo",
+        "views": {
+          "3d": "3D",
+          "flat": "Piatto"
+        },
+        "camera": "Telecamera sui combattimenti",
+        "cameraHint": "Si avvicina al campo di battaglia durante il combattimento, poi torna indietro.",
         "continue": "Continua",
         "play": "Gioca il mio turno",
         "key": "Spazio",
