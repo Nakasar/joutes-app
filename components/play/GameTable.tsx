@@ -286,7 +286,7 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
               )}
 
               {sorted.buttons.length > 0 && (
-                <ChoiceButtons key={prompt.text} choices={sorted.buttons} onAct={act} />
+                <ChoiceButtons key={promptKey} choices={sorted.buttons} onAct={act} />
               )}
             </>
           ) : (
