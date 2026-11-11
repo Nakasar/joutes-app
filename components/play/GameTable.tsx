@@ -1,18 +1,31 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { BookOpen, Crown, Flag, Hourglass, Layers, Trash2, WifiOff } from "lucide-react";
+import { BookOpen, Crown, FastForward, Flag, Gauge, Hourglass, Layers, Trash2, WifiOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 
 import { PlayCard } from "@/components/play/PlayCard";
 import type { GameFeed } from "@/components/play/game-feed";
+import { usePacedFeed, type Ghost, type PacedFeed } from "@/components/play/usePacedFeed";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { mulliganChoice, mulliganLimit, sortChoices } from "@/lib/engine/anchors";
 import type { TableCard, TableCards } from "@/lib/engine/cards";
+import {
+  actorOf,
+  battlefieldOf,
+  codeOf,
+  damageOf,
+  eventType,
+  objectsOf,
+  PACE_SPEEDS,
+  revealsCard,
+  type Ack,
+} from "@/lib/engine/pacing";
 import type {
   EngineAction,
   EngineBattlefield,
@@ -52,7 +65,14 @@ type GameTableProps = {
  */
 export function GameTable({ feed, cards, afterResult }: GameTableProps) {
   const t = useTranslations("Games.Play");
-  const { update, journal } = feed;
+  // La partie racontée pas à pas : la vue et le journal suivent le récit, la
+  // question n'apparaît qu'une fois le récit arrivé au présent.
+  const paced = usePacedFeed(feed);
+  const { update, journal } = paced;
+  const hold = feed.hold;
+  useEffect(() => {
+    hold?.(paced.busy);
+  }, [hold, paced.busy]);
   const [inspected, setInspected] = useState<Inspected | null>(null);
   const [trashOf, setTrashOf] = useState<number | null>(null);
   const [mulliganState, setMulliganState] = useState<{ key: string; ids: number[] }>({ key: "", ids: [] });
@@ -87,6 +107,21 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
   const mulliganing = (sorted?.mulligan.length ?? 0) > 0;
   const mulliganMax = sorted ? mulliganLimit(sorted.mulligan) : 0;
 
+  // Ce que l'évènement raconté concerne : entouré, touché, ou au centre de la table.
+  const step = paced.current;
+  const focusObjs = new Set(step ? objectsOf(step.entry) : []);
+  const focusBf = step ? battlefieldOf(step.entry) : null;
+  const hits = step ? damageOf(step.entry) : new Map<number, number>();
+  const actor = step ? actorOf(step.entry) : null;
+  const scoring =
+    step && (eventType(step.entry) === "scored" || eventType(step.entry) === "points")
+      ? view.players
+          .filter((player) =>
+            eventType(step.entry) === "points" ? player.team === step.entry.event.team : player.seat === actor,
+          )
+          .map((player) => player.seat)
+      : [];
+
   const renderObj = (obj: EngineObj, size: "xs" | "sm" | "md" | "lg" = "md") => (
     <PlayCard
       key={obj.id}
@@ -97,8 +132,25 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
       onAct={act}
       onInspect={() => setInspected({ obj, card: cardOf(obj) })}
       dim={choosingOnTable}
+      focus={focusObjs.has(obj.id)}
+      hit={hits.get(obj.id)}
     />
   );
+
+  const renderGhost = (ghost: Ghost, size: "sm" | "md" = "md") => (
+    <PlayCard
+      key={`ghost-${ghost.obj.id}`}
+      obj={ghost.obj}
+      card={cardOf(ghost.obj)}
+      size={size}
+      dying={ghost.dying}
+      focus={focusObjs.has(ghost.obj.id)}
+    />
+  );
+  const ghostsAt = (place: "base" | "bf", index: number) =>
+    paced.ghosts.filter((ghost) =>
+      place === "base" ? "base" in ghost.place && ghost.place.base === index : "bf" in ghost.place && ghost.place.bf === index,
+    );
 
   const isRune = (obj: EngineObj) => cardOf(obj)?.kind === "rune";
   const others = view.players.filter((player) => player.seat !== me);
@@ -130,6 +182,8 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
             choices={choicesOn(`seat:${player.seat}`)}
             onAct={act}
             onTrash={() => setTrashOf(player.seat)}
+            acting={actor === player.seat}
+            scoring={scoring.includes(player.seat)}
             legend={renderObj(player.legend, "sm")}
             addedLegends={(player.added_legends ?? []).map((added) => renderObj(added, "sm"))}
             champion={player.champion && (spectator || player.seat !== me) ? renderObj(player.champion, "sm") : null}
@@ -138,7 +192,10 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
       </aside>
 
       {/* Table */}
-      <main className="flex min-w-0 flex-col gap-3">
+      <main className="relative flex min-w-0 flex-col gap-3">
+        <Narration paced={paced} />
+        <StepOverlay paced={paced} view={view} cards={cards} me={feed.seat} />
+
         {others.map((player) => (
           <BaseStrip
             key={player.seat}
@@ -147,6 +204,7 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
             onAct={act}
           >
             {view.bases[player.seat].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "sm"))}
+            {ghostsAt("base", player.seat).map((ghost) => renderGhost(ghost, "sm"))}
             <Runes objs={view.bases[player.seat].filter(isRune)} cards={cards} choicesOn={choicesOn} onAct={act} />
           </BaseStrip>
         ))}
@@ -162,6 +220,9 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
               view={view}
               me={me}
               showdown={view.showdown?.bf === bf.index}
+              focus={focusBf === bf.index}
+              ghosts={ghostsAt("bf", bf.index)}
+              renderGhost={renderGhost}
               choices={choicesOn(`bf:${bf.index}`)}
               onAct={act}
               card={renderObj(bf.card, "md")}
@@ -177,6 +238,7 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
           mine
         >
           {view.bases[me].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "md"))}
+          {ghostsAt("base", me).map((ghost) => renderGhost(ghost))}
           <Runes objs={view.bases[me].filter(isRune)} cards={cards} choicesOn={choicesOn} onAct={act} />
         </BaseStrip>
 
@@ -244,6 +306,8 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
               <p className="text-sm text-muted-foreground">{view.result.reason}</p>
               {afterResult}
             </>
+          ) : paced.ack ? (
+            <AckCard ack={paced.ack} view={view} cards={cards} onContinue={paced.proceed} />
           ) : prompt && sorted ? (
             <>
               <div className="flex items-start gap-3">
@@ -293,7 +357,11 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
           ) : (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <Hourglass className="size-4" aria-hidden />
-              {waitingFor ? t("prompt.waitingFor", { name: waitingFor.name }) : t("prompt.waiting")}
+              {paced.busy
+                ? t("pace.telling")
+                : waitingFor
+                  ? t("prompt.waitingFor", { name: waitingFor.name })
+                  : t("prompt.waiting")}
             </p>
           )}
 
@@ -524,13 +592,30 @@ type PlayerPanelProps = {
   choices: EngineChoice[];
   onAct: (action: EngineAction) => void;
   onTrash: () => void;
+  /** Fait l'action que la table raconte. */
+  acting?: boolean;
+  /** Marque des points dans l'évènement raconté. */
+  scoring?: boolean;
   legend: ReactNode;
   /** Les légendes ajoutées en cours de partie (Neeko), sur leur propre rangée. */
   addedLegends?: ReactNode[];
   champion: ReactNode;
 };
 
-function PlayerPanel({ player, view, isMe, away, choices, onAct, onTrash, legend, addedLegends, champion }: PlayerPanelProps) {
+function PlayerPanel({
+  player,
+  view,
+  isMe,
+  away,
+  choices,
+  onAct,
+  onTrash,
+  acting = false,
+  scoring = false,
+  legend,
+  addedLegends,
+  champion,
+}: PlayerPanelProps) {
   const t = useTranslations("Games.Play");
   const turn = view.turn_seat === player.seat;
   const deciding = view.pending?.seat === player.seat && !view.result;
@@ -541,8 +626,9 @@ function PlayerPanel({ player, view, isMe, away, choices, onAct, onTrash, legend
   return (
     <section
       className={cn(
-        "flex min-w-56 shrink-0 flex-col gap-2 rounded-xl border bg-card p-3 lg:min-w-0",
+        "flex min-w-56 shrink-0 flex-col gap-2 rounded-xl border bg-card p-3 transition-shadow duration-300 lg:min-w-0",
         turn && "border-primary/60",
+        acting && "play-focus",
         !player.alive && "opacity-50",
         choices.length > 0 && "ring-2 ring-primary",
       )}
@@ -575,7 +661,11 @@ function PlayerPanel({ player, view, isMe, away, choices, onAct, onTrash, legend
             <span
               key={index}
               aria-hidden
-              className={cn("size-2.5 rounded-full border", index < player.points ? "border-primary bg-primary" : "")}
+              className={cn(
+                "size-2.5 rounded-full border transition-transform duration-300",
+                index < player.points ? "border-primary bg-primary" : "",
+                scoring && index === player.points - 1 && "scale-150 shadow-[0_0_10px_var(--primary)]",
+              )}
             />
           ))}
         </div>
@@ -708,19 +798,41 @@ type BattlefieldColumnProps = {
   view: EngineView;
   me: number;
   showdown: boolean;
+  /** Concerné par l'évènement raconté. */
+  focus: boolean;
+  /** Unités mortes à l'instant, encore dessinées. */
+  ghosts: Ghost[];
+  renderGhost: (ghost: Ghost) => ReactNode;
   choices: EngineChoice[];
   onAct: (action: EngineAction) => void;
   card: ReactNode;
   renderObj: (obj: EngineObj, size?: "xs" | "sm" | "md" | "lg") => ReactNode;
 };
 
-function BattlefieldColumn({ bf, view, me, showdown, choices, onAct, card, renderObj }: BattlefieldColumnProps) {
+function BattlefieldColumn({
+  bf,
+  view,
+  me,
+  showdown,
+  focus,
+  ghosts,
+  renderGhost,
+  choices,
+  onAct,
+  card,
+  renderObj,
+}: BattlefieldColumnProps) {
   const t = useTranslations("Games.Play");
   const mineHere = bf.units.filter((obj) => obj.controller === me);
+  const ghostsOf = (seat: number) => ghosts.filter((ghost) => ghost.obj.controller === seat);
   const theirs = view.players
     .filter((player) => player.seat !== me)
-    .map((player) => ({ player, units: bf.units.filter((obj) => obj.controller === player.seat) }))
-    .filter((group) => group.units.length > 0);
+    .map((player) => ({
+      player,
+      units: bf.units.filter((obj) => obj.controller === player.seat),
+      ghosts: ghostsOf(player.seat),
+    }))
+    .filter((group) => group.units.length + group.ghosts.length > 0);
   const several = view.players.length > 2;
 
   const status =
@@ -733,8 +845,9 @@ function BattlefieldColumn({ bf, view, me, showdown, choices, onAct, card, rende
   return (
     <section
       className={cn(
-        "flex min-w-0 flex-col items-center gap-2 rounded-xl border bg-card p-2 sm:p-3",
+        "flex min-w-0 flex-col items-center gap-2 rounded-xl border bg-card p-2 transition-colors duration-300 sm:p-3",
         showdown && "border-amber-500",
+        focus && "border-amber-400",
         choices.length > 0 && "ring-2 ring-primary",
       )}
     >
@@ -744,6 +857,7 @@ function BattlefieldColumn({ bf, view, me, showdown, choices, onAct, card, rende
             {several && <span className="text-[0.65rem] text-muted-foreground">{group.player.name}</span>}
             <div className="flex flex-row flex-wrap justify-center gap-1.5">
               {group.units.map((obj) => renderObj(obj, "md"))}
+              {group.ghosts.map((ghost) => renderGhost(ghost))}
             </div>
           </div>
         ))}
@@ -779,6 +893,7 @@ function BattlefieldColumn({ bf, view, me, showdown, choices, onAct, card, rende
 
       <div className="flex min-h-20 w-full flex-row flex-wrap items-start justify-center gap-1.5">
         {mineHere.map((obj) => renderObj(obj, "md"))}
+        {ghostsOf(me).map((ghost) => renderGhost(ghost))}
       </div>
     </section>
   );
@@ -820,5 +935,196 @@ function Journal({ entries }: { entries: EngineTold[] }) {
         ))}
       </ol>
     </section>
+  );
+}
+
+/** Une ligne du journal sans ses tirets de mise en forme (« — Tour 4 : Robot — »). */
+function plain(text: string | null | undefined): string {
+  return (text ?? "").trim().replace(/^—\s*|\s*—$/g, "");
+}
+
+/** Le bandeau du récit : l'évènement au premier plan, ce qui reste, et le réglage du rythme. */
+function Narration({ paced }: { paced: PacedFeed }) {
+  const t = useTranslations("Games.Play");
+  const step = paced.current;
+  const shown = step?.entry ?? paced.journal.at(-1);
+
+  return (
+    <div
+      aria-live="polite"
+      className="sticky top-0 z-20 flex flex-row flex-wrap items-center gap-2 rounded-xl border bg-secondary/90 px-3 py-2 backdrop-blur"
+    >
+      <p
+        key={step?.index ?? "idle"}
+        className={cn("animate-fade-in min-w-0 flex-1 text-sm leading-snug", !step && "text-muted-foreground")}
+      >
+        {shown?.text ? shown.text.trim() : t("journal.empty")}
+        {shown?.rule && (
+          <span className="ml-1.5 rounded border px-1 font-mono text-[0.65rem] text-muted-foreground">{shown.rule}</span>
+        )}
+      </p>
+      {paced.remaining > 0 && (
+        <span className="font-mono text-xs text-muted-foreground">{t("pace.remaining", { count: paced.remaining })}</span>
+      )}
+      {step && !paced.ack && step.ms > 0 && (
+        <span aria-hidden className="h-1 w-16 overflow-hidden rounded bg-border">
+          <span
+            key={step.index}
+            className="play-progress block h-full bg-primary"
+            style={{ animationDuration: `${step.ms}ms` }}
+          />
+        </span>
+      )}
+      <div className="flex flex-row flex-wrap items-center gap-1">
+        {paced.busy && (
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={paced.skip}>
+            <FastForward aria-hidden />
+            <span className="max-sm:sr-only">{t("pace.skip")}</span>
+          </Button>
+        )}
+        <PaceSettings paced={paced} />
+      </div>
+    </div>
+  );
+}
+
+function PaceSettings({ paced }: { paced: PacedFeed }) {
+  const t = useTranslations("Games.Play");
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" title={t("pace.settings")}>
+          <Gauge aria-hidden />
+          <span className="max-sm:sr-only">{t(`pace.speed.${paced.pace.speed}`)}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="flex w-72 flex-col gap-3 p-3">
+        <p className="text-sm font-medium">{t("pace.settings")}</p>
+        <div className="flex flex-row flex-wrap gap-1" role="group" aria-label={t("pace.settings")}>
+          {PACE_SPEEDS.map((speed) => (
+            <Button
+              key={speed}
+              size="sm"
+              variant={paced.pace.speed === speed ? "default" : "outline"}
+              aria-pressed={paced.pace.speed === speed}
+              className="h-7 px-2 text-xs"
+              onClick={() => paced.setPace({ ...paced.pace, speed })}
+            >
+              {t(`pace.speed.${speed}`)}
+            </Button>
+          ))}
+        </div>
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="mt-0.5 accent-[var(--primary)]"
+            checked={paced.pace.stops}
+            onChange={(event) => paced.setPace({ ...paced.pace, stops: event.target.checked })}
+          />
+          <span>
+            {t("pace.stops")}
+            <span className="block text-xs text-muted-foreground">{t("pace.stopsHint")}</span>
+          </span>
+        </label>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** Au centre de la table, le temps de l'évènement : la carte jouée par un adversaire, ou le nouveau tour. */
+function StepOverlay({ paced, view, cards, me }: { paced: PacedFeed; view: EngineView; cards: TableCards; me: number | null }) {
+  const step = paced.current;
+  if (!step) return null;
+  const type = eventType(step.entry);
+
+  if (type === "turn_started") {
+    return (
+      <div className="pointer-events-none absolute inset-x-0 top-24 z-30 flex justify-center px-4">
+        <p
+          key={step.index}
+          className="play-banner rounded-xl border border-primary bg-card/95 px-6 py-2.5 text-lg font-semibold shadow-xl"
+        >
+          {plain(step.entry.text)}
+        </p>
+      </div>
+    );
+  }
+
+  if (!revealsCard(step.entry, me)) return null;
+  const event = step.entry.event;
+  const id = typeof event.obj === "number" ? event.obj : typeof event.source === "number" ? event.source : null;
+  const code = id !== null ? codeOf(view, id) : null;
+  const card = code ? cards[code] : undefined;
+  if (!card) return null;
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-24 z-30 flex justify-center px-4">
+      <div
+        key={step.index}
+        className="play-enter flex max-w-xs flex-col items-center gap-2 rounded-xl border bg-background/90 p-3 text-center shadow-2xl backdrop-blur"
+      >
+        <span className="text-sm text-muted-foreground">{plain(step.entry.text)}</span>
+        <PlayCard card={card} size="lg" />
+      </div>
+    </div>
+  );
+}
+
+/** Un moment clé : la lecture attend « Continuer » (ou Espace, Entrée). */
+function AckCard({
+  ack,
+  view,
+  cards,
+  onContinue,
+}: {
+  ack: Ack;
+  view: EngineView;
+  cards: TableCards;
+  onContinue: () => void;
+}) {
+  const t = useTranslations("Games.Play");
+  const code = ack.objId !== null ? codeOf(view, ack.objId) : null;
+  const card = code ? cards[code] : undefined;
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== " " && event.key !== "Enter") return;
+      // Un bouton ou un champ a le focus : c'est à lui de répondre.
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("button, input, textarea, select, a, [contenteditable]")) return;
+      event.preventDefault();
+      onContinue();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onContinue]);
+
+  return (
+    <div className="animate-fade-in flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        {card && <PlayCard card={card} size="sm" />}
+        <div className="min-w-0 flex-1">
+          <h2 className="text-base font-semibold leading-snug">
+            {ack.kind === "turn" ? t("pace.yourTurn") : plain(ack.title)}
+          </h2>
+          {card?.text && (
+            <p className="mt-1 line-clamp-4 whitespace-pre-line text-xs text-muted-foreground">{card.text}</p>
+          )}
+          {ack.kind === "turn" && <p className="mt-1 text-sm text-muted-foreground">{t("pace.sinceLastTurn")}</p>}
+          {ack.lines.length > 0 && (
+            <ul className="mt-1 list-disc pl-4 text-sm text-muted-foreground">
+              {ack.lines.map((line, index) => (
+                <li key={index}>{line}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-row flex-wrap items-center gap-2">
+        <Button autoFocus onClick={onContinue}>
+          {ack.kind === "turn" ? t("pace.play") : t("pace.continue")}
+        </Button>
+        <kbd className="rounded border px-1 font-mono text-[0.65rem] text-muted-foreground">{t("pace.key")}</kbd>
+      </div>
+    </div>
   );
 }

@@ -517,3 +517,102 @@
     padding: 0 !important;
   }
 }
+
+/*
+ * Table de jeu (components/play) : ce que le récit montre. Une carte qui arrive
+ * glisse en place, une carte concernée par l'évènement raconté s'entoure
+ * d'ambre, une unité touchée tremble et affiche ses dégâts. Mouvement coupé, il
+ * reste l'anneau et les chiffres.
+ */
+@keyframes play-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(1.12);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes play-shake {
+  0%, 100% {
+    translate: 0;
+  }
+  25% {
+    translate: -4px 0;
+  }
+  75% {
+    translate: 4px 0;
+  }
+}
+
+@keyframes play-float {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -28px);
+  }
+}
+
+@keyframes play-banner {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  15%, 80% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes play-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.play-enter {
+  animation: play-enter 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.play-shake {
+  animation: play-shake 0.4s;
+}
+
+.play-float {
+  animation: play-float 1.1s forwards;
+}
+
+.play-banner {
+  animation: play-banner 1.5s forwards;
+}
+
+.play-progress {
+  transform-origin: left;
+  animation-name: play-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.play-focus {
+  box-shadow: 0 0 0 2px rgb(251 191 36), 0 0 16px 2px rgb(251 191 36 / 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-enter,
+  .play-shake,
+  .play-float,
+  .play-banner {
+    animation: none;
+  }
+}

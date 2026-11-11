@@ -669,6 +669,25 @@
         "empty": "La partie commence.",
         "rule": "Ouvrir la règle {rule}"
       },
+      "pace": {
+        "telling": "La table raconte ce qui vient de se passer…",
+        "remaining": "encore {count}",
+        "skip": "Tout montrer",
+        "settings": "Rythme de la partie",
+        "speed": {
+          "slow": "Lent",
+          "normal": "Normal",
+          "fast": "Rapide",
+          "instant": "Instantané"
+        },
+        "stops": "S'arrêter aux moments clés",
+        "stopsHint": "Carte jouée par un adversaire, fin de combat, points marqués, début de votre tour.",
+        "continue": "Continuer",
+        "play": "Jouer mon tour",
+        "key": "Espace",
+        "yourTurn": "À vous de jouer",
+        "sinceLastTurn": "Depuis votre dernier tour :"
+      },
       "concede": {
         "action": "Abandonner",
         "confirm": "Abandonner la partie ?",
