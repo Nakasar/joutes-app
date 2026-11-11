@@ -17,6 +17,15 @@ export function auto_deck(legend: string, seed: number): string;
  */
 export function random_config(mode_name: string, seed: number): string;
 /**
+ * Joue une partie entière entre robots (`bots` : un niveau par siège) et rend
+ * son résumé (`joutes_session::GameSummary`). La même configuration, la même
+ * graine et les mêmes niveaux redonnent la même partie sur une `Table`.
+ *
+ * L'appel est synchrone et dure de quelques millisecondes (Facile) à plusieurs
+ * secondes (Difficile, ou plus de deux joueurs) : l'appeler depuis un Web Worker.
+ */
+export function simulate(config: string, seed: number, bots: string): string;
+/**
  * Version du moteur.
  */
 export function version(): string;
@@ -83,6 +92,7 @@ export interface InitOutput {
   readonly judge_review: (a: number, b: number, c: number, d: number) => [number, number, number, number];
   readonly judge_simulate: (a: number, b: number, c: number, d: number) => [number, number, number, number];
   readonly random_config: (a: number, b: number, c: number) => [number, number, number, number];
+  readonly simulate: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
   readonly table_act: (a: number, b: number, c: number, d: number) => [number, number, number];
   readonly table_bot_step: (a: number) => number;
   readonly table_is_bot: (a: number, b: number) => number;

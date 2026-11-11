@@ -19,7 +19,8 @@ raconte chaque évènement en citant la règle. Le site ne contient aucune règl
 - `lib/engine/pkg/` : le moteur compilé pour le navigateur, copié depuis
   `joutes-engine` (`scripts/build-wasm.sh`, dossier `pkg/web`). `VERSION` dit de
   quel commit. Pour le mettre à jour : reconstruire, recopier les quatre
-  fichiers, mettre `VERSION` à jour.
+  fichiers, mettre `VERSION` à jour, ainsi que `ENGINE_VERSION`
+  (`lib/engine/version.ts`, vérifié par son test).
 - `scripts/build-engine.mjs` (lancé par `predev` et `prebuild`) écrit
   `lib/engine/wasm.generated.ts`, hors git : le même binaire en base64, pour le
   serveur (`lib/engine/server.ts` : validation des decks, arbitrage).
@@ -111,3 +112,23 @@ moteur rejoue est borné en taille.
   montré à côté.
 - Depuis une page https, le navigateur refuse un serveur hôte sans chiffrement,
   sauf `localhost`.
+
+## Simuler un deck
+
+`/games/riftbound/play/simulate` : une série de N parties IA contre IA pour
+évaluer un deck, contre un deck précis ou un deck tiré à chaque partie dans des
+ensembles (decks méta, mes decks, groupes, publics, automatiques).
+
+- Les parties tournent dans le navigateur, dans un worker
+  (`components/play/simulation.worker.ts`, fonction `simulate` du moteur).
+  Rien ne tourne sur Vercel.
+- Une série est un document de `deckSimulations` (`lib/db/deck-simulations.ts`,
+  index dans `lib/db/indexes/users.ts`) : les decks figés à la création, puis
+  chaque partie (graine, adversaire, siège, premier joueur, résultat, tours,
+  score), envoyée par lots. `npm run indexes` après déploiement.
+- Le deck évalué change de siège toutes les deux parties et le premier joueur
+  alterne (`gameSeating`, `lib/engine/simulation.ts`).
+- « Revoir » rouvre la partie dans la table spectateur : même configuration,
+  même graine, mêmes niveaux, donc les mêmes coups — tant que le moteur est le
+  même (`ENGINE_VERSION`, gardé dans la série).
+- La fourchette affichée est l'intervalle de Wilson à 95 %.
