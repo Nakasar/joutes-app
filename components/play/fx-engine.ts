@@ -43,7 +43,8 @@ const bez = (a: Point, c: Point, b: Point, k: number): Point => {
 
 function rgba(color: string, alpha: number): string {
   if (color.startsWith("#")) {
-    const n = parseInt(color.slice(1), 16);
+    const hex = color.length === 4 ? [...color.slice(1)].map((c) => c + c).join("") : color.slice(1);
+    const n = parseInt(hex, 16);
     return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${alpha})`;
   }
   const m = color.match(/[\d.]+/g) ?? ["255", "255", "255"];
@@ -81,6 +82,7 @@ export class FxEngine {
   private frame = 0;
   private last = 0;
   private dpr = 1;
+  private dead = false;
   /** Facteur de durée : la vitesse du récit (lent 1,6, normal 1, rapide 0,5). */
   scale = 1;
 
@@ -102,9 +104,12 @@ export class FxEngine {
     this.canvas.height = Math.round(window.innerHeight * this.dpr);
   }
 
-  /** Arrête tout : nouvelle partie, effets coupés. */
+  /**
+   * Arrête tout : nouvelle partie, effets coupés. Les effets en cours ne
+   * reprennent pas : leurs attentes restent pendantes au lieu de se résoudre,
+   * sinon la suite d'une frappe se dessinerait d'un coup après l'arrêt.
+   */
   clear() {
-    this.effects.forEach((effect) => effect.done());
     this.effects = [];
     this.parts = [];
     this.layer.querySelectorAll("[data-fx-ghost]").forEach((ghost) => ghost.remove());
@@ -115,6 +120,7 @@ export class FxEngine {
   }
 
   dispose() {
+    this.dead = true;
     this.clear();
   }
 
@@ -122,7 +128,7 @@ export class FxEngine {
   // La boucle
 
   private run() {
-    if (this.frame) return;
+    if (this.frame || this.dead) return;
     this.last = performance.now();
     const tick = (now: number) => {
       // L'horodatage d'une image peut précéder `performance.now()` lu juste avant.
