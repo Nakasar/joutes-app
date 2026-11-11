@@ -772,6 +772,8 @@
         "watchHint": "Sieh KIs gegeneinander spielen, mit Pause.",
         "youBadge": "du",
         "levelOf": "Stufe von {name}",
+        "openLists": "Offene Decklisten",
+        "openListsHint": "Die KIs kennen die Karten des gegnerischen Decks, aber weder ihre Reihenfolge noch die Handkarten. Sonst wissen sie nur, was gezeigt wurde.",
         "watchInfo": "Du schaust zu, ohne mitzuspielen: Die Hände der KIs sind sichtbar, und du kannst jederzeit pausieren.",
         "startWatch": "Partie ansehen",
         "resumeWatchTitle": "Laufende Partie KI gegen KI",

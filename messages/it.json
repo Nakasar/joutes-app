@@ -772,6 +772,8 @@
         "watchHint": "Guarda le IA sfidarsi, con pausa.",
         "youBadge": "tu",
         "levelOf": "Livello di {name}",
+        "openLists": "Liste aperte",
+        "openListsHint": "Le IA conoscono le carte del mazzo avversario, ma non il loro ordine né quelle in mano. Altrimenti sanno solo ciò che è stato mostrato.",
         "watchInfo": "Guardi la partita senza giocare: le mani delle IA sono visibili e puoi metterla in pausa in qualsiasi momento.",
         "startWatch": "Guarda la partita",
         "resumeWatchTitle": "Partita IA contro IA in corso",
