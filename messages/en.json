@@ -697,6 +697,8 @@
         },
         "camera": "Camera on combats",
         "cameraHint": "It moves in on the battlefield during combat, then pulls back.",
+        "effects": "Card effects",
+        "effectsHint": "Lightning, comets, flames: each card has its own effect. Off at “Instant” speed.",
         "continue": "Continue",
         "play": "Play my turn",
         "key": "Space",

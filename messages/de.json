@@ -697,6 +697,8 @@
         },
         "camera": "Kamera bei Kämpfen",
         "cameraHint": "Sie fährt während des Kampfes an das Schlachtfeld heran und dann zurück.",
+        "effects": "Karteneffekte",
+        "effectsHint": "Blitze, Kometen, Flammen: Jede Karte hat ihren eigenen Effekt. Bei „Sofort“ aus.",
         "continue": "Weiter",
         "play": "Meinen Zug spielen",
         "key": "Leertaste",

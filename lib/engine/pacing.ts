@@ -31,6 +31,8 @@ export type PaceSettings = {
    * d'office, la pause étant à la main.
    */
   watchStops: boolean;
+  /** Les effets des cartes sur la table : éclairs, comètes, flammes… */
+  effects: boolean;
 };
 
 export const DEFAULT_PACE: PaceSettings = {
@@ -39,10 +41,11 @@ export const DEFAULT_PACE: PaceSettings = {
   view: "3d",
   camera: true,
   watchStops: false,
+  effects: true,
 };
 
 const BASE_MS: Record<Weight, number> = { minor: 350, normal: 900, major: 1500 };
-const SPEED_FACTOR: Record<PaceSpeed, number> = { slow: 1.6, normal: 1, fast: 0.5, instant: 0 };
+export const SPEED_FACTOR: Record<PaceSpeed, number> = { slow: 1.6, normal: 1, fast: 0.5, instant: 0 };
 /** Ses propres actions se lisent plus vite : on sait ce qu'on vient de faire. */
 const OWN_FACTOR = 0.5;
 

@@ -34,6 +34,7 @@ function readPace(): PaceSettings {
       view: raw?.view && TABLE_VIEWS.includes(raw.view) ? raw.view : prefersLessMotion() ? "flat" : DEFAULT_PACE.view,
       camera: typeof raw?.camera === "boolean" ? raw.camera : DEFAULT_PACE.camera,
       watchStops: typeof raw?.watchStops === "boolean" ? raw.watchStops : DEFAULT_PACE.watchStops,
+      effects: typeof raw?.effects === "boolean" ? raw.effects : !prefersLessMotion(),
     };
   } catch {
     return DEFAULT_PACE;

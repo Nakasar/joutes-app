@@ -52,6 +52,22 @@ règlent depuis le bandeau du récit et sont gardés dans le navigateur
 (`joutes.play.pace`). Un retard de plus de 60 évènements (reconnexion) se
 rattrape d'un coup.
 
+Les effets des cartes (éclair, comètes, souffle de feu…) se dessinent sur un
+calque au-dessus de la table (`components/play/TableFx.tsx`, dessin dans
+`components/play/fx-engine.ts`, règles pures dans `lib/engine/card-fx.ts`). Le
+**geste** vient des évènements du moteur : quand une carte se résout, elle
+apparaît au bord de la table et frappe d'un coup toutes les unités que la suite
+de sa résolution blesse ; une mort, un bonus de Puissance, un étourdissement,
+un jeton, une carte contrée ont chacun leur geste, et les dégâts de combat
+heurtent le champ de bataille. La **matière** (12 : éclair, comètes, feu,
+arcanes, lumière, explosifs, acier, coup, glace, néant, ombre, vent) dit comment
+la carte frappe et teinte ses autres gestes ; `matterOf` la déduit du nom du
+sort, du champion ou de la faction, sinon c'est la couleur du domaine. Elle
+voyage avec les cartes de la table (`TableCard.fx`, avec `def`, le numéro de la
+carte dans les évènements). Pour corriger une carte : `CHOSEN` dans
+`card-fx.ts`. Rien en « Instantané », avec « Effets des cartes » décoché, ou
+quand le système demande moins d'animations ; le moteur n'en sait rien.
+
 ## Choisir les decks
 
 Chaque siège de « Qui joue ? » a sa combobox (`DeckPicker`) : mes decks, ceux

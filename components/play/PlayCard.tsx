@@ -78,6 +78,7 @@ export function PlayCard({
 
   const face = (
     <span
+      data-obj={obj?.id}
       className={cn(
         "play-enter relative block overflow-hidden rounded-md border bg-muted transition duration-500",
         landscape ? "aspect-[7/5]" : "aspect-[5/7]",

@@ -7,6 +7,8 @@
  * Relentless Storm » au catalogue et « Relentless Storm » dans le moteur.
  */
 
+import type { Matter } from "@/lib/engine/card-fx";
+
 const JOUTES_ID = /^([A-Za-z]+)-?(\d+)([a-z*]*)$/;
 
 /** `OGN030a` → `OGN-030`. `null` si l'identifiant n'a pas la forme attendue. */
@@ -40,6 +42,10 @@ export type TableCard = {
   token?: boolean;
   /** Faux pour une carte que le moteur ne sait pas jouer. */
   playable: boolean;
+  /** Le numéro de la carte dans le moteur (le `def` de ses évènements). */
+  def?: number;
+  /** La matière de ses effets sur la table, quand ce n'est pas la couleur de son domaine. */
+  fx?: Matter;
 };
 
 export type TableCards = Record<string, TableCard>;

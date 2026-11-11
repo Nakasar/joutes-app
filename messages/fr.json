@@ -697,6 +697,8 @@
         },
         "camera": "Caméra sur les combats",
         "cameraHint": "Elle s'approche du champ de bataille le temps du combat, puis revient.",
+        "effects": "Effets des cartes",
+        "effectsHint": "Éclairs, comètes, flammes : chaque carte a son effet. Coupés en « Instantané ».",
         "continue": "Continuer",
         "play": "Jouer mon tour",
         "key": "Espace",

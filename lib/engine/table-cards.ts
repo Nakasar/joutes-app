@@ -3,6 +3,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { getDeckCardInfos } from "@/lib/db/deck-cards";
+import { matterOf } from "@/lib/engine/card-fx";
 import { readableCardText, toCatalogId, type TableCards } from "@/lib/engine/cards";
 import { engineCards } from "@/lib/engine/server";
 
@@ -30,6 +31,7 @@ export async function readTableCards(gameId: string): Promise<TableCards> {
 
   const cards: TableCards = {};
   for (const card of engine) {
+    const fx = matterOf(card);
     const info = byId.get(toCatalogId(card.code));
     cards[card.code] = {
       code: card.code,
@@ -45,6 +47,8 @@ export async function readTableCards(gameId: string): Promise<TableCards> {
       ...(card.champion ? { champion: true } : {}),
       ...(card.token ? { token: true } : {}),
       playable: card.coverage !== "none",
+      def: card.id,
+      ...(fx !== "domaine" ? { fx } : {}),
     };
   }
   return cards;
