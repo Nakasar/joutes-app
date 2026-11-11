@@ -27,6 +27,7 @@ import { deckLegality, deckSize, type DeckCards } from "@/lib/decks/contents.ts"
 import { resolveDeckText } from "@/lib/decks/resolve-text.ts";
 import { normalizeCardName, parseDeckText, renameDeckTextCard } from "@/lib/decks/text.ts";
 import { getDeckZones, zoneCounterLabel } from "@/lib/decks/zones.ts";
+import { zonesForDeck } from "@/lib/decks/extra-legends.ts";
 import { DECK_VISIBILITIES, DECK_VISIBILITY_LABELS, type Deck, type DeckVisibility } from "@/lib/types/Deck.ts";
 import { toast } from "sonner";
 
@@ -140,7 +141,9 @@ export default function CreateDeckDialog({
     };
   }, [formData.decklist, gameSlug, zones]);
 
-  const importedCount = preview ? deckSize(preview.cards, zones) : 0;
+  // Le contenu lu décide des bornes : avec Neeko, quatre légendes.
+  const previewZones = useMemo(() => zonesForDeck(zones, preview?.cards), [zones, preview]);
+  const importedCount = preview ? deckSize(preview.cards, previewZones) : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -297,7 +300,7 @@ export default function CreateDeckDialog({
                   ) : preview ? (
                     <>
                       <div className="flex flex-wrap gap-1.5">
-                        {deckLegality(preview.cards, zones)
+                        {deckLegality(preview.cards, previewZones)
                           .filter((row) => row.count > 0 || row.zone.min !== undefined)
                           .map((row) => (
                             <span

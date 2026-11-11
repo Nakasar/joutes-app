@@ -6,6 +6,7 @@ import { deckCardIds } from "@/lib/decks/contents";
 import { CARD_COST_KEYS, toDeckCardInfo, type RawCard } from "@/lib/decks/card-info";
 import { normalizeCardName } from "@/lib/decks/text";
 import { computeDeckDomains } from "@/lib/decks/domains";
+import { championKey, startingLegendFirst } from "@/lib/decks/extra-legends";
 import { getCardnexusProductIds } from "@/lib/db/card-prices";
 import { copyPriceKey } from "@/lib/prices/copies";
 import { deckCardnexusOrder, deckOrderLines, type DeckCardnexusOrder } from "@/lib/decks/cardnexus-order";
@@ -129,6 +130,18 @@ export async function deriveDeckDomains(
   const ids = [...new Set([...deckCardIds(cards), ...(legendCardId ? [legendCardId] : [])])];
   const infos = new Map((await getDeckCardInfos(gameId, ids)).map((info) => [info.id, info]));
   return computeDeckDomains(cards, (cardId) => infos.get(cardId)?.domain, legendCardId);
+}
+
+/**
+ * Le contenu tel qu'il s'enregistre : avec plusieurs légendes (Neeko), celle du
+ * champion choisi passe en tête, d'où qu'il vienne — éditeur, import, MCP.
+ */
+export async function withStartingLegendFirst(gameId: string, cards: DeckCards): Promise<DeckCards> {
+  const champion = cards.champions?.[0]?.cardId;
+  if ((cards.legend?.length ?? 0) < 2 || !champion) return cards;
+  const ids = [...new Set([champion, ...(cards.legend ?? []).map((entry) => entry.cardId)])];
+  const infos = new Map((await getDeckCardInfos(gameId, ids)).map((info) => [info.id, info]));
+  return startingLegendFirst(cards, (cardId) => [championKey(infos.get(cardId)?.name)]);
 }
 
 /**

@@ -82,3 +82,41 @@ test("les légendes rangées après la première sont celles de Neeko", () => {
   assert.equal(list?.legend, "OGN-249");
   assert.deepEqual(list?.extra_legends, ["VEN-139", "SFD-201", "RAD-145"]);
 });
+
+const TAGS: Record<string, string[]> = {
+  "OGN-249": ["Volibear"],
+  "VEN-139": ["Akali"],
+  "SFD-201": ["Renata Glasc"],
+  "RAD-145": ["Orianna"],
+  "RAD-068": ["Piltover", "Orianna"],
+};
+
+test("avec Neeko, la légende de départ est celle du champion choisi", () => {
+  const { list } = toEngineDeck(
+    {
+      legend: [
+        { cardId: "VEN139", quantity: 1 },
+        { cardId: "OGN249", quantity: 1 },
+        { cardId: "RAD145", quantity: 1 },
+        { cardId: "SFD201", quantity: 1 },
+      ],
+      champions: [{ cardId: "RAD068", quantity: 1 }],
+      maindeck: [{ cardId: "RAD167", quantity: 1 }],
+    },
+    (code) => TAGS[code]
+  );
+  assert.equal(list?.legend, "RAD-145");
+  assert.deepEqual(list?.extra_legends, ["VEN-139", "OGN-249", "SFD-201"]);
+});
+
+test("sans Neeko, une légende en trop n'est pas envoyée au moteur", () => {
+  const { list } = toEngineDeck({
+    legend: [
+      { cardId: "OGN249", quantity: 1 },
+      { cardId: "VEN139", quantity: 1 },
+    ],
+    champions: [{ cardId: "OGN030", quantity: 1 }],
+  });
+  assert.equal(list?.legend, "OGN-249");
+  assert.equal(list?.extra_legends, undefined);
+});

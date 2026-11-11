@@ -11,6 +11,7 @@ import {
 import { listLegendCards, resolveCardIdsByName } from "@/lib/db/deck-cards";
 import { deckLegality, zoneCount, type DeckCardInfo, type DeckCards } from "@/lib/decks/contents";
 import { computeDeckDomains } from "@/lib/decks/domains";
+import { championKey, startingLegendFirst, zonesForDeck } from "@/lib/decks/extra-legends";
 import { routeCardToZone } from "@/lib/decks/routing";
 import { applyDeckText, normalizeCardName, parseDeckText, type ParsedDeckText } from "@/lib/decks/text";
 import { getDeckZones, type DeckZone, type DeckZoneKey } from "@/lib/decks/zones";
@@ -311,6 +312,9 @@ export async function resolveMetaImport(
     if (applied.matched === 0) {
       return { ...base, status: "error", notes: ["Aucune carte reconnue."] };
     }
+    // Neeko : quatre légendes, celle du champion choisi en tête quel que soit
+    // l'ordre de la source (un code Piltover Archive les trie à sa façon).
+    applied.cards = startingLegendFirst(applied.cards, (cardId) => [championKey(byId.get(cardId)?.name)]);
 
     const notes: string[] = [...(inferenceNotes.get(index) ?? [])];
     const approximated = [...new Set(item.parsed.lines.map((line) => line.name))].filter((name) => approximations.has(name));
@@ -321,7 +325,7 @@ export async function resolveMetaImport(
       notes.push(`Cartes inconnues, ignorées : ${applied.unmatched.join(", ")}`);
     }
 
-    const legality = deckLegality(applied.cards, zones);
+    const legality = deckLegality(applied.cards, zonesForDeck(zones, applied.cards));
     // Le locator ne publie ni les champs de bataille ni le champion choisi : leur
     // absence (et le deck principal à qui manque alors le champion) ne se
     // signale pas à chaque deck, l'écran le dit une fois pour toutes.

@@ -7,7 +7,7 @@ import { DateTime } from "luxon";
 import { getDeckById } from "@/lib/db/decks";
 import * as tablesDb from "@/lib/db/game-tables";
 import { toEngineDeck } from "@/lib/engine/deck";
-import { autoEngineDeck, engineCards, validateEngineDeck } from "@/lib/engine/server";
+import { autoEngineDeck, engineCards, engineTags, validateEngineDeck } from "@/lib/engine/server";
 import { engineGameId, parseEngineResult, type EngineResult } from "@/lib/engine/results";
 import { signTicket } from "@/lib/engine/tickets";
 import {
@@ -118,7 +118,7 @@ export async function resolveDeck(
   if (!stored || stored.gameId !== gameId) throw new TableFailure("INVALID_DECK");
   if (stored.playerId !== userId && stored.visibility === "private") throw new TableFailure("INVALID_DECK");
 
-  const { list, problems } = toEngineDeck(stored.cards);
+  const { list, problems } = toEngineDeck(stored.cards, engineTags);
   if (!list) {
     throw new TableFailure(
       "INVALID_DECK",

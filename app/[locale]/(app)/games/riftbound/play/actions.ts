@@ -7,7 +7,7 @@ import { searchDecks } from "@/lib/db/decks.ts";
 import { getGameTable, listGameTablesOf } from "@/lib/db/game-tables.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { toEngineDeck } from "@/lib/engine/deck.ts";
-import { validateEngineDeck } from "@/lib/engine/server.ts";
+import { engineTags, validateEngineDeck } from "@/lib/engine/server.ts";
 import {
   addBot,
   autoDeckLegends,
@@ -133,7 +133,7 @@ export async function loadLobby(): Promise<PlayResult<{ lobby: Lobby }>> {
     ]);
 
     const lobbyDecks = decks.map((deck): LobbyDeck => {
-      const { list, problems } = toEngineDeck(deck.cards);
+      const { list, problems } = toEngineDeck(deck.cards, engineTags);
       if (!list) {
         return { id: deck.id, name: deck.name, legend: null, list: null, problems: problems.map((p) => p.kind) };
       }

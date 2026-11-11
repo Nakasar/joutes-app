@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BookOpen, Crown, Flag, Hourglass, Layers, Trash2, WifiOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -130,14 +130,8 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
             choices={choicesOn(`seat:${player.seat}`)}
             onAct={act}
             onTrash={() => setTrashOf(player.seat)}
-            legend={
-              <>
-                {renderObj(player.legend, "sm")}
-                {(player.added_legends ?? []).map((added) => (
-                  <Fragment key={added.id}>{renderObj(added, "sm")}</Fragment>
-                ))}
-              </>
-            }
+            legend={renderObj(player.legend, "sm")}
+            addedLegends={(player.added_legends ?? []).map((added) => renderObj(added, "sm"))}
             champion={player.champion && (spectator || player.seat !== me) ? renderObj(player.champion, "sm") : null}
           />
         ))}
@@ -531,10 +525,12 @@ type PlayerPanelProps = {
   onAct: (action: EngineAction) => void;
   onTrash: () => void;
   legend: ReactNode;
+  /** Les légendes ajoutées en cours de partie (Neeko), sur leur propre rangée. */
+  addedLegends?: ReactNode[];
   champion: ReactNode;
 };
 
-function PlayerPanel({ player, view, isMe, away, choices, onAct, onTrash, legend, champion }: PlayerPanelProps) {
+function PlayerPanel({ player, view, isMe, away, choices, onAct, onTrash, legend, addedLegends, champion }: PlayerPanelProps) {
   const t = useTranslations("Games.Play");
   const turn = view.turn_seat === player.seat;
   const deciding = view.pending?.seat === player.seat && !view.result;
@@ -570,6 +566,8 @@ function PlayerPanel({ player, view, isMe, away, choices, onAct, onTrash, legend
           </div>
         </div>
       </div>
+
+      {addedLegends && addedLegends.length > 0 && <div className="flex flex-row flex-wrap gap-2">{addedLegends}</div>}
 
       <div aria-label={t("player.points", { points: player.points, max: view.victory_score })}>
         <div className="flex flex-row flex-wrap gap-1">

@@ -5,7 +5,7 @@ import { getUsersByIds } from "@/lib/db/users";
 import { deleteDeckCommentsForDeck } from "@/lib/db/deck-comments";
 import { unlinkDeckFromResults } from "@/lib/db/tournament-results";
 import { removeDeckFromPlayGroups } from "@/lib/db/play-group-decks";
-import { deriveDeckDomains, getDeckCardInfos } from "@/lib/db/deck-cards";
+import { deriveDeckDomains, getDeckCardInfos, withStartingLegendFirst } from "@/lib/db/deck-cards";
 import { deckVersionWrite } from "@/lib/db/deck-version";
 import { deckCardIds, type DeckCards } from "@/lib/decks/contents";
 import { escapeRegex } from "@/lib/utils/regex";
@@ -337,6 +337,9 @@ export async function createDeck(deckData: NewDeck): Promise<Deck> {
   // fenêtre de création — en déduit ce que l'enregistrement en déduirait :
   // les domaines pour la librairie, la légende pour les listes et la
   // couverture. Une copie de deck apporte les siens tout faits.
+  if (deckData.cards) {
+    deckData = { ...deckData, cards: await withStartingLegendFirst(deckData.gameId, deckData.cards) };
+  }
   const derived: Pick<Deck, "domains" | "legendCardId" | "legendName"> =
     deckData.cards && !deckData.domains
       ? await deriveFromCards(deckData.gameId, deckData.cards, deckData.legendCardId)
@@ -454,7 +457,8 @@ export async function updateDeck(
   // plutôt qu'à chaque lecture. Les domaines servent au filtre de la librairie,
   // le nom de la légende à sa combobox et aux listes.
   if (updates.cards) {
-    Object.assign(set, await deriveFromCards(existing.gameId, updates.cards, updates.legendCardId));
+    updates = { ...updates, cards: await withStartingLegendFirst(existing.gameId, updates.cards) };
+    Object.assign(set, await deriveFromCards(existing.gameId, updates.cards!, updates.legendCardId));
   }
 
   // La couverture se réécrit quand l'auteur y touche — et quand le contenu

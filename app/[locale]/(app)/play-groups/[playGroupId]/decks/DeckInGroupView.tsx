@@ -60,7 +60,8 @@ export default async function DeckInGroupView({ playGroupId, deckId }: { playGro
           orientation: card?.orientation,
         };
       })
-      .sort((a, b) => a.name.localeCompare(b.name)),
+      // La zone Légende garde son ordre : avec Neeko, la première est celle de départ.
+      .sort((a, b) => (zone.key === "legend" ? 0 : a.name.localeCompare(b.name))),
   }));
 
   const isMine = deck.playerId === viewer.userId;
