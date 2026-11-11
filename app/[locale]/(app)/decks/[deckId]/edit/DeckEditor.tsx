@@ -25,6 +25,7 @@ import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import { stringifyDeckText } from "@/lib/decks/text.ts";
 import { AUTO_ZONE, routeCardToZone, zoneHoldingCard, type DeckTargetZone } from "@/lib/decks/routing.ts";
 import type { DeckZone, DeckZoneKey } from "@/lib/decks/zones.ts";
+import { wantsExtraLegends, withExtraLegends } from "@/lib/decks/extra-legends.ts";
 import { DECK_VISIBILITIES, DECK_VISIBILITY_LABELS, type Deck, type DeckVisibility } from "@/lib/types/Deck.ts";
 import { DeckCatalog } from "./DeckCatalog.tsx";
 import { DeckPanels } from "./DeckPanels.tsx";
@@ -51,7 +52,7 @@ export function DeckEditor({
   deck,
   gameName,
   gameSlug,
-  zones,
+  zones: gameZones,
   initialCatalog,
   ownedByCardId: initialOwnedByCardId,
   copyLimit,
@@ -72,6 +73,13 @@ export function DeckEditor({
   const [name, setName] = useState(deck.name);
   const [renaming, setRenaming] = useState(false);
   const [cards, setCards] = useState<DeckCards>(deck.cards ?? {});
+  // Les zones du jeu, ajustées au deck en cours : Neeko demande trois légendes de plus.
+  // Ne changent d'identité que lorsque Neeko entre dans le deck ou en sort.
+  const extraLegends = wantsExtraLegends(cards);
+  const zones = useMemo(
+    () => (extraLegends ? withExtraLegends(gameZones) : gameZones),
+    [gameZones, extraLegends]
+  );
   const [notes, setNotes] = useState(deck.notes ?? "");
   const [visibility, setVisibility] = useState<DeckVisibility>(deck.visibility);
   const [zone, setZone] = useState<DeckTargetZone>(AUTO_ZONE);

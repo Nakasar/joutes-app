@@ -55,8 +55,19 @@ export function toEngineDeck(cards: DeckCards | undefined): EngineDeckOutcome {
     return { list: null, problems };
   }
 
+  // Neeko, Blending In : les légendes rangées après la légende de départ sont
+  // celles qu'elle peut ajouter. Le moteur juge leur nombre et leurs noms.
+  const extra = legends.slice(1);
+
   return {
-    list: { legend: legends[0], champion: champions[0], main, runes, battlefields },
+    list: {
+      legend: legends[0],
+      champion: champions[0],
+      main,
+      runes,
+      battlefields,
+      ...(extra.length > 0 ? { extra_legends: extra } : {}),
+    },
     problems,
   };
 }

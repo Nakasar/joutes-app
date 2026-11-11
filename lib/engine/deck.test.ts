@@ -61,3 +61,24 @@ test("une carte sans numéro est signalée et écartée", () => {
   assert.deepEqual(problems, [{ kind: "unknownCard", cardId: "jeton-recrue" }]);
   assert.deepEqual(list?.main, []);
 });
+
+test("les légendes rangées après la première sont celles de Neeko", () => {
+  const plain = toEngineDeck({
+    legend: [{ cardId: "OGN249", quantity: 1 }],
+    champions: [{ cardId: "OGN030", quantity: 1 }],
+  });
+  assert.equal(plain.list?.extra_legends, undefined);
+
+  const { list } = toEngineDeck({
+    legend: [
+      { cardId: "OGN249", quantity: 1 },
+      { cardId: "VEN139", quantity: 1 },
+      { cardId: "SFD201", quantity: 1 },
+      { cardId: "RAD145", quantity: 1 },
+    ],
+    champions: [{ cardId: "OGN030", quantity: 1 }],
+    maindeck: [{ cardId: "RAD167", quantity: 1 }],
+  });
+  assert.equal(list?.legend, "OGN-249");
+  assert.deepEqual(list?.extra_legends, ["VEN-139", "SFD-201", "RAD-145"]);
+});

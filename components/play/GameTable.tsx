@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BookOpen, Crown, Flag, Hourglass, Layers, Trash2, WifiOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -130,7 +130,14 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
             choices={choicesOn(`seat:${player.seat}`)}
             onAct={act}
             onTrash={() => setTrashOf(player.seat)}
-            legend={renderObj(player.legend, "sm")}
+            legend={
+              <>
+                {renderObj(player.legend, "sm")}
+                {(player.added_legends ?? []).map((added) => (
+                  <Fragment key={added.id}>{renderObj(added, "sm")}</Fragment>
+                ))}
+              </>
+            }
             champion={player.champion && (spectator || player.seat !== me) ? renderObj(player.champion, "sm") : null}
           />
         ))}

@@ -22,6 +22,8 @@ export type EngineDeckList = {
   main: string[];
   runes: string[];
   battlefields: string[];
+  /** Les trois légendes de plus d'un deck qui joue Neeko, Blending In. */
+  extra_legends?: string[];
 };
 
 export type EngineConfig = {
@@ -82,6 +84,8 @@ export type EnginePlayer = {
   banish: EngineObj[];
   pool: { energy: number; power: number[] };
   legend: EngineObj;
+  /** Les légendes ajoutées en cours de partie (Neeko, Blending In). */
+  added_legends?: EngineObj[];
   champion: EngineObj | null;
   runes_ready: number;
   runes_exhausted: number;
