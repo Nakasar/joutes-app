@@ -7,6 +7,7 @@ export const catalog: () => [number, number];
 export const judge_review: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const judge_simulate: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const random_config: (a: number, b: number, c: number) => [number, number, number, number];
+export const simulate: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
 export const table_act: (a: number, b: number, c: number, d: number) => [number, number, number];
 export const table_bot_step: (a: number) => number;
 export const table_is_bot: (a: number, b: number) => number;

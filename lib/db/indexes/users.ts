@@ -386,4 +386,10 @@ export const USER_INDEXES: IndexDefinition[] = [
     keys: { memberIds: 1, createdAt: -1 },
     why: "Mes tables, les plus récentes d'abord (page Jouer)",
   },
+  // Simulations de decks (`lib/db/deck-simulations.ts`).
+  {
+    collection: "deckSimulations",
+    keys: { userId: 1, gameId: 1, updatedAt: -1 },
+    why: "Mes simulations d'un jeu, les plus récentes d'abord (page Simuler)",
+  },
 ];
