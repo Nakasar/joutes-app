@@ -65,6 +65,7 @@ export function visibleObjects(view: EngineView): Set<number> {
   const ids = new Set<number>();
   for (const player of view.players) {
     ids.add(player.legend.id);
+    for (const added of player.added_legends ?? []) ids.add(added.id);
     if (player.champion) ids.add(player.champion.id);
     for (const card of player.hand ?? []) ids.add(card.id);
   }

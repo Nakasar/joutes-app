@@ -20,6 +20,7 @@ import { resolveDeckCover } from "@/lib/decks/cover.ts";
 import { ShareDeckDialog } from "@/components/decks/ShareDeckDialog.tsx";
 import { cn } from "@/lib/utils.ts";
 import { getDeckZones } from "@/lib/decks/zones.ts";
+import { zonesForDeck } from "@/lib/decks/extra-legends.ts";
 import type { PaginatedDecksResult } from "@/lib/db/decks.ts";
 import type { Deck, DeckVisibility } from "@/lib/types/Deck.ts";
 import type { Game } from "@/lib/types/Game.ts";
@@ -294,7 +295,7 @@ function DeckCard({
   onShareAction: () => void;
   onAfterFavoriteAction: () => void;
 }) {
-  const zones = getDeckZones(game);
+  const zones = zonesForDeck(getDeckZones(game), deck.cards);
   const cover = resolveDeckCover(deck);
   const updatedAt = DateTime.fromJSDate(new Date(deck.updatedAt)).setLocale("fr");
   const [favorited, setFavorited] = useState((deck.favoritedBy ?? []).includes(currentUserId));

@@ -32,7 +32,7 @@ import {Pencil} from "lucide-react";
 import {useTranslations} from "next-intl";
 import CardImage from "@/components/cards/CardImage.tsx";
 import {
-  ConstructionRules,
+  constructionRulesFor,
   DeckCardDetails,
   DeckCardTile,
   DeckSection as SharedDeckSection,
@@ -400,6 +400,7 @@ export function RiftboundDeckChecker({ input }: { input?: string }) {
     }
   }
 
+  const rules = constructionRulesFor(deckList ?? { champions: [], maindeck: [] });
   const allCards = deckList ? [...deckList.legends, ...deckList.champions, ...deckList.maindeck, ...deckList.battlefields, ...deckList.runes, ...deckList.sideboard] : [];
   const unrecognized = allCards.filter(c => !c.recognized);
 
@@ -455,13 +456,13 @@ export function RiftboundDeckChecker({ input }: { input?: string }) {
       {deckList && (
         <div className="space-y-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <DeckSection title={t('sections.legend')} cards={deckList.legends} compact rules={ConstructionRules.legends} onEditCard={(i) => setEditingCard({ section: 'legends', index: i })} onQuantityChange={(i, d) => handleQuantityChange('legends', i, d)} />
-            <DeckSection title={t('sections.champion')} cards={deckList.champions} compact rules={ConstructionRules.champions} onEditCard={(i) => setEditingCard({ section: 'champions', index: i })} onQuantityChange={(i, d) => handleQuantityChange('champions', i, d)} />
+            <DeckSection title={t('sections.legend')} cards={deckList.legends} compact rules={rules.legends} onEditCard={(i) => setEditingCard({ section: 'legends', index: i })} onQuantityChange={(i, d) => handleQuantityChange('legends', i, d)} />
+            <DeckSection title={t('sections.champion')} cards={deckList.champions} compact rules={rules.champions} onEditCard={(i) => setEditingCard({ section: 'champions', index: i })} onQuantityChange={(i, d) => handleQuantityChange('champions', i, d)} />
             <DeckSection title={t('sections.battlefields')} cards={deckList.battlefields} compact onEditCard={(i) => setEditingCard({ section: 'battlefields', index: i })} onQuantityChange={(i, d) => handleQuantityChange('battlefields', i, d)} />
-            <DeckSection title={t('sections.runes')} cards={deckList.runes} compact rules={ConstructionRules.runes} onEditCard={(i) => setEditingCard({ section: 'runes', index: i })} onQuantityChange={(i, d) => handleQuantityChange('runes', i, d)} />
+            <DeckSection title={t('sections.runes')} cards={deckList.runes} compact rules={rules.runes} onEditCard={(i) => setEditingCard({ section: 'runes', index: i })} onQuantityChange={(i, d) => handleQuantityChange('runes', i, d)} />
           </div>
-          <DeckSection title={t('sections.mainDeck')} cards={deckList.maindeck} rules={ConstructionRules.maindeck} onEditCard={(i) => setEditingCard({ section: 'maindeck', index: i })} onQuantityChange={(i, d) => handleQuantityChange('maindeck', i, d)} />
-          <DeckSection title={t('sections.sideboard')} cards={deckList.sideboard} rules={ConstructionRules.sideboard} onEditCard={(i) => setEditingCard({ section: 'sideboard', index: i })} onQuantityChange={(i, d) => handleQuantityChange('sideboard', i, d)} />
+          <DeckSection title={t('sections.mainDeck')} cards={deckList.maindeck} rules={rules.maindeck} onEditCard={(i) => setEditingCard({ section: 'maindeck', index: i })} onQuantityChange={(i, d) => handleQuantityChange('maindeck', i, d)} />
+          <DeckSection title={t('sections.sideboard')} cards={deckList.sideboard} rules={rules.sideboard} onEditCard={(i) => setEditingCard({ section: 'sideboard', index: i })} onQuantityChange={(i, d) => handleQuantityChange('sideboard', i, d)} />
 
           <UnrecognizedCards cards={unrecognized} />
         </div>

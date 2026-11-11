@@ -5,7 +5,7 @@ import {useApp} from "@modelcontextprotocol/ext-apps/react";
 import type {App, McpUiHostContext} from "@modelcontextprotocol/ext-apps";
 import {XIcon} from "lucide-react";
 import {
-  ConstructionRules,
+  constructionRulesFor,
   DeckCardDetails,
   DeckCardTile,
   DeckSection,
@@ -55,10 +55,11 @@ type ViewState =
 function deckIssues(deck: DeckViewList) {
   const all = Object.values(deck).flat();
   const total = (cards: DeckViewCard[]) => cards.reduce((sum, c) => sum + c.quantity, 0);
-  const invalidSections = (Object.keys(ConstructionRules) as (keyof typeof ConstructionRules)[])
+  const rules = constructionRulesFor(deck);
+  const invalidSections = (Object.keys(rules) as (keyof typeof rules)[])
     .filter((section) => {
       const count = total(deck[section]);
-      return count < ConstructionRules[section].min || count > ConstructionRules[section].max;
+      return count < rules[section].min || count > rules[section].max;
     }).length;
   return {
     unrecognized: all.filter((c) => !c.recognized),
@@ -187,6 +188,7 @@ function DeckView({result, app}: { result: DeckCheckResult; app: App | null }) {
   const topSections: SectionKey[] = ["legends", "champions", "battlefields", "runes"];
   const panelIn = (sections: SectionKey[]) => selected && sections.includes(selected.section) ? panel : null;
   const allCards = Object.values(deck).flat();
+  const rules = constructionRulesFor(deck);
 
   return (
     <>
@@ -194,15 +196,15 @@ function DeckView({result, app}: { result: DeckCheckResult; app: App | null }) {
       <div className="space-y-8">
         <div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <DeckSection title={t('sections.legend')} cards={deck.legends} compact rules={ConstructionRules.legends} renderCard={renderCard("legends")} />
-            <DeckSection title={t('sections.champion')} cards={deck.champions} compact rules={ConstructionRules.champions} renderCard={renderCard("champions")} />
+            <DeckSection title={t('sections.legend')} cards={deck.legends} compact rules={rules.legends} renderCard={renderCard("legends")} />
+            <DeckSection title={t('sections.champion')} cards={deck.champions} compact rules={rules.champions} renderCard={renderCard("champions")} />
             <DeckSection title={t('sections.battlefields')} cards={deck.battlefields} compact renderCard={renderCard("battlefields")} />
-            <DeckSection title={t('sections.runes')} cards={deck.runes} compact rules={ConstructionRules.runes} renderCard={renderCard("runes")} />
+            <DeckSection title={t('sections.runes')} cards={deck.runes} compact rules={rules.runes} renderCard={renderCard("runes")} />
           </div>
           {panelIn(topSections)}
         </div>
-        <DeckSection title={t('sections.mainDeck')} cards={deck.maindeck} rules={ConstructionRules.maindeck} renderCard={renderCard("maindeck")} footer={panelIn(["maindeck"])} />
-        <DeckSection title={t('sections.sideboard')} cards={deck.sideboard} rules={ConstructionRules.sideboard} renderCard={renderCard("sideboard")} footer={panelIn(["sideboard"])} />
+        <DeckSection title={t('sections.mainDeck')} cards={deck.maindeck} rules={rules.maindeck} renderCard={renderCard("maindeck")} footer={panelIn(["maindeck"])} />
+        <DeckSection title={t('sections.sideboard')} cards={deck.sideboard} rules={rules.sideboard} renderCard={renderCard("sideboard")} footer={panelIn(["sideboard"])} />
         <UnrecognizedCards cards={allCards.filter((c) => !c.recognized)} />
       </div>
     </>

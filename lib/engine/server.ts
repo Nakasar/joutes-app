@@ -39,6 +39,11 @@ export function engineCards(): Map<string, EngineCard> {
   return cards;
 }
 
+/** Les tags d'une carte du moteur : ce qui lie un champion à sa légende. */
+export function engineTags(code: string): string[] | undefined {
+  return engineCards().get(code)?.tags;
+}
+
 export function engineVersion(): string {
   engine();
   return version();

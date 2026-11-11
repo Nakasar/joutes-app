@@ -1,4 +1,5 @@
 import type { DeckCards, DeckCardEntry } from "@/lib/decks/contents";
+import { startingLegendIndex, wantsExtraLegends } from "@/lib/decks/extra-legends";
 import { toEngineCode } from "@/lib/engine/cards";
 import type { EngineDeckList } from "@/lib/engine/types";
 
@@ -21,8 +22,15 @@ export type EngineDeckOutcome = {
  * moteur ne sait pas jouer sont vérifiés par le moteur lui-même
  * (`validate_deck`), qui est seul à connaître ses règles. Ici on ne relève que
  * ce qui empêche d'écrire la liste.
+ *
+ * `tagsOf` rend les tags d'une carte du moteur : avec plusieurs légendes
+ * (Neeko), il désigne celle du champion choisi comme légende de départ, sans se
+ * fier à l'ordre dans lequel le deck les range.
  */
-export function toEngineDeck(cards: DeckCards | undefined): EngineDeckOutcome {
+export function toEngineDeck(
+  cards: DeckCards | undefined,
+  tagsOf?: (code: string) => readonly string[] | undefined
+): EngineDeckOutcome {
   const problems: EngineDeckProblem[] = [];
 
   const expand = (entries: DeckCardEntry[] | undefined): string[] => {
@@ -55,8 +63,22 @@ export function toEngineDeck(cards: DeckCards | undefined): EngineDeckOutcome {
     return { list: null, problems };
   }
 
+  // Neeko, Blending In : les légendes autres que celle de départ sont celles
+  // qu'elle peut ajouter. Le moteur juge leur nombre et leurs noms. Sans Neeko,
+  // une légende en trop n'est pas envoyée : c'est la taille de la zone qui est
+  // fausse, et le deck se joue avec sa légende de départ.
+  const start = tagsOf ? startingLegendIndex(legends, champions[0], tagsOf) : 0;
+  const extra = wantsExtraLegends(cards) ? legends.filter((_, index) => index !== start) : [];
+
   return {
-    list: { legend: legends[0], champion: champions[0], main, runes, battlefields },
+    list: {
+      legend: legends[start],
+      champion: champions[0],
+      main,
+      runes,
+      battlefields,
+      ...(extra.length > 0 ? { extra_legends: extra } : {}),
+    },
     problems,
   };
 }

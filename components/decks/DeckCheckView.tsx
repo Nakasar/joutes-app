@@ -7,6 +7,7 @@ import {useLocale, useTranslations} from "next-intl";
 import CardImage from "@/components/cards/CardImage.tsx";
 import type {DeckListCard} from "@/app/[locale]/(app)/games/riftbound/deck-checker/action.ts";
 import type {Errata, ErrataType} from "@/lib/types/errata.ts";
+import {EXTRA_LEGENDS, isExtraLegendsCard} from "@/lib/decks/extra-legends.ts";
 
 /*
   Affichage d'un deck vérifié, partagé entre la page du vérificateur de deck et
@@ -49,6 +50,17 @@ export const ConstructionRules = {
 };
 
 export type SectionRules = { min: number; max: number };
+
+/**
+ * Les règles de construction de ce deck-là : avec Neeko, Blending In dans le
+ * deck principal ou en champion choisi, la zone Légende en attend trois de plus.
+ */
+export function constructionRulesFor(deck: Pick<DeckViewList, "champions" | "maindeck">): typeof ConstructionRules {
+  const neeko = [...deck.champions, ...deck.maindeck].some((card) => card.quantity > 0 && isExtraLegendsCard(card.cardId));
+  if (!neeko) return ConstructionRules;
+  const { min, max } = ConstructionRules.legends;
+  return { ...ConstructionRules, legends: { min: min + EXTRA_LEGENDS, max: max + EXTRA_LEGENDS } };
+}
 
 // ── Errata type badge ─────────────────────────────────────────────────────────
 export const ERRATA_CLASS: Record<ErrataType, string> = {

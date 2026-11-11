@@ -13,6 +13,7 @@ import { deckCardIds } from "@/lib/decks/contents.ts";
 import { getDeckCollectionCounts } from "@/lib/decks/collection.ts";
 import { riftboundDeckCode } from "@/lib/decks/export-code.ts";
 import { getDeckZones } from "@/lib/decks/zones.ts";
+import { zonesForDeck } from "@/lib/decks/extra-legends.ts";
 import { readDeckAccess } from "@/lib/decks/read-access.ts";
 import { isDeckIndexable, type Deck } from "@/lib/types/Deck.ts";
 import { listVisibleDeckResults } from "@/lib/tournaments/result-service.ts";
@@ -85,7 +86,7 @@ async function DeckPageContent({ params }: { params: Params }) {
   }
 
   const game = await getGameById(deck.gameId);
-  const zones = getDeckZones(game);
+  const zones = zonesForDeck(getDeckZones(game), deck.cards);
   const [catalog, cardnexusOrder, canManageMeta, results] = await Promise.all([
     getDeckCardInfos(deck.gameId, deckCardIds(deck.cards)),
     // Le lien « Acheter le deck sur CardNexus » : le deck entier.

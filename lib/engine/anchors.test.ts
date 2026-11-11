@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { anchorOf, mulliganChoice, mulliganLimit, sortChoices } from "./anchors.ts";
+import { anchorOf, mulliganChoice, mulliganLimit, sortChoices, visibleObjects } from "./anchors.ts";
 import type { EngineChoice, EngineObj, EngineView } from "./types.ts";
 
 function obj(id: number): EngineObj {
@@ -106,4 +106,15 @@ test("le mulligan retrouve la combinaison choisie, dans n'importe quel ordre", (
   assert.equal(mulliganChoice(choices, [11, 10])?.label, "Les deux");
   assert.equal(mulliganChoice(choices, [11]), null);
   assert.equal(sortChoices(choices, view([10, 11])).mulligan.length, 3);
+});
+
+test("une légende ajoutée en cours de partie est dessinée, donc cliquable", () => {
+  const table = view([]);
+  assert.equal(visibleObjects(table).has(3), false);
+  table.players[0].added_legends = [obj(3)];
+  assert.equal(visibleObjects(table).has(3), true);
+  // Sa capacité s'accroche à elle plutôt que de tomber dans les boutons.
+  const sorted = sortChoices([choice({ type: "activate", source: 3, ability: 0 })], table);
+  assert.equal(sorted.anchored.get("obj:3")?.length, 1);
+  assert.equal(sorted.buttons.length, 0);
 });
