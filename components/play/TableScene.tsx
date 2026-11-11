@@ -55,14 +55,21 @@ export function TableScene({ dive, rails, hand, children }: TableSceneProps) {
     const zoomed = glass.hasAttribute("data-dive");
     if (zoomed) glass.style.transition = "none";
     glass.removeAttribute("data-dive");
-    // Sur téléphone, le panneau des questions couvre le bas de l'écran, et le
-    // bandeau du récit reste collé en haut.
+    // Sur téléphone, le panneau des questions couvre le bas de l'écran, et la
+    // barre de la table reste collée en haut.
     const sheet = document.querySelector<HTMLElement>("[data-play-sheet]");
     const sheetTop =
       sheet && getComputedStyle(sheet).position === "fixed" ? sheet.getBoundingClientRect().top : window.innerHeight;
-    const viewTop = 96;
+    const bar = document.querySelector<HTMLElement>("[data-play-bar]");
+    const viewTop = bar ? bar.getBoundingClientRect().bottom + 8 : 96;
     const viewBottom = Math.max(viewTop + 1, sheetTop);
-    // Le champ de bataille est loin du centre de ce qu'on voit : la page défile
+    // Ce qui défile : la table en plein écran, sinon la page.
+    const scroller = box.closest<HTMLElement>("[data-play-scroll]");
+    const scrollTop = scroller ? scroller.scrollTop : window.scrollY;
+    const scrollMax = scroller
+      ? scroller.scrollHeight - scroller.clientHeight
+      : document.documentElement.scrollHeight - window.innerHeight;
+    // Le champ de bataille est loin du centre de ce qu'on voit : la table défile
     // jusqu'à lui, comme la caméra qui se tourne avant d'avancer.
     let shift = 0;
     if (!zoomed) {
@@ -71,9 +78,8 @@ export function TableScene({ dive, rails, hand, children }: TableSceneProps) {
       const band = (viewBottom - viewTop) / 4;
       if (middle < viewTop + band || middle > viewBottom - band) {
         const wanted = middle - (viewTop + viewBottom) / 2;
-        const max = document.documentElement.scrollHeight - window.innerHeight;
-        shift = Math.max(0, Math.min(max, window.scrollY + wanted)) - window.scrollY;
-        if (shift !== 0) window.scrollBy({ top: shift, behavior: "smooth" });
+        shift = Math.max(0, Math.min(scrollMax, scrollTop + wanted)) - scrollTop;
+        if (shift !== 0) (scroller ?? window).scrollBy({ top: shift, behavior: "smooth" });
       }
     }
     // Les mesures, telles qu'elles seront une fois la page défilée.
@@ -122,11 +128,14 @@ export function PointRails({
   me,
   max,
   label,
+  colorOf,
 }: {
   players: EnginePlayer[];
   me: number | null;
   max: number;
   label: (player: EnginePlayer) => string;
+  /** La couleur des jetons de chaque joueur. */
+  colorOf?: (seat: number) => string;
 }) {
   const others = players.filter((player) => player.seat !== me);
   const mine = players.find((player) => player.seat === me);
@@ -137,6 +146,7 @@ export function PointRails({
       role="img"
       aria-label={label(player)}
       title={label(player)}
+      style={colorOf ? ({ "--token": colorOf(player.seat) } as CSSProperties) : undefined}
     >
       {Array.from({ length: max }, (_, index) => (
         <span key={index} className={cn("play-socket", index < player.points && "play-socket-on")} />

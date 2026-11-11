@@ -73,11 +73,11 @@ export function RemoteGame() {
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Les noms et le récit de cette table viennent de ce serveur, pas de Joutes : on dit lequel. */}
-      {url && <p className="text-xs text-muted-foreground">{t("remote.server", { host: new URL(url).host })}</p>}
       <GameTable
         feed={feed}
         cards={cards}
+        // Les noms et le récit de cette table viennent de ce serveur, pas de Joutes : on dit lequel.
+        note={url ? t("remote.server", { host: new URL(url).host }) : undefined}
         afterResult={
           <div className="flex flex-row flex-wrap gap-2">
             <Button variant="outline" asChild>

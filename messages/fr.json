@@ -646,11 +646,12 @@
         "hand": "Main",
         "deck": "Deck",
         "runes": "Runes",
-        "runesReady": "{ready} prêtes sur {total}",
+        "runesReady": "{ready, plural, one {# prête} other {# prêtes}} sur {total}",
         "runeDeck": "Deck de runes",
         "pool": "Réserve",
         "energy": "{count} Énergie",
-        "trash": "Défausse ({count})"
+        "trash": "Défausse ({count})",
+        "trashLabel": "Défausse"
       },
       "prompt": {
         "onTable": "Choisissez sur la table : ce qui est entouré est permis.",
@@ -664,10 +665,17 @@
         "title": "Chaîne",
         "pending": "en cours de déclaration"
       },
+      "table": {
+        "quit": "Quitter la table",
+        "turn": "Tour {turn}"
+      },
       "journal": {
         "title": "Journal",
         "empty": "La partie commence.",
-        "rule": "Ouvrir la règle {rule}"
+        "rule": "Ouvrir la règle {rule}",
+        "thisTurn": "Ce tour",
+        "all": "Toute la partie",
+        "setup": "Mise en place"
       },
       "pace": {
         "telling": "La table raconte ce qui vient de se passer…",

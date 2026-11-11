@@ -1,13 +1,38 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { BookOpen, Crown, FastForward, Flag, Gauge, Hourglass, Layers, Trash2, WifiOff } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  ArrowLeft,
+  BookOpen,
+  Circle,
+  Coins,
+  Crown,
+  FastForward,
+  Flag,
+  Gauge,
+  Gem,
+  Hand,
+  Hourglass,
+  Layers,
+  Library,
+  MoveRight,
+  Play,
+  Plus,
+  Skull,
+  Star,
+  Swords,
+  Trash2,
+  WifiOff,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 
-import { PlayCard } from "@/components/play/PlayCard";
+import { PlayCard, type CardSize } from "@/components/play/PlayCard";
 import { HandFan, PointRails, TableScene } from "@/components/play/TableScene";
+import { ToldText } from "@/components/play/ToldText";
 import type { GameFeed } from "@/components/play/game-feed";
 import { usePacedFeed, type Ghost, type PacedFeed } from "@/components/play/usePacedFeed";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +63,7 @@ import type {
   EngineTold,
   EngineView,
 } from "@/lib/engine/types";
+import { DOMAIN_HEX, playerColor, toldIndex } from "@/lib/engine/told-text";
 import { cn } from "@/lib/utils";
 
 /** Ordre des domaines dans `pool.power`, celui du moteur. */
@@ -59,6 +85,8 @@ type GameTableProps = {
   cards: TableCards;
   /** Ce qui suit le résultat : rejouer, revenir à l'accueil du jeu… */
   afterResult?: ReactNode;
+  /** Une précision dans la barre de la table (le serveur d'une partie hébergée). */
+  note?: ReactNode;
 };
 
 /**
@@ -66,7 +94,7 @@ type GameTableProps = {
  * montre (`view`), pose la question qu'il pose (`prompt`) et lui renvoie, telle
  * quelle, l'une des actions qu'il propose.
  */
-export function GameTable({ feed, cards, afterResult }: GameTableProps) {
+export function GameTable({ feed, cards, afterResult, note }: GameTableProps) {
   const t = useTranslations("Games.Play");
   // La partie racontée pas à pas : la vue et le journal suivent le récit, la
   // question n'apparaît qu'une fois le récit arrivé au présent.
@@ -76,6 +104,15 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
   useEffect(() => {
     hold?.(paced.busy);
   }, [hold, paced.busy]);
+  // La table occupe tout l'écran : la page du site, dessous, ne défile plus.
+  useEffect(() => {
+    const root = document.documentElement;
+    const before = root.style.overflow;
+    root.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = before;
+    };
+  }, []);
   const [inspected, setInspected] = useState<Inspected | null>(null);
   const [trashOf, setTrashOf] = useState<number | null>(null);
   const [mulliganState, setMulliganState] = useState<{ key: string; ids: number[] }>({ key: "", ids: [] });
@@ -89,6 +126,13 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
     () => (view && prompt ? sortChoices(prompt.choices, view) : null),
     [view, prompt],
   );
+
+  // Les noms à mettre en évidence dans le journal : les joueurs, puis toutes les cartes.
+  const playerKey = view ? JSON.stringify(view.players.map((player) => [player.seat, player.name])) : "[]";
+  const names = useMemo(() => {
+    const players = (JSON.parse(playerKey) as [number, string][]).map(([seat, name]) => ({ seat, name }));
+    return toldIndex(players, Object.values(cards));
+  }, [playerKey, cards]);
 
   // La sélection du mulligan ne vaut que pour la question à laquelle elle répond.
   const promptKey = update ? `${update.seq}:${prompt?.text ?? ""}` : "";
@@ -125,7 +169,7 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
           .map((player) => player.seat)
       : [];
 
-  const renderObj = (obj: EngineObj, size: "xs" | "sm" | "md" | "lg" = "md") => (
+  const renderObj = (obj: EngineObj, size: CardSize = "md") => (
     <PlayCard
       key={obj.id}
       obj={obj}
@@ -168,6 +212,18 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
       ? // Entre deux évènements racontés, la caméra reste sur le dernier.
         combatInFocus(paced.journal, paced.current ?? { index: paced.journal.length - 1 }, paced.ack)
       : null;
+
+  const seats = view.players.map((player) => player.seat);
+  const colorOf = (seat: number) => playerColor(seat, spectator ? null : me, seats);
+  const told = (text: string) => (
+    <ToldText
+      text={text}
+      index={names}
+      cards={cards}
+      colorOf={colorOf}
+      onInspect={(card) => setInspected({ card })}
+    />
+  );
 
   const toggleMulligan = (id: number) =>
     setMulliganState({
@@ -221,8 +277,8 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
           onAct={act}
           relief={relief}
         >
-          {view.bases[player.seat].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "sm"))}
-          {ghostsAt("base", player.seat).map((ghost) => renderGhost(ghost, "sm"))}
+          {view.bases[player.seat].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "md"))}
+          {ghostsAt("base", player.seat).map((ghost) => renderGhost(ghost))}
           <Runes objs={view.bases[player.seat].filter(isRune)} cards={cards} choicesOn={choicesOn} onAct={act} />
         </BaseStrip>
       ))}
@@ -243,9 +299,10 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
             renderGhost={renderGhost}
             choices={choicesOn(`bf:${bf.index}`)}
             onAct={act}
-            card={renderObj(bf.card, "md")}
+            card={renderObj(bf.card, "xl")}
             renderObj={renderObj}
             relief={relief}
+            colorOf={colorOf}
           />
         ))}
       </div>
@@ -257,327 +314,338 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
         mine
         relief={relief}
       >
-        {view.bases[me].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "md"))}
+        {view.bases[me].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "lg"))}
         {ghostsAt("base", me).map((ghost) => renderGhost(ghost))}
         <Runes objs={view.bases[me].filter(isRune)} cards={cards} choicesOn={choicesOn} onAct={act} />
       </BaseStrip>
     </>
   );
 
+  const bandOf = (player: EnginePlayer, row: boolean) => (
+    <PlayerBand
+      key={player.seat}
+      row={row}
+      player={player}
+      view={view}
+      isMe={!spectator && player.seat === me}
+      away={feed.away.includes(player.seat)}
+      choices={choicesOn(`seat:${player.seat}`)}
+      onAct={act}
+      onTrash={() => setTrashOf(player.seat)}
+      acting={actor === player.seat}
+      color={colorOf(player.seat)}
+      scoring={scoring.includes(player.seat)}
+      legendName={cardOf(player.legend)?.name ?? player.legend.name ?? ""}
+      legend={renderObj(player.legend, "xs")}
+      addedLegends={(player.added_legends ?? []).map((added) => renderObj(added, "xs"))}
+      champion={player.champion && (spectator || player.seat !== me) ? renderObj(player.champion, "xs") : null}
+    />
+  );
+
+  const handSection = spectator ? null : (
+    <section aria-label={t("zone.hand")} className="min-w-0 flex-1">
+      <h3 className="px-2 text-xs text-muted-foreground">
+        <span className="font-semibold text-foreground">{t("zone.hand")}</span> · {myHand.length}
+      </h3>
+      {myHand.length === 0 && !mine.champion ? (
+        <p className="py-6 text-center text-sm text-muted-foreground">{t("zone.emptyHand")}</p>
+      ) : relief ? (
+        <HandFan items={handItems} />
+      ) : (
+        <div className="flex items-end gap-2 overflow-x-auto px-1 pb-2 pt-2">
+          {mine.champion && (
+            <div className="flex shrink-0 flex-col items-center gap-1 border-r pr-3">
+              {renderObj(mine.champion, "lg")}
+              <span className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">{t("zone.champion")}</span>
+            </div>
+          )}
+          {myHand.map(handCard)}
+        </div>
+      )}
+    </section>
+  );
+
+  // Au premier plan : votre bandeau (sur ordinateur), puis votre main.
+  const foreground = (
+    <div className="flex items-end gap-3">
+      <div className="hidden w-60 shrink-0 pb-3 lg:block">{bandOf(mine, false)}</div>
+      {handSection}
+    </div>
+  );
+
   return (
-    <div className="flex flex-col gap-3 max-lg:pb-48 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)_21rem] lg:items-start">
-      {/* Joueurs */}
-      <aside className="flex gap-2 overflow-x-auto lg:sticky lg:top-20 lg:flex-col lg:overflow-visible">
-        {[...others, mine].map((player) => (
-          <PlayerPanel
-            key={player.seat}
-            player={player}
-            view={view}
-            isMe={!spectator && player.seat === me}
-            away={feed.away.includes(player.seat)}
-            choices={choicesOn(`seat:${player.seat}`)}
-            onAct={act}
-            onTrash={() => setTrashOf(player.seat)}
-            acting={actor === player.seat}
-            scoring={scoring.includes(player.seat)}
-            legend={renderObj(player.legend, "sm")}
-            addedLegends={(player.added_legends ?? []).map((added) => renderObj(added, "sm"))}
-            champion={player.champion && (spectator || player.seat !== me) ? renderObj(player.champion, "sm") : null}
-          />
-        ))}
-      </aside>
+    <div data-play-scroll className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-background text-foreground">
+      <TableBar paced={paced} view={view} told={told} colorOf={colorOf} note={note} />
 
-      {/* Table */}
-      <main className="relative flex min-w-0 flex-col gap-3">
-        <Narration paced={paced} />
-        <StepOverlay paced={paced} view={view} cards={cards} me={feed.seat} />
+      <div className="flex flex-col gap-3 p-2 max-lg:pb-56 sm:p-3 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-4 lg:px-4">
+        {/* Sur téléphone, tous les joueurs en haut, côte à côte. */}
+        <div className="grid grid-cols-2 gap-2 lg:hidden">{[...others, mine].map((player) => bandOf(player, false))}</div>
 
-        {relief ? (
-          <TableScene
-            dive={dive}
-            rails={
-              <PointRails
-                players={view.players}
-                me={spectator ? null : me}
-                max={view.victory_score}
-                label={(player) =>
-                  `${player.name} · ${t("player.points", { points: player.points, max: view.victory_score })}`
-                }
-              />
-            }
-            hand={
-              spectator ? null : (
-                <section aria-label={t("zone.hand")}>
-                  {myHand.length === 0 && !mine.champion ? (
-                    <p className="py-6 text-center text-sm text-muted-foreground">{t("zone.emptyHand")}</p>
-                  ) : (
-                    <HandFan items={handItems} />
-                  )}
-                </section>
-              )
-            }
+        {/* Table */}
+        <main className="relative flex min-w-0 flex-col gap-3">
+          <div className="hidden flex-col gap-2 lg:flex">{others.map((player) => bandOf(player, true))}</div>
+          <StepOverlay paced={paced} view={view} cards={cards} me={feed.seat} />
+
+          {relief ? (
+            <TableScene
+              dive={dive}
+              rails={
+                <PointRails
+                  players={view.players}
+                  me={spectator ? null : me}
+                  max={view.victory_score}
+                  colorOf={colorOf}
+                  label={(player) =>
+                    `${player.name} · ${t("player.points", { points: player.points, max: view.victory_score })}`
+                  }
+                />
+              }
+              hand={foreground}
+            >
+              {board}
+            </TableScene>
+          ) : (
+            <>
+              {board}
+              <div className="rounded-xl border bg-card p-3">{foreground}</div>
+            </>
+          )}
+        </main>
+
+        {/* Question, chaîne, journal */}
+        <aside className="flex flex-col gap-3 lg:sticky lg:top-16 lg:max-h-[calc(100dvh-5rem)]">
+          <section
+            aria-live="polite"
+            data-play-sheet
+            className="flex flex-col gap-3 rounded-2xl border border-primary/40 bg-card bg-gradient-to-b from-primary/15 to-card p-4 shadow-lg max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-30 max-lg:max-h-[45dvh] max-lg:overflow-y-auto max-lg:rounded-b-none max-lg:pb-6 max-lg:shadow-2xl"
           >
-            {board}
-          </TableScene>
-        ) : (
-          <>
-            {board}
-            {!spectator && (
-              <section aria-label={t("zone.hand")} className="rounded-xl border bg-card p-3">
-                <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {t("zone.hand")} · {myHand.length}
-                </h3>
-                <div className="flex items-end gap-2 overflow-x-auto px-1 pb-2 pt-2">
-                  {mine.champion && (
-                    <div className="flex shrink-0 flex-col items-center gap-1 border-r pr-3">
-                      {renderObj(mine.champion, "lg")}
-                      <span className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-                        {t("zone.champion")}
+            {feed.status === "reconnecting" && (
+              <p className="flex items-center gap-2 text-sm text-amber-500">
+                <WifiOff className="size-4" aria-hidden />
+                {t("status.reconnecting")}
+              </p>
+            )}
+
+            {view.result ? (
+              <>
+                <h2 className="flex items-center gap-2 text-lg font-semibold">
+                  <Crown className="size-5 text-yellow-400" aria-hidden />
+                  {view.result.winners.length === 0
+                    ? t("result.draw")
+                    : !spectator && view.result.winners.includes(me)
+                      ? t("result.won")
+                      : t("result.winner", {
+                          names: view.result.winners.map((seat) => view.players[seat].name).join(", "),
+                        })}
+                </h2>
+                <p className="text-sm text-muted-foreground">{view.result.reason}</p>
+                {afterResult}
+              </>
+            ) : paced.ack ? (
+              <AckCard ack={paced.ack} view={view} cards={cards} onContinue={paced.proceed} told={told} />
+            ) : prompt && sorted ? (
+              <>
+                <div className="flex items-start gap-3">
+                  {prompt.card && cards[prompt.card] && (
+                    <PlayCard
+                      card={cards[prompt.card]}
+                      size="sm"
+                      onInspect={() => setInspected({ card: cards[prompt.card as string] })}
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-base font-semibold leading-snug">{prompt.text}</h2>
+                    {/* Le texte de la carte en cause : c'est lui qui dit ce que
+                        valent un « mode 1 » ou un « oui ». */}
+                    {prompt.card && cards[prompt.card]?.text && (
+                      <p className="mt-1 line-clamp-2 whitespace-pre-line text-xs text-muted-foreground lg:line-clamp-6">
+                        {cards[prompt.card].text}
+                      </p>
+                    )}
+                    {choosingOnTable && <p className="mt-1 text-sm text-primary">{t("prompt.onTable")}</p>}
+                    {mulliganing && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {t("prompt.mulligan", { count: mulligan.length, max: mulliganMax })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {mulliganing && (
+                  <div className="flex flex-row flex-wrap gap-2">
+                    <Button
+                      onClick={() => {
+                        const choice = mulliganChoice(sorted.mulligan, mulligan);
+                        if (choice) act(choice.action);
+                      }}
+                      disabled={!mulliganChoice(sorted.mulligan, mulligan)}
+                    >
+                      {mulligan.length === 0 ? t("prompt.keepHand") : t("prompt.setAside", { count: mulligan.length })}
+                    </Button>
+                  </div>
+                )}
+
+                {sorted.buttons.length > 0 && (
+                  <ChoiceButtons key={promptKey} choices={sorted.buttons} onAct={act} />
+                )}
+              </>
+            ) : (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Hourglass className="size-4" aria-hidden />
+                {paced.busy
+                  ? t("pace.telling")
+                  : waitingFor
+                    ? t("prompt.waitingFor", { name: waitingFor.name })
+                    : t("prompt.waiting")}
+              </p>
+            )}
+
+            {feed.error && view && <p className="text-sm text-destructive">{feed.error}</p>}
+
+          </section>
+
+          {view.chain.length > 0 && (
+            <section className="rounded-xl border bg-card p-4">
+              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                <Layers className="size-4" aria-hidden />
+                {t("chain.title")}
+              </h3>
+              <ol className="flex flex-col-reverse gap-1.5">
+                {view.chain.map((item, index) => {
+                  const choices = choicesOn(`item:${item.id}`);
+                  const label = (
+                    <>
+                      <span className="text-xs text-muted-foreground">{index + 1}.</span>{" "}
+                      <span className="font-medium">{cards[item.code]?.name ?? item.name}</span>{" "}
+                      <span className="text-xs text-muted-foreground">
+                        {view.players[item.controller]?.name}
+                        {item.pending ? ` · ${t("chain.pending")}` : ""}
                       </span>
+                    </>
+                  );
+                  return (
+                    <li key={item.id}>
+                      {choices.length > 0 ? (
+                        <button
+                          type="button"
+                          title={choices[0].label}
+                          onClick={() => act(choices[0].action)}
+                          className="w-full rounded-md border px-2 py-1 text-left text-sm ring-2 ring-primary"
+                        >
+                          {label}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setInspected({ card: cards[item.code] })}
+                          className="w-full rounded-md border px-2 py-1 text-left text-sm"
+                        >
+                          {label}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          )}
+
+          <Journal entries={journal} told={told} colorOf={colorOf} />
+
+          {!spectator && !view.result && <Concede onConcede={() => act({ type: "concede" })} />}
+        </aside>
+
+        <Dialog open={inspected !== null} onOpenChange={(open) => !open && setInspected(null)}>
+          <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{inspected?.card?.name ?? inspected?.obj?.name ?? t("card.hidden")}</DialogTitle>
+              <DialogDescription>
+                {inspected?.card ? t(`kind.${inspected.card.kind}`) : t("card.hiddenHint")}
+              </DialogDescription>
+            </DialogHeader>
+            {inspected?.card && (
+              <div className="flex flex-col gap-3 sm:flex-row">
+                {inspected.card.image && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={inspected.card.image}
+                    alt=""
+                    className={cn("mx-auto rounded-lg border", inspected.card.landscape ? "w-full sm:w-64" : "w-48")}
+                  />
+                )}
+                <div className="flex min-w-0 flex-1 flex-col gap-2 text-sm">
+                  {inspected.card.text && <p className="whitespace-pre-line">{inspected.card.text}</p>}
+                  {inspected.obj && inspected.obj.keywords.length > 0 && (
+                    <div className="flex flex-row flex-wrap gap-1">
+                      {inspected.obj.keywords.map((keyword) => (
+                        <Badge key={keyword} variant="secondary">
+                          {keyword}
+                        </Badge>
+                      ))}
                     </div>
                   )}
-                  {myHand.length === 0 && <p className="py-6 text-sm text-muted-foreground">{t("zone.emptyHand")}</p>}
-                  {myHand.map(handCard)}
+                  {inspected.obj && (
+                    <ul className="text-muted-foreground">
+                      {inspected.obj.might !== null && (
+                        <li>{t("card.might", { might: inspected.obj.might, damage: inspected.obj.damage })}</li>
+                      )}
+                      {inspected.obj.exhausted && <li>{t("card.exhausted")}</li>}
+                      {inspected.obj.stunned && <li>{t("card.stunned")}</li>}
+                      {inspected.obj.buffs > 0 && <li>{t("card.buffed")}</li>}
+                    </ul>
+                  )}
+                  {!inspected.card.playable && <p className="text-amber-500">{t("card.unsupported")}</p>}
                 </div>
-              </section>
+              </div>
             )}
-          </>
-        )}
-      </main>
+          </DialogContent>
+        </Dialog>
 
-      {/* Question, chaîne, journal */}
-      <aside className="flex flex-col gap-3 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)]">
-        <section
-          aria-live="polite"
-          data-play-sheet
-          className="flex flex-col gap-3 rounded-xl border bg-card p-4 max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-30 max-lg:max-h-[45dvh] max-lg:overflow-y-auto max-lg:rounded-b-none max-lg:shadow-2xl"
-        >
-          {feed.status === "reconnecting" && (
-            <p className="flex items-center gap-2 text-sm text-amber-500">
-              <WifiOff className="size-4" aria-hidden />
-              {t("status.reconnecting")}
-            </p>
-          )}
-
-          {view.result ? (
-            <>
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <Crown className="size-5 text-yellow-400" aria-hidden />
-                {view.result.winners.length === 0
-                  ? t("result.draw")
-                  : !spectator && view.result.winners.includes(me)
-                    ? t("result.won")
-                    : t("result.winner", {
-                        names: view.result.winners.map((seat) => view.players[seat].name).join(", "),
-                      })}
-              </h2>
-              <p className="text-sm text-muted-foreground">{view.result.reason}</p>
-              {afterResult}
-            </>
-          ) : paced.ack ? (
-            <AckCard ack={paced.ack} view={view} cards={cards} onContinue={paced.proceed} />
-          ) : prompt && sorted ? (
-            <>
-              <div className="flex items-start gap-3">
-                {prompt.card && cards[prompt.card] && (
-                  <PlayCard
-                    card={cards[prompt.card]}
-                    size="sm"
-                    onInspect={() => setInspected({ card: cards[prompt.card as string] })}
-                  />
-                )}
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-base font-semibold leading-snug">{prompt.text}</h2>
-                  {/* Le texte de la carte en cause : c'est lui qui dit ce que
-                      valent un « mode 1 » ou un « oui ». */}
-                  {prompt.card && cards[prompt.card]?.text && (
-                    <p className="mt-1 line-clamp-2 whitespace-pre-line text-xs text-muted-foreground lg:line-clamp-6">
-                      {cards[prompt.card].text}
-                    </p>
-                  )}
-                  {choosingOnTable && <p className="mt-1 text-sm text-primary">{t("prompt.onTable")}</p>}
-                  {mulliganing && (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {t("prompt.mulligan", { count: mulligan.length, max: mulliganMax })}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {mulliganing && (
+        <Dialog open={trashOf !== null} onOpenChange={(open) => !open && setTrashOf(null)}>
+          <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {trashOf !== null ? t("zone.trashOf", { name: view.players[trashOf].name }) : ""}
+              </DialogTitle>
+              <DialogDescription>{t("zone.trashHint")}</DialogDescription>
+            </DialogHeader>
+            {trashOf !== null && (
+              <div className="flex flex-col gap-4">
                 <div className="flex flex-row flex-wrap gap-2">
-                  <Button
-                    onClick={() => {
-                      const choice = mulliganChoice(sorted.mulligan, mulligan);
-                      if (choice) act(choice.action);
-                    }}
-                    disabled={!mulliganChoice(sorted.mulligan, mulligan)}
-                  >
-                    {mulligan.length === 0 ? t("prompt.keepHand") : t("prompt.setAside", { count: mulligan.length })}
-                  </Button>
+                  {view.players[trashOf].trash.length === 0 && (
+                    <p className="text-sm text-muted-foreground">{t("zone.empty")}</p>
+                  )}
+                  {view.players[trashOf].trash.map((obj) => (
+                    <PlayCard
+                      key={obj.id}
+                      obj={obj}
+                      card={cardOf(obj)}
+                      size="md"
+                      onInspect={() => setInspected({ obj, card: cardOf(obj) })}
+                    />
+                  ))}
                 </div>
-              )}
-
-              {sorted.buttons.length > 0 && (
-                <ChoiceButtons key={promptKey} choices={sorted.buttons} onAct={act} />
-              )}
-            </>
-          ) : (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Hourglass className="size-4" aria-hidden />
-              {paced.busy
-                ? t("pace.telling")
-                : waitingFor
-                  ? t("prompt.waitingFor", { name: waitingFor.name })
-                  : t("prompt.waiting")}
-            </p>
-          )}
-
-          {feed.error && view && <p className="text-sm text-destructive">{feed.error}</p>}
-
-        </section>
-
-        {view.chain.length > 0 && (
-          <section className="rounded-xl border bg-card p-4">
-            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-              <Layers className="size-4" aria-hidden />
-              {t("chain.title")}
-            </h3>
-            <ol className="flex flex-col-reverse gap-1.5">
-              {view.chain.map((item, index) => {
-                const choices = choicesOn(`item:${item.id}`);
-                const label = (
-                  <>
-                    <span className="text-xs text-muted-foreground">{index + 1}.</span>{" "}
-                    <span className="font-medium">{cards[item.code]?.name ?? item.name}</span>{" "}
-                    <span className="text-xs text-muted-foreground">
-                      {view.players[item.controller]?.name}
-                      {item.pending ? ` · ${t("chain.pending")}` : ""}
-                    </span>
-                  </>
-                );
-                return (
-                  <li key={item.id}>
-                    {choices.length > 0 ? (
-                      <button
-                        type="button"
-                        title={choices[0].label}
-                        onClick={() => act(choices[0].action)}
-                        className="w-full rounded-md border px-2 py-1 text-left text-sm ring-2 ring-primary"
-                      >
-                        {label}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setInspected({ card: cards[item.code] })}
-                        className="w-full rounded-md border px-2 py-1 text-left text-sm"
-                      >
-                        {label}
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
-        )}
-
-        <Journal entries={journal} />
-
-        {!spectator && !view.result && <Concede onConcede={() => act({ type: "concede" })} />}
-      </aside>
-
-      <Dialog open={inspected !== null} onOpenChange={(open) => !open && setInspected(null)}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{inspected?.card?.name ?? inspected?.obj?.name ?? t("card.hidden")}</DialogTitle>
-            <DialogDescription>
-              {inspected?.card ? t(`kind.${inspected.card.kind}`) : t("card.hiddenHint")}
-            </DialogDescription>
-          </DialogHeader>
-          {inspected?.card && (
-            <div className="flex flex-col gap-3 sm:flex-row">
-              {inspected.card.image && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={inspected.card.image}
-                  alt=""
-                  className={cn("mx-auto rounded-lg border", inspected.card.landscape ? "w-full sm:w-64" : "w-48")}
-                />
-              )}
-              <div className="flex min-w-0 flex-1 flex-col gap-2 text-sm">
-                {inspected.card.text && <p className="whitespace-pre-line">{inspected.card.text}</p>}
-                {inspected.obj && inspected.obj.keywords.length > 0 && (
-                  <div className="flex flex-row flex-wrap gap-1">
-                    {inspected.obj.keywords.map((keyword) => (
-                      <Badge key={keyword} variant="secondary">
-                        {keyword}
-                      </Badge>
-                    ))}
+                {view.players[trashOf].banish.length > 0 && (
+                  <div>
+                    <h4 className="mb-2 text-sm font-medium">{t("zone.banish")}</h4>
+                    <div className="flex flex-row flex-wrap gap-2">
+                      {view.players[trashOf].banish.map((obj) => (
+                        <PlayCard
+                          key={obj.id}
+                          obj={obj}
+                          card={cardOf(obj)}
+                          size="md"
+                          onInspect={() => setInspected({ obj, card: cardOf(obj) })}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
-                {inspected.obj && (
-                  <ul className="text-muted-foreground">
-                    {inspected.obj.might !== null && (
-                      <li>{t("card.might", { might: inspected.obj.might, damage: inspected.obj.damage })}</li>
-                    )}
-                    {inspected.obj.exhausted && <li>{t("card.exhausted")}</li>}
-                    {inspected.obj.stunned && <li>{t("card.stunned")}</li>}
-                    {inspected.obj.buffs > 0 && <li>{t("card.buffed")}</li>}
-                  </ul>
-                )}
-                {!inspected.card.playable && <p className="text-amber-500">{t("card.unsupported")}</p>}
               </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={trashOf !== null} onOpenChange={(open) => !open && setTrashOf(null)}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {trashOf !== null ? t("zone.trashOf", { name: view.players[trashOf].name }) : ""}
-            </DialogTitle>
-            <DialogDescription>{t("zone.trashHint")}</DialogDescription>
-          </DialogHeader>
-          {trashOf !== null && (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-row flex-wrap gap-2">
-                {view.players[trashOf].trash.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("zone.empty")}</p>
-                )}
-                {view.players[trashOf].trash.map((obj) => (
-                  <PlayCard
-                    key={obj.id}
-                    obj={obj}
-                    card={cardOf(obj)}
-                    size="md"
-                    onInspect={() => setInspected({ obj, card: cardOf(obj) })}
-                  />
-                ))}
-              </div>
-              {view.players[trashOf].banish.length > 0 && (
-                <div>
-                  <h4 className="mb-2 text-sm font-medium">{t("zone.banish")}</h4>
-                  <div className="flex flex-row flex-wrap gap-2">
-                    {view.players[trashOf].banish.map((obj) => (
-                      <PlayCard
-                        key={obj.id}
-                        obj={obj}
-                        card={cardOf(obj)}
-                        size="md"
-                        onInspect={() => setInspected({ obj, card: cardOf(obj) })}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
@@ -652,7 +720,9 @@ function ChoiceButtons({ choices, onAct }: { choices: EngineChoice[]; onAct: (ac
   );
 }
 
-type PlayerPanelProps = {
+type PlayerBandProps = {
+  /** Sur une ligne (les adversaires au-dessus du plateau) ou en carte (téléphone, et vous). */
+  row?: boolean;
   player: EnginePlayer;
   view: EngineView;
   isMe: boolean;
@@ -664,13 +734,22 @@ type PlayerPanelProps = {
   acting?: boolean;
   /** Marque des points dans l'évènement raconté. */
   scoring?: boolean;
+  /** Sa couleur, celle de son nom dans le journal. */
+  color?: string;
+  /** Le nom de sa légende, sous le sien. */
+  legendName: string;
   legend: ReactNode;
-  /** Les légendes ajoutées en cours de partie (Neeko), sur leur propre rangée. */
+  /** Les légendes ajoutées en cours de partie (Neeko). */
   addedLegends?: ReactNode[];
   champion: ReactNode;
 };
 
-function PlayerPanel({
+/**
+ * Le bandeau d'un joueur : qui il est, son score en grand, puis ses compteurs.
+ * Les adversaires l'ont au-dessus du plateau, vous à côté de votre main.
+ */
+function PlayerBand({
+  row = false,
   player,
   view,
   isMe,
@@ -680,103 +759,126 @@ function PlayerPanel({
   onTrash,
   acting = false,
   scoring = false,
+  color,
+  legendName,
   legend,
   addedLegends,
   champion,
-}: PlayerPanelProps) {
+}: PlayerBandProps) {
   const t = useTranslations("Games.Play");
   const turn = view.turn_seat === player.seat;
   const deciding = view.pending?.seat === player.seat && !view.result;
+  const max = view.victory_score;
+  const runes = player.runes_ready + player.runes_exhausted;
   const power = DOMAINS.map((domain, index) => ({ domain, amount: player.pool.power[index] ?? 0 })).filter(
     (entry) => entry.amount > 0,
   );
 
+  const score = (
+    <p
+      className="shrink-0 text-xl font-extrabold leading-none tabular-nums"
+      aria-label={t("player.points", { points: player.points, max })}
+    >
+      {player.points}
+      <span className="text-sm font-semibold text-muted-foreground"> / {max}</span>
+    </p>
+  );
+  const track = (
+    <div aria-hidden className={cn("flex gap-0.5", !row && "w-full")}>
+      {Array.from({ length: max }, (_, index) => (
+        <span
+          key={index}
+          className={cn(
+            "h-1.5 rounded-full bg-border transition-transform duration-300",
+            row ? "w-4" : "flex-1",
+            scoring && index === player.points - 1 && "scale-y-[2.2]",
+          )}
+          style={index < player.points ? { background: color } : undefined}
+        />
+      ))}
+    </div>
+  );
+  const chip = cn(
+    "inline-flex items-center rounded-md bg-secondary/70 text-xs text-muted-foreground",
+    row ? "h-7 gap-1.5 px-2" : "h-6 gap-1 px-1.5",
+  );
+  const counter = (Icon: LucideIcon, label: string, value: ReactNode, narrow = true) => (
+    <span className={cn(chip, !narrow && "max-sm:hidden")} title={label}>
+      <Icon className="size-3.5" aria-hidden />
+      <span className={cn(!row && "sr-only")}>{label}</span>
+      <b className="font-semibold text-foreground">{value}</b>
+    </span>
+  );
+
   return (
     <section
+      aria-label={player.name}
       className={cn(
-        "flex min-w-56 shrink-0 flex-col gap-2 rounded-xl border bg-card p-3 transition-shadow duration-300 lg:min-w-0",
+        "flex min-w-0 gap-2 rounded-xl border bg-card transition-shadow duration-300",
+        row ? "flex-row flex-wrap items-center gap-x-4 px-3 py-2" : "flex-col p-2.5",
         turn && "border-primary/60",
         acting && "play-focus",
         !player.alive && "opacity-50",
         choices.length > 0 && "ring-2 ring-primary",
       )}
     >
-      <div className="flex items-start gap-2">
-        {legend}
-        {champion}
+      <div className={cn("flex min-w-0 items-center gap-2", row && "min-w-48")}>
+        <div className="flex shrink-0 gap-1">
+          {legend}
+          {champion}
+        </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">
-            {player.name}
+          <p className="truncate text-sm font-bold">
+            <span style={{ color }}>{player.name}</span>
             {isMe && <span className="font-normal text-muted-foreground"> · {t("player.you")}</span>}
           </p>
-          <div className="mt-1 flex flex-row flex-wrap gap-1">
-            {turn && <Badge>{t("player.turn")}</Badge>}
-            {deciding && !turn && <Badge variant="secondary">{t("player.deciding")}</Badge>}
-            {away && (
-              <Badge variant="outline" className="text-amber-500">
-                {t("player.away")}
-              </Badge>
+          <p className="truncate text-xs text-muted-foreground">
+            {away ? (
+              <span className="text-amber-500">{t("player.away")}</span>
+            ) : turn ? (
+              <span className="font-medium text-primary">{t("player.turn")}</span>
+            ) : deciding ? (
+              t("player.deciding")
+            ) : (
+              legendName
             )}
-          </div>
+          </p>
         </div>
+        {!row && score}
       </div>
 
-      {addedLegends && addedLegends.length > 0 && <div className="flex flex-row flex-wrap gap-2">{addedLegends}</div>}
-
-      <div aria-label={t("player.points", { points: player.points, max: view.victory_score })}>
-        <div className="flex flex-row flex-wrap gap-1">
-          {Array.from({ length: view.victory_score }, (_, index) => (
-            <span
-              key={index}
-              aria-hidden
-              className={cn(
-                "size-2.5 rounded-full border transition-transform duration-300",
-                index < player.points ? "border-primary bg-primary" : "",
-                scoring && index === player.points - 1 && "scale-150 shadow-[0_0_10px_var(--primary)]",
-              )}
-            />
-          ))}
+      {row ? (
+        <div className="flex items-center gap-2.5">
+          {score}
+          {track}
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {t("player.points", { points: player.points, max: view.victory_score })}
-        </p>
-      </div>
-
-      <p className="text-xs text-muted-foreground lg:hidden">
-        {t("player.hand")} {player.hand_count} · {t("player.deck")} {player.deck_count} · {t("player.runes")}{" "}
-        {player.runes_ready}/{player.runes_ready + player.runes_exhausted}
-      </p>
-      <dl className="hidden grid-cols-2 gap-x-2 gap-y-0.5 text-xs text-muted-foreground lg:grid">
-        <dt>{t("player.hand")}</dt>
-        <dd className="text-right text-foreground">{player.hand_count}</dd>
-        <dt>{t("player.deck")}</dt>
-        <dd className="text-right text-foreground">{player.deck_count}</dd>
-        <dt>{t("player.runes")}</dt>
-        <dd className="text-right text-foreground">
-          {t("player.runesReady", { ready: player.runes_ready, total: player.runes_ready + player.runes_exhausted })}
-        </dd>
-        <dt>{t("player.runeDeck")}</dt>
-        <dd className="text-right text-foreground">{player.rune_deck_count}</dd>
-      </dl>
-
-      {(player.pool.energy > 0 || power.length > 0) && (
-        <div className="flex flex-row flex-wrap items-center gap-1 text-xs">
-          <span className="text-muted-foreground">{t("player.pool")}</span>
-          {player.pool.energy > 0 && <Badge variant="secondary">{t("player.energy", { count: player.pool.energy })}</Badge>}
-          {power.map((entry) => (
-            <Badge key={entry.domain} variant="secondary" className="gap-1">
-              <span aria-hidden className={cn("size-2 rounded-full", DOMAIN_COLOR[entry.domain])} />
-              {entry.amount} {t(`domain.${entry.domain}`)}
-            </Badge>
-          ))}
-        </div>
+      ) : (
+        track
       )}
 
-      <div className="flex flex-row flex-wrap gap-2">
-        <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={onTrash}>
-          <Trash2 aria-hidden />
-          {t("player.trash", { count: player.trash.length })}
-        </Button>
+      {addedLegends && addedLegends.length > 0 && <div className="flex flex-row flex-wrap gap-1">{addedLegends}</div>}
+
+      <div className={cn("flex flex-row flex-wrap items-center gap-1", row && "ml-auto")}>
+        {counter(Hand, t("player.hand"), player.hand_count)}
+        {counter(Library, t("player.deck"), player.deck_count, false)}
+        {counter(Gem, t("player.runes"), `${player.runes_ready}/${runes}`)}
+        <button
+          type="button"
+          onClick={onTrash}
+          title={t("player.trash", { count: player.trash.length })}
+          className={cn(chip, "hover:bg-secondary hover:text-foreground")}
+        >
+          <Trash2 className="size-3.5" aria-hidden />
+          <span className={cn(!row && "sr-only")}>{t("player.trashLabel")}</span>
+          <b className="font-semibold text-foreground">{player.trash.length}</b>
+        </button>
+        {player.pool.energy > 0 && <Badge variant="secondary">{t("player.energy", { count: player.pool.energy })}</Badge>}
+        {power.map((entry) => (
+          <Badge key={entry.domain} variant="secondary" className="gap-1">
+            <span aria-hidden className={cn("size-2 rounded-full", DOMAIN_COLOR[entry.domain])} />
+            {entry.amount} {t(`domain.${entry.domain}`)}
+          </Badge>
+        ))}
         {choices.map((choice, index) => (
           <Button key={index} size="sm" className="h-7 px-2 text-xs" onClick={() => onAct(choice.action)}>
             {choice.label}
@@ -838,8 +940,15 @@ type RunesProps = {
 function Runes({ objs, cards, choicesOn, onAct }: RunesProps) {
   const t = useTranslations("Games.Play");
   if (objs.length === 0) return null;
+  const ready = objs.filter((obj) => !obj.exhausted).length;
+  const byDomain = new Map<string, number>();
+  for (const obj of objs) {
+    const domain = (obj.code ? cards[obj.code]?.domains[0]?.toLowerCase() : undefined) ?? "";
+    if (domain) byDomain.set(domain, (byDomain.get(domain) ?? 0) + 1);
+  }
   return (
-    <div className="ml-auto flex max-w-full flex-row flex-wrap items-center gap-1 self-center" aria-label={t("player.runes")}>
+    <div className="ml-auto flex max-w-full flex-col items-end gap-1 self-center">
+    <div className="flex max-w-full flex-row flex-wrap justify-end gap-1" aria-label={t("player.runes")}>
       {objs.map((obj) => {
         const card = obj.code ? cards[obj.code] : undefined;
         const domain = card?.domains[0]?.toLowerCase() ?? "";
@@ -848,7 +957,7 @@ function Runes({ objs, cards, choicesOn, onAct }: RunesProps) {
         const dot = (
           <span
             className={cn(
-              "block size-5 rounded-full border-2 border-background",
+              "block size-5 rounded-full border-2 border-background lg:size-6",
               DOMAIN_COLOR[domain] ?? "bg-muted-foreground",
               obj.exhausted && "opacity-30",
               choices.length > 0 && "ring-2 ring-primary",
@@ -871,6 +980,17 @@ function Runes({ objs, cards, choicesOn, onAct }: RunesProps) {
         );
       })}
     </div>
+      <p className="text-right text-xs text-muted-foreground">
+        {t("player.runes")} :{" "}
+        <b className="font-semibold text-foreground">{t("player.runesReady", { ready, total: objs.length })}</b>
+        {[...byDomain].map(([domain, count]) => (
+          <span key={domain} style={{ color: DOMAIN_HEX[domain] }}>
+            {" · "}
+            {count} {t(`domain.${domain}`)}
+          </span>
+        ))}
+      </p>
+    </div>
   );
 }
 
@@ -887,9 +1007,11 @@ type BattlefieldColumnProps = {
   choices: EngineChoice[];
   onAct: (action: EngineAction) => void;
   card: ReactNode;
-  renderObj: (obj: EngineObj, size?: "xs" | "sm" | "md" | "lg") => ReactNode;
+  renderObj: (obj: EngineObj, size?: CardSize) => ReactNode;
   /** Sur la table en relief : le contrôle se lit au fanion. */
   relief?: boolean;
+  /** La couleur d'un joueur, pour le fanion de celui qui contrôle. */
+  colorOf?: (seat: number) => string;
 };
 
 function BattlefieldColumn({
@@ -905,6 +1027,7 @@ function BattlefieldColumn({
   card,
   renderObj,
   relief = false,
+  colorOf,
 }: BattlefieldColumnProps) {
   const t = useTranslations("Games.Play");
   const mineHere = bf.units.filter((obj) => obj.controller === me);
@@ -941,11 +1064,19 @@ function BattlefieldColumn({
       )}
     >
       {relief && (
-        <span className="play-pennant self-start" data-control={control}>
+        <span
+          className="play-pennant self-start"
+          data-control={control}
+          style={
+            control !== "contested" && bf.controller !== null && colorOf
+              ? ({ "--pennant": colorOf(bf.controller) } as CSSProperties)
+              : undefined
+          }
+        >
           {status}
         </span>
       )}
-      <div className="flex min-h-20 w-full flex-col items-center justify-end gap-1">
+      <div className="flex min-h-8 w-full flex-col items-center justify-end gap-1">
         {theirs.map((group) => (
           <div key={group.player.seat} className="flex w-full flex-col items-center gap-1">
             {several && <span className="text-[0.65rem] text-muted-foreground">{group.player.name}</span>}
@@ -987,7 +1118,7 @@ function BattlefieldColumn({
         ))}
       </div>
 
-      <div className="flex min-h-20 w-full flex-row flex-wrap items-start justify-center gap-1.5">
+      <div className="flex min-h-8 w-full flex-row flex-wrap items-start justify-center gap-1.5">
         {mineHere.map((obj) => renderObj(obj, "md"))}
         {ghostsOf(me).map((ghost) => renderGhost(ghost))}
       </div>
@@ -995,41 +1126,133 @@ function BattlefieldColumn({
   );
 }
 
-/** Le récit de la partie. Chaque ligne cite sa règle ; le numéro ouvre la règle. */
-function Journal({ entries }: { entries: EngineTold[] }) {
+/** Le signe d'une ligne du journal : ce que fait l'action, d'un coup d'œil. */
+const EVENT_ICON: Record<string, LucideIcon> = {
+  played: Play,
+  activated: Zap,
+  drew: Plus,
+  paid: Coins,
+  channeled: Gem,
+  died: Skull,
+  banished: Skull,
+  control_changed: Flag,
+  contested: Flag,
+  scored: Star,
+  points: Star,
+  combat_started: Swords,
+  combat_damage: Swords,
+  damaged: Swords,
+  moved: MoveRight,
+};
+
+type JournalTurn = { start: number; title: string | null; seat: number | null; items: { entry: EngineTold; index: number }[] };
+
+/** Le journal découpé par tour : chaque début de tour ouvre un groupe et lui donne son titre. */
+function byTurn(entries: EngineTold[]): JournalTurn[] {
+  const turns: JournalTurn[] = [];
+  entries.forEach((entry, index) => {
+    if (eventType(entry) === "turn_started") {
+      turns.push({ start: index, title: plain(entry.text), seat: actorOf(entry), items: [] });
+      return;
+    }
+    if (turns.length === 0) turns.push({ start: index, title: null, seat: null, items: [] });
+    turns[turns.length - 1].items.push({ entry, index });
+  });
+  return turns;
+}
+
+/** Le récit de la partie, tour par tour. Le numéro de la règle n'apparaît qu'au survol d'une ligne. */
+function Journal({
+  entries,
+  told,
+  colorOf,
+}: {
+  entries: EngineTold[];
+  told: (text: string) => ReactNode;
+  colorOf: (seat: number) => string;
+}) {
   const t = useTranslations("Games.Play");
-  const list = useRef<HTMLOListElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const [scope, setScope] = useState<"all" | "turn">("all");
+  const turns = useMemo(() => byTurn(entries), [entries]);
+  const shown = scope === "turn" ? turns.slice(-1) : turns;
 
   useEffect(() => {
     const container = list.current;
     if (container) container.scrollTop = container.scrollHeight;
-  }, [entries.length]);
+  }, [entries.length, scope]);
 
   return (
-    <section className="flex min-h-0 flex-col rounded-xl border bg-card p-4 lg:flex-1">
-      <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-        <BookOpen className="size-4" aria-hidden />
-        {t("journal.title")}
-      </h3>
-      <ol ref={list} className="flex max-h-72 min-h-24 flex-col gap-1 overflow-y-auto text-sm lg:max-h-none lg:flex-1">
-        {entries.length === 0 && <li className="text-muted-foreground">{t("journal.empty")}</li>}
-        {entries.map((entry, index) => (
-          <li key={index} className={cn("leading-snug", entry.text?.startsWith(" ") && "pl-4 text-muted-foreground")}>
-            {entry.text?.trim()}
-            {entry.rule && (
-              <Link
-                href={`/games/riftbound/rules/cr#rule-${entry.rule}`}
-                target="_blank"
-                rel="noreferrer"
-                title={t("journal.rule", { rule: entry.rule })}
-                className="ml-1.5 inline-block rounded border px-1 text-[0.65rem] text-muted-foreground hover:border-primary hover:text-primary"
-              >
-                {entry.rule}
-              </Link>
-            )}
-          </li>
+    <section className="flex min-h-0 flex-col rounded-xl border bg-card lg:flex-1">
+      <div className="flex flex-row flex-wrap items-center gap-2 px-4 pb-2 pt-3">
+        <h3 className="flex items-center gap-2 text-sm font-semibold">
+          <BookOpen className="size-4" aria-hidden />
+          {t("journal.title")}
+        </h3>
+        <div className="ml-auto flex flex-row flex-wrap rounded-md bg-secondary/70 p-0.5" role="group" aria-label={t("journal.title")}>
+          {(["turn", "all"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={scope === value}
+              onClick={() => setScope(value)}
+              className={cn(
+                "h-6 rounded px-2 text-xs text-muted-foreground",
+                scope === value && "bg-background text-foreground shadow-sm",
+              )}
+            >
+              {t(value === "turn" ? "journal.thisTurn" : "journal.all")}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div ref={list} className="flex max-h-80 min-h-24 flex-col gap-3 overflow-y-auto px-3 pb-3 text-sm lg:max-h-none lg:flex-1">
+        {entries.length === 0 && <p className="px-1 text-muted-foreground">{t("journal.empty")}</p>}
+        {shown.map((turn) => (
+          <section key={turn.start} className="flex flex-col">
+            <h4 className="sticky top-0 z-[1] mb-1 flex items-center gap-2 border-b bg-card px-1 pb-1.5 pt-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <span
+                aria-hidden
+                className="size-2 shrink-0 rounded-full bg-muted-foreground"
+                style={turn.seat !== null ? { background: colorOf(turn.seat) } : undefined}
+              />
+              {turn.title ?? t("journal.setup")}
+            </h4>
+            <ol className="flex flex-col">
+              {turn.items.map(({ entry, index }) => {
+                const Icon = EVENT_ICON[eventType(entry)] ?? Circle;
+                const sub = entry.text?.startsWith(" ");
+                return (
+                  <li
+                    key={index}
+                    className={cn(
+                      "group flex items-start gap-2 rounded-md px-1 py-0.5 leading-snug hover:bg-secondary/50",
+                      sub && "pl-6 text-muted-foreground",
+                    )}
+                  >
+                    <Icon
+                      aria-hidden
+                      className={cn("mt-0.5 shrink-0 text-muted-foreground", Icon === Circle ? "size-1.5 translate-y-1 fill-current" : "size-3.5")}
+                    />
+                    <span className="min-w-0 flex-1">{told(entry.text?.trim() ?? "")}</span>
+                    {entry.rule && (
+                      <Link
+                        href={`/games/riftbound/rules/cr#rule-${entry.rule}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={t("journal.rule", { rule: entry.rule })}
+                        className="shrink-0 pt-0.5 font-mono text-[0.65rem] text-muted-foreground opacity-0 transition-opacity hover:text-primary focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-60"
+                      >
+                        {entry.rule}
+                      </Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
         ))}
-      </ol>
+      </div>
     </section>
   );
 }
@@ -1039,8 +1262,73 @@ function plain(text: string | null | undefined): string {
   return (text ?? "").trim().replace(/^—\s*|\s*—$/g, "");
 }
 
-/** Le bandeau du récit : l'évènement au premier plan, ce qui reste, et le réglage du rythme. */
-function Narration({ paced }: { paced: PacedFeed }) {
+/**
+ * La barre de la table, à la place de l'en-tête du site : quitter, le tour en
+ * cours, l'évènement raconté et le réglage du rythme.
+ */
+function TableBar({
+  paced,
+  view,
+  told,
+  colorOf,
+  note,
+}: {
+  paced: PacedFeed;
+  view: EngineView;
+  told: (text: string) => ReactNode;
+  colorOf: (seat: number) => string;
+  note?: ReactNode;
+}) {
+  const t = useTranslations("Games.Play");
+  const turnPlayer = view.players[view.turn_seat];
+  return (
+    <header
+      data-play-bar
+      className="sticky top-0 z-30 flex flex-row flex-wrap items-center gap-x-2 gap-y-1.5 border-b bg-background/95 px-2 py-1.5 backdrop-blur lg:flex-nowrap lg:gap-3 lg:px-4"
+    >
+      <Button variant="outline" size="sm" asChild>
+        <Link href="/games/riftbound/play" aria-label={t("table.quit")}>
+          <ArrowLeft aria-hidden />
+          <span className="max-lg:hidden">{t("table.quit")}</span>
+        </Link>
+      </Button>
+      <div className="hidden shrink-0 flex-col leading-tight xl:flex">
+        <span className="text-sm font-bold">Riftbound</span>
+        {note && <span className="text-[0.7rem] text-muted-foreground">{note}</span>}
+      </div>
+      {turnPlayer && (
+        <p className="flex shrink-0 items-center gap-1.5 rounded-full border bg-secondary/60 px-3 py-1 text-xs sm:text-sm">
+          <span className="font-semibold">{t("table.turn", { turn: view.turn })}</span>
+          <span aria-hidden className="size-2 rounded-full" style={{ background: colorOf(view.turn_seat) }} />
+          <span className="font-medium" style={{ color: colorOf(view.turn_seat) }}>
+            {turnPlayer.name}
+          </span>
+        </p>
+      )}
+      <Narration paced={paced} told={told} className="max-lg:order-last max-lg:basis-full lg:flex-1" />
+      <div className="ml-auto flex flex-row flex-wrap items-center gap-1 lg:ml-0">
+        {paced.busy && (
+          <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={paced.skip}>
+            <FastForward aria-hidden />
+            <span className="max-sm:sr-only">{t("pace.skip")}</span>
+          </Button>
+        )}
+        <PaceSettings paced={paced} />
+      </div>
+    </header>
+  );
+}
+
+/** Le récit : l'évènement au premier plan et ce qui reste à raconter. */
+function Narration({
+  paced,
+  told,
+  className,
+}: {
+  paced: PacedFeed;
+  told: (text: string) => ReactNode;
+  className?: string;
+}) {
   const t = useTranslations("Games.Play");
   const step = paced.current;
   const shown = step?.entry ?? paced.journal.at(-1);
@@ -1048,22 +1336,19 @@ function Narration({ paced }: { paced: PacedFeed }) {
   return (
     <div
       aria-live="polite"
-      className="sticky top-0 z-20 flex flex-row flex-wrap items-center gap-2 rounded-xl border bg-secondary/90 px-3 py-2 backdrop-blur"
+      className={cn("flex min-w-0 flex-row items-center gap-2 rounded-lg border bg-secondary/50 px-3 py-1.5", className)}
     >
       <p
         key={step?.index ?? "idle"}
-        className={cn("animate-fade-in min-w-0 flex-1 text-sm leading-snug", !step && "text-muted-foreground")}
+        className={cn("animate-fade-in line-clamp-2 min-w-0 flex-1 text-sm leading-snug", !step && "text-muted-foreground")}
       >
-        {shown?.text ? shown.text.trim() : t("journal.empty")}
-        {shown?.rule && (
-          <span className="ml-1.5 rounded border px-1 font-mono text-[0.65rem] text-muted-foreground">{shown.rule}</span>
-        )}
+        {shown?.text ? told(shown.text.trim()) : t("journal.empty")}
       </p>
       {paced.remaining > 0 && (
-        <span className="font-mono text-xs text-muted-foreground">{t("pace.remaining", { count: paced.remaining })}</span>
+        <span className="shrink-0 font-mono text-xs text-muted-foreground">{t("pace.remaining", { count: paced.remaining })}</span>
       )}
       {step && !paced.ack && step.ms > 0 && (
-        <span aria-hidden className="h-1 w-16 overflow-hidden rounded bg-border">
+        <span aria-hidden className="h-1 w-12 shrink-0 overflow-hidden rounded bg-border">
           <span
             key={step.index}
             className="play-progress block h-full bg-primary"
@@ -1071,15 +1356,6 @@ function Narration({ paced }: { paced: PacedFeed }) {
           />
         </span>
       )}
-      <div className="flex flex-row flex-wrap items-center gap-1">
-        {paced.busy && (
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={paced.skip}>
-            <FastForward aria-hidden />
-            <span className="max-sm:sr-only">{t("pace.skip")}</span>
-          </Button>
-        )}
-        <PaceSettings paced={paced} />
-      </div>
     </div>
   );
 }
@@ -1199,11 +1475,13 @@ function AckCard({
   view,
   cards,
   onContinue,
+  told,
 }: {
   ack: Ack;
   view: EngineView;
   cards: TableCards;
   onContinue: () => void;
+  told: (text: string) => ReactNode;
 }) {
   const t = useTranslations("Games.Play");
   const code = ack.objId !== null ? codeOf(view, ack.objId) : null;
@@ -1228,7 +1506,7 @@ function AckCard({
         {card && <PlayCard card={card} size="sm" />}
         <div className="min-w-0 flex-1">
           <h2 className="text-base font-semibold leading-snug">
-            {ack.kind === "turn" ? t("pace.yourTurn") : plain(ack.title)}
+            {ack.kind === "turn" ? t("pace.yourTurn") : told(plain(ack.title))}
           </h2>
           {card?.text && (
             <p className="mt-1 line-clamp-4 whitespace-pre-line text-xs text-muted-foreground">{card.text}</p>
@@ -1237,7 +1515,7 @@ function AckCard({
           {ack.lines.length > 0 && (
             <ul className="mt-1 list-disc pl-4 text-sm text-muted-foreground">
               {ack.lines.map((line, index) => (
-                <li key={index}>{line}</li>
+                <li key={index}>{told(line)}</li>
               ))}
             </ul>
           )}

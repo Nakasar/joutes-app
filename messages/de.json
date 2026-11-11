@@ -650,7 +650,8 @@
         "runeDeck": "Runendeck",
         "pool": "Vorrat",
         "energy": "{count} Energie",
-        "trash": "Ablage ({count})"
+        "trash": "Ablage ({count})",
+        "trashLabel": "Ablage"
       },
       "prompt": {
         "onTable": "Wähle auf dem Tisch: Was umrandet ist, ist erlaubt.",
@@ -664,10 +665,17 @@
         "title": "Kette",
         "pending": "wird angesagt"
       },
+      "table": {
+        "quit": "Tisch verlassen",
+        "turn": "Zug {turn}"
+      },
       "journal": {
         "title": "Protokoll",
         "empty": "Die Partie beginnt.",
-        "rule": "Regel {rule} öffnen"
+        "rule": "Regel {rule} öffnen",
+        "thisTurn": "Dieser Zug",
+        "all": "Ganze Partie",
+        "setup": "Aufbau"
       },
       "pace": {
         "telling": "Der Tisch zeigt, was gerade passiert ist …",
