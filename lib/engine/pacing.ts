@@ -26,9 +26,20 @@ export type PaceSettings = {
   view: TableView;
   /** En relief, la caméra plonge sur le champ de bataille d'un combat raconté. */
   camera: boolean;
+  /**
+   * En spectateur d'une partie entre IA : s'arrêter aux moments clés. Désactivé
+   * d'office, la pause étant à la main.
+   */
+  watchStops: boolean;
 };
 
-export const DEFAULT_PACE: PaceSettings = { speed: "normal", stops: true, view: "3d", camera: true };
+export const DEFAULT_PACE: PaceSettings = {
+  speed: "normal",
+  stops: true,
+  view: "3d",
+  camera: true,
+  watchStops: false,
+};
 
 const BASE_MS: Record<Weight, number> = { minor: 350, normal: 900, major: 1500 };
 const SPEED_FACTOR: Record<PaceSpeed, number> = { slow: 1.6, normal: 1, fast: 0.5, instant: 0 };

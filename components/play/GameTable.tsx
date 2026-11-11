@@ -13,10 +13,13 @@ import {
   Gem,
   Hand,
   Hourglass,
+  Eye,
   Layers,
   Library,
   MoveRight,
+  Pause,
   Play,
+  SkipForward,
   Plus,
   Skull,
   Star,
@@ -87,6 +90,11 @@ type GameTableProps = {
   afterResult?: ReactNode;
   /** Une précision dans la barre de la table (le serveur d'une partie hébergée). */
   note?: ReactNode;
+  /**
+   * Une partie entre IA regardée en spectateur : pause, pas à pas, et le choix
+   * de voir les mains.
+   */
+  watch?: { hands: boolean; onHands: (hands: boolean) => void };
 };
 
 /**
@@ -94,7 +102,7 @@ type GameTableProps = {
  * montre (`view`), pose la question qu'il pose (`prompt`) et lui renvoie, telle
  * quelle, l'une des actions qu'il propose.
  */
-export function GameTable({ feed, cards, afterResult, note }: GameTableProps) {
+export function GameTable({ feed, cards, afterResult, note, watch }: GameTableProps) {
   const t = useTranslations("Games.Play");
   // La partie racontée pas à pas : la vue et le journal suivent le récit, la
   // question n'apparaît qu'une fois le récit arrivé au présent.
@@ -102,8 +110,24 @@ export function GameTable({ feed, cards, afterResult, note }: GameTableProps) {
   const { update, journal } = paced;
   const hold = feed.hold;
   useEffect(() => {
-    hold?.(paced.busy);
-  }, [hold, paced.busy]);
+    hold?.(paced.busy || paced.paused);
+  }, [hold, paced.busy, paced.paused]);
+  // Partie entre IA : Espace met en pause ou reprend (sauf sur un arrêt
+  // « Continuer », qui garde la touche).
+  const { paused, setPaused } = paced;
+  const hasAck = paced.ack !== null;
+  useEffect(() => {
+    if (!watch || hasAck) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== " ") return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("button, input, textarea, select, a, [contenteditable]")) return;
+      event.preventDefault();
+      setPaused(!paused);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [watch, hasAck, paused, setPaused]);
   // La table occupe tout l'écran : la page du site, dessous, ne défile plus.
   useEffect(() => {
     const root = document.documentElement;
@@ -280,6 +304,7 @@ export function GameTable({ feed, cards, afterResult, note }: GameTableProps) {
           {view.bases[player.seat].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "md"))}
           {ghostsAt("base", player.seat).map((ghost) => renderGhost(ghost))}
           <Runes objs={view.bases[player.seat].filter(isRune)} cards={cards} choicesOn={choicesOn} onAct={act} />
+          {spectator && player.hand && <SeenHand player={player} renderObj={renderObj} />}
         </BaseStrip>
       ))}
 
@@ -342,7 +367,19 @@ export function GameTable({ feed, cards, afterResult, note }: GameTableProps) {
     />
   );
 
-  const handSection = spectator ? null : (
+  const handSection = spectator ? (
+    mine.hand ? (
+      <section aria-label={t("watch.handOf", { name: mine.name })} className="min-w-0 flex-1">
+        <h3 className="px-2 text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground">{t("watch.handOf", { name: mine.name })}</span> ·{" "}
+          {mine.hand.length}
+        </h3>
+        <div className="flex items-end gap-2 overflow-x-auto px-1 pb-2 pt-2">
+          {mine.hand.map((obj) => renderObj(obj, "md"))}
+        </div>
+      </section>
+    ) : null
+  ) : (
     <section aria-label={t("zone.hand")} className="min-w-0 flex-1">
       <h3 className="px-2 text-xs text-muted-foreground">
         <span className="font-semibold text-foreground">{t("zone.hand")}</span> · {myHand.length}
@@ -375,7 +412,7 @@ export function GameTable({ feed, cards, afterResult, note }: GameTableProps) {
 
   return (
     <div data-play-scroll className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-background text-foreground">
-      <TableBar paced={paced} view={view} told={told} colorOf={colorOf} note={note} />
+      <TableBar paced={paced} view={view} told={told} colorOf={colorOf} note={note} watching={Boolean(watch)} />
 
       <div className="flex flex-col gap-3 p-2 max-lg:pb-56 sm:p-3 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-4 lg:px-4">
         {/* Sur téléphone, tous les joueurs en haut, côte à côte. */}
@@ -384,7 +421,20 @@ export function GameTable({ feed, cards, afterResult, note }: GameTableProps) {
         {/* Table */}
         <main className="relative flex min-w-0 flex-col gap-3">
           <div className="hidden flex-col gap-2 lg:flex">{others.map((player) => bandOf(player, true))}</div>
+          {/* Sous les bandeaux, au bord haut du plateau : la partie est en pause. */}
+          {watch && paced.paused && !view.result && (
+            <div className="relative z-40 h-0">
+              <p
+                role="status"
+                className="pointer-events-none absolute left-1/2 top-3 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-primary bg-card/95 px-4 py-1.5 text-sm font-semibold shadow-lg"
+              >
+                <Pause className="size-4" aria-hidden />
+                {t("watch.paused")}
+              </p>
+            </div>
+          )}
           <StepOverlay paced={paced} view={view} cards={cards} me={feed.seat} />
+
 
           {relief ? (
             <TableScene
@@ -443,6 +493,8 @@ export function GameTable({ feed, cards, afterResult, note }: GameTableProps) {
               </>
             ) : paced.ack ? (
               <AckCard ack={paced.ack} view={view} cards={cards} onContinue={paced.proceed} told={told} />
+            ) : watch ? (
+              <WatchPanel paced={paced} hands={watch.hands} onHands={watch.onHands} turn={view.turn} />
             ) : prompt && sorted ? (
               <>
                 <div className="flex items-start gap-3">
@@ -1272,12 +1324,15 @@ function TableBar({
   told,
   colorOf,
   note,
+  watching = false,
 }: {
   paced: PacedFeed;
   view: EngineView;
   told: (text: string) => ReactNode;
   colorOf: (seat: number) => string;
   note?: ReactNode;
+  /** Partie entre IA : boutons de pause et de pas à pas. */
+  watching?: boolean;
 }) {
   const t = useTranslations("Games.Play");
   const turnPlayer = view.players[view.turn_seat];
@@ -1307,13 +1362,36 @@ function TableBar({
       )}
       <Narration paced={paced} told={told} className="max-lg:order-last max-lg:basis-full lg:flex-1" />
       <div className="ml-auto flex flex-row flex-wrap items-center gap-1 lg:ml-0">
-        {paced.busy && (
+        {watching && !view.result && (
+          <>
+            <Button
+              size="sm"
+              variant={paced.paused ? "default" : "secondary"}
+              className="h-8 px-2.5 text-xs"
+              aria-pressed={paced.paused}
+              onClick={() => paced.setPaused(!paced.paused)}
+            >
+              {paced.paused ? <Play aria-hidden /> : <Pause aria-hidden />}
+              {paced.paused ? t("watch.resume") : t("watch.pause")}
+              <kbd className="rounded border border-current px-1 font-mono text-[0.6rem] opacity-70 max-sm:hidden">
+                {t("pace.key")}
+              </kbd>
+            </Button>
+            {paced.paused && (
+              <Button variant="outline" size="sm" className="h-8 px-2 text-xs" onClick={paced.step}>
+                <SkipForward aria-hidden />
+                <span className="max-sm:sr-only">{t("watch.step")}</span>
+              </Button>
+            )}
+          </>
+        )}
+        {paced.busy && !(watching && paced.paused) && (
           <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={paced.skip}>
             <FastForward aria-hidden />
             <span className="max-sm:sr-only">{t("pace.skip")}</span>
           </Button>
         )}
-        <PaceSettings paced={paced} />
+        <PaceSettings paced={paced} watching={watching} />
       </div>
     </header>
   );
@@ -1360,7 +1438,64 @@ function Narration({
   );
 }
 
-function PaceSettings({ paced }: { paced: PacedFeed }) {
+/** La main d'un joueur vue par un spectateur d'une partie entre IA (vue d'arbitre). */
+function SeenHand({ player, renderObj }: { player: EnginePlayer; renderObj: (obj: EngineObj, size?: CardSize) => ReactNode }) {
+  const t = useTranslations("Games.Play");
+  if (!player.hand || player.hand.length === 0) return null;
+  return (
+    <div className="flex w-full flex-col gap-1 border-t border-dashed pt-2">
+      <span className="flex items-center gap-1 text-[0.65rem] uppercase tracking-wide text-muted-foreground">
+        <Eye className="size-3" aria-hidden />
+        {t("watch.handOf", { name: player.name })} · {player.hand.length}
+      </span>
+      <div className="flex flex-row flex-wrap gap-1.5">{player.hand.map((obj) => renderObj(obj, "sm"))}</div>
+    </div>
+  );
+}
+
+/** Le panneau d'une partie entre IA : où en est la partie, pause, mains visibles. */
+function WatchPanel({
+  paced,
+  hands,
+  onHands,
+  turn,
+}: {
+  paced: PacedFeed;
+  hands: boolean;
+  onHands: (hands: boolean) => void;
+  turn: number;
+}) {
+  const t = useTranslations("Games.Play");
+  return (
+    <div className="flex flex-col gap-3">
+      <h2 className="text-base font-semibold">{t("watch.title")}</h2>
+      <p className="text-sm text-muted-foreground">{paced.paused ? t("watch.pausedHint", { turn }) : t("watch.playingHint")}</p>
+      <div className="flex flex-row flex-wrap gap-2">
+        <Button onClick={() => paced.setPaused(!paced.paused)}>
+          {paced.paused ? <Play aria-hidden /> : <Pause aria-hidden />}
+          {paced.paused ? t("watch.resumeLong") : t("watch.pauseLong")}
+        </Button>
+        {paced.paused && (
+          <Button variant="outline" onClick={paced.step}>
+            <SkipForward aria-hidden />
+            {t("watch.step")}
+          </Button>
+        )}
+      </div>
+      <label className="flex items-center gap-2 border-t pt-3 text-sm">
+        <input
+          type="checkbox"
+          className="accent-[var(--primary)]"
+          checked={hands}
+          onChange={(event) => onHands(event.target.checked)}
+        />
+        {t("watch.hands")}
+      </label>
+    </div>
+  );
+}
+
+function PaceSettings({ paced, watching = false }: { paced: PacedFeed; watching?: boolean }) {
   const t = useTranslations("Games.Play");
   return (
     <Popover>
@@ -1386,18 +1521,33 @@ function PaceSettings({ paced }: { paced: PacedFeed }) {
             </Button>
           ))}
         </div>
-        <label className="flex items-start gap-2 text-sm">
-          <input
-            type="checkbox"
-            className="mt-0.5 accent-[var(--primary)]"
-            checked={paced.pace.stops}
-            onChange={(event) => paced.setPace({ ...paced.pace, stops: event.target.checked })}
-          />
-          <span>
-            {t("pace.stops")}
-            <span className="block text-xs text-muted-foreground">{t("pace.stopsHint")}</span>
-          </span>
-        </label>
+        {watching ? (
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 accent-[var(--primary)]"
+              checked={paced.pace.watchStops}
+              onChange={(event) => paced.setPace({ ...paced.pace, watchStops: event.target.checked })}
+            />
+            <span>
+              {t("watch.stops")}
+              <span className="block text-xs text-muted-foreground">{t("watch.stopsHint")}</span>
+            </span>
+          </label>
+        ) : (
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 accent-[var(--primary)]"
+              checked={paced.pace.stops}
+              onChange={(event) => paced.setPace({ ...paced.pace, stops: event.target.checked })}
+            />
+            <span>
+              {t("pace.stops")}
+              <span className="block text-xs text-muted-foreground">{t("pace.stopsHint")}</span>
+            </span>
+          </label>
+        )}
         <p className="text-sm font-medium">{t("pace.view")}</p>
         <div className="flex flex-row flex-wrap gap-1" role="group" aria-label={t("pace.view")}>
           {TABLE_VIEWS.map((view) => (

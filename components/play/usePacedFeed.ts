@@ -33,6 +33,7 @@ function readPace(): PaceSettings {
       // Sans choix enregistré, la table reste à plat si le système demande moins d'animations.
       view: raw?.view && TABLE_VIEWS.includes(raw.view) ? raw.view : prefersLessMotion() ? "flat" : DEFAULT_PACE.view,
       camera: typeof raw?.camera === "boolean" ? raw.camera : DEFAULT_PACE.camera,
+      watchStops: typeof raw?.watchStops === "boolean" ? raw.watchStops : DEFAULT_PACE.watchStops,
     };
   } catch {
     return DEFAULT_PACE;
@@ -70,6 +71,14 @@ export type PacedFeed = {
   skip: () => void;
   pace: PaceSettings;
   setPace: (pace: PaceSettings) => void;
+  /** Le récit est en pause : rien n'avance, et les robots attendent. */
+  paused: boolean;
+  setPaused: (paused: boolean) => void;
+  /**
+   * En pause : montre l'évènement suivant, ou fait jouer le coup suivant d'une
+   * IA quand le récit a rattrapé la partie (`GameFeed.step`).
+   */
+  step: () => void;
 };
 
 /**
@@ -91,6 +100,11 @@ export function usePacedFeed(feed: GameFeed): PacedFeed {
   // Quand l'évènement au premier plan est apparu : une mise à jour qui arrive
   // pendant sa lecture (en ligne) ne doit pas relancer son délai.
   const shownSince = useRef<{ index: number; at: number } | null>(null);
+  const [paused, setPaused] = useState(false);
+  // En pause, un pas demandé alors que tout était raconté : montrer le premier
+  // évènement du coup joué dès qu'il arrive.
+  const [stepWanted, setStepWanted] = useState(false);
+  const stops = me === null ? pace.watchStops : pace.stops;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lecture du stockage après le montage, pour ne pas diverger du rendu serveur
@@ -131,6 +145,16 @@ export function usePacedFeed(feed: GameFeed): PacedFeed {
   const inStep = settled < cursor;
 
   useEffect(() => {
+    if (paused) {
+      if (stepWanted && settled >= cursor && cursor < length) {
+        const timer = window.setTimeout(() => {
+          setStepWanted(false);
+          setCursor(cursor + 1);
+        }, 0);
+        return () => window.clearTimeout(timer);
+      }
+      return;
+    }
     if (ack) return;
     if (pace.speed === "instant" && (cursor < length || settled < length)) {
       const timer = window.setTimeout(() => {
@@ -147,7 +171,7 @@ export function usePacedFeed(feed: GameFeed): PacedFeed {
       const wait = entry ? delayOf(entry, me, pace.speed) - (now - shownSince.current.at) : 0;
       const timer = window.setTimeout(
         () => {
-          const next = pace.stops && snapshot ? ackAfter(journal, cursor - 1, snapshot.start, snapshot.end, me) : null;
+          const next = stops && snapshot ? ackAfter(journal, cursor - 1, snapshot.start, snapshot.end, me) : null;
           if (next) setAck(next);
           else setSettled(cursor);
         },
@@ -159,7 +183,7 @@ export function usePacedFeed(feed: GameFeed): PacedFeed {
       const timer = window.setTimeout(() => setCursor(cursor + 1), 0);
       return () => window.clearTimeout(timer);
     }
-  }, [ack, cursor, settled, length, journal, snapshots, snapshotIndex, me, pace]);
+  }, [ack, cursor, settled, length, journal, snapshots, snapshotIndex, me, pace, stops, paused, stepWanted]);
 
   const proceed = useCallback(() => {
     setAck(null);
@@ -171,6 +195,23 @@ export function usePacedFeed(feed: GameFeed): PacedFeed {
     setCursor(length);
     setSettled(length);
   }, [length]);
+
+  const feedStep = feed.step;
+  const step = useCallback(() => {
+    if (ack) {
+      setAck(null);
+      setSettled(cursor);
+    } else if (settled < cursor) {
+      // L'évènement montré est lu : passer au suivant, s'il y en a un.
+      setSettled(cursor);
+      if (cursor < length) setCursor(cursor + 1);
+    } else if (cursor < length) {
+      setCursor(cursor + 1);
+    } else if (feedStep) {
+      setStepWanted(true);
+      feedStep();
+    }
+  }, [ack, cursor, settled, length, feedStep]);
 
   const busy = settled < length || ack !== null;
   const latest = snapshots.at(-1)?.update ?? feed.update;
@@ -216,5 +257,8 @@ export function usePacedFeed(feed: GameFeed): PacedFeed {
     skip,
     pace,
     setPace,
+    paused,
+    setPaused,
+    step,
   };
 }

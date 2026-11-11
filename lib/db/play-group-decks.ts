@@ -99,6 +99,24 @@ export async function listPlayGroupDecks(playGroupId: string): Promise<PlayGroup
   return docs.map(toLink);
 }
 
+/** Les decks d'un jeu partagés dans ces groupes, les plus récemment ajoutés d'abord. */
+export async function listPlayGroupDecksOfGroups(
+  playGroupIds: string[],
+  gameId: string,
+  limit: number,
+): Promise<PlayGroupDeck[]> {
+  if (playGroupIds.length === 0) {
+    return [];
+  }
+  const docs = await collection
+    .find({ playGroupId: { $in: playGroupIds }, gameId })
+    .sort({ addedAt: -1 })
+    .limit(limit)
+    .toArray();
+
+  return docs.map(toLink);
+}
+
 /** Les groupes où ce deck est partagé. */
 export async function listPlayGroupIdsForDeck(deckId: string): Promise<string[]> {
   const docs = await collection.find({ deckId }, { projection: { playGroupId: 1 } }).toArray();

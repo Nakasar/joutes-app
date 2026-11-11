@@ -9,19 +9,43 @@ import { useTableCards } from "@/components/play/useTableCards";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 
-/** Une partie contre l'IA : la partie gardée dans le navigateur, reprise là où elle en était. */
+const HANDS_STORAGE_KEY = "joutes.play.hands";
+
+function readHands(): boolean {
+  try {
+    return window.localStorage.getItem(HANDS_STORAGE_KEY) !== "hidden";
+  } catch {
+    return true;
+  }
+}
+
+function writeHands(hands: boolean): void {
+  try {
+    window.localStorage.setItem(HANDS_STORAGE_KEY, hands ? "shown" : "hidden");
+  } catch {
+    // Stockage refusé : le réglage vaut pour cette page seulement.
+  }
+}
+
+/**
+ * Une partie contre l'IA, ou entre IA regardée en spectateur : la partie
+ * gardée dans le navigateur, reprise là où elle en était.
+ */
 export function SoloGame() {
   const t = useTranslations("Games.Play");
   const cards = useTableCards();
   // `undefined` : pas encore lu (le stockage n'existe que dans le navigateur).
   const [save, setSave] = useState<SoloSave | null | undefined>(undefined);
+  // Partie entre IA : voir leurs mains (vue d'arbitre) ou non.
+  const [hands, setHands] = useState(true);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lecture du stockage après le montage, pour ne pas diverger du rendu serveur
     setSave(readSoloSave());
+    setHands(readHands());
   }, []);
 
-  const feed = useSoloGame(save ?? null);
+  const feed = useSoloGame(save ?? null, { hands });
 
   if (save === undefined) {
     return <p className="rounded-xl border bg-card p-8 text-center text-muted-foreground">{t("status.loading")}</p>;
@@ -70,6 +94,17 @@ export function SoloGame() {
     <GameTable
       feed={feed}
       cards={cards}
+      watch={
+        save.seat === null
+          ? {
+              hands,
+              onHands: (next) => {
+                setHands(next);
+                writeHands(next);
+              },
+            }
+          : undefined
+      }
       afterResult={
         <div className="flex flex-row flex-wrap gap-2">
           <Button onClick={replay}>{t("result.replay")}</Button>

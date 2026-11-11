@@ -255,7 +255,9 @@ export function OnlineRoom() {
                 legends={lobby?.legends ?? []}
                 cards={cards}
                 value={choice}
-                onChange={setChoice}
+                onChange={(next) => {
+                  if (next.kind !== "random") setChoice(next);
+                }}
               />
               <div className="flex flex-row flex-wrap gap-2">
                 <Button disabled={busy || !choice} onClick={() => run(() => joinTableAction(table.id, choice))}>

@@ -300,6 +300,28 @@ export async function getDeckSummariesByIds(deckIds: string[]): Promise<Deck[]> 
 }
 
 /**
+ * Plusieurs decks d'un coup, avec leur contenu et le nom de leur auteur : ce
+ * qu'il faut pour les traduire en listes pour le moteur de jeu. Ordre non
+ * garanti ; les identifiants invalides ou disparus sont ignorés. Ne vérifie
+ * aucun droit de lecture.
+ */
+export async function getDecksByIds(deckIds: string[]): Promise<Deck[]> {
+  const ids = [...new Set(deckIds)].filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find({ _id: { $in: ids } }, { projection: { decklist: 0, guide: 0, notes: 0, matchups: 0, favoritedBy: 0 } })
+    .toArray();
+  const creators = await getUsersByIds(docs.map((doc) => doc.playerId).filter(Boolean));
+  const names = new Map(creators.map((user) => [user.id, getUserDisplayName(user)]));
+
+  return docs.map((doc) => toDeck(doc, names.get(doc.playerId)));
+}
+
+/**
  * Ce qui se déduit du contenu d'un deck : ses domaines, pour le filtre de la
  * librairie, et sa légende, pour sa combobox et les listes. La légende
  * choisie à la main l'emporte sur celle que porte la zone.
