@@ -65,8 +65,11 @@ la carte frappe et teinte ses autres gestes ; `matterOf` la déduit du nom du
 sort, du champion ou de la faction, sinon c'est la couleur du domaine. Elle
 voyage avec les cartes de la table (`TableCard.fx`, avec `def`, le numéro de la
 carte dans les évènements). Pour corriger une carte : `CHOSEN` dans
-`card-fx.ts`. Rien en « Instantané », avec « Effets des cartes » décoché, ou
-quand le système demande moins d'animations ; le moteur n'en sait rien.
+`card-fx.ts`. Rien en « Instantané » ou avec « Effets des cartes » décoché
+(décoché d'office quand le système demande moins d'animations, tant qu'on ne
+l'a pas coché) ; le moteur n'en sait rien. Les cartes de la table se gardent une
+heure dans le navigateur : leur adresse porte `ENGINE_VERSION` et
+`TABLE_CARDS_SHAPE` (`useTableCards.ts`), à monter quand leur forme change.
 
 ## Choisir les decks
 

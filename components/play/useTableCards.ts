@@ -3,11 +3,19 @@
 import { useEffect, useState } from "react";
 
 import type { TableCards } from "@/lib/engine/cards";
+import { ENGINE_VERSION } from "@/lib/engine/version";
+
+/**
+ * Change quand la forme des cartes change (ici : `def` et `fx` pour les effets).
+ * Avec la version du moteur, elle entre dans l'adresse : la réponse se garde une
+ * heure dans le navigateur, et un déploiement ne doit pas servir l'ancienne.
+ */
+const TABLE_CARDS_SHAPE = 2;
 
 let shared: Promise<TableCards> | undefined;
 
 function fetchTableCards(): Promise<TableCards> {
-  shared ??= fetch("/api/games/riftbound/play/cards").then((response) => {
+  shared ??= fetch(`/api/games/riftbound/play/cards?v=${ENGINE_VERSION}.${TABLE_CARDS_SHAPE}`).then((response) => {
     if (!response.ok) throw new Error(String(response.status));
     return response.json() as Promise<TableCards>;
   });
