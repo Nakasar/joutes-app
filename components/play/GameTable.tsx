@@ -286,18 +286,7 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
               )}
 
               {sorted.buttons.length > 0 && (
-                <div className="flex flex-row flex-wrap gap-2">
-                  {sorted.buttons.map((choice, index) => (
-                    <Button
-                      key={index}
-                      variant={buttonVariant(choice.action.type)}
-                      className="h-auto min-h-9 max-w-full whitespace-normal text-left"
-                      onClick={() => act(choice.action)}
-                    >
-                      {choice.label}
-                    </Button>
-                  ))}
-                </div>
+                <ChoiceButtons key={prompt.text} choices={sorted.buttons} onAct={act} />
               )}
             </>
           ) : (
@@ -483,6 +472,45 @@ function Concede({ onConcede }: { onConcede: () => void }) {
           {t("concede.action")}
         </Button>
       )}
+    </div>
+  );
+}
+
+/** Au-delà de ce nombre, les choix défilent et se filtrent (nommer une carte ou un tag). */
+const MANY_CHOICES = 12;
+
+function ChoiceButtons({ choices, onAct }: { choices: EngineChoice[]; onAct: (action: EngineAction) => void }) {
+  const t = useTranslations("Games.Play");
+  const [filter, setFilter] = useState("");
+  const many = choices.length > MANY_CHOICES;
+  const needle = filter.trim().toLocaleLowerCase();
+  const shown = many && needle ? choices.filter((choice) => choice.label.toLocaleLowerCase().includes(needle)) : choices;
+
+  return (
+    <div className="flex flex-col gap-2">
+      {many && (
+        <input
+          type="search"
+          value={filter}
+          onChange={(event) => setFilter(event.target.value)}
+          placeholder={t("choices.filter")}
+          aria-label={t("choices.filter")}
+          className="h-9 w-full max-w-sm rounded-md border bg-background px-3 text-sm"
+        />
+      )}
+      <div className={cn("flex flex-row flex-wrap gap-2", many && "max-h-64 overflow-y-auto pr-1")}>
+        {shown.map((choice, index) => (
+          <Button
+            key={index}
+            variant={buttonVariant(choice.action.type)}
+            className="h-auto min-h-9 max-w-full whitespace-normal text-left"
+            onClick={() => onAct(choice.action)}
+          >
+            {choice.label}
+          </Button>
+        ))}
+        {shown.length === 0 && <p className="text-sm text-muted-foreground">{t("choices.none")}</p>}
+      </div>
     </div>
   );
 }

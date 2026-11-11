@@ -616,6 +616,10 @@
         "might": "Potenza {might}, danni subiti {damage}",
         "unsupported": "Il motore non sa ancora giocare questa carta."
       },
+      "choices": {
+        "filter": "Filtra le scelte",
+        "none": "Nessuna scelta corrisponde."
+      },
       "zone": {
         "baseOf": "Base di {name}",
         "myBase": "La mia base",

@@ -616,6 +616,10 @@
         "might": "Might {might}, damage taken {damage}",
         "unsupported": "The engine cannot play this card yet."
       },
+      "choices": {
+        "filter": "Filter the choices",
+        "none": "No choice matches."
+      },
       "zone": {
         "baseOf": "{name}'s base",
         "myBase": "My base",
