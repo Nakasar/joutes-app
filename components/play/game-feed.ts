@@ -16,6 +16,12 @@ export type GameFeed = {
   /** Sièges dont le joueur est déconnecté (en ligne seulement). */
   away: number[];
   act: (action: EngineAction) => void;
+  /**
+   * La table raconte encore ce qui vient de se passer : les robots joués dans
+   * le navigateur attendent avant leur coup suivant. Absent en ligne, où la
+   * partie avance au rythme du serveur.
+   */
+  hold?: (busy: boolean) => void;
 };
 
 /** Le journal ne garde que ce qui se raconte. */

@@ -669,6 +669,25 @@
         "empty": "The game begins.",
         "rule": "Open rule {rule}"
       },
+      "pace": {
+        "telling": "The table is replaying what just happened…",
+        "remaining": "{count} more",
+        "skip": "Show all",
+        "settings": "Game pace",
+        "speed": {
+          "slow": "Slow",
+          "normal": "Normal",
+          "fast": "Fast",
+          "instant": "Instant"
+        },
+        "stops": "Pause at key moments",
+        "stopsHint": "A card played by an opponent, end of combat, points scored, start of your turn.",
+        "continue": "Continue",
+        "play": "Play my turn",
+        "key": "Space",
+        "yourTurn": "Your turn",
+        "sinceLastTurn": "Since your last turn:"
+      },
       "concede": {
         "action": "Concede",
         "confirm": "Concede the game?",

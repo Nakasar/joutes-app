@@ -37,6 +37,12 @@ export type PlayCardProps = {
   selected?: boolean;
   /** Atténuée : une autre carte ou un autre choix est attendu. */
   dim?: boolean;
+  /** Concernée par l'évènement que la table raconte : entourée d'ambre. */
+  focus?: boolean;
+  /** Dégâts reçus dans l'évènement raconté : la carte tremble et les affiche. */
+  hit?: number;
+  /** Une unité qui vient de mourir, encore dessinée le temps de le raconter. */
+  dying?: boolean;
   className?: string;
 };
 
@@ -54,6 +60,9 @@ export function PlayCard({
   onInspect,
   selected = false,
   dim = false,
+  focus = false,
+  hit,
+  dying = false,
   className,
 }: PlayCardProps) {
   const t = useTranslations("Games.Play");
@@ -67,13 +76,16 @@ export function PlayCard({
   const face = (
     <span
       className={cn(
-        "relative block overflow-hidden rounded-md border bg-muted transition",
+        "play-enter relative block overflow-hidden rounded-md border bg-muted transition duration-500",
         landscape ? "aspect-[7/5]" : "aspect-[5/7]",
         landscape ? LANDSCAPE_WIDTH[size] : WIDTH[size],
         exhausted && "rotate-[8deg] opacity-60 saturate-50",
         dim && !actionable && "opacity-50",
         actionable && "ring-2 ring-primary ring-offset-1 ring-offset-background",
         selected && "ring-2 ring-destructive ring-offset-1 ring-offset-background",
+        focus && !actionable && !selected && "play-focus",
+        hit !== undefined && "play-shake",
+        dying && "scale-90 opacity-25 grayscale",
       )}
     >
       {hidden ? (
@@ -127,6 +139,16 @@ export function PlayCard({
     </span>
   );
 
+  const damage =
+    hit !== undefined ? (
+      <span
+        aria-hidden
+        className="play-float pointer-events-none absolute left-1/2 top-1/4 z-20 text-lg font-bold text-destructive drop-shadow"
+      >
+        −{hit}
+      </span>
+    ) : null;
+
   const label = actionable ? (choices.length === 1 ? choices[0].label : name) : name;
 
   const inspect =
@@ -169,6 +191,7 @@ export function PlayCard({
           </PopoverContent>
         </Popover>
         {inspect}
+        {damage}
       </span>
     );
   }
@@ -191,6 +214,7 @@ export function PlayCard({
         {face}
       </button>
       {inspect}
+      {damage}
     </span>
   );
 }

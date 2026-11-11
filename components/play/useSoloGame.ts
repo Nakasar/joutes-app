@@ -47,8 +47,11 @@ export function writeSoloSave(save: SoloSave | null): void {
   }
 }
 
-/** Le temps laissé pour lire un coup du robot avant le suivant. */
-const BOT_DELAY_MS = 650;
+/**
+ * Le temps laissé entre la fin du récit d'un coup du robot et le suivant. Le
+ * récit lui-même (`usePacedFeed`) prend le temps de montrer chaque évènement.
+ */
+const BOT_DELAY_MS = 500;
 
 type Table = InstanceType<BrowserEngine["Table"]>;
 
@@ -65,6 +68,8 @@ export function useSoloGame(save: SoloSave | null): GameFeed {
   const [journal, setJournal] = useState<EngineTold[]>([]);
   // Incrémenté à chaque changement d'état du moteur : relance l'effet des robots.
   const [tick, setTick] = useState(0);
+  // La table raconte encore le coup précédent : le robot attend.
+  const [held, setHeld] = useState(false);
 
   const seat = save?.seat ?? 0;
 
@@ -112,7 +117,7 @@ export function useSoloGame(save: SoloSave | null): GameFeed {
 
   useEffect(() => {
     const current = table.current;
-    if (!current || status !== "ready") return;
+    if (!current || status !== "ready" || held) return;
     const next = current.to_act();
     if (next < 0 || !current.is_bot(next)) return;
     const timer = window.setTimeout(() => {
@@ -126,7 +131,7 @@ export function useSoloGame(save: SoloSave | null): GameFeed {
       refresh();
     }, BOT_DELAY_MS);
     return () => window.clearTimeout(timer);
-  }, [tick, status, refresh]);
+  }, [tick, status, held, refresh]);
 
   const act = useCallback(
     (action: EngineAction) => {
@@ -143,5 +148,5 @@ export function useSoloGame(save: SoloSave | null): GameFeed {
     [seat, refresh],
   );
 
-  return { status, error, update, journal, seat, away: [], act };
+  return { status, error, update, journal, seat, away: [], act, hold: setHeld };
 }

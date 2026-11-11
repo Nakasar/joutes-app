@@ -35,6 +35,21 @@ posée, les évènements) et renvoie au moteur l'une des actions qu'il propose.
 table ; ce qui ne se désigne pas devient un bouton. La même table sert aux
 trois façons de jouer : seule la source change (`useSoloGame`, `useOnlineGame`).
 
+Le moteur rend tout ce qui s'est passé depuis la dernière question d'un seul
+bloc ; la table le raconte pas à pas (`components/play/usePacedFeed.ts`,
+règles pures dans `lib/engine/pacing.ts`). Chaque évènement raconté reste au
+premier plan selon son poids (350 ms, 900 ms ou 1,5 s, moitié moins pour ses
+propres actions, multiplié par la vitesse choisie), la carte concernée
+s'entoure d'ambre, une carte jouée par un adversaire s'affiche en grand, une
+unité qui meurt reste dessinée le temps de le dire. Aux moments clés (carte
+jouée ou capacité activée par un adversaire, fin de combat, points marqués hors
+combat, début de son tour avec le résumé du tour adverse), la lecture attend
+« Continuer ». La question n'apparaît qu'une fois le récit rattrapé ; contre
+l'IA, le robot attend la fin du récit (`GameFeed.hold`). Vitesse et arrêts se
+règlent depuis le bandeau du récit et sont gardés dans le navigateur
+(`joutes.play.pace`). Un retard de plus de 60 évènements (reconnexion) se
+rattrape d'un coup.
+
 ## En ligne
 
 - Une table est un document `gameTables` (`lib/db/game-tables.ts`), dont le code

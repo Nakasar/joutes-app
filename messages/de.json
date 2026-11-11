@@ -669,6 +669,25 @@
         "empty": "Die Partie beginnt.",
         "rule": "Regel {rule} öffnen"
       },
+      "pace": {
+        "telling": "Der Tisch zeigt, was gerade passiert ist …",
+        "remaining": "noch {count}",
+        "skip": "Alles zeigen",
+        "settings": "Spieltempo",
+        "speed": {
+          "slow": "Langsam",
+          "normal": "Normal",
+          "fast": "Schnell",
+          "instant": "Sofort"
+        },
+        "stops": "Bei wichtigen Momenten anhalten",
+        "stopsHint": "Vom Gegner gespielte Karte, Kampfende, erzielte Punkte, Beginn deines Zuges.",
+        "continue": "Weiter",
+        "play": "Meinen Zug spielen",
+        "key": "Leertaste",
+        "yourTurn": "Du bist dran",
+        "sinceLastTurn": "Seit deinem letzten Zug:"
+      },
       "concede": {
         "action": "Aufgeben",
         "confirm": "Die Partie aufgeben?",
