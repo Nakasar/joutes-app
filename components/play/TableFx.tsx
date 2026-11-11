@@ -9,15 +9,12 @@ import { SPEED_FACTOR, type PaceSettings } from "@/lib/engine/pacing";
 import { DOMAIN_HEX } from "@/lib/engine/told-text";
 import type { EngineTold } from "@/lib/engine/types";
 
-function prefersLessMotion(): boolean {
-  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 /**
  * Les effets des cartes sur la table : à chaque évènement raconté, le geste
  * qu'il montre (frapper, mourir, renforcer…) dans la matière de la carte qui
- * se résout. Coupés en « Instantané », avec le réglage « Effets des cartes »
- * décoché, ou quand le système demande moins d'animations.
+ * se résout. Coupés en « Instantané » ou avec le réglage « Effets des cartes »
+ * décoché (décoché d'office quand le système demande moins d'animations, tant
+ * qu'on ne l'a pas coché soi-même).
  */
 export function TableFx({
   current,
@@ -85,7 +82,7 @@ export function TableFx({
     if (index < seen.current) fx.clear();
     if (index === seen.current) return;
     seen.current = index;
-    if (!enabled || prefersLessMotion() || document.hidden) return;
+    if (!enabled || document.hidden) return;
     const defs: FxDefs = (def) => {
       const card = byDef.get(def);
       return card ? { matter: card.matter, color: card.info.color, spell: card.spell } : null;
