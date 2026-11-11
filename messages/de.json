@@ -616,6 +616,10 @@
         "might": "Macht {might}, erlittener Schaden {damage}",
         "unsupported": "Die Engine kann diese Karte noch nicht spielen."
       },
+      "choices": {
+        "filter": "Auswahl filtern",
+        "none": "Keine passende Auswahl."
+      },
       "zone": {
         "baseOf": "Basis von {name}",
         "myBase": "Meine Basis",
