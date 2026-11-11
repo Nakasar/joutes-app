@@ -32,6 +32,8 @@ export type EngineConfig = {
   first_player?: number | null;
   auto_pass?: boolean;
   allow_unimplemented?: boolean;
+  /** Les IA connaissent les cartes du deck adverse (ni leur ordre, ni la main). */
+  open_decklists?: boolean;
 };
 
 export type EngineLoc = { Base: number } | { Bf: number };

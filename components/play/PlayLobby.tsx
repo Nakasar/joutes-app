@@ -19,6 +19,7 @@ import { readSoloSave, writeSoloSave, type SoloSave } from "@/components/play/us
 import { useTableCards } from "@/components/play/useTableCards";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -61,6 +62,8 @@ export function PlayLobby() {
   // Par siège : le deck et le niveau de l'IA qui s'y assoit.
   const [botDecks, setBotDecks] = useState<BotDeckChoice[]>([]);
   const [botLevels, setBotLevels] = useState<BotLevel[]>([]);
+  // Listes ouvertes : les IA connaissent les cartes du deck d'en face.
+  const [openLists, setOpenLists] = useState(false);
   // Les decks publics trouvés par une recherche, absents de `lobby.decks`.
   const [found, setFound] = useState<Record<string, LobbyDeck>>({});
   const [code, setCode] = useState("");
@@ -125,7 +128,11 @@ export function PlayLobby() {
       const save: SoloSave = {
         seat: watching ? null : 0,
         bots,
-        record: { config: { mode, players }, seed: randomSeed(), actions: [] },
+        record: {
+          config: { mode, players, ...(openLists ? { open_decklists: true } : {}) },
+          seed: randomSeed(),
+          actions: [],
+        },
       };
       // Le moteur refuse ici une configuration qu'il ne sait pas jouer, avant
       // qu'on ne quitte la page.
@@ -323,6 +330,13 @@ export function PlayLobby() {
           {(opponent === "ai" || watching) && (
             <div className="flex flex-col gap-2">
               {watching && <p className="text-sm text-muted-foreground">{t("lobby.watchInfo")}</p>}
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-secondary">
+                <Checkbox checked={openLists} onCheckedChange={(checked) => setOpenLists(checked === true)} />
+                <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                  <span className="text-sm font-medium">{t("lobby.openLists")}</span>
+                  <span className="text-xs text-muted-foreground">{t("lobby.openListsHint")}</span>
+                </span>
+              </label>
               <div className="flex flex-row flex-wrap gap-2">
                 <Button disabled={busy || (!watching && !choice)} onClick={startSolo}>
                   {watching ? t("lobby.startWatch") : t("lobby.startSolo")}

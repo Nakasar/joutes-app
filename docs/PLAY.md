@@ -14,6 +14,12 @@ raconte chaque évènement en citant la règle. Le site ne contient aucune règl
 | En ligne | Sur le serveur de parties (`joutes-server serve`) | Les variables `JOUTES_ENGINE_*` (voir `.env.example`). |
 | Mon serveur (mode hôte) | Sur un serveur lancé par un organisateur (`joutes-server host`) | L'adresse et le code du serveur, saisis dans la page. Joutes ne les voit pas. |
 
+Contre l'IA et en IA contre IA, la case « Listes ouvertes » du lobby met
+`open_decklists` dans la configuration : les IA connaissent alors les cartes du
+deck d'en face, sans leur ordre ni la main. Sans elle, une IA ne sait de
+l'adversaire que sa légende et ce qu'il a déjà montré (voir `docs/ia.md` de
+`joutes-engine`).
+
 ## Le moteur dans ce dépôt
 
 - `lib/engine/pkg/` : le moteur compilé pour le navigateur, copié depuis

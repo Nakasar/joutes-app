@@ -772,6 +772,8 @@
         "watchHint": "Watch AIs play each other, with pause.",
         "youBadge": "you",
         "levelOf": "{name} level",
+        "openLists": "Open decklists",
+        "openListsHint": "The AIs know the cards in the opposing deck, but not their order or which are in hand. Otherwise they only know what has been shown.",
         "watchInfo": "You watch the game without playing: the AIs' hands are visible, and you can pause at any time.",
         "startWatch": "Watch the game",
         "resumeWatchTitle": "AI vs AI game in progress",
