@@ -697,6 +697,8 @@
         },
         "camera": "Telecamera sui combattimenti",
         "cameraHint": "Si avvicina al campo di battaglia durante il combattimento, poi torna indietro.",
+        "effects": "Effetti delle carte",
+        "effectsHint": "Fulmini, comete, fiamme: ogni carta ha il suo effetto. Disattivati con «Istantaneo».",
         "continue": "Continua",
         "play": "Gioca il mio turno",
         "key": "Spazio",

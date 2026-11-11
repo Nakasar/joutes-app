@@ -34,6 +34,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
 import { PlayCard, type CardSize } from "@/components/play/PlayCard";
+import { TableFx } from "@/components/play/TableFx";
 import { HandFan, PointRails, TableScene } from "@/components/play/TableScene";
 import { ToldText } from "@/components/play/ToldText";
 import type { GameFeed } from "@/components/play/game-feed";
@@ -380,7 +381,7 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
       </section>
     ) : null
   ) : (
-    <section aria-label={t("zone.hand")} className="min-w-0 flex-1">
+    <section data-play-hand aria-label={t("zone.hand")} className="min-w-0 flex-1">
       <h3 className="px-2 text-xs text-muted-foreground">
         <span className="font-semibold text-foreground">{t("zone.hand")}</span> · {myHand.length}
       </h3>
@@ -413,13 +414,14 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
   return (
     <div data-play-scroll className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-background text-foreground">
       <TableBar paced={paced} view={view} told={told} colorOf={colorOf} note={note} watching={Boolean(watch)} />
+      <TableFx current={paced.current} journal={feed.journal} cards={cards} me={me} pace={paced.pace} />
 
       <div className="flex flex-col gap-3 p-2 max-lg:pb-56 sm:p-3 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-4 lg:px-4">
         {/* Sur téléphone, tous les joueurs en haut, côte à côte. */}
         <div className="grid grid-cols-2 gap-2 lg:hidden">{[...others, mine].map((player) => bandOf(player, false))}</div>
 
         {/* Table */}
-        <main className="relative flex min-w-0 flex-col gap-3">
+        <main data-play-table className="relative flex min-w-0 flex-col gap-3">
           <div className="hidden flex-col gap-2 lg:flex">{others.map((player) => bandOf(player, true))}</div>
           {/* Sous les bandeaux, au bord haut du plateau : la partie est en pause. */}
           {watch && paced.paused && !view.result && (
@@ -1574,6 +1576,18 @@ function PaceSettings({ paced, watching = false }: { paced: PacedFeed; watching?
           <span>
             {t("pace.camera")}
             <span className="block text-xs text-muted-foreground">{t("pace.cameraHint")}</span>
+          </span>
+        </label>
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="mt-0.5 accent-[var(--primary)]"
+            checked={paced.pace.effects}
+            onChange={(event) => paced.setPace({ ...paced.pace, effects: event.target.checked })}
+          />
+          <span>
+            {t("pace.effects")}
+            <span className="block text-xs text-muted-foreground">{t("pace.effectsHint")}</span>
           </span>
         </label>
       </PopoverContent>
