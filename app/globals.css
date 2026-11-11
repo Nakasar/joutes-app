@@ -624,7 +624,8 @@
  * champ de bataille d'un combat raconté.
  */
 .play-scene {
-  --play-tilt: 14deg;
+  /* Peu incliné : le relief se voit, les cartes restent lisibles. */
+  --play-tilt: 6deg;
   --play-wood: #3a2416;
   --play-wood-dark: #1d120a;
   --play-brass: #c9a45a;
@@ -642,8 +643,8 @@
 
 @media (min-width: 64rem) {
   .play-scene {
-    --play-tilt: 28deg;
-    padding: 1.5rem 2.25rem 0;
+    --play-tilt: 12deg;
+    padding: 1.25rem 1.75rem 0;
   }
 }
 
@@ -669,13 +670,13 @@
   perspective: 1600px;
   perspective-origin: 50% 25%;
   /* Le haut du plateau recule : on reprend la place qu'il laisse. */
-  margin-top: -1.5rem;
+  margin-top: -0.5rem;
 }
 
 @media (min-width: 64rem) {
   .play-stage {
-    perspective: 1600px;
-    margin-top: -4rem;
+    perspective: 1800px;
+    margin-top: -1.5rem;
   }
 }
 
@@ -826,11 +827,11 @@
   --token: var(--play-me);
 }
 
-/* La main : à plat, en éventail, par-dessus le bas du plateau. */
+/* La main : à plat, en éventail, sous le plateau, entière. */
 .play-hand {
   position: relative;
   z-index: 1;
-  margin-top: -2.5rem;
+  margin-top: 0.5rem;
   padding: 0 0.5rem 0.75rem;
 }
 

@@ -9,13 +9,14 @@ import type { TableCard } from "@/lib/engine/cards";
 import type { EngineAction, EngineChoice, EngineObj } from "@/lib/engine/types";
 import { cn } from "@/lib/utils";
 
-export type CardSize = "xs" | "sm" | "md" | "lg";
+export type CardSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 const WIDTH: Record<CardSize, string> = {
   xs: "w-9",
   sm: "w-14",
   md: "w-[4.5rem] sm:w-20",
   lg: "w-24 sm:w-28",
+  xl: "w-24 sm:w-28 lg:w-32",
 };
 
 const LANDSCAPE_WIDTH: Record<CardSize, string> = {
@@ -23,6 +24,8 @@ const LANDSCAPE_WIDTH: Record<CardSize, string> = {
   sm: "w-20",
   md: "w-28 sm:w-36",
   lg: "w-40 sm:w-48",
+  /* Un champ de bataille sur le plateau : il doit se lire de loin. */
+  xl: "w-32 sm:w-56 lg:w-64 xl:w-72",
 };
 
 export type PlayCardProps = {

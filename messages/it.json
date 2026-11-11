@@ -646,11 +646,12 @@
         "hand": "Mano",
         "deck": "Mazzo",
         "runes": "Rune",
-        "runesReady": "{ready} pronte su {total}",
+        "runesReady": "{ready, plural, one {# pronta} other {# pronte}} su {total}",
         "runeDeck": "Mazzo delle rune",
         "pool": "Riserva",
         "energy": "{count} Energia",
-        "trash": "Scarti ({count})"
+        "trash": "Scarti ({count})",
+        "trashLabel": "Scarti"
       },
       "prompt": {
         "onTable": "Scegli sul tavolo: ciò che è evidenziato è permesso.",
@@ -664,10 +665,17 @@
         "title": "Catena",
         "pending": "in dichiarazione"
       },
+      "table": {
+        "quit": "Lascia il tavolo",
+        "turn": "Turno {turn}"
+      },
       "journal": {
         "title": "Registro",
         "empty": "La partita comincia.",
-        "rule": "Apri la regola {rule}"
+        "rule": "Apri la regola {rule}",
+        "thisTurn": "Questo turno",
+        "all": "Tutta la partita",
+        "setup": "Preparazione"
       },
       "pace": {
         "telling": "Il tavolo mostra cosa è appena successo…",

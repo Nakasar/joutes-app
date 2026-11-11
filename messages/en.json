@@ -650,7 +650,8 @@
         "runeDeck": "Rune deck",
         "pool": "Pool",
         "energy": "{count} Energy",
-        "trash": "Trash ({count})"
+        "trash": "Trash ({count})",
+        "trashLabel": "Trash"
       },
       "prompt": {
         "onTable": "Choose on the table: whatever is outlined is allowed.",
@@ -664,10 +665,17 @@
         "title": "Chain",
         "pending": "being declared"
       },
+      "table": {
+        "quit": "Leave the table",
+        "turn": "Turn {turn}"
+      },
       "journal": {
         "title": "Log",
         "empty": "The game begins.",
-        "rule": "Open rule {rule}"
+        "rule": "Open rule {rule}",
+        "thisTurn": "This turn",
+        "all": "Whole game",
+        "setup": "Setup"
       },
       "pace": {
         "telling": "The table is replaying what just happened…",
