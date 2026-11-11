@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { BookOpen, Crown, FastForward, Flag, Gauge, Hourglass, Layers, Trash2, WifiOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -8,6 +8,7 @@ import { Link } from "@/i18n/navigation";
 
 import { PlayCard } from "@/components/play/PlayCard";
 import { HandFan, PointRails, TableScene } from "@/components/play/TableScene";
+import { ToldText } from "@/components/play/ToldText";
 import type { GameFeed } from "@/components/play/game-feed";
 import { usePacedFeed, type Ghost, type PacedFeed } from "@/components/play/usePacedFeed";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ import type {
   EngineTold,
   EngineView,
 } from "@/lib/engine/types";
+import { playerColor, toldIndex } from "@/lib/engine/told-text";
 import { cn } from "@/lib/utils";
 
 /** Ordre des domaines dans `pool.power`, celui du moteur. */
@@ -89,6 +91,13 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
     () => (view && prompt ? sortChoices(prompt.choices, view) : null),
     [view, prompt],
   );
+
+  // Les noms à mettre en évidence dans le journal : les joueurs, puis toutes les cartes.
+  const playerKey = view ? JSON.stringify(view.players.map((player) => [player.seat, player.name])) : "[]";
+  const names = useMemo(() => {
+    const players = (JSON.parse(playerKey) as [number, string][]).map(([seat, name]) => ({ seat, name }));
+    return toldIndex(players, Object.values(cards));
+  }, [playerKey, cards]);
 
   // La sélection du mulligan ne vaut que pour la question à laquelle elle répond.
   const promptKey = update ? `${update.seq}:${prompt?.text ?? ""}` : "";
@@ -169,6 +178,18 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
         combatInFocus(paced.journal, paced.current ?? { index: paced.journal.length - 1 }, paced.ack)
       : null;
 
+  const seats = view.players.map((player) => player.seat);
+  const colorOf = (seat: number) => playerColor(seat, spectator ? null : me, seats);
+  const told = (text: string) => (
+    <ToldText
+      text={text}
+      index={names}
+      cards={cards}
+      colorOf={colorOf}
+      onInspect={(card) => setInspected({ card })}
+    />
+  );
+
   const toggleMulligan = (id: number) =>
     setMulliganState({
       key: promptKey,
@@ -246,6 +267,7 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
             card={renderObj(bf.card, "md")}
             renderObj={renderObj}
             relief={relief}
+            colorOf={colorOf}
           />
         ))}
       </div>
@@ -279,6 +301,7 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
             onAct={act}
             onTrash={() => setTrashOf(player.seat)}
             acting={actor === player.seat}
+            color={colorOf(player.seat)}
             scoring={scoring.includes(player.seat)}
             legend={renderObj(player.legend, "sm")}
             addedLegends={(player.added_legends ?? []).map((added) => renderObj(added, "sm"))}
@@ -289,7 +312,7 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
 
       {/* Table */}
       <main className="relative flex min-w-0 flex-col gap-3">
-        <Narration paced={paced} />
+        <Narration paced={paced} told={told} />
         <StepOverlay paced={paced} view={view} cards={cards} me={feed.seat} />
 
         {relief ? (
@@ -300,6 +323,7 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
                 players={view.players}
                 me={spectator ? null : me}
                 max={view.victory_score}
+                colorOf={colorOf}
                 label={(player) =>
                   `${player.name} · ${t("player.points", { points: player.points, max: view.victory_score })}`
                 }
@@ -375,7 +399,7 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
               {afterResult}
             </>
           ) : paced.ack ? (
-            <AckCard ack={paced.ack} view={view} cards={cards} onContinue={paced.proceed} />
+            <AckCard ack={paced.ack} view={view} cards={cards} onContinue={paced.proceed} told={told} />
           ) : prompt && sorted ? (
             <>
               <div className="flex items-start gap-3">
@@ -483,7 +507,7 @@ export function GameTable({ feed, cards, afterResult }: GameTableProps) {
           </section>
         )}
 
-        <Journal entries={journal} />
+        <Journal entries={journal} told={told} />
 
         {!spectator && !view.result && <Concede onConcede={() => act({ type: "concede" })} />}
       </aside>
@@ -664,6 +688,8 @@ type PlayerPanelProps = {
   acting?: boolean;
   /** Marque des points dans l'évènement raconté. */
   scoring?: boolean;
+  /** Sa couleur, celle de son nom dans le journal. */
+  color?: string;
   legend: ReactNode;
   /** Les légendes ajoutées en cours de partie (Neeko), sur leur propre rangée. */
   addedLegends?: ReactNode[];
@@ -680,6 +706,7 @@ function PlayerPanel({
   onTrash,
   acting = false,
   scoring = false,
+  color,
   legend,
   addedLegends,
   champion,
@@ -706,7 +733,7 @@ function PlayerPanel({
         {champion}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">
-            {player.name}
+            <span style={{ color }}>{player.name}</span>
             {isMe && <span className="font-normal text-muted-foreground"> · {t("player.you")}</span>}
           </p>
           <div className="mt-1 flex flex-row flex-wrap gap-1">
@@ -890,6 +917,8 @@ type BattlefieldColumnProps = {
   renderObj: (obj: EngineObj, size?: "xs" | "sm" | "md" | "lg") => ReactNode;
   /** Sur la table en relief : le contrôle se lit au fanion. */
   relief?: boolean;
+  /** La couleur d'un joueur, pour le fanion de celui qui contrôle. */
+  colorOf?: (seat: number) => string;
 };
 
 function BattlefieldColumn({
@@ -905,6 +934,7 @@ function BattlefieldColumn({
   card,
   renderObj,
   relief = false,
+  colorOf,
 }: BattlefieldColumnProps) {
   const t = useTranslations("Games.Play");
   const mineHere = bf.units.filter((obj) => obj.controller === me);
@@ -941,7 +971,15 @@ function BattlefieldColumn({
       )}
     >
       {relief && (
-        <span className="play-pennant self-start" data-control={control}>
+        <span
+          className="play-pennant self-start"
+          data-control={control}
+          style={
+            control !== "contested" && bf.controller !== null && colorOf
+              ? ({ "--pennant": colorOf(bf.controller) } as CSSProperties)
+              : undefined
+          }
+        >
           {status}
         </span>
       )}
@@ -996,7 +1034,7 @@ function BattlefieldColumn({
 }
 
 /** Le récit de la partie. Chaque ligne cite sa règle ; le numéro ouvre la règle. */
-function Journal({ entries }: { entries: EngineTold[] }) {
+function Journal({ entries, told }: { entries: EngineTold[]; told: (text: string) => ReactNode }) {
   const t = useTranslations("Games.Play");
   const list = useRef<HTMLOListElement>(null);
 
@@ -1015,7 +1053,7 @@ function Journal({ entries }: { entries: EngineTold[] }) {
         {entries.length === 0 && <li className="text-muted-foreground">{t("journal.empty")}</li>}
         {entries.map((entry, index) => (
           <li key={index} className={cn("leading-snug", entry.text?.startsWith(" ") && "pl-4 text-muted-foreground")}>
-            {entry.text?.trim()}
+            {told(entry.text?.trim() ?? "")}
             {entry.rule && (
               <Link
                 href={`/games/riftbound/rules/cr#rule-${entry.rule}`}
@@ -1040,7 +1078,7 @@ function plain(text: string | null | undefined): string {
 }
 
 /** Le bandeau du récit : l'évènement au premier plan, ce qui reste, et le réglage du rythme. */
-function Narration({ paced }: { paced: PacedFeed }) {
+function Narration({ paced, told }: { paced: PacedFeed; told: (text: string) => ReactNode }) {
   const t = useTranslations("Games.Play");
   const step = paced.current;
   const shown = step?.entry ?? paced.journal.at(-1);
@@ -1054,7 +1092,7 @@ function Narration({ paced }: { paced: PacedFeed }) {
         key={step?.index ?? "idle"}
         className={cn("animate-fade-in min-w-0 flex-1 text-sm leading-snug", !step && "text-muted-foreground")}
       >
-        {shown?.text ? shown.text.trim() : t("journal.empty")}
+        {shown?.text ? told(shown.text.trim()) : t("journal.empty")}
         {shown?.rule && (
           <span className="ml-1.5 rounded border px-1 font-mono text-[0.65rem] text-muted-foreground">{shown.rule}</span>
         )}
@@ -1199,11 +1237,13 @@ function AckCard({
   view,
   cards,
   onContinue,
+  told,
 }: {
   ack: Ack;
   view: EngineView;
   cards: TableCards;
   onContinue: () => void;
+  told: (text: string) => ReactNode;
 }) {
   const t = useTranslations("Games.Play");
   const code = ack.objId !== null ? codeOf(view, ack.objId) : null;
@@ -1228,7 +1268,7 @@ function AckCard({
         {card && <PlayCard card={card} size="sm" />}
         <div className="min-w-0 flex-1">
           <h2 className="text-base font-semibold leading-snug">
-            {ack.kind === "turn" ? t("pace.yourTurn") : plain(ack.title)}
+            {ack.kind === "turn" ? t("pace.yourTurn") : told(plain(ack.title))}
           </h2>
           {card?.text && (
             <p className="mt-1 line-clamp-4 whitespace-pre-line text-xs text-muted-foreground">{card.text}</p>
@@ -1237,7 +1277,7 @@ function AckCard({
           {ack.lines.length > 0 && (
             <ul className="mt-1 list-disc pl-4 text-sm text-muted-foreground">
               {ack.lines.map((line, index) => (
-                <li key={index}>{line}</li>
+                <li key={index}>{told(line)}</li>
               ))}
             </ul>
           )}

@@ -122,11 +122,14 @@ export function PointRails({
   me,
   max,
   label,
+  colorOf,
 }: {
   players: EnginePlayer[];
   me: number | null;
   max: number;
   label: (player: EnginePlayer) => string;
+  /** La couleur des jetons de chaque joueur. */
+  colorOf?: (seat: number) => string;
 }) {
   const others = players.filter((player) => player.seat !== me);
   const mine = players.find((player) => player.seat === me);
@@ -137,6 +140,7 @@ export function PointRails({
       role="img"
       aria-label={label(player)}
       title={label(player)}
+      style={colorOf ? ({ "--token": colorOf(player.seat) } as CSSProperties) : undefined}
     >
       {Array.from({ length: max }, (_, index) => (
         <span key={index} className={cn("play-socket", index < player.points && "play-socket-on")} />

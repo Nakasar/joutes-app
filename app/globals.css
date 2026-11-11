@@ -814,12 +814,15 @@
 }
 
 .play-socket-on {
-  --token: var(--play-other);
   background: radial-gradient(circle at 35% 30%, #fff 0 8%, var(--token) 30%, color-mix(in srgb, var(--token) 50%, #000) 100%);
   box-shadow: 0 2px 3px rgb(0 0 0 / 0.6);
 }
 
-.play-rail-own .play-socket-on {
+.play-rail {
+  --token: var(--play-other);
+}
+
+.play-rail-own {
   --token: var(--play-me);
 }
 
