@@ -20,6 +20,9 @@ export function random_config(mode_name: string, seed: number): string;
  * Joue une partie entière entre robots (`bots` : un niveau par siège) et rend
  * son résumé (`joutes_session::GameSummary`). La même configuration, la même
  * graine et les mêmes niveaux redonnent la même partie sur une `Table`.
+ *
+ * L'appel est synchrone et dure de quelques millisecondes (Facile) à plusieurs
+ * secondes (Difficile, ou plus de deux joueurs) : l'appeler depuis un Web Worker.
  */
 export function simulate(config: string, seed: number, bots: string): string;
 /**

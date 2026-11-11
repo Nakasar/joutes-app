@@ -34,7 +34,9 @@ export type EngineGameSummary = {
   first_seat: number;
   winners: number[];
   reason: string;
+  /** Faux aussi quand le moteur a dû interrompre la partie (`interrupted`). */
   finished: boolean;
+  interrupted?: boolean;
   turns: number;
   decisions: number;
   points: number[];
