@@ -616,3 +616,254 @@
     animation: none;
   }
 }
+
+/*
+ * Table en relief (components/play/TableScene.tsx) : un plateau de feutre dans
+ * un cadre de bois et de laiton, incliné. Le décor est le même dans les deux
+ * thèmes : c'est un objet, pas une page. La caméra (`data-dive`) s'approche du
+ * champ de bataille d'un combat raconté.
+ */
+.play-scene {
+  --play-tilt: 14deg;
+  --play-wood: #3a2416;
+  --play-wood-dark: #1d120a;
+  --play-brass: #c9a45a;
+  --play-brass-dark: #7a5f2c;
+  --play-felt: #0f2a2c;
+  --play-me: #2bb7dc;
+  --play-other: #e0566b;
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  padding: 1rem 0.5rem 0;
+  color: var(--foreground);
+  background: radial-gradient(70% 55% at 50% 30%, #3a2a1c 0%, #140d08 55%, #070504 100%);
+}
+
+@media (min-width: 64rem) {
+  .play-scene {
+    --play-tilt: 28deg;
+    padding: 1.5rem 2.25rem 0;
+  }
+}
+
+.play-scene::after {
+  /* La lampe au-dessus de la table. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 45% at 50% 35%, rgb(255 200 120 / 0.1), transparent 70%);
+}
+
+.play-lens {
+  transform-origin: var(--dive-ox, 50%) var(--dive-oy, 50%);
+  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+.play-lens[data-dive] {
+  transform: translate(var(--dive-x, 0), var(--dive-y, 0)) scale(var(--dive-zoom, 1.5));
+}
+
+.play-stage {
+  perspective: 1600px;
+  perspective-origin: 50% 25%;
+  /* Le haut du plateau recule : on reprend la place qu'il laisse. */
+  margin-top: -1.5rem;
+}
+
+@media (min-width: 64rem) {
+  .play-stage {
+    perspective: 1600px;
+    margin-top: -4rem;
+  }
+}
+
+.play-board {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  transform: rotateX(var(--play-tilt));
+  /* Pivoter un peu sous le milieu : le haut recule, le bas avance à peine. */
+  transform-origin: 50% 80%;
+  border-radius: 1.25rem;
+  padding: 0.6rem;
+  background:
+    repeating-linear-gradient(92deg, rgb(255 255 255 / 0.04) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(88deg, rgb(0 0 0 / 0.14) 0 5px, transparent 5px 18px),
+    var(--play-wood);
+  box-shadow:
+    0 0 0 1px var(--play-wood-dark),
+    0 30px 60px rgb(0 0 0 / 0.75);
+}
+
+@media (min-width: 64rem) {
+  .play-board {
+    padding: 1.1rem;
+    border-radius: 1.75rem;
+  }
+}
+
+.play-felt {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: 0.9rem;
+  padding: 0.6rem;
+  background:
+    radial-gradient(80% 70% at 50% 40%, rgb(255 214 150 / 0.08), transparent 70%),
+    radial-gradient(120% 100% at 50% 50%, #15383a 0%, var(--play-felt) 60%, #0a1d1f 100%);
+  box-shadow:
+    inset 0 0 0 2px var(--play-brass-dark),
+    inset 0 0 0 3px var(--play-brass),
+    inset 0 0 28px rgb(0 0 0 / 0.6);
+}
+
+@media (min-width: 64rem) {
+  .play-felt {
+    padding: 0.9rem;
+  }
+}
+
+/* Une zone du plateau : un cartouche gravé dans le feutre. */
+@layer components {
+  .play-zone {
+    border-color: color-mix(in srgb, var(--play-brass) 55%, transparent);
+    background-color: rgb(0 0 0 / 0.16);
+    outline: 1px solid color-mix(in srgb, var(--play-brass) 16%, transparent);
+    outline-offset: 3px;
+  }
+
+  .play-engrave {
+    font-family: var(--font-engrave), Georgia, serif;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--play-brass);
+  }
+}
+
+/* Le fanion d'un champ de bataille : à la couleur de celui qui le contrôle. */
+.play-pennant {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-engrave), Georgia, serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #f3e6c8;
+}
+
+.play-pennant::before {
+  content: "";
+  width: 1.4rem;
+  height: 1rem;
+  background: var(--pennant, #6b7785);
+  clip-path: polygon(0 0, 100% 0, 78% 50%, 100% 100%, 0 100%);
+  box-shadow: inset 2px 0 0 var(--play-brass);
+  transition: background-color 0.6s;
+}
+
+.play-pennant[data-control="me"] { --pennant: var(--play-me); }
+.play-pennant[data-control="other"] { --pennant: var(--play-other); }
+.play-pennant[data-control="contested"] { --pennant: rgb(251 191 36); }
+
+/* Les pistes de points, sur le bord gauche (ordinateur seulement). */
+.play-rails {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .play-rails {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+}
+
+.play-rails-group {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.play-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.35rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--play-brass-dark), var(--play-brass) 40%, var(--play-brass-dark));
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.4), 0 3px 6px rgb(0 0 0 / 0.6);
+}
+
+.play-rail-own {
+  flex-direction: column-reverse;
+}
+
+.play-socket {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  background: radial-gradient(circle at 40% 35%, #2b2013, #0d0904);
+  box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.8);
+  transition: background 0.4s, transform 0.4s;
+}
+
+.play-socket-on {
+  --token: var(--play-other);
+  background: radial-gradient(circle at 35% 30%, #fff 0 8%, var(--token) 30%, color-mix(in srgb, var(--token) 50%, #000) 100%);
+  box-shadow: 0 2px 3px rgb(0 0 0 / 0.6);
+}
+
+.play-rail-own .play-socket-on {
+  --token: var(--play-me);
+}
+
+/* La main : à plat, en éventail, par-dessus le bas du plateau. */
+.play-hand {
+  position: relative;
+  z-index: 1;
+  margin-top: -2.5rem;
+  padding: 0 0.5rem 0.75rem;
+}
+
+.play-fan {
+  display: flex;
+  justify-content: safe center;
+  align-items: flex-end;
+  overflow-x: auto;
+  padding-top: 1.75rem;
+  padding-inline: 1rem;
+  padding-bottom: 0.25rem;
+}
+
+.play-fan-card {
+  flex: none;
+  margin-inline: -0.6rem;
+  transform-origin: 50% 140%;
+  transform: rotate(calc(var(--fan, 0) * 3deg)) translateY(calc(var(--fan, 0) * var(--fan, 0) * 2px));
+  transition: transform 0.25s;
+}
+
+.play-fan-card:hover,
+.play-fan-card:focus-within {
+  z-index: 1;
+  transform: translateY(-1.25rem);
+}
+
+@media (min-width: 64rem) {
+  .play-fan-card {
+    margin-inline: -0.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-lens,
+  .play-fan-card {
+    transition: none;
+  }
+}

@@ -682,6 +682,13 @@
         },
         "stops": "Pause at key moments",
         "stopsHint": "A card played by an opponent, end of combat, points scored, start of your turn.",
+        "view": "Table",
+        "views": {
+          "3d": "3D",
+          "flat": "Flat"
+        },
+        "camera": "Camera on combats",
+        "cameraHint": "It moves in on the battlefield during combat, then pulls back.",
         "continue": "Continue",
         "play": "Play my turn",
         "key": "Space",

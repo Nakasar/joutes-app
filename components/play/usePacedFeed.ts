@@ -11,6 +11,7 @@ import {
   diedIn,
   PACE_SPEEDS,
   placeOf,
+  TABLE_VIEWS,
   type Ack,
   type PaceSettings,
   type Place,
@@ -19,12 +20,19 @@ import type { EngineObj, EngineTold, EngineUpdate } from "@/lib/engine/types";
 
 const PACE_STORAGE_KEY = "joutes.play.pace";
 
+function prefersLessMotion(): boolean {
+  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 function readPace(): PaceSettings {
   try {
     const raw = JSON.parse(window.localStorage.getItem(PACE_STORAGE_KEY) ?? "null") as Partial<PaceSettings> | null;
     return {
       speed: raw?.speed && PACE_SPEEDS.includes(raw.speed) ? raw.speed : DEFAULT_PACE.speed,
       stops: typeof raw?.stops === "boolean" ? raw.stops : DEFAULT_PACE.stops,
+      // Sans choix enregistré, la table reste à plat si le système demande moins d'animations.
+      view: raw?.view && TABLE_VIEWS.includes(raw.view) ? raw.view : prefersLessMotion() ? "flat" : DEFAULT_PACE.view,
+      camera: typeof raw?.camera === "boolean" ? raw.camera : DEFAULT_PACE.camera,
     };
   } catch {
     return DEFAULT_PACE;

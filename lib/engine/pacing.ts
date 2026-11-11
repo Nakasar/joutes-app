@@ -14,13 +14,21 @@ export type PaceSpeed = "slow" | "normal" | "fast" | "instant";
 
 export const PACE_SPEEDS: PaceSpeed[] = ["slow", "normal", "fast", "instant"];
 
+/** La table en relief (plateau incliné, décor) ou à plat. */
+export type TableView = "3d" | "flat";
+
+export const TABLE_VIEWS: TableView[] = ["3d", "flat"];
+
 export type PaceSettings = {
   speed: PaceSpeed;
   /** S'arrêter sur « Continuer » aux moments clés. */
   stops: boolean;
+  view: TableView;
+  /** En relief, la caméra plonge sur le champ de bataille d'un combat raconté. */
+  camera: boolean;
 };
 
-export const DEFAULT_PACE: PaceSettings = { speed: "normal", stops: true };
+export const DEFAULT_PACE: PaceSettings = { speed: "normal", stops: true, view: "3d", camera: true };
 
 const BASE_MS: Record<Weight, number> = { minor: 350, normal: 900, major: 1500 };
 const SPEED_FACTOR: Record<PaceSpeed, number> = { slow: 1.6, normal: 1, fast: 0.5, instant: 0 };
@@ -281,4 +289,49 @@ export function ackAfter(
   }
 
   return null;
+}
+
+/**
+ * Ce qui montre qu'un combat est fini : la partie reprend son cours (un coût
+ * payé, une carte jouée, un déplacement, un autre tour…). Le journal de la
+ * table ne garde que les évènements racontés : la fin de la confrontation n'y
+ * figure pas toujours.
+ */
+const AFTER_COMBAT = new Set([
+  "turn_started",
+  "turn_ended",
+  "paid",
+  "played",
+  "activated",
+  "moved",
+  "channeled",
+  "drew",
+  "showdown_started",
+  "combat_started",
+]);
+
+/**
+ * Le champ de bataille du combat en train d'être raconté, pour que la caméra
+ * s'en approche : du début du combat (règle 466) aux dégâts, morts, points et
+ * prises de contrôle qui en découlent. Pendant l'arrêt de fin de combat, la
+ * caméra reste sur place jusqu'à « Continuer ».
+ */
+export function combatInFocus(
+  journal: EngineTold[],
+  current: { index: number } | null,
+  ack: Ack | null,
+): number | null {
+  const at = ack?.kind === "combat" ? ack.at : current?.index;
+  if (at === undefined || at < 0 || at >= journal.length) return null;
+  let start = -1;
+  for (let index = at; index >= 0; index -= 1) {
+    const type = eventType(journal[index]);
+    if (type === "combat_started") {
+      start = index;
+      break;
+    }
+    if (AFTER_COMBAT.has(type)) return null;
+  }
+  if (start < 0) return null;
+  return battlefieldOf(journal[start]);
 }

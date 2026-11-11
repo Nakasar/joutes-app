@@ -682,6 +682,13 @@
         },
         "stops": "S'arrêter aux moments clés",
         "stopsHint": "Carte jouée par un adversaire, fin de combat, points marqués, début de votre tour.",
+        "view": "Table",
+        "views": {
+          "3d": "En relief",
+          "flat": "À plat"
+        },
+        "camera": "Caméra sur les combats",
+        "cameraHint": "Elle s'approche du champ de bataille le temps du combat, puis revient.",
         "continue": "Continuer",
         "play": "Jouer mon tour",
         "key": "Espace",

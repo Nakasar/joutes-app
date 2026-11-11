@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { ackAfter, battlefieldOf, delayOf, diedIn, objectsOf, revealsCard, weightOf } from "./pacing.ts";
+import { ackAfter, battlefieldOf, combatInFocus, delayOf, diedIn, objectsOf, revealsCard, weightOf } from "./pacing.ts";
 import type { EngineTold } from "./types.ts";
 
 const told = (event: EngineTold["event"], text: string): EngineTold => ({ event, text, rule: null });
@@ -87,5 +87,27 @@ describe("moments clés", () => {
   it("ne s'arrête plus quand la partie est finie", () => {
     const end = told({ type: "game_ended", winners: [1], reason: "8 points" }, "Robot gagne.");
     assert.equal(ackAfter([played, end], 0, 0, 2, 0), null);
+  });
+});
+
+describe("caméra sur les combats", () => {
+  const later = told({ type: "moved", seat: 1, units: [13], to: { Bf: 1 } }, "Robot déplace Vi vers Piltover.");
+  const journal = [turn4, channel, played, moved, combat, damage, died, scored, points, later, turn5];
+
+  it("suit le combat de son début aux points qu'il rapporte", () => {
+    assert.equal(combatInFocus(journal, { index: 3 }, null), null);
+    for (const index of [4, 5, 6, 7, 8]) assert.equal(combatInFocus(journal, { index }, null), 0);
+    assert.equal(combatInFocus(journal, { index: 9 }, null), null);
+    assert.equal(combatInFocus(journal, { index: 10 }, null), null);
+  });
+
+  it("reste sur place pendant l'arrêt de fin de combat", () => {
+    const ack = { at: 8, kind: "combat" as const, title: "", lines: [], objId: null };
+    assert.equal(combatInFocus(journal, null, ack), 0);
+  });
+
+  it("ne remonte pas au combat d'un tour précédent", () => {
+    assert.equal(combatInFocus([combat, damage, turn5, draw], { index: 3 }, null), null);
+    assert.equal(combatInFocus(journal, null, null), null);
   });
 });

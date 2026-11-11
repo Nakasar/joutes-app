@@ -682,6 +682,13 @@
         },
         "stops": "Bei wichtigen Momenten anhalten",
         "stopsHint": "Vom Gegner gespielte Karte, Kampfende, erzielte Punkte, Beginn deines Zuges.",
+        "view": "Tisch",
+        "views": {
+          "3d": "3D",
+          "flat": "Flach"
+        },
+        "camera": "Kamera bei Kämpfen",
+        "cameraHint": "Sie fährt während des Kampfes an das Schlachtfeld heran und dann zurück.",
         "continue": "Weiter",
         "play": "Meinen Zug spielen",
         "key": "Leertaste",
