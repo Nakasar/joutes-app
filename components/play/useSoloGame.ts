@@ -6,9 +6,12 @@ import { appendJournal, type GameFeed } from "@/components/play/game-feed";
 import { loadEngine, type BrowserEngine } from "@/lib/engine/browser";
 import type { BotLevel, EngineAction, EngineRecord, EngineTold, EngineUpdate } from "@/lib/engine/types";
 
-/** Une partie contre l'IA telle qu'elle est gardée dans le navigateur. */
+/**
+ * Une partie contre l'IA telle qu'elle est gardée dans le navigateur. `seat`
+ * est `null` pour une partie entre IA, regardée en spectateur.
+ */
 export type SoloSave = {
-  seat: number;
+  seat: number | null;
   bots: (BotLevel | null)[];
   record: EngineRecord;
 };
@@ -23,7 +26,7 @@ export function readSoloSave(): SoloSave | null {
     // oubliée : la lire telle quelle ferait tomber la page à chaque visite.
     if (
       !save ||
-      typeof save.seat !== "number" ||
+      (typeof save.seat !== "number" && save.seat !== null) ||
       !Array.isArray(save.bots) ||
       typeof save.record?.config?.mode !== "string" ||
       !Array.isArray(save.record.config.players) ||
@@ -59,7 +62,7 @@ type Table = InstanceType<BrowserEngine["Table"]>;
  * Une partie contre l'IA, jouée entièrement dans le navigateur. Le journal de
  * la partie est réécrit après chaque coup : recharger la page la reprend.
  */
-export function useSoloGame(save: SoloSave | null): GameFeed {
+export function useSoloGame(save: SoloSave | null, options: { hands?: boolean } = {}): GameFeed {
   const table = useRef<Table | null>(null);
   const seen = useRef(0);
   const [status, setStatus] = useState<GameFeed["status"]>("loading");
@@ -71,13 +74,18 @@ export function useSoloGame(save: SoloSave | null): GameFeed {
   // La table raconte encore le coup précédent : le robot attend.
   const [held, setHeld] = useState(false);
 
-  const seat = save?.seat ?? 0;
+  const seat = save ? save.seat : 0;
+  // Spectateur : la vue d'arbitre (-2) montre les mains des IA, celle de
+  // spectateur (-1) les cache.
+  const viewer = seat ?? (options.hands ? -2 : -1);
 
   const refresh = useCallback(() => {
     const current = table.current;
     if (!current || !save) return;
     try {
-      const next = JSON.parse(current.update(seat, seen.current)) as EngineUpdate;
+      const raw = JSON.parse(current.update(viewer, seen.current)) as EngineUpdate;
+      // L'arbitre voit la question d'une IA : un spectateur n'y répond pas.
+      const next = seat === null ? { ...raw, prompt: null } : raw;
       seen.current = next.seq;
       setUpdate(next);
       setJournal((previous) => appendJournal(previous, next.events));
@@ -87,7 +95,7 @@ export function useSoloGame(save: SoloSave | null): GameFeed {
       // Le moteur a levé une erreur : la dire plutôt que de laisser la table figée.
       setError(cause instanceof Error ? cause.message : String(cause));
     }
-  }, [save, seat]);
+  }, [save, seat, viewer]);
 
   useEffect(() => {
     if (!save) return;
@@ -136,7 +144,7 @@ export function useSoloGame(save: SoloSave | null): GameFeed {
   const act = useCallback(
     (action: EngineAction) => {
       const current = table.current;
-      if (!current) return;
+      if (!current || seat === null) return;
       try {
         current.act(seat, JSON.stringify(action));
         setError(null);
@@ -148,5 +156,20 @@ export function useSoloGame(save: SoloSave | null): GameFeed {
     [seat, refresh],
   );
 
-  return { status, error, update, journal, seat, away: [], act, hold: setHeld };
+  // Le coup suivant d'une IA, tout de suite : le pas à pas d'une partie en pause.
+  const step = useCallback(() => {
+    const current = table.current;
+    if (!current) return;
+    const next = current.to_act();
+    if (next < 0 || !current.is_bot(next)) return;
+    try {
+      current.bot_step();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+      return;
+    }
+    refresh();
+  }, [refresh]);
+
+  return { status, error, update, journal, seat, away: [], act, hold: setHeld, step };
 }

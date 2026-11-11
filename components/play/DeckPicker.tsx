@@ -1,97 +1,343 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import { Check, ChevronsUpDown, Loader2, Shuffle, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { deckProblemText } from "@/components/play/deck-problems";
 
-import type { LobbyDeck } from "@/app/[locale]/(app)/games/riftbound/play/actions";
+import { searchPlayDecksAction, type LobbyDeck } from "@/app/[locale]/(app)/games/riftbound/play/actions";
+import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { TableCards } from "@/lib/engine/cards";
-import type { DeckChoice } from "@/lib/engine/tables";
+import type { BotDeckChoice } from "@/lib/engine/tables";
+import { DOMAIN_HEX } from "@/lib/engine/told-text";
+import { cn } from "@/lib/utils";
 
-export function choiceKey(choice: DeckChoice | null): string {
+export function choiceKey(choice: BotDeckChoice | null): string {
   if (!choice) return "";
+  if (choice.kind === "random") return "random";
   return choice.kind === "deck" ? `deck:${choice.deckId}` : `auto:${choice.legend}`;
 }
 
-function parseKey(key: string): DeckChoice | null {
-  if (key.startsWith("deck:")) return { kind: "deck", deckId: key.slice(5) };
-  if (key.startsWith("auto:")) return { kind: "auto", legend: key.slice(5) };
-  return null;
-}
+/** Ce qu'une ligne de la liste montre, quelle que soit sa source. */
+type Option = {
+  key: string;
+  choice: BotDeckChoice;
+  name: string;
+  hint: string;
+  /** Code moteur de la légende, pour la vignette. */
+  legend: string | null;
+  domains: string[];
+  /** Raison pour laquelle le moteur refuse le deck ; absente s'il est jouable. */
+  refused?: string;
+  favorites?: number;
+  /** Texte où chercher, en minuscules. */
+  haystack: string;
+  deck?: LobbyDeck;
+};
 
 type DeckPickerProps = {
   id: string;
+  /** L'intitulé au-dessus du champ ; absent, il est lu par les lecteurs d'écran seulement. */
+  label?: string;
+  srLabel?: string;
   decks: LobbyDeck[];
   legends: string[];
   cards: TableCards;
-  value: DeckChoice | null;
-  onChange: (choice: DeckChoice | null) => void;
+  value: BotDeckChoice | null;
+  /** `deck` : le deck Joutes choisi, utile pour un deck public trouvé par une recherche. */
+  onChange: (choice: BotDeckChoice, deck?: LobbyDeck) => void;
+  /** Propose « Au hasard » : une légende tirée au sort à chaque partie (pour une IA). */
+  allowRandom?: boolean;
+  /** Cherche aussi dans les decks publics de Joutes pendant la frappe. */
+  searchPublic?: boolean;
+  className?: string;
 };
 
+/** Le temps laissé à la frappe avant de chercher sur le serveur. */
+const SEARCH_DELAY_MS = 300;
+
 /**
- * Le deck avec lequel on s'assoit : l'un des siens, s'il est jouable par le
- * moteur, ou un deck construit automatiquement autour d'une légende.
+ * Le choix d'un deck pour un siège, dans une combobox avec recherche : mes
+ * decks, ceux partagés dans mes groupes, les publics (cherchés sur Joutes
+ * pendant la frappe), et les decks automatiques autour d'une légende. Un deck
+ * que le moteur refuse reste visible, grisé, avec sa raison.
  */
-export function DeckPicker({ id, decks, legends, cards, value, onChange }: DeckPickerProps) {
+export function DeckPicker({
+  id,
+  label,
+  srLabel,
+  decks,
+  legends,
+  cards,
+  value,
+  onChange,
+  allowRandom = false,
+  searchPublic = true,
+  className,
+}: DeckPickerProps) {
   const t = useTranslations("Games.Play");
-  const playable = decks.filter((deck) => deck.list !== null);
-  const refused = decks.filter((deck) => deck.list === null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [found, setFound] = useState<{ query: string; decks: LobbyDeck[] } | null>(null);
+  const [searching, setSearching] = useState(false);
+  // Sur téléphone, la liste s'ouvre en feuille depuis le bas de l'écran : un
+  // menu déroulant n'y trouve pas la place de sa recherche et de ses groupes.
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 639px)");
+    const sync = () => setPhone(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+
+  const trimmed = query.trim();
+  const remote = searchPublic && trimmed.length >= 2;
+
+  useEffect(() => {
+    if (!remote || !open) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setSearching(true);
+      void searchPlayDecksAction(trimmed).then((result) => {
+        if (cancelled) return;
+        setSearching(false);
+        setFound({ query: trimmed, decks: result.ok ? result.decks : [] });
+      });
+    }, SEARCH_DELAY_MS);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [remote, open, trimmed]);
+
+  const fromDeck = (deck: LobbyDeck): Option => {
+    // Le nom que le deck range (celui du catalogue Joutes), sinon celui de la table.
+    const legendName = deck.legendName ?? (deck.legend ? cards[deck.legend]?.name : undefined);
+    const details =
+      deck.source === "mine"
+        ? [legendName]
+        : deck.source === "shared"
+          ? [deck.author, deck.groups?.join(", ")]
+          : [deck.author, legendName];
+    return {
+      key: `deck:${deck.id}`,
+      choice: { kind: "deck", deckId: deck.id },
+      name: deck.name,
+      hint: details.filter(Boolean).join(" · "),
+      legend: deck.legend,
+      domains: (deck.domains ?? []).map((domain) => domain.toLowerCase()),
+      refused: deck.list ? undefined : deckProblemText(t, deck.problems[0] ?? "noLegend"),
+      favorites: deck.favorites,
+      deck,
+      haystack: [deck.name, deck.legendName, legendName, deck.author, ...(deck.groups ?? [])]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase(),
+    };
+  };
+
+  const autoOptions = useMemo<Option[]>(
+    () =>
+      legends.map((code) => {
+        const name = cards[code]?.name ?? code;
+        return {
+          key: `auto:${code}`,
+          choice: { kind: "auto", legend: code },
+          name,
+          hint: t("deck.autoHint"),
+          legend: code,
+          domains: cards[code]?.domains ?? [],
+          haystack: `${name} ${code}`.toLowerCase(),
+        };
+      }),
+    [legends, cards, t],
+  );
+
+  const known = decks.map(fromDeck);
+  const randomOption: Option = {
+    key: "random",
+    choice: { kind: "random" },
+    name: t("deck.random"),
+    hint: t("deck.randomHint"),
+    legend: null,
+    domains: [],
+    haystack: t("deck.random").toLowerCase(),
+  };
+
+  const needle = trimmed.toLowerCase();
+  const matches = (option: Option) => !needle || option.haystack.includes(needle);
+
+  // Les publics de la page, puis ceux trouvés sur le serveur pour cette recherche.
+  const publicKnown = known.filter((_, index) => decks[index].source === "public");
+  const publicFound =
+    remote && found?.query === trimmed
+      ? found.decks.map(fromDeck).filter((option) => !known.some((other) => other.key === option.key))
+      : [];
+
+  const groups: { key: string; title: string; note?: string; options: Option[] }[] = [
+    { key: "random", title: t("deck.randomGroup"), options: allowRandom ? [randomOption].filter(matches) : [] },
+    {
+      key: "mine",
+      title: t("deck.mine"),
+      options: known.filter((_, index) => decks[index].source === "mine").filter(matches),
+    },
+    {
+      key: "shared",
+      title: t("deck.shared"),
+      options: known.filter((_, index) => decks[index].source === "shared").filter(matches),
+    },
+    {
+      key: "public",
+      title: t("deck.public"),
+      note: searchPublic ? (remote ? t("deck.publicSearched") : t("deck.publicHint")) : undefined,
+      options: [...publicKnown.filter(matches), ...publicFound],
+    },
+    { key: "auto", title: t("deck.auto"), options: autoOptions.filter(matches) },
+  ].filter((group) => group.options.length > 0);
+
+  const all = [...(allowRandom ? [randomOption] : []), ...known, ...publicFound, ...autoOptions];
+  const selectedKey = choiceKey(value);
+  // Un deck public trouvé par une recherche passée n'est plus dans la liste : on garde son nom.
+  const [remembered, setRemembered] = useState<Option | null>(null);
+  const selected = all.find((option) => option.key === selectedKey) ?? (remembered?.key === selectedKey ? remembered : null);
+  const count = groups.reduce((sum, group) => sum + group.options.length, 0);
+
+  const pick = (option: Option) => {
+    if (option.refused) return;
+    setRemembered(option);
+    onChange(option.choice, option.deck);
+    setOpen(false);
+    setQuery("");
+  };
+
+  const list = (
+    <Command shouldFilter={false}>
+      <div className="relative">
+        <CommandInput value={query} onValueChange={setQuery} placeholder={t("deck.search")} className="pr-20" />
+        <span className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1 font-mono text-xs text-muted-foreground">
+          {searching && remote && <Loader2 className="size-3 animate-spin" aria-hidden />}
+          {t("deck.count", { count })}
+        </span>
+      </div>
+      <CommandList className="max-h-[min(26rem,60dvh)]">
+        <CommandEmpty>{searching ? t("deck.searching") : t("deck.none")}</CommandEmpty>
+        {groups.map((group) => (
+          <CommandGroup
+            key={group.key}
+            heading={
+              <span className="flex justify-between gap-2">
+                <span>{group.title}</span>
+                {group.note && <span className="font-normal normal-case">{group.note}</span>}
+              </span>
+            }
+          >
+            {group.options.map((option) => (
+              <CommandItem
+                key={option.key}
+                value={option.key}
+                disabled={Boolean(option.refused)}
+                onSelect={() => pick(option)}
+                className="min-h-11 gap-3 py-1.5"
+              >
+                <OptionBody option={option} cards={cards} />
+                {option.key === selectedKey && <Check className="size-4 shrink-0 text-primary" aria-hidden />}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        ))}
+      </CommandList>
+    </Command>
+  );
 
   return (
-    <div className="flex flex-col gap-2">
-      <Label htmlFor={id}>{t("deck.label")}</Label>
-      <Select value={choiceKey(value)} onValueChange={(key) => onChange(parseKey(key))}>
-        <SelectTrigger id={id} className="w-full">
-          <SelectValue placeholder={t("deck.placeholder")} />
-        </SelectTrigger>
-        <SelectContent>
-          {playable.length > 0 && (
-            <SelectGroup>
-              <SelectLabel>{t("deck.mine")}</SelectLabel>
-              {playable.map((deck) => (
-                <SelectItem key={deck.id} value={`deck:${deck.id}`}>
-                  {deck.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          )}
-          <SelectGroup>
-            <SelectLabel>{t("deck.auto")}</SelectLabel>
-            {legends.map((code) => (
-              <SelectItem key={code} value={`auto:${code}`}>
-                {cards[code]?.name ?? code}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-      {refused.length > 0 && (
-        <details className="text-sm text-muted-foreground">
-          <summary className="cursor-pointer">{t("deck.refused", { count: refused.length })}</summary>
-          <ul className="mt-2 flex flex-col gap-2">
-            {refused.map((deck) => (
-              <li key={deck.id}>
-                <span className="font-medium text-foreground">{deck.name}</span>
-                <ul className="list-disc pl-5">
-                  {deck.problems.slice(0, 4).map((problem, index) => (
-                    <li key={index}>{deckProblemText(t, problem)}</li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
-        </details>
+    <div className={cn("flex min-w-0 flex-col gap-2", className)}>
+      {label ? (
+        <Label htmlFor={id}>{label}</Label>
+      ) : (
+        srLabel && (
+          <Label htmlFor={id} className="sr-only">
+            {srLabel}
+          </Label>
+        )
       )}
+      <Popover open={open && !phone} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="h-auto min-h-11 w-full justify-between gap-3 px-2.5 py-1.5 font-normal"
+          >
+            {selected ? (
+              <OptionBody option={selected} cards={cards} />
+            ) : (
+              <span className="truncate text-muted-foreground">{t("deck.placeholder")}</span>
+            )}
+            <ChevronsUpDown className="size-4 shrink-0 opacity-50" aria-hidden />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="w-[min(36rem,calc(100vw-2rem))] min-w-[var(--radix-popover-trigger-width)] p-0"
+        >
+          {list}
+        </PopoverContent>
+      </Popover>
+      <Dialog open={open && phone} onOpenChange={setOpen}>
+        <DialogContent className="top-auto bottom-0 max-h-[85dvh] max-w-none translate-y-0 gap-0 rounded-b-none p-0 pt-10 sm:max-w-none">
+          <DialogTitle className="absolute left-4 top-3 text-base">{label ?? srLabel ?? t("deck.label")}</DialogTitle>
+          {list}
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+/** La vignette de la légende, le nom, la précision et les domaines d'une ligne. */
+function OptionBody({ option, cards }: { option: Option; cards: TableCards }) {
+  const image = option.legend ? cards[option.legend]?.image : undefined;
+  return (
+    <span className="flex min-w-0 flex-1 items-center gap-3 text-left">
+      <span
+        aria-hidden
+        className={cn(
+          "flex h-10 w-7 shrink-0 items-center justify-center overflow-hidden rounded border bg-secondary",
+          option.key === "random" && "bg-[repeating-linear-gradient(135deg,var(--secondary)_0_5px,var(--card)_5px_10px)]",
+        )}
+      >
+        {image ? (
+          // eslint-disable-next-line @next/next/no-img-element -- vignette de carte servie telle quelle
+          <img src={image} alt="" className="size-full object-cover" loading="lazy" />
+        ) : option.key === "random" ? (
+          <Shuffle className="size-3.5 text-muted-foreground" />
+        ) : null}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col leading-tight">
+        <span className="truncate font-medium">{option.name}</span>
+        <span className={cn("truncate text-xs", option.refused ? "text-destructive" : "text-muted-foreground")}>
+          {option.refused ?? option.hint}
+        </span>
+      </span>
+      {option.favorites ? (
+        <span className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground">
+          <Star className="size-3" aria-hidden />
+          {option.favorites}
+        </span>
+      ) : null}
+      {option.domains.length > 0 && (
+        <span className="flex shrink-0 gap-1" aria-hidden>
+          {option.domains.slice(0, 3).map((domain) => (
+            <span key={domain} className="size-2.5 rounded-full" style={{ background: DOMAIN_HEX[domain] ?? "#64748b" }} />
+          ))}
+        </span>
+      )}
+    </span>
   );
 }

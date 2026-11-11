@@ -5,6 +5,7 @@ import { randomBytes, randomInt } from "node:crypto";
 import { DateTime } from "luxon";
 
 import { getDeckById } from "@/lib/db/decks";
+import { readDeckAccess } from "@/lib/decks/read-access";
 import * as tablesDb from "@/lib/db/game-tables";
 import { toEngineDeck } from "@/lib/engine/deck";
 import { autoEngineDeck, engineCards, engineTags, validateEngineDeck } from "@/lib/engine/server";
@@ -54,6 +55,9 @@ export class TableFailure extends Error {
 }
 
 export type DeckChoice = { kind: "deck"; deckId: string } | { kind: "auto"; legend: string };
+
+/** Le deck d'une IA : un choix de joueur, ou une légende tirée au sort à chaque partie. */
+export type BotDeckChoice = DeckChoice | { kind: "random" };
 
 export type Seated = { userId: string; name: string };
 
@@ -116,7 +120,8 @@ export async function resolveDeck(
 
   const stored = await getDeckById(choice.deckId);
   if (!stored || stored.gameId !== gameId) throw new TableFailure("INVALID_DECK");
-  if (stored.playerId !== userId && stored.visibility === "private") throw new TableFailure("INVALID_DECK");
+  // Un deck privé s'ouvre à son auteur et aux membres d'un groupe où il est partagé.
+  if (!(await readDeckAccess(stored, userId))) throw new TableFailure("INVALID_DECK");
 
   const { list, problems } = toEngineDeck(stored.cards, engineTags);
   if (!list) {

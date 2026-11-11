@@ -22,6 +22,11 @@ export type GameFeed = {
    * partie avance au rythme du serveur.
    */
   hold?: (busy: boolean) => void;
+  /**
+   * Fait jouer tout de suite le coup suivant d'une IA, même retenue : le pas à
+   * pas d'une partie entre IA mise en pause. Absent en ligne.
+   */
+  step?: () => void;
 };
 
 /** Le journal ne garde que ce qui se raconte. */

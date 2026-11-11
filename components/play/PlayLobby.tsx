@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Bot, Globe, Server } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Bot, Eye, Globe, Server } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { withDeckProblems } from "@/components/play/deck-problems";
@@ -11,6 +11,7 @@ import {
   createTableAction,
   loadLobby,
   type Lobby,
+  type LobbyDeck,
 } from "@/app/[locale]/(app)/games/riftbound/play/actions";
 import { DeckPicker } from "@/components/play/DeckPicker";
 import { HostPanel } from "@/components/play/HostPanel";
@@ -22,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useRouter } from "@/i18n/navigation";
 import { loadEngine } from "@/lib/engine/browser";
-import type { DeckChoice } from "@/lib/engine/tables";
+import type { BotDeckChoice, DeckChoice } from "@/lib/engine/tables";
 import {
   BOT_LEVELS,
   ENGINE_MODES,
@@ -33,7 +34,11 @@ import {
 } from "@/lib/engine/types";
 import { cn } from "@/lib/utils";
 
-type Opponent = "ai" | "online" | "host";
+/** Qui joue : moi contre l'IA, des IA entre elles (je regarde), en ligne, ou sur un serveur. */
+type Opponent = "ai" | "watch" | "online" | "host";
+
+/** Couleurs des sièges, dans l'ordre de la table (comme `playerColor`). */
+const SEAT_COLORS = ["#2bb7dc", "#f05a7e", "#f5b041", "#8e7cf0"];
 
 export function randomSeed(): number {
   return Math.floor(Math.random() * 2 ** 31) + 1;
@@ -53,7 +58,11 @@ export function PlayLobby() {
   const [mode, setMode] = useState<EngineMode>("duel");
   const [choice, setChoice] = useState<DeckChoice | null>(null);
   const [opponent, setOpponent] = useState<Opponent>("ai");
-  const [level, setLevel] = useState<BotLevel>("normal");
+  // Par siège : le deck et le niveau de l'IA qui s'y assoit.
+  const [botDecks, setBotDecks] = useState<BotDeckChoice[]>([]);
+  const [botLevels, setBotLevels] = useState<BotLevel[]>([]);
+  // Les decks publics trouvés par une recherche, absents de `lobby.decks`.
+  const [found, setFound] = useState<Record<string, LobbyDeck>>({});
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<SoloSave | null>(null);
@@ -79,29 +88,45 @@ export function PlayLobby() {
     return <p className="rounded-xl border bg-card p-8 text-center text-muted-foreground">{t("status.loading")}</p>;
   }
 
-  /** La liste du deck choisi, telle que le moteur la veut. */
-  const myDeck = async (): Promise<EngineDeckList | null> => {
-    if (!choice) return null;
-    if (choice.kind === "deck") return lobby.decks.find((deck) => deck.id === choice.deckId)?.list ?? null;
+  const watching = opponent === "watch";
+  const seatCount = modePlayers(mode);
+  const botDeckOf = (seat: number): BotDeckChoice => botDecks[seat] ?? { kind: "random" };
+  const botLevelOf = (seat: number): BotLevel => botLevels[seat] ?? "normal";
+  const deckById = (id: string) => lobby.decks.find((deck) => deck.id === id) ?? found[id];
+
+  /** La liste d'un deck choisi, telle que le moteur la veut. */
+  const listOf = async (picked: BotDeckChoice | null): Promise<EngineDeckList | null> => {
+    if (!picked) return null;
+    if (picked.kind === "deck") return deckById(picked.deckId)?.list ?? null;
     const engine = await loadEngine();
-    return JSON.parse(engine.auto_deck(choice.legend, randomSeed())) as EngineDeckList | null;
+    const legend = picked.kind === "auto" ? picked.legend : pickRandom(lobby.legends);
+    return JSON.parse(engine.auto_deck(legend, randomSeed())) as EngineDeckList | null;
   };
+  const myDeck = () => listOf(choice);
 
   const startSolo = async () => {
     setBusy(true);
     try {
       const engine = await loadEngine();
-      const deck = await myDeck();
-      if (!deck) throw new Error(t("error.INVALID_DECK"));
-      const players = [{ name: lobby.name ?? t("lobby.you"), deck }];
-      const bots: (BotLevel | null)[] = [null];
-      for (let seat = 1; seat < modePlayers(mode); seat++) {
-        const bot = JSON.parse(engine.auto_deck(pickRandom(lobby.legends), randomSeed())) as EngineDeckList | null;
-        if (!bot) throw new Error(t("error.SERVER"));
-        players.push({ name: t("lobby.botName", { number: seat }), deck: bot });
-        bots.push(level);
+      const players: { name: string; deck: EngineDeckList }[] = [];
+      const bots: (BotLevel | null)[] = [];
+      if (!watching) {
+        const deck = await myDeck();
+        if (!deck) throw new Error(t("error.INVALID_DECK"));
+        players.push({ name: lobby.name ?? t("lobby.you"), deck });
+        bots.push(null);
       }
-      const save: SoloSave = { seat: 0, bots, record: { config: { mode, players }, seed: randomSeed(), actions: [] } };
+      for (let seat = players.length; seat < seatCount; seat++) {
+        const bot = await listOf(botDeckOf(seat));
+        if (!bot) throw new Error(t("error.INVALID_DECK"));
+        players.push({ name: t("lobby.botName", { number: watching ? seat + 1 : seat }), deck: bot });
+        bots.push(botLevelOf(seat));
+      }
+      const save: SoloSave = {
+        seat: watching ? null : 0,
+        bots,
+        record: { config: { mode, players }, seed: randomSeed(), actions: [] },
+      };
       // Le moteur refuse ici une configuration qu'il ne sait pas jouer, avant
       // qu'on ne quitte la page.
       engine.Table.restore(JSON.stringify(save.record), JSON.stringify(bots)).free();
@@ -128,6 +153,7 @@ export function PlayLobby() {
 
   const opponents: { key: Opponent; icon: typeof Bot; title: string; hint: string }[] = [
     { key: "ai", icon: Bot, title: t("lobby.ai"), hint: t("lobby.aiHint") },
+    { key: "watch", icon: Eye, title: t("lobby.watch"), hint: t("lobby.watchHint") },
     { key: "online", icon: Globe, title: t("lobby.online"), hint: t("lobby.onlineHint") },
     { key: "host", icon: Server, title: t("lobby.host"), hint: t("lobby.hostHint") },
   ];
@@ -138,9 +164,9 @@ export function PlayLobby() {
         {saved && (
           <section className="flex flex-row flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/50 bg-card p-5">
             <div>
-              <h2 className="font-semibold">{t("lobby.resumeTitle")}</h2>
+              <h2 className="font-semibold">{t(saved.seat === null ? "lobby.resumeWatchTitle" : "lobby.resumeTitle")}</h2>
               <p className="text-sm text-muted-foreground">
-                {t("lobby.resumeHint", {
+                {t(saved.seat === null ? "lobby.resumeWatchHint" : "lobby.resumeHint", {
                   mode: t(`mode.${saved.record.config.mode}`),
                   moves: saved.record.actions.length,
                 })}
@@ -185,29 +211,8 @@ export function PlayLobby() {
         </section>
 
         <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
-          <h2 className="font-semibold">{t("lobby.deckTitle")}</h2>
-          <DeckPicker
-            id="lobby-deck"
-            decks={lobby.decks}
-            legends={lobby.legends}
-            cards={cards}
-            value={choice}
-            onChange={setChoice}
-          />
-          {!lobby.signedIn && (
-            <div className="flex flex-row flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span>{t("lobby.signInForDecks")}</span>
-              <Button asChild size="sm" variant="outline">
-                <Link href="/login">{t("lobby.signIn")}</Link>
-              </Button>
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground">{t("lobby.sets")}</p>
-        </section>
-
-        <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
-          <h2 className="font-semibold">{t("lobby.opponentTitle")}</h2>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <h2 className="font-semibold">{t("lobby.whoTitle")}</h2>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {opponents.map(({ key, icon: Icon, title, hint }) => (
               <button
                 key={key}
@@ -228,25 +233,99 @@ export function PlayLobby() {
             ))}
           </div>
 
-          {opponent === "ai" && (
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-row flex-wrap items-center gap-2">
-                <span className="text-sm text-muted-foreground">{t("lobby.level")}</span>
-                {BOT_LEVELS.map((value) => (
-                  <Button
-                    key={value}
-                    size="sm"
-                    variant={level === value ? "default" : "outline"}
-                    aria-pressed={level === value}
-                    onClick={() => setLevel(value)}
-                  >
-                    {t(`level.${value}`)}
-                  </Button>
-                ))}
-              </div>
+          <ul className="flex flex-col">
+            {!watching && (
+              <SeatRow color={SEAT_COLORS[0]} name={lobby.name ?? t("lobby.you")} you={t("lobby.youBadge")}>
+                <DeckPicker
+                  id="lobby-deck"
+                  srLabel={t("deck.of", { name: lobby.name ?? t("lobby.you") })}
+                  decks={lobby.decks}
+                  legends={lobby.legends}
+                  cards={cards}
+                  value={choice}
+                  onChange={(next, deck) => {
+                    if (next.kind === "random") return;
+                    if (deck) setFound((previous) => ({ ...previous, [deck.id]: deck }));
+                    setChoice(next);
+                  }}
+                  className="flex-1 basis-72"
+                />
+              </SeatRow>
+            )}
+            {(opponent === "ai" || watching) &&
+              Array.from({ length: seatCount }, (_, seat) => seat)
+                .filter((seat) => watching || seat > 0)
+                .map((seat) => {
+                  const name = t("lobby.botName", { number: watching ? seat + 1 : seat });
+                  return (
+                    <SeatRow key={seat} color={SEAT_COLORS[seat]} name={name}>
+                      <DeckPicker
+                        id={`bot-deck-${seat}`}
+                        srLabel={t("deck.of", { name })}
+                        decks={lobby.decks}
+                        legends={lobby.legends}
+                        cards={cards}
+                        value={botDeckOf(seat)}
+                        allowRandom
+                        onChange={(next, deck) => {
+                          if (deck) setFound((previous) => ({ ...previous, [deck.id]: deck }));
+                          setBotDecks((previous) => {
+                            const copy = [...previous];
+                            copy[seat] = next;
+                            return copy;
+                          });
+                        }}
+                        className="flex-1 basis-72"
+                      />
+                      <div
+                        className="inline-flex overflow-hidden rounded-lg border"
+                        role="group"
+                        aria-label={t("lobby.levelOf", { name })}
+                      >
+                        {BOT_LEVELS.map((value) => (
+                          <button
+                            key={value}
+                            type="button"
+                            aria-pressed={botLevelOf(seat) === value}
+                            onClick={() =>
+                              setBotLevels((previous) => {
+                                const copy = [...previous];
+                                copy[seat] = value;
+                                return copy;
+                              })
+                            }
+                            className={cn(
+                              "min-h-9 px-3 text-xs transition",
+                              botLevelOf(seat) === value
+                                ? "bg-secondary text-foreground"
+                                : "text-muted-foreground hover:text-foreground",
+                            )}
+                          >
+                            {t(`level.${value}`)}
+                          </button>
+                        ))}
+                      </div>
+                    </SeatRow>
+                  );
+                })}
+          </ul>
+
+          {!lobby.signedIn && (
+            <div className="flex flex-row flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span>{t("lobby.signInForDecks")}</span>
+              <Button asChild size="sm" variant="outline">
+                <Link href="/login">{t("lobby.signIn")}</Link>
+              </Button>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">{t("lobby.sets")}</p>
+
+          {(opponent === "ai" || watching) && (
+            <div className="flex flex-col gap-2">
+              {watching && <p className="text-sm text-muted-foreground">{t("lobby.watchInfo")}</p>}
               <div className="flex flex-row flex-wrap gap-2">
-                <Button disabled={busy || !choice} onClick={startSolo}>
-                  {t("lobby.startSolo")}
+                <Button disabled={busy || (!watching && !choice)} onClick={startSolo}>
+                  {watching ? t("lobby.startWatch") : t("lobby.startSolo")}
                 </Button>
               </div>
               {saved && <p className="text-xs text-muted-foreground">{t("lobby.replaces")}</p>}
@@ -330,5 +409,19 @@ export function PlayLobby() {
         </section>
       </aside>
     </div>
+  );
+}
+
+/** Une ligne de « Qui joue ? » : un siège, son deck et, pour une IA, son niveau. */
+function SeatRow({ color, name, you, children }: { color: string; name: string; you?: string; children: ReactNode }) {
+  return (
+    <li className="flex flex-row flex-wrap items-center gap-3 border-t py-3 first:border-t-0">
+      <span className="flex w-32 shrink-0 items-center gap-2">
+        <span aria-hidden className="size-2.5 rounded-full" style={{ background: color }} />
+        <span className="truncate font-semibold">{name}</span>
+        {you && <span className="rounded-md bg-secondary px-1.5 text-[0.7rem]">{you}</span>}
+      </span>
+      {children}
+    </li>
   );
 }

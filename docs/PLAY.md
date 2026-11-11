@@ -5,11 +5,12 @@ Page `/games/riftbound/play`, ouverte par la fonctionnalité de jeu « Jouer »
 `joutes-engine` (Rust) : il connaît les règles, publie les actions permises et
 raconte chaque évènement en citant la règle. Le site ne contient aucune règle.
 
-## Les trois façons de jouer
+## Les façons de jouer
 
 | | Où tourne la partie | Ce qu'il faut |
 |---|---|---|
 | Contre l'IA | Dans le navigateur (WebAssembly) | Rien. La partie est gardée dans `localStorage` et reprend au rechargement. |
+| IA contre IA (spectateur) | Dans le navigateur, comme contre l'IA | Rien. La sauvegarde a `seat: null` ; voir « Regarder des IA » plus bas. |
 | En ligne | Sur le serveur de parties (`joutes-server serve`) | Les variables `JOUTES_ENGINE_*` (voir `.env.example`). |
 | Mon serveur (mode hôte) | Sur un serveur lancé par un organisateur (`joutes-server host`) | L'adresse et le code du serveur, saisis dans la page. Joutes ne les voit pas. |
 
@@ -49,6 +50,28 @@ l'IA, le robot attend la fin du récit (`GameFeed.hold`). Vitesse et arrêts se
 règlent depuis le bandeau du récit et sont gardés dans le navigateur
 (`joutes.play.pace`). Un retard de plus de 60 évènements (reconnexion) se
 rattrape d'un coup.
+
+## Choisir les decks
+
+Chaque siège de « Qui joue ? » a sa combobox (`DeckPicker`) : mes decks, ceux
+partagés dans mes groupes (`playGroupDecks`), les publics (les 20 plus aimés au
+chargement, puis `searchPlayDecksAction` pendant la frappe), les decks
+automatiques autour d'une légende et, pour une IA, « au hasard ». Chaque deck
+est traduit puis vérifié par le moteur côté serveur (`loadLobby`) : un deck
+refusé reste dans la liste, grisé, avec sa raison. En ligne, un deck privé
+partagé dans un de mes groupes se lit aussi (`readDeckAccess`). Les IA
+ajoutées à une table en ligne ou sur un serveur gardent un deck automatique.
+
+## Regarder des IA
+
+« IA contre IA » lance une partie dans le navigateur dont tous les sièges sont
+des robots. La table la montre en spectateur (`GameFeed.seat === null`) : vue
+d'arbitre (`update(-2)`) pour voir les mains, sinon vue de spectateur
+(`update(-1)`) ; la question d'une IA n'est jamais posée. Pause (bouton ou
+Espace) : le récit s'arrête et les robots attendent (`hold`). En pause,
+« Évènement suivant » montre l'évènement suivant, ou fait jouer le coup
+suivant d'une IA (`GameFeed.step`) quand le récit a rattrapé la partie. Les
+arrêts « Continuer » sont désactivés d'office en spectateur (`watchStops`).
 
 ## En ligne
 
