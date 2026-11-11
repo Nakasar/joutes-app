@@ -3,4 +3,4 @@
  * `VERSION`, que `version.test.ts` compare). Une série simulée le retient : une
  * autre version du moteur peut rejouer ses parties autrement.
  */
-export const ENGINE_VERSION = "402c67c";
+export const ENGINE_VERSION = "b44ddd1";

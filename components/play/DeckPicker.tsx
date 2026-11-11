@@ -124,7 +124,14 @@ export function DeckPicker({
         ? [legendName]
         : deck.source === "shared"
           ? [deck.author, deck.groups?.join(", ")]
-          : [deck.author, legendName];
+          : deck.source === "meta"
+            ? [
+                deck.author,
+                // Le nom d'un deck importé dit déjà le tournoi et la place.
+                deck.tournament && !deck.name.includes(deck.tournament.split(" · ").pop() ?? "") ? deck.tournament : undefined,
+                deck.completed?.length ? t("deck.completed") : undefined,
+              ]
+            : [deck.author, legendName];
     return {
       key: `deck:${deck.id}`,
       choice: { kind: "deck", deckId: deck.id },
@@ -135,7 +142,7 @@ export function DeckPicker({
       refused: deck.list ? undefined : deckProblemText(t, deck.problems[0] ?? "noLegend"),
       favorites: deck.favorites,
       deck,
-      haystack: [deck.name, deck.legendName, legendName, deck.author, ...(deck.groups ?? [])]
+      haystack: [deck.name, deck.legendName, legendName, deck.author, deck.tournament, ...(deck.groups ?? [])]
         .filter(Boolean)
         .join(" ")
         .toLowerCase(),
@@ -173,35 +180,43 @@ export function DeckPicker({
   const needle = trimmed.toLowerCase();
   const matches = (option: Option) => !needle || option.haystack.includes(needle);
 
-  // Les publics de la page, puis ceux trouvés sur le serveur pour cette recherche.
-  const publicKnown = known.filter((_, index) => decks[index].source === "public");
-  const publicFound =
-    remote && found?.query === trimmed
-      ? found.decks.map(fromDeck).filter((option) => !known.some((other) => other.key === option.key))
-      : [];
+  // Ceux de la page, puis ceux trouvés sur le serveur pour cette recherche
+  // (publics ou méta, rangés selon leur source).
+  const fromPage = (source: LobbyDeck["source"]) => known.filter((_, index) => decks[index].source === source);
+  const foundDecks =
+    remote && found?.query === trimmed ? found.decks.filter((deck) => !known.some((other) => other.key === `deck:${deck.id}`)) : [];
+  const foundOptions = foundDecks.map(fromDeck);
+  const foundFrom = (source: LobbyDeck["source"]) =>
+    foundOptions.filter((_, index) => foundDecks[index].source === source);
 
   const groups: { key: string; title: string; note?: string; options: Option[] }[] = [
     { key: "random", title: t("deck.randomGroup"), options: allowRandom ? [randomOption].filter(matches) : [] },
     {
       key: "mine",
       title: t("deck.mine"),
-      options: known.filter((_, index) => decks[index].source === "mine").filter(matches),
+      options: fromPage("mine").filter(matches),
     },
     {
       key: "shared",
       title: t("deck.shared"),
-      options: known.filter((_, index) => decks[index].source === "shared").filter(matches),
+      options: fromPage("shared").filter(matches),
+    },
+    {
+      key: "meta",
+      title: t("deck.meta"),
+      note: searchPublic ? (remote ? t("deck.publicSearched") : t("deck.metaHint")) : undefined,
+      options: [...fromPage("meta").filter(matches), ...foundFrom("meta")],
     },
     {
       key: "public",
       title: t("deck.public"),
       note: searchPublic ? (remote ? t("deck.publicSearched") : t("deck.publicHint")) : undefined,
-      options: [...publicKnown.filter(matches), ...publicFound],
+      options: [...fromPage("public").filter(matches), ...foundFrom("public")],
     },
     { key: "auto", title: t("deck.auto"), options: autoOptions.filter(matches) },
   ].filter((group) => group.options.length > 0);
 
-  const all = [...(allowRandom ? [randomOption] : []), ...known, ...publicFound, ...autoOptions];
+  const all = [...(allowRandom ? [randomOption] : []), ...known, ...foundOptions, ...autoOptions];
   const selectedKey = choiceKey(value);
   // Un deck public trouvé par une recherche passée n'est plus dans la liste : on garde son nom.
   const [remembered, setRemembered] = useState<Option | null>(null);

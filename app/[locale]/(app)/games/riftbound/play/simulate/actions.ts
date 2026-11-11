@@ -15,7 +15,15 @@ import {
   setDeckSimulationTarget,
 } from "@/lib/db/deck-simulations.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
-import { metaDecks, publicDecks, sharedDecks, toLobbyDeck, type LobbyDeck } from "@/lib/engine/lobby-decks.ts";
+import {
+  META_PICKER_DECKS,
+  mergeLobbyDecks,
+  metaDecks,
+  publicDecks,
+  sharedDecks,
+  toLobbyDeck,
+  type LobbyDeck,
+} from "@/lib/engine/lobby-decks.ts";
 import { autoEngineDeck, engineCards, validateEngineDeck } from "@/lib/engine/server.ts";
 import {
   MAX_POOL_DECKS,
@@ -66,9 +74,9 @@ async function guarded<T extends object>(run: () => Promise<T>): Promise<SimResu
   }
 }
 
-/** Mes decks, ceux de mes groupes et les publics les plus aimés : ce que je peux faire évaluer ou affronter. */
+/** Mes decks, ceux de mes groupes, les decks méta récents et les publics les plus aimés : ce que je peux faire évaluer ou affronter. */
 async function playableDecks(userId: string, gameId: string): Promise<LobbyDeck[]> {
-  const [{ decks: mine }, shared, popular] = await Promise.all([
+  const [{ decks: mine }, shared, meta, popular] = await Promise.all([
     searchDecks({
       playerId: userId,
       viewerId: userId,
@@ -79,14 +87,10 @@ async function playableDecks(userId: string, gameId: string): Promise<LobbyDeck[
       limit: 100,
     }),
     sharedDecks(userId, gameId),
+    metaDecks(gameId, META_PICKER_DECKS),
     publicDecks(gameId, userId, undefined, PUBLIC_POOL),
   ]);
-  const sharedIds = new Set(shared.map((deck) => deck.id));
-  return [
-    ...mine.map((deck) => toLobbyDeck(deck, "mine")),
-    ...shared,
-    ...popular.filter((deck) => !sharedIds.has(deck.id)),
-  ];
+  return mergeLobbyDecks(mine.map((deck) => toLobbyDeck(deck, "mine")), shared, meta, popular);
 }
 
 export type Simulator = {

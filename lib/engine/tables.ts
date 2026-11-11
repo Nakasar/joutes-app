@@ -7,8 +7,8 @@ import { DateTime } from "luxon";
 import { getDeckById } from "@/lib/db/decks";
 import { readDeckAccess } from "@/lib/decks/read-access";
 import * as tablesDb from "@/lib/db/game-tables";
-import { toEngineDeck } from "@/lib/engine/deck";
-import { autoEngineDeck, engineCards, engineTags, validateEngineDeck } from "@/lib/engine/server";
+import { engineDeckOf } from "@/lib/engine/playable-deck";
+import { autoEngineDeck, engineCards } from "@/lib/engine/server";
 import { engineGameId, parseEngineResult, type EngineResult } from "@/lib/engine/results";
 import { signTicket } from "@/lib/engine/tickets";
 import {
@@ -123,15 +123,8 @@ export async function resolveDeck(
   // Un deck privé s'ouvre à son auteur et aux membres d'un groupe où il est partagé.
   if (!(await readDeckAccess(stored, userId))) throw new TableFailure("INVALID_DECK");
 
-  const { list, problems } = toEngineDeck(stored.cards, engineTags);
-  if (!list) {
-    throw new TableFailure(
-      "INVALID_DECK",
-      problems.map((problem) => problem.kind),
-    );
-  }
-  const refused = validateEngineDeck(list);
-  if (refused.length > 0) throw new TableFailure("INVALID_DECK", refused);
+  const { list, problems } = engineDeckOf(stored);
+  if (!list) throw new TableFailure("INVALID_DECK", problems);
   return { deck: list, deckName: stored.name };
 }
 
