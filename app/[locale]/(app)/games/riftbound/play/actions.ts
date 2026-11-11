@@ -6,7 +6,15 @@ import { auth } from "@/lib/auth.ts";
 import { searchDecks } from "@/lib/db/decks.ts";
 import { getGameTable, listGameTablesOf } from "@/lib/db/game-tables.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
-import { publicDecks, sharedDecks, toLobbyDeck, type LobbyDeck } from "@/lib/engine/lobby-decks.ts";
+import {
+  META_PICKER_DECKS,
+  mergeLobbyDecks,
+  metaDecks,
+  publicDecks,
+  sharedDecks,
+  toLobbyDeck,
+  type LobbyDeck,
+} from "@/lib/engine/lobby-decks.ts";
 import {
   addBot,
   autoDeckLegends,
@@ -113,14 +121,14 @@ export async function loadLobby(): Promise<PlayResult<{ lobby: Lobby }>> {
           signedIn: false,
           name: null,
           online,
-          decks: await publicDecks(game.id, null),
+          decks: mergeLobbyDecks(...(await Promise.all([metaDecks(game.id, META_PICKER_DECKS), publicDecks(game.id, null)]))),
           tables: [],
           legends: autoDeckLegends(),
         },
       };
     }
 
-    const [{ decks }, shared, popular, tables] = await Promise.all([
+    const [{ decks }, shared, popular, meta, tables] = await Promise.all([
       searchDecks({
         playerId: seated.userId,
         viewerId: seated.userId,
@@ -132,21 +140,22 @@ export async function loadLobby(): Promise<PlayResult<{ lobby: Lobby }>> {
       }),
       sharedDecks(seated.userId, game.id),
       publicDecks(game.id, seated.userId),
+      metaDecks(game.id, META_PICKER_DECKS),
       online ? listGameTablesOf(seated.userId, 10) : Promise.resolve([]),
     ]);
 
-    // Un deck à la fois partagé et public reste rangé avec les partagés.
-    const sharedIds = new Set(shared.map((deck) => deck.id));
     return {
       lobby: {
         signedIn: true,
         name: seated.name,
         online,
-        decks: [
-          ...decks.map((deck) => toLobbyDeck(deck, "mine")),
-          ...shared,
-          ...popular.filter((deck) => !sharedIds.has(deck.id)),
-        ],
+        // Un deck à la fois partagé et public reste rangé avec les partagés.
+        decks: mergeLobbyDecks(
+          decks.map((deck) => toLobbyDeck(deck, "mine")),
+          shared,
+          meta,
+          popular,
+        ),
         tables: tables.map(summarize),
         legends: autoDeckLegends(),
       },

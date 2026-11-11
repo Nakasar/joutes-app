@@ -3,8 +3,11 @@ import "server-only";
 import { getDecksByIds, searchDecks } from "@/lib/db/decks.ts";
 import { listPlayGroupDecksOfGroups } from "@/lib/db/play-group-decks.ts";
 import { getPlayGroupsForUser } from "@/lib/db/play-groups.ts";
+import type { DeckCompletion } from "@/lib/engine/complete-deck.ts";
+import { toEngineCode } from "@/lib/engine/cards.ts";
 import { toEngineDeck } from "@/lib/engine/deck.ts";
-import { engineTags, validateEngineDeck } from "@/lib/engine/server.ts";
+import { engineDeckOf } from "@/lib/engine/playable-deck.ts";
+import { engineTags } from "@/lib/engine/server.ts";
 import type { EngineDeckList } from "@/lib/engine/types.ts";
 import type { Deck } from "@/lib/types/Deck.ts";
 
@@ -27,6 +30,8 @@ export type LobbyDeck = {
   domains?: string[];
   /** L'auteur, pour un deck qui n'est pas à moi. */
   author?: string;
+  /** Pour un deck méta : le tournoi et la place, « Top 8 · Regional Lyon ». */
+  tournament?: string;
   /** Les groupes où le deck m'est partagé. */
   groups?: string[];
   favorites?: number;
@@ -35,27 +40,31 @@ export type LobbyDeck = {
   /** Absente si le deck ne peut pas être joué ; `problems` dit pourquoi. */
   list: EngineDeckList | null;
   problems: string[];
+  /** Ce que le moteur a reçu en plus du deck rangé (deck méta importé du locator). */
+  completed?: DeckCompletion[];
 };
 
 /** Un deck Joutes tel que la page Jouer le propose : traduit et vérifié par le moteur. */
 export function toLobbyDeck(deck: Deck, source: LobbyDeckSource, groups?: string[]): LobbyDeck {
+  // Un deck méta importé s'affiche au nom de son joueur, pas du compte qui l'a importé.
+  const author = deck.meta?.imported && deck.meta.pilot ? deck.meta.pilot : deck.creatorName;
   const base = {
     id: deck.id,
     name: deck.name,
     source,
     ...(deck.legendName ? { legendName: deck.legendName } : {}),
     ...(deck.domains?.length ? { domains: deck.domains } : {}),
-    ...(source !== "mine" && deck.creatorName ? { author: deck.creatorName } : {}),
+    ...(source !== "mine" && author ? { author } : {}),
+    ...(deck.meta ? { tournament: [deck.meta.placement, deck.meta.source].filter(Boolean).join(" · ") } : {}),
     ...(groups?.length ? { groups } : {}),
     ...(deck.favoritesCount ? { favorites: deck.favoritesCount } : {}),
     ...(deck.updatedAt ? { updatedAt: new Date(deck.updatedAt).toISOString() } : {}),
   };
-  const { list, problems } = toEngineDeck(deck.cards, engineTags);
-  if (!list) {
-    return { ...base, legend: null, list: null, problems: problems.map((p) => p.kind) };
-  }
-  const refused = validateEngineDeck(list);
-  return { ...base, legend: list.legend, list: refused.length === 0 ? list : null, problems: refused };
+  const { list, problems, completed } = engineDeckOf(deck);
+  // La vignette garde la légende d'un deck refusé, s'il en a une.
+  const first = deck.cards?.legend?.[0]?.cardId;
+  const legend = list?.legend ?? toEngineDeck(deck.cards, engineTags).list?.legend ?? (first ? toEngineCode(first) : null);
+  return { ...base, legend, list, problems, ...(completed.length > 0 ? { completed } : {}) };
 }
 
 /** Combien de decks publics la page propose d'emblée, et par recherche. */
@@ -78,7 +87,20 @@ export async function publicDecks(
   return decks
     .filter((deck) => deck.playerId !== viewerId)
     .slice(0, count)
-    .map((deck) => toLobbyDeck(deck, "public"));
+    .map((deck) => toLobbyDeck(deck, deck.meta ? "meta" : "public"));
+}
+
+/** Combien de decks méta les combobox proposent d'emblée ; les autres se trouvent par la recherche. */
+export const META_PICKER_DECKS = 60;
+
+/** Plusieurs listes en une : un deck présent deux fois reste dans la première où il apparaît. */
+export function mergeLobbyDecks(...lists: LobbyDeck[][]): LobbyDeck[] {
+  const seen = new Set<string>();
+  return lists.flat().filter((deck) => {
+    if (seen.has(deck.id)) return false;
+    seen.add(deck.id);
+    return true;
+  });
 }
 
 /** Les decks partagés dans mes groupes, sauf les miens. */
