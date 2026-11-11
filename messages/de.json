@@ -977,7 +977,8 @@
           "INVALID": "Ungültige Anfrage.",
           "INVALID_DECK": "Die Engine kann dieses Deck nicht spielen.",
           "EMPTY_POOL": "Kein gegnerisches Deck in der gewählten Auswahl.",
-          "SERVER": "Der Server hat nicht geantwortet. Versuche es gleich noch einmal."
+          "SERVER": "Der Server hat nicht geantwortet. Versuche es gleich noch einmal.",
+          "ENGINE": "Die Engine ist bei einer Partie abgestürzt. Starte die Serie neu; wenn es wieder passiert, melde es bitte."
         }
       }
     },

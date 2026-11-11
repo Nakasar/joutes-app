@@ -39,18 +39,66 @@ export async function getDeckSimulation(id: string, userId: string): Promise<Dec
   return doc ? toSimulation(doc) : null;
 }
 
+/** Ce qu'il faut pour vérifier un envoi de parties : le nombre visé et les adversaires possibles. */
+export async function getDeckSimulationForRecord(
+  id: string,
+  userId: string,
+): Promise<{ target: number; opponents: string[] } | null> {
+  const _id = objectId(id);
+  if (!_id) return null;
+  const doc = await collection.findOne(
+    { _id, userId },
+    { projection: { target: 1, "pool.key": 1 } },
+  );
+  return doc ? { target: doc.target, opponents: doc.pool.map((deck) => deck.key) } : null;
+}
+
 /**
- * Ajoute des parties à une série. Rien n'est écrit si l'une d'elles y est déjà
- * (un envoi répété après une coupure) : rend le nombre de parties ajoutées.
+ * Ajoute des parties à une série. Une partie dont le rang y est déjà (envoi
+ * répété après une coupure, deuxième onglet) est ignorée, les autres sont
+ * écrites. Rend le nombre de parties ajoutées.
  */
 export async function pushDeckSimulationGames(id: string, userId: string, games: SimulationGame[]): Promise<number> {
   const _id = objectId(id);
   if (!_id || games.length === 0) return 0;
-  const result = await collection.updateOne(
-    { _id, userId, "games.n": { $nin: games.map((game) => game.n) } },
-    { $push: { games: { $each: games } }, $set: { updatedAt: new Date().toISOString() } },
+  const before = await collection.findOneAndUpdate(
+    { _id, userId },
+    [
+      {
+        $set: {
+          games: {
+            $concatArrays: [
+              "$games",
+              {
+                $filter: {
+                  input: { $literal: games },
+                  as: "g",
+                  cond: { $not: [{ $in: ["$$g.n", "$games.n"] }] },
+                },
+              },
+            ],
+          },
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    ],
+    { projection: { "games.n": 1 }, returnDocument: "before" },
   );
-  return result.modifiedCount === 1 ? games.length : 0;
+  if (!before) return 0;
+  const known = new Set(before.games.map((game) => game.n));
+  return games.filter((game) => !known.has(game.n)).length;
+}
+
+/** Garde les `keep` séries les plus récentes de cette personne pour ce jeu, supprime les autres. */
+export async function pruneDeckSimulations(userId: string, gameId: string, keep: number): Promise<number> {
+  const old = await collection
+    .find({ userId, gameId }, { projection: { _id: 1 } })
+    .sort({ updatedAt: -1 })
+    .skip(keep)
+    .toArray();
+  if (old.length === 0) return 0;
+  const result = await collection.deleteMany({ _id: { $in: old.map((doc) => doc._id) }, userId });
+  return result.deletedCount;
 }
 
 export async function setDeckSimulationTarget(id: string, userId: string, target: number): Promise<boolean> {

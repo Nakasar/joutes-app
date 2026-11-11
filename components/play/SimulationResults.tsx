@@ -112,7 +112,8 @@ export function SimulationResults() {
       toast.error(t(`sim.error.${result.error}`));
       return;
     }
-    setSimulation({ ...simulation, target: result.target, games: runner.games });
+    // Seul le nombre visé change : les parties jouées restent celles du runner.
+    setSimulation({ ...simulation, target: result.target });
   };
 
   const remove = async () => {
@@ -184,7 +185,9 @@ export function SimulationResults() {
       {simulation.engine !== ENGINE_VERSION && (
         <p className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm">{t("sim.otherEngine")}</p>
       )}
-      {runner.error && <p className="rounded-lg border border-destructive/50 p-3 text-sm text-destructive">{runner.error}</p>}
+      {runner.error && (
+        <p className="rounded-lg border border-destructive/50 p-3 text-sm text-destructive">{t(`sim.error.${runner.error}`)}</p>
+      )}
 
       <section className="flex flex-col gap-2 rounded-xl border bg-card p-4">
         <div className="flex flex-row flex-wrap justify-between gap-2 text-sm">

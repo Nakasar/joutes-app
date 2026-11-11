@@ -977,7 +977,8 @@
           "INVALID": "Demande invalide.",
           "INVALID_DECK": "Ce deck ne peut pas être joué par le moteur.",
           "EMPTY_POOL": "Aucun deck adverse dans l'ensemble choisi.",
-          "SERVER": "Le serveur n'a pas répondu. Réessayez dans un instant."
+          "SERVER": "Le serveur n'a pas répondu. Réessayez dans un instant.",
+          "ENGINE": "Le moteur a échoué sur une partie. Relancez la série ; si cela se reproduit, signalez-le."
         }
       }
     },

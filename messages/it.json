@@ -977,7 +977,8 @@
           "INVALID": "Richiesta non valida.",
           "INVALID_DECK": "Il motore non può giocare questo mazzo.",
           "EMPTY_POOL": "Nessun mazzo avversario nell'insieme scelto.",
-          "SERVER": "Il server non ha risposto. Riprova tra un attimo."
+          "SERVER": "Il server non ha risposto. Riprova tra un attimo.",
+          "ENGINE": "Il motore ha avuto un errore in una partita. Riavvia la serie; se succede di nuovo, segnalalo."
         }
       }
     },

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { recordSimulationGamesAction } from "@/app/[locale]/(app)/games/riftbound/play/simulate/actions";
+import { recordSimulationGamesAction, type SimError } from "@/app/[locale]/(app)/games/riftbound/play/simulate/actions";
 import {
   drawOpponent,
   gameConfig,
@@ -15,12 +15,19 @@ import type { DeckSimulation } from "@/lib/types/DeckSimulation";
 
 /** Les parties jouées sont envoyées par paquets de cette taille, ou à l'arrêt. */
 const FLUSH_EVERY = 5;
+/** Le serveur n'accepte pas plus de parties par envoi. */
+const MAX_BATCH = 50;
+/** Des erreurs qu'un nouvel essai ne corrigera pas : la série s'arrête. */
+const FATAL: SimError[] = ["NOT_FOUND", "INVALID", "UNAUTHENTICATED"];
+
+/** Un code d'erreur d'enregistrement (`SimError`), ou `ENGINE` pour un échec du moteur. */
+export type SimulationRunnerError = SimError | "ENGINE";
 
 export type SimulationRunner = {
   games: SimulationGame[];
   running: boolean;
-  /** La dernière erreur (moteur ou enregistrement), à montrer. */
-  error: string | null;
+  /** La dernière erreur (moteur ou enregistrement), à traduire par `sim.error.<code>`. */
+  error: SimulationRunnerError | null;
   start: () => void;
   pause: () => void;
   /** Secondes par partie mesurées pendant cette série, ou `null` avant la première. */
@@ -41,7 +48,7 @@ export function useSimulationRunner(
 ): SimulationRunner {
   const [games, setGames] = useState<SimulationGame[]>(simulation?.games ?? []);
   const [running, setRunning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<SimulationRunnerError | null>(null);
   const [pace, setPace] = useState<number | null>(null);
   const worker = useRef<Worker | null>(null);
   const pending = useRef(new Map<number, Pending>());
@@ -50,11 +57,18 @@ export function useSimulationRunner(
   const played = useRef<SimulationGame[]>(simulation?.games ?? []);
   const target = useRef(simulation?.target ?? 0);
 
+  // Une autre série : on repart de ses parties. Pour la même série (parties
+  // ajoutées), on ne touche qu'au nombre visé : les parties jouées entre-temps
+  // ne sont que dans `played`.
+  const simulationId = simulation?.id;
   useEffect(() => {
     played.current = simulation?.games ?? [];
-    target.current = simulation?.target ?? 0;
     setGames(played.current);
-  }, [simulation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seulement au changement de série
+  }, [simulationId]);
+  useEffect(() => {
+    target.current = simulation?.target ?? 0;
+  }, [simulation?.target]);
 
   const ensureWorker = useCallback((): Worker => {
     if (worker.current) return worker.current;
@@ -70,26 +84,46 @@ export function useSimulationRunner(
     return created;
   }, []);
 
+  const flush = useCallback(async () => {
+    if (!simulation) return;
+    while (unsent.current.length > 0) {
+      const batch = unsent.current.slice(0, MAX_BATCH);
+      unsent.current = unsent.current.slice(MAX_BATCH);
+      let code: SimError | null = null;
+      try {
+        const result = await recordSimulationGamesAction(simulation.id, batch);
+        if (!result.ok) code = result.error;
+      } catch {
+        // Coupure réseau, serveur redéployé : l'action rejette au lieu de répondre.
+        code = "SERVER";
+      }
+      if (code) {
+        // Gardées pour le prochain envoi : une coupure ne perd pas de parties.
+        unsent.current = [...batch, ...unsent.current];
+        setError(code);
+        if (FATAL.includes(code)) stop.current = true;
+        return;
+      }
+    }
+  }, [simulation]);
+
+  // En quittant la page : la partie en cours est abandonnée, celles déjà
+  // jouées partent au serveur sans attendre la réponse.
+  const flushRef = useRef(flush);
+  useEffect(() => {
+    flushRef.current = flush;
+  }, [flush]);
   useEffect(
     () => () => {
       stop.current = true;
       worker.current?.terminate();
       worker.current = null;
+      for (const job of pending.current.values()) job.reject(new Error("arrêt"));
+      pending.current.clear();
+      void flushRef.current();
     },
     [],
   );
-
-  const flush = useCallback(async () => {
-    if (!simulation || unsent.current.length === 0) return;
-    const batch = unsent.current;
-    unsent.current = [];
-    const result = await recordSimulationGamesAction(simulation.id, batch);
-    if (!result.ok) {
-      // Gardées pour le prochain envoi : une coupure ne perd pas de parties.
-      unsent.current = [...batch, ...unsent.current];
-      setError(result.error);
-    }
-  }, [simulation]);
 
   const start = useCallback(() => {
     if (!simulation || running) return;
@@ -130,10 +164,16 @@ export function useSimulationRunner(
           if (unsent.current.length >= FLUSH_EVERY) await flush();
         }
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
+        if (!stop.current) {
+          console.error("simulation", cause);
+          setError("ENGINE");
+        }
       } finally {
-        await flush();
-        setRunning(false);
+        try {
+          await flush();
+        } finally {
+          setRunning(false);
+        }
       }
     })();
   }, [simulation, running, names, ensureWorker, flush]);

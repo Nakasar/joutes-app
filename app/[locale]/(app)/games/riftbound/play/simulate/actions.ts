@@ -7,8 +7,10 @@ import { searchDecks } from "@/lib/db/decks.ts";
 import {
   deleteDeckSimulation,
   getDeckSimulation,
+  getDeckSimulationForRecord,
   insertDeckSimulation,
   listDeckSimulations,
+  pruneDeckSimulations,
   pushDeckSimulationGames,
   setDeckSimulationTarget,
 } from "@/lib/db/deck-simulations.ts";
@@ -41,6 +43,8 @@ class SimFailure extends Error {
 const GAME_SLUG = "riftbound";
 /** Decks publics les plus aimés proposés comme adversaires. */
 const PUBLIC_POOL = 50;
+/** Séries gardées par personne et par jeu ; les plus anciennes sont supprimées. */
+const MAX_SIMULATIONS_PER_USER = 50;
 
 async function context(): Promise<{ userId: string; name: string; gameId: string }> {
   const game = await readGameBySlugOrId(GAME_SLUG);
@@ -193,6 +197,8 @@ function randomSeed(): number {
   return Math.floor(Math.random() * 2 ** 31) + 1;
 }
 
+const isDeck = (deck: SimulationDeck | null): deck is SimulationDeck => deck !== null;
+
 /** Les decks d'un ensemble, figés pour la série. Le deck évalué n'est pas son propre adversaire. */
 async function poolOf(
   sources: SimulationSource[],
@@ -203,21 +209,27 @@ async function poolOf(
   const decks = sources.some((source) => source !== "meta" && source !== "auto")
     ? await playableDecks(userId, gameId)
     : [];
-  const pool: SimulationDeck[] = [];
-  const seen = new Set<string>([exclude]);
-  const add = (deck: SimulationDeck | null) => {
-    if (!deck || seen.has(deck.key) || pool.length >= MAX_POOL_DECKS) return;
-    seen.add(deck.key);
-    pool.push(deck);
-  };
+  // Chaque source donne sa liste ; le plafond se partage ensuite à tour de
+  // rôle, pour qu'une grande source (la méta) n'évince pas les autres.
+  const lists: SimulationDeck[][] = [];
   for (const source of sources) {
     if (source === "meta") {
-      for (const deck of await metaDecks(gameId, MAX_POOL_DECKS)) add(fromLobby(deck, "meta"));
+      lists.push((await metaDecks(gameId, MAX_POOL_DECKS)).map((deck) => fromLobby(deck, "meta")).filter(isDeck));
     } else if (source === "auto") {
       // Un deck automatique par légende, tiré une fois pour toute la série.
-      for (const legend of distinctAutoLegends()) add(autoDeck(legend, randomSeed()));
+      lists.push(distinctAutoLegends().map((legend) => autoDeck(legend, randomSeed())).filter(isDeck));
     } else {
-      for (const deck of decks.filter((candidate) => candidate.source === source)) add(fromLobby(deck, source));
+      lists.push(decks.filter((candidate) => candidate.source === source).map((deck) => fromLobby(deck, source)).filter(isDeck));
+    }
+  }
+  const pool: SimulationDeck[] = [];
+  const seen = new Set<string>([exclude]);
+  for (let index = 0; pool.length < MAX_POOL_DECKS && lists.some((list) => index < list.length); index++) {
+    for (const list of lists) {
+      const deck = list[index];
+      if (!deck || seen.has(deck.key) || pool.length >= MAX_POOL_DECKS) continue;
+      seen.add(deck.key);
+      pool.push(deck);
     }
   }
   return pool;
@@ -277,6 +289,8 @@ export async function createSimulationAction(input: unknown): Promise<SimResult<
       createdAt: now,
       updatedAt: now,
     });
+    // Les séries les plus anciennes au-delà de la limite partent : le compte ne grossit pas sans fin.
+    await pruneDeckSimulations(userId, gameId, MAX_SIMULATIONS_PER_USER);
     return { id };
   });
 }
@@ -298,9 +312,9 @@ export async function recordSimulationGamesAction(id: unknown, games: unknown): 
     if (typeof id !== "string" || !Array.isArray(games) || games.length === 0 || games.length > 50) {
       throw new SimFailure("INVALID");
     }
-    const simulation = await getDeckSimulation(id, userId);
+    const simulation = await getDeckSimulationForRecord(id, userId);
     if (!simulation) throw new SimFailure("NOT_FOUND");
-    const opponents = Object.fromEntries(simulation.pool.map((deck) => [deck.key, deck]));
+    const opponents = Object.fromEntries(simulation.opponents.map((key) => [key, true]));
     const parsed = games.map((game) => parseSimulationGame(game, opponents));
     if (parsed.some((game) => game === null || game.n >= simulation.target)) throw new SimFailure("INVALID");
     const ns = new Set(parsed.map((game) => (game as SimulationGame).n));

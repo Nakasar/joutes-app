@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
   expectedMargin,
+  MAX_POOL_DECKS,
   SECONDS_PER_GAME,
   SIMULATION_SIZES,
   SIMULATION_SOURCES,
@@ -81,14 +82,18 @@ export function SimulatorSetup() {
     return <p className="rounded-xl border bg-card p-8 text-center text-muted-foreground">{t("status.loading")}</p>;
   }
 
-  const poolSize = sources.reduce((sum, source) => sum + simulator.pools[source], 0);
+  // Le serveur plafonne l'ensemble : on annonce la même taille.
+  const poolSize = Math.min(MAX_POOL_DECKS, sources.reduce((sum, source) => sum + simulator.pools[source], 0));
   const ready = deck !== null && (kind === "fixed" ? opponent !== null : poolSize > 0);
   const margin = expectedMargin(games);
 
-  const toggleSource = (source: SimulationSource, on: boolean) =>
+  const toggleSource = (source: SimulationSource, on: boolean) => {
     setSources((previous) =>
       on ? SIMULATION_SOURCES.filter((s) => s === source || previous.includes(s)) : previous.filter((s) => s !== source),
     );
+    // L'option « une légende à la fois » ne se montre qu'avec la méta : sans elle, on revient au tirage par deck.
+    if (source === "meta" && !on) setByLegend(false);
+  };
 
   const start = async () => {
     if (!deck) return;
