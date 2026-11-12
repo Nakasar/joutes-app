@@ -35,6 +35,7 @@ function readPace(): PaceSettings {
       camera: typeof raw?.camera === "boolean" ? raw.camera : DEFAULT_PACE.camera,
       watchStops: typeof raw?.watchStops === "boolean" ? raw.watchStops : DEFAULT_PACE.watchStops,
       effects: typeof raw?.effects === "boolean" ? raw.effects : !prefersLessMotion(),
+      autoPay: typeof raw?.autoPay === "boolean" ? raw.autoPay : DEFAULT_PACE.autoPay,
     };
   } catch {
     return DEFAULT_PACE;

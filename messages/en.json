@@ -703,7 +703,9 @@
         "play": "Play my turn",
         "key": "Space",
         "yourTurn": "Your turn",
-        "sinceLastTurn": "Since your last turn:"
+        "sinceLastTurn": "Since your last turn:",
+        "autoPay": "Pay without confirming",
+        "autoPayHint": "The suggested payment goes through right away, without showing it."
       },
       "concede": {
         "action": "Concede",
@@ -986,6 +988,50 @@
           "EMPTY_POOL": "No opposing deck in the chosen pool.",
           "SERVER": "The server did not answer. Try again in a moment.",
           "ENGINE": "The engine failed on a game. Restart the run; if it happens again, please report it."
+        }
+      },
+      "hand": {
+        "play": "Play",
+        "playHere": "Play here",
+        "hideHere": "Hide face down",
+        "cancel": "Cancel",
+        "dropAnywhere": "Drop anywhere on the table",
+        "where": "Where to play {name}? Click a highlighted spot.",
+        "here": "Here",
+        "playAt": "Play at: {place}",
+        "cost": "Cost:",
+        "whereSpell": "A spell: drop it anywhere on the table, then choose its targets.",
+        "whereList": "Plays to: {places}",
+        "base": "your base",
+        "battlefield": "battlefield {n}"
+      },
+      "payment": {
+        "total": "Total cost",
+        "energy": "Energy",
+        "anyPower": "Any power",
+        "cardPower": "Card's power",
+        "proposed": "Suggested payment",
+        "yours": "Your payment",
+        "nothing": "Nothing chosen.",
+        "rune": "{domain} rune",
+        "alreadyExhausted": "already exhausted",
+        "givesEnergy": "1 Energy",
+        "givesPower": "1 {domain}",
+        "givesBoth": "1 Energy + 1 {domain}",
+        "source": "Resource",
+        "adds": "adds its resource",
+        "customHint": "Click the runes in your base: exhaust, exhaust then recycle, recycle, nothing. A Seal or Gold is used with one click, on the table or below.",
+        "extra": "Left over: {energy} Energy, {power} Power. The pool empties at the end of the phase.",
+        "pay": "Pay",
+        "enter": "Enter",
+        "customize": "Customize",
+        "useProposed": "Suggested payment",
+        "cancel": "Cancel",
+        "use": "Use {name} to pay",
+        "mark": {
+          "exhaust": "exhausted",
+          "both": "exhausted then recycled",
+          "recycle": "recycled"
         }
       }
     },

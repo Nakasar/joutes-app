@@ -239,7 +239,7 @@ export function engineConfig(table: GameTable): { config: EngineConfig; bots: (B
   return {
     config: {
       mode: table.mode,
-      players: table.seats.map((seat) => ({ name: seat.name, deck: seat.deck })),
+      players: table.seats.map((seat) => ({ name: seat.name, deck: seat.deck, ...(seat.bot ? {} : { manual_pay: true }) })),
     },
     bots: table.seats.map((seat) => seat.bot ?? null),
   };
