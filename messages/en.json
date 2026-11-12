@@ -1023,7 +1023,7 @@
         "customHint": "Click the runes in your base: exhaust, exhaust then recycle, recycle, nothing. A Seal or Gold is used with one click, on the table or below.",
         "extra": "Left over: {energy} Energy, {power} Power. The pool empties at the end of the phase.",
         "pay": "Pay",
-        "enter": "Enter",
+        "key": "Space",
         "customize": "Customize",
         "useProposed": "Suggested payment",
         "cancel": "Cancel",

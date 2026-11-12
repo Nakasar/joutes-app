@@ -1023,7 +1023,7 @@
         "customHint": "Clicca le rune della tua base: esaurire, esaurire poi riciclare, riciclare, niente. Un Sigillo o un Oro si usa con un clic, sul tavolo o qui sotto.",
         "extra": "In eccesso: {energy} Energia, {power} Potere. La riserva si svuota alla fine della fase.",
         "pay": "Paga",
-        "enter": "Invio",
+        "key": "Spazio",
         "customize": "Personalizza",
         "useProposed": "Pagamento proposto",
         "cancel": "Annulla",

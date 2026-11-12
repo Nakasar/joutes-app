@@ -57,7 +57,7 @@ export function PaymentPanel({
   const used = payment.abilities.filter((ability) => choice.abilities.includes(abilityKey(ability)));
 
   return (
-    <div className="flex flex-col gap-3">
+    <div data-pay-panel className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2 text-sm">
         <span>{t("total")}</span>
         <CostChips cost={payment.cost} domains={payment.domains} />
@@ -169,7 +169,7 @@ export function PaymentPanel({
       <div className="flex flex-row flex-wrap items-center gap-2">
         <Button onClick={onPay} disabled={custom && !cover.ok}>
           {t("pay")}
-          <kbd className="ml-1 rounded max-lg:hidden border border-current px-1 font-mono text-[0.65rem] opacity-70">{t("enter")}</kbd>
+          <kbd className="ml-1 rounded max-lg:hidden border border-current px-1 font-mono text-[0.65rem] opacity-70">{t("key")}</kbd>
         </Button>
         <Button variant="secondary" onClick={() => onCustom(!custom)}>
           {custom ? t("useProposed") : t("customize")}

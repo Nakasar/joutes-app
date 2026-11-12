@@ -360,13 +360,16 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
   useEffect(() => {
     payRef.current = confirmPay;
   });
-  const paying = pay !== null;
+  // Espace confirme le paiement, sauf pendant un arrêt « Continuer », qui garde la touche.
+  const paying = pay !== null && !hasAck;
   useEffect(() => {
     if (!paying) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Enter") return;
+      if (event.key !== " ") return;
+      // Un champ, ou un bouton du panneau de paiement, garde la touche ; un bouton de la table
+      // (une rune qu'on vient de cliquer) ne doit pas l'avaler.
       const target = event.target as HTMLElement | null;
-      if (target?.closest("button, input, textarea, select, a, [contenteditable]")) return;
+      if (target?.closest("input, textarea, select, [contenteditable], [data-pay-panel]")) return;
       event.preventDefault();
       payRef.current();
     };

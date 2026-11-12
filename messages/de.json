@@ -1023,7 +1023,7 @@
         "customHint": "Klicke die Runen deiner Basis: erschöpfen, erschöpfen und recyceln, recyceln, nichts. Ein Siegel oder Gold wird mit einem Klick genutzt, auf dem Tisch oder unten.",
         "extra": "Übrig: {energy} Energie, {power} Macht. Der Pool leert sich am Ende der Phase.",
         "pay": "Bezahlen",
-        "enter": "Enter",
+        "key": "Leertaste",
         "customize": "Anpassen",
         "useProposed": "Vorgeschlagene Zahlung",
         "cancel": "Abbrechen",
