@@ -167,7 +167,7 @@ export function PaymentPanel({
       )}
 
       <div className="flex flex-row flex-wrap items-center gap-2">
-        <Button onClick={onPay} disabled={!cover.ok}>
+        <Button onClick={onPay} disabled={custom && !cover.ok}>
           {t("pay")}
           <kbd className="ml-1 rounded max-lg:hidden border border-current px-1 font-mono text-[0.65rem] opacity-70">{t("enter")}</kbd>
         </Button>

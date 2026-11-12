@@ -74,7 +74,7 @@ export type Coverage = {
   extraPower: number;
 };
 
-type Pool = { energy: number; power: number[]; wild?: number };
+type Pool = { energy: number; power: number[]; wild?: number; spell_energy?: number; spell_wild?: number };
 
 /** Ce que le choix met dans la réserve, et s'il couvre le coût. */
 export function coverage(
@@ -82,15 +82,18 @@ export function coverage(
   pool: Pool,
   runeDomain: (id: number) => string | null,
   choice: PayChoice,
+  /** On paie un sort : les ressources réservées aux sorts comptent aussi. */
+  spell = false,
 ): Coverage {
   const domains = payment.domains.map((domain) => domain.toLowerCase());
-  let energy = pool.energy;
+  let energy = pool.energy + (spell ? (pool.spell_energy ?? 0) : 0);
   // Les Puissances fournies, une par entrée : un domaine, ou « any ».
   const supply: string[] = [];
   POOL_DOMAINS.forEach((domain, index) => {
     for (let n = 0; n < (pool.power[index] ?? 0); n++) supply.push(domain);
   });
-  for (let n = 0; n < (pool.wild ?? 0); n++) supply.push("any");
+  const wild = (pool.wild ?? 0) + (spell ? (pool.spell_wild ?? 0) : 0);
+  for (let n = 0; n < wild; n++) supply.push("any");
   for (const [id, use] of Object.entries(choice.runes)) {
     if (use === "exhaust" || use === "both") energy += 1;
     if (use === "recycle" || use === "both") supply.push(runeDomain(Number(id)) ?? "any");

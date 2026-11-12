@@ -53,6 +53,9 @@ export function HandCard({ obj, children, playable, armed, onPlay, onDragStart, 
       onPointerEnter={() => onHover(true)}
       onPointerLeave={() => onHover(false)}
       onPointerDown={(event) => {
+        // Un nouvel appui oublie le glisser d'avant, même annulé sans clic (Échap).
+        if (press.current?.timer) window.clearTimeout(press.current.timer);
+        press.current = null;
         if (!playable || event.button !== 0) return;
         if ((event.target as HTMLElement).closest("[data-hand-play]")) return;
         const id = event.pointerId;

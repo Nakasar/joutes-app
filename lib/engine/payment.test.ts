@@ -63,6 +63,15 @@ describe("paiement personnalisé", () => {
     assert.deepEqual(cover.power, [{ key: "fury", have: 1, need: 1 }]);
   });
 
+  it("compte les ressources réservées aux sorts quand on paie un sort", () => {
+    const pool = { energy: 0, power: [0, 0, 0, 0, 0, 0], spell_energy: 2, spell_wild: 2 };
+    const none = { runes: {}, abilities: [] };
+    assert.equal(coverage(payment, pool, domainOf, none, true).ok, true);
+    const unit = coverage(payment, pool, domainOf, none);
+    assert.equal(unit.ok, false);
+    assert.deepEqual(unit.energy, { key: "energy", have: 0, need: 2 });
+  });
+
   it("fait tourner une rune entre ses usages", () => {
     assert.equal(nextRuneUse("none", false), "exhaust");
     assert.equal(nextRuneUse("exhaust", false), "both");

@@ -405,17 +405,28 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
       : [];
 
   // Paiement personnalisé : un Seal ou un Or se choisit aussi d'un clic sur la table.
-  const payAbilityOf = (id: number) =>
-    pay?.custom ? payment?.abilities.find((ability) => ability.source === id) : undefined;
+  const payAbilitiesOf = (id: number) =>
+    pay?.custom ? (payment?.abilities ?? []).filter((ability) => ability.source === id) : [];
+  /** Un clic sur l'objet passe à sa capacité suivante, puis à aucune (une seule par source). */
+  const cycleAbility = (id: number) => {
+    if (!pay) return;
+    const keys = payAbilitiesOf(id).map(abilityKey);
+    const at = keys.findIndex((key) => pay.choice.abilities.includes(key));
+    const next = keys[at + 1];
+    const abilities = [...pay.choice.abilities.filter((key) => !keys.includes(key)), ...(next ? [next] : [])];
+    setPay({ custom: true, choice: { ...pay.choice, abilities } });
+  };
   const toggleAbility = (key: string) => {
     if (!pay) return;
+    const source = key.split(":")[0];
     const abilities = pay.choice.abilities.includes(key)
       ? pay.choice.abilities.filter((k) => k !== key)
-      : [...pay.choice.abilities, key];
+      : [...pay.choice.abilities.filter((k) => k.split(":")[0] !== source), key];
     setPay({ custom: true, choice: { ...pay.choice, abilities } });
   };
   const renderObj = (obj: EngineObj, size: CardSize = "md") => {
-    const source = payAbilityOf(obj.id);
+    const sourceKeys = payAbilitiesOf(obj.id).map(abilityKey);
+    const source = sourceKeys.length > 0;
     return (
       <PlayCard
         key={obj.id}
@@ -427,10 +438,10 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
             ? [{ action: { type: "pay_source" }, label: t("payment.use", { name: cardOf(obj)?.name ?? "" }) }]
             : choicesOn(`obj:${obj.id}`)
         }
-        onAct={source ? () => toggleAbility(abilityKey(source)) : act}
+        onAct={source ? () => cycleAbility(obj.id) : act}
         onInspect={() => setInspected({ obj, card: cardOf(obj) })}
         dim={choosingOnTable}
-        selected={source ? pay?.choice.abilities.includes(abilityKey(source)) : false}
+        selected={source && sourceKeys.some((key) => pay?.choice.abilities.includes(key))}
         focus={focusObjs.has(obj.id)}
         hit={hits.get(obj.id)}
       />
@@ -901,6 +912,7 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
                         return (obj?.code ? cards[obj.code]?.domains[0]?.toLowerCase() : null) ?? null;
                       },
                       pay.choice,
+                      cards[prompt.card ?? ""]?.kind === "spell",
                     )}
                     choice={pay.choice}
                     custom={pay.custom}
@@ -1026,7 +1038,7 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
                     </ul>
                   )}
                   {!inspected.card.playable && <p className="text-amber-500">{t("card.unsupported")}</p>}
-                  {inspected.playable && inspected.obj && (
+                  {inspected.playable && inspected.obj && dropKeysOf(inspected.obj.id).length > 0 && (
                     <PlayWhere
                       keys={dropKeysOf(inspected.obj.id)}
                       hint={hintOf(inspected.obj.id)}

@@ -85,7 +85,8 @@ export type EnginePlayer = {
   rune_deck_count: number;
   trash: EngineObj[];
   banish: EngineObj[];
-  pool: { energy: number; power: number[]; wild?: number };
+  /** `spell_energy` et `spell_wild` ne paient que des sorts ; `reserved`, un autre usage précis. */
+  pool: { energy: number; power: number[]; wild?: number; spell_energy?: number; spell_wild?: number };
   legend: EngineObj;
   /** Les légendes ajoutées en cours de partie (Neeko, Blending In). */
   added_legends?: EngineObj[];
