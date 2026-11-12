@@ -1023,7 +1023,7 @@
         "customHint": "Cliquez les runes de votre base : épuiser, épuiser puis recycler, recycler, rien. Un Seal ou un Or s'active d'un clic, sur la table ou ci-dessous.",
         "extra": "En trop : {energy} Énergie, {power} Puissance. La réserve se vide à la fin de la phase.",
         "pay": "Payer",
-        "enter": "Entrée",
+        "key": "Espace",
         "customize": "Personnaliser",
         "useProposed": "Paiement proposé",
         "cancel": "Annuler",
