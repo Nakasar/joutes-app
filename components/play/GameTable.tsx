@@ -33,6 +33,8 @@ import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 
+import { CostChips, DragGhost, HandCard, RUNE_MARK, type DragStart } from "@/components/play/HandPlay";
+import { PaymentPanel } from "@/components/play/PaymentPanel";
 import { PlayCard, type CardSize } from "@/components/play/PlayCard";
 import { TableFx } from "@/components/play/TableFx";
 import { HandFan, PointRails, TableScene } from "@/components/play/TableScene";
@@ -45,6 +47,17 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { mulliganChoice, mulliganLimit, sortChoices } from "@/lib/engine/anchors";
 import type { TableCard, TableCards } from "@/lib/engine/cards";
+import {
+  abilityKey,
+  coverage,
+  locKey,
+  nextRuneUse,
+  payAction,
+  proposedChoice,
+  sameLoc,
+  type PayChoice,
+  type RuneUse,
+} from "@/lib/engine/payment";
 import {
   actorOf,
   battlefieldOf,
@@ -62,7 +75,9 @@ import type {
   EngineAction,
   EngineBattlefield,
   EngineChoice,
+  EngineLoc,
   EngineObj,
+  EnginePlayHint,
   EnginePlayer,
   EngineTold,
   EngineView,
@@ -82,7 +97,27 @@ const DOMAIN_COLOR: Record<string, string> = {
   order: "bg-yellow-400",
 };
 
-type Inspected = { obj?: EngineObj; card?: TableCard };
+type Inspected = { obj?: EngineObj; card?: TableCard; playable?: boolean };
+
+/** La carte que le joueur est en train de jouer : posée quelque part, ou en attente d'un emplacement. */
+type Intent = { card: number; loc: EngineLoc | null; armed: boolean; sent: boolean };
+
+/** L'état d'un emplacement pendant qu'on joue une carte. */
+type DropState = { key: string; state: "ok" | "hot" | "off" | null; onPick?: (event: { clientX: number; clientY: number }) => void };
+
+/** Le nom d'une question : `"pay"`, `"play_location"`, `"priority"`… */
+function kindName(kind: unknown): string | null {
+  if (typeof kind === "string") return kind;
+  if (kind && typeof kind === "object") return Object.keys(kind)[0] ?? null;
+  return null;
+}
+
+function keyLoc(key: string): EngineLoc | null {
+  const [zone, n] = key.split(":");
+  if (zone === "base") return { Base: Number(n) };
+  if (zone === "bf") return { Bf: Number(n) };
+  return null;
+}
 
 type GameTableProps = {
   feed: GameFeed;
@@ -163,6 +198,182 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
   const promptKey = update ? `${update.seq}:${prompt?.text ?? ""}` : "";
   const mulligan = mulliganState.key === promptKey ? mulliganState.ids : [];
 
+  // ---- Jouer une carte : glisser-déposer, bouton Jouer, paiement.
+  const [intent, setIntent] = useState<Intent | null>(null);
+  const [drag, setDrag] = useState<{ card: number; x: number; y: number; target: string | null } | null>(null);
+  const [dropMenu, setDropMenu] = useState<{ card: number; bf: number; x: number; y: number } | null>(null);
+  const [handHover, setHandHover] = useState<number | null>(null);
+  const [payState, setPayState] = useState<{ key: string; custom: boolean; choice: PayChoice } | null>(null);
+  const asking = kindName(prompt?.kind);
+  const payment = asking === "pay" ? (prompt?.payment ?? null) : null;
+  const plays = prompt?.plays ?? [];
+  const hintOf = (card: number) => plays.find((hint) => hint.card === card);
+  const act = (action: EngineAction) => feed.act(action);
+  const choicesFor = (id: number) => (prompt?.choices ?? []).filter((choice) => choice.action.card === id);
+  const playChoiceOf = (card: number) => choicesFor(card).find((choice) => choice.action.type === "play");
+  const hideChoicesOf = (card: number) => choicesFor(card).filter((choice) => choice.action.type === "hide");
+  /** Où l'on peut poser cette carte : des clés d'emplacement, ou « any » pour un sort. */
+  const dropKeysOf = (card: number): string[] => {
+    const hint = hintOf(card);
+    const hides = hideChoicesOf(card).map((choice) => `bf:${choice.action.bf as number}`);
+    if (!playChoiceOf(card)) return hides;
+    if (!hint) {
+      // Un moteur qui ne donne pas les emplacements : on pose où l'on veut, il demandera.
+      return ["any"];
+    }
+    if (hint.locs.length === 0) return ["any"];
+    return [...new Set([...hint.locs.map(locKey), ...hides])];
+  };
+
+  const playCard = (card: number, loc: EngineLoc | null) => {
+    const choice = playChoiceOf(card);
+    setDropMenu(null);
+    if (!choice) return;
+    setIntent({ card, loc, armed: false, sent: true });
+    act(choice.action);
+  };
+  const dropOn = (card: number, key: string, at: { clientX: number; clientY: number }) => {
+    if (key === "any") return playCard(card, null);
+    const loc = keyLoc(key);
+    if (!loc) return;
+    const hide = "Bf" in loc ? hideChoicesOf(card).find((choice) => choice.action.bf === loc.Bf) : undefined;
+    const canPlay = Boolean(playChoiceOf(card)) && (hintOf(card)?.locs ?? [loc]).some((l) => sameLoc(l, loc));
+    if (hide && canPlay && "Bf" in loc) {
+      setIntent(null);
+      setDropMenu({ card, bf: loc.Bf, x: at.clientX, y: at.clientY });
+    } else if (hide) {
+      setIntent(null);
+      act(hide.action);
+    } else if (canPlay) {
+      playCard(card, loc);
+    }
+  };
+  /** Le bouton Jouer : tout de suite s'il n'y a qu'un endroit possible, sinon on attend un clic. */
+  const playButton = (card: number) => {
+    const keys = dropKeysOf(card);
+    if (keys.length === 1 && hideChoicesOf(card).length === 0) {
+      return playCard(card, keys[0] === "any" ? null : keyLoc(keys[0]));
+    }
+    if (keys.length > 0) setIntent({ card, loc: null, armed: true, sent: false });
+  };
+  const beginDrag = (start: DragStart) => {
+    setIntent(null);
+    setDropMenu(null);
+    setHandHover(null);
+    setDrag({ card: start.card, x: start.x, y: start.y, target: null });
+  };
+
+  // Pendant le glisser, la carte suit le pointeur ; lâchée sur un emplacement permis, elle s'y joue.
+  const dragging = drag !== null;
+  const dropRef = useRef({ dropKeysOf, dropOn });
+  const dragRef = useRef(drag);
+  useEffect(() => {
+    dropRef.current = { dropKeysOf, dropOn };
+    dragRef.current = drag;
+  });
+  useEffect(() => {
+    if (!dragging) return;
+    const targetAt = (x: number, y: number, card: number): string | null => {
+      const keys = dropRef.current.dropKeysOf(card);
+      const el = document.elementFromPoint(x, y) as HTMLElement | null;
+      const zone = el?.closest("[data-drop]")?.getAttribute("data-drop") ?? null;
+      if (zone && keys.includes(zone)) return zone;
+      if (keys.includes("any") && el?.closest("[data-play-table]")) return "any";
+      return null;
+    };
+    const move = (event: PointerEvent) => {
+      setDrag((current) =>
+        current
+          ? { ...current, x: event.clientX, y: event.clientY, target: targetAt(event.clientX, event.clientY, current.card) }
+          : current,
+      );
+    };
+    const up = (event: PointerEvent) => {
+      const current = dragRef.current;
+      setDrag(null);
+      const target = current ? targetAt(event.clientX, event.clientY, current.card) : null;
+      if (current && target) dropRef.current.dropOn(current.card, target, event);
+    };
+    const cancel = () => setDrag(null);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+    };
+  }, [dragging]);
+
+  // Échap : on repose la carte.
+  const pending = intent?.armed || dropMenu !== null || dragging;
+  useEffect(() => {
+    if (!pending) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setIntent(null);
+      setDropMenu(null);
+      setDrag(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [pending]);
+
+  // Le moteur demande où va la carte qu'on vient de poser : on répond pour le joueur.
+  const answered = useRef("");
+  useEffect(() => {
+    if (!prompt || answered.current === promptKey) return;
+    if (intent?.sent && asking === "play_location" && intent.loc) {
+      const choice = prompt.choices.find(
+        (c) => c.action.type === "pick_loc" && sameLoc(c.action.loc as EngineLoc, intent.loc),
+      );
+      if (choice) {
+        answered.current = promptKey;
+        act(choice.action);
+        return;
+      }
+    }
+    // De retour à la question de priorité : la carte est jouée (ou la déclaration annulée).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- la réponse du moteur clôt l'intention
+    if (intent?.sent && asking === "priority") setIntent(null);
+    // « Payer sans confirmer » : la proposition du moteur part aussitôt.
+    if (asking === "pay" && paced.pace.autoPay && prompt.choices[0]?.action.type === "pay") {
+      answered.current = promptKey;
+      act(prompt.choices[0].action);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [promptKey]);
+
+  // Le paiement en cours : la proposition du moteur, ou celle que le joueur compose.
+  const pay = payment
+    ? payState?.key === promptKey
+      ? payState
+      : { key: promptKey, custom: false, choice: proposedChoice(payment) }
+    : null;
+  const setPay = (next: { custom: boolean; choice: PayChoice }) => setPayState({ key: promptKey, ...next });
+  const confirmPay = () => {
+    if (!pay) return;
+    const proposed = prompt?.choices.find((choice) => choice.action.type === "pay");
+    act(pay.custom || !proposed ? payAction(pay.choice) : proposed.action);
+  };
+  const payRef = useRef(confirmPay);
+  useEffect(() => {
+    payRef.current = confirmPay;
+  });
+  const paying = pay !== null;
+  useEffect(() => {
+    if (!paying) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Enter") return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("button, input, textarea, select, a, [contenteditable]")) return;
+      event.preventDefault();
+      payRef.current();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [paying]);
+
   if (!view) {
     return (
       <div className="flex min-h-64 items-center justify-center rounded-xl border bg-card p-8 text-muted-foreground">
@@ -174,7 +385,6 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
   const cardOf = (obj: EngineObj | undefined | null): TableCard | undefined =>
     obj?.code ? cards[obj.code] : undefined;
   const choicesOn = (key: string): EngineChoice[] => sorted?.anchored.get(key) ?? [];
-  const act = (action: EngineAction) => feed.act(action);
   const choosingOnTable = (sorted?.anchored.size ?? 0) > 0;
   const mulliganing = (sorted?.mulligan.length ?? 0) > 0;
   const mulliganMax = sorted ? mulliganLimit(sorted.mulligan) : 0;
@@ -194,20 +404,92 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
           .map((player) => player.seat)
       : [];
 
-  const renderObj = (obj: EngineObj, size: CardSize = "md") => (
-    <PlayCard
-      key={obj.id}
-      obj={obj}
-      card={cardOf(obj)}
-      size={size}
-      choices={choicesOn(`obj:${obj.id}`)}
-      onAct={act}
-      onInspect={() => setInspected({ obj, card: cardOf(obj) })}
-      dim={choosingOnTable}
-      focus={focusObjs.has(obj.id)}
-      hit={hits.get(obj.id)}
-    />
-  );
+  // Paiement personnalisé : un Seal ou un Or se choisit aussi d'un clic sur la table.
+  const payAbilityOf = (id: number) =>
+    pay?.custom ? payment?.abilities.find((ability) => ability.source === id) : undefined;
+  const toggleAbility = (key: string) => {
+    if (!pay) return;
+    const abilities = pay.choice.abilities.includes(key)
+      ? pay.choice.abilities.filter((k) => k !== key)
+      : [...pay.choice.abilities, key];
+    setPay({ custom: true, choice: { ...pay.choice, abilities } });
+  };
+  const renderObj = (obj: EngineObj, size: CardSize = "md") => {
+    const source = payAbilityOf(obj.id);
+    return (
+      <PlayCard
+        key={obj.id}
+        obj={obj}
+        card={cardOf(obj)}
+        size={size}
+        choices={
+          source
+            ? [{ action: { type: "pay_source" }, label: t("payment.use", { name: cardOf(obj)?.name ?? "" }) }]
+            : choicesOn(`obj:${obj.id}`)
+        }
+        onAct={source ? () => toggleAbility(abilityKey(source)) : act}
+        onInspect={() => setInspected({ obj, card: cardOf(obj) })}
+        dim={choosingOnTable}
+        selected={source ? pay?.choice.abilities.includes(abilityKey(source)) : false}
+        focus={focusObjs.has(obj.id)}
+        hit={hits.get(obj.id)}
+      />
+    );
+  };
+
+  // Une carte de la main qu'on peut jouer : aperçu au clic, glisser, bouton Jouer.
+  const handPlayCard = (obj: EngineObj, size: CardSize) => {
+    const choices = choicesOn(`obj:${obj.id}`);
+    const others = choices.filter((choice) => choice.action.type !== "play" && choice.action.type !== "hide");
+    const playable = choices.length > 0 && others.length === 0;
+    if (spectator || !playable) return renderObj(obj, size);
+    return (
+      <HandCard
+        key={obj.id}
+        obj={obj}
+        playable
+        armed={intent?.armed === true && intent.card === obj.id}
+        onPlay={() => playButton(obj.id)}
+        onDragStart={beginDrag}
+        onHover={(hovered) => setHandHover((current) => (hovered ? obj.id : current === obj.id ? null : current))}
+      >
+        <PlayCard
+          obj={obj}
+          card={cardOf(obj)}
+          size={size}
+          onInspect={() => setInspected({ obj, card: cardOf(obj), playable: true })}
+          focus={focusObjs.has(obj.id)}
+        />
+      </HandCard>
+    );
+  };
+
+  // Les runes que le paiement utiliserait : pendant le paiement, ou au survol d'une carte jouable.
+  const previewCard = drag?.card ?? (intent?.armed ? intent.card : handHover);
+  const previewHint = previewCard !== null && previewCard !== undefined ? hintOf(previewCard) : undefined;
+  const runeMarks: Record<number, RuneUse> = pay
+    ? pay.choice.runes
+    : previewHint
+      ? proposedChoice(previewHint).runes
+      : {};
+  const onRune = pay?.custom
+    ? (id: number) => {
+        const obj = view.bases[me].find((o) => o.id === id);
+        const use = nextRuneUse(pay.choice.runes[id] ?? "none", obj?.exhausted === true);
+        setPay({ custom: true, choice: { ...pay.choice, runes: { ...pay.choice.runes, [id]: use } } });
+      }
+    : undefined;
+
+  // L'état de chaque emplacement pendant qu'on joue une carte.
+  const placing = drag?.card ?? (intent?.armed ? intent.card : null);
+  const placeKeys = placing !== null ? dropKeysOf(placing) : [];
+  const dropOf = (key: string): DropState => {
+    if (placing === null || placeKeys.includes("any")) return { key, state: null };
+    if (!placeKeys.includes(key)) return { key, state: "off" };
+    if (drag) return { key, state: drag.target === key ? "hot" : "ok" };
+    return { key, state: "ok", onPick: (event) => dropOn(placing, key, event) };
+  };
+  const anywhere = drag !== null && placeKeys.includes("any");
 
   const renderGhost = (ghost: Ghost, size: "sm" | "md" = "md") => (
     <PlayCard
@@ -228,6 +510,8 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
   const others = view.players.filter((player) => player.seat !== me);
   const mine = view.players[me];
   const myHand = spectator ? [] : (mine.hand ?? []);
+  const placingObj =
+    placing !== null ? [...myHand, ...(mine.champion ? [mine.champion] : [])].find((o) => o.id === placing) : undefined;
   const waitingFor = view.pending && view.pending.seat !== feed.seat ? view.players[view.pending.seat] : null;
 
   // En relief, la caméra s'approche du combat raconté ; jamais pendant qu'on choisit.
@@ -273,7 +557,7 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
         selected={mulligan.includes(obj.id)}
       />
     ) : (
-      renderObj(obj, "lg")
+      handPlayCard(obj, "lg")
     );
   const handItems = [
     ...(mine.champion && !spectator
@@ -282,7 +566,7 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
             key: "champion",
             node: (
               <div className="flex flex-col items-center gap-1">
-                {renderObj(mine.champion, "lg")}
+                {handPlayCard(mine.champion, "lg")}
                 <span className="play-engrave text-[0.6rem] uppercase">{t("zone.champion")}</span>
               </div>
             ),
@@ -301,6 +585,7 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
           choices={choicesOn(`base:${player.seat}`)}
           onAct={act}
           relief={relief}
+          drop={dropOf(`base:${player.seat}`)}
         >
           {view.bases[player.seat].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "md"))}
           {ghostsAt("base", player.seat).map((ghost) => renderGhost(ghost))}
@@ -329,6 +614,7 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
             renderObj={renderObj}
             relief={relief}
             colorOf={colorOf}
+            drop={dropOf(`bf:${bf.index}`)}
           />
         ))}
       </div>
@@ -339,10 +625,18 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
         onAct={act}
         mine
         relief={relief}
+        drop={dropOf(`base:${me}`)}
       >
         {view.bases[me].filter((obj) => !isRune(obj)).map((obj) => renderObj(obj, "lg"))}
         {ghostsAt("base", me).map((ghost) => renderGhost(ghost))}
-        <Runes objs={view.bases[me].filter(isRune)} cards={cards} choicesOn={choicesOn} onAct={act} />
+        <Runes
+          objs={view.bases[me].filter(isRune)}
+          cards={cards}
+          choicesOn={choicesOn}
+          onAct={act}
+          marks={runeMarks}
+          onRune={onRune}
+        />
       </BaseStrip>
     </>
   );
@@ -393,7 +687,7 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
         <div className="flex items-end gap-2 overflow-x-auto px-1 pb-2 pt-2">
           {mine.champion && (
             <div className="flex shrink-0 flex-col items-center gap-1 border-r pr-3">
-              {renderObj(mine.champion, "lg")}
+              {handPlayCard(mine.champion, "lg")}
               <span className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">{t("zone.champion")}</span>
             </div>
           )}
@@ -415,13 +709,70 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
     <div data-play-scroll className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-background text-foreground">
       <TableBar paced={paced} view={view} told={told} colorOf={colorOf} note={note} watching={Boolean(watch)} />
       <TableFx current={paced.current} journal={feed.journal} cards={cards} me={me} pace={paced.pace} />
+      {drag && (
+        <DragGhost
+          card={cardOf(placingObj)}
+          x={drag.x}
+          y={drag.y}
+          over={drag.target !== null}
+          cost={hintOf(drag.card)?.cost}
+        />
+      )}
+      {dropMenu && (
+        <div
+          role="menu"
+          className="fixed z-[70] flex -translate-x-1/2 -translate-y-full flex-col gap-1.5 rounded-xl border bg-card p-2 shadow-2xl"
+          style={{ left: dropMenu.x, top: dropMenu.y - 8 }}
+        >
+          <Button size="sm" onClick={() => playCard(dropMenu.card, { Bf: dropMenu.bf })}>
+            {t("hand.playHere")}
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              const hide = hideChoicesOf(dropMenu.card).find((choice) => choice.action.bf === dropMenu.bf);
+              setDropMenu(null);
+              if (hide) act(hide.action);
+            }}
+          >
+            {t("hand.hideHere")}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setDropMenu(null)}>
+            {t("hand.cancel")}
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 p-2 max-lg:pb-56 sm:p-3 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-4 lg:px-4">
         {/* Sur téléphone, tous les joueurs en haut, côte à côte. */}
         <div className="grid grid-cols-2 gap-2 lg:hidden">{[...others, mine].map((player) => bandOf(player, false))}</div>
 
         {/* Table */}
-        <main data-play-table className="relative flex min-w-0 flex-col gap-3">
+        <main
+          data-play-table
+          className={cn(
+            "relative flex min-w-0 flex-col gap-3 rounded-2xl transition-shadow",
+            anywhere && "ring-4 ring-primary/70",
+          )}
+        >
+          {(anywhere || intent?.armed) && (
+            <div className="relative z-40 h-0">
+              <div
+                role="status"
+                className="absolute left-1/2 top-3 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-primary bg-card/95 py-1.5 pl-4 pr-1.5 text-sm font-semibold shadow-lg"
+              >
+                {anywhere
+                  ? t("hand.dropAnywhere")
+                  : t("hand.where", { name: (placingObj && cardOf(placingObj)?.name) ?? "" })}
+                {intent?.armed && (
+                  <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setIntent(null)}>
+                    {t("hand.cancel")}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
           <div className="hidden flex-col gap-2 lg:flex">{others.map((player) => bandOf(player, true))}</div>
           {/* Sous les bandeaux, au bord haut du plateau : la partie est en pause. */}
           {watch && paced.paused && !view.result && (
@@ -539,8 +890,34 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
                   </div>
                 )}
 
-                {sorted.buttons.length > 0 && (
-                  <ChoiceButtons key={promptKey} choices={sorted.buttons} onAct={act} />
+                {payment && pay ? (
+                  <PaymentPanel
+                    payment={payment}
+                    cover={coverage(
+                      payment,
+                      mine.pool,
+                      (id) => {
+                        const obj = view.bases[me].find((o) => o.id === id);
+                        return (obj?.code ? cards[obj.code]?.domains[0]?.toLowerCase() : null) ?? null;
+                      },
+                      pay.choice,
+                    )}
+                    choice={pay.choice}
+                    custom={pay.custom}
+                    objOf={(id) => view.bases[me].find((o) => o.id === id)}
+                    cardOf={cardOf}
+                    onCustom={(custom) =>
+                      setPay({ custom, choice: custom ? pay.choice : proposedChoice(payment) })
+                    }
+                    onToggleAbility={toggleAbility}
+                    onPay={confirmPay}
+                    onCancel={(() => {
+                      const cancel = prompt.choices.find((choice) => choice.action.type === "cancel");
+                      return cancel ? () => act(cancel.action) : null;
+                    })()}
+                  />
+                ) : (
+                  sorted.buttons.length > 0 && <ChoiceButtons key={promptKey} choices={sorted.buttons} onAct={act} />
                 )}
               </>
             ) : (
@@ -649,6 +1026,20 @@ export function GameTable({ feed, cards, afterResult, note, watch }: GameTablePr
                     </ul>
                   )}
                   {!inspected.card.playable && <p className="text-amber-500">{t("card.unsupported")}</p>}
+                  {inspected.playable && inspected.obj && (
+                    <PlayWhere
+                      keys={dropKeysOf(inspected.obj.id)}
+                      hint={hintOf(inspected.obj.id)}
+                      view={view}
+                      cardOf={cardOf}
+                      domains={inspected.card.domains}
+                      onPlay={() => {
+                        const id = inspected.obj?.id;
+                        setInspected(null);
+                        if (id !== undefined) playButton(id);
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -943,7 +1334,77 @@ function PlayerBand({
   );
 }
 
+function dropClass(drop: DropState | undefined): string | false {
+  if (!drop?.state) return false;
+  if (drop.state === "off") return "opacity-40 transition-opacity";
+  return cn(
+    "ring-2 ring-primary transition",
+    drop.state === "hot" ? "bg-primary/25 shadow-[0_0_34px_var(--primary)]" : "bg-primary/10 shadow-[0_0_24px_color-mix(in_oklab,var(--primary)_40%,transparent)]",
+  );
+}
+
+/** Un emplacement permis, en attente d'un clic (après le bouton Jouer). */
+function DropPick({ drop, label }: { drop: DropState | undefined; label: string }) {
+  const t = useTranslations("Games.Play");
+  if (!drop?.onPick || drop.state !== "ok") return null;
+  return (
+    <button
+      type="button"
+      className="absolute inset-0 z-20 cursor-pointer rounded-xl"
+      aria-label={t("hand.playAt", { place: label })}
+      onClick={(event) => drop.onPick?.(event)}
+    >
+      <span className="absolute right-2 top-2 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+        {t("hand.here")}
+      </span>
+    </button>
+  );
+}
+
+/** Dans l'aperçu d'une carte jouable : où elle peut aller, son coût, et le bouton Jouer. */
+function PlayWhere({
+  keys,
+  hint,
+  view,
+  cardOf,
+  domains,
+  onPlay,
+}: {
+  keys: string[];
+  hint: EnginePlayHint | undefined;
+  view: EngineView;
+  cardOf: (obj: EngineObj | undefined | null) => TableCard | undefined;
+  domains: string[];
+  onPlay: () => void;
+}) {
+  const t = useTranslations("Games.Play");
+  const place = (key: string) => {
+    const loc = keyLoc(key);
+    if (!loc) return "";
+    if ("Base" in loc) return t("hand.base");
+    const bf = view.battlefields[loc.Bf];
+    return (bf && cardOf(bf.card)?.name) ?? t("hand.battlefield", { n: loc.Bf + 1 });
+  };
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border bg-background/60 p-2">
+      {hint && (
+        <p className="flex items-center gap-2">
+          {t("hand.cost")} <CostChips cost={hint.cost} domains={domains} />
+        </p>
+      )}
+      <p className="text-muted-foreground">
+        {keys.includes("any") ? t("hand.whereSpell") : t("hand.whereList", { places: keys.map(place).join(" · ") })}
+      </p>
+      <Button className="self-start" onClick={onPlay}>
+        {t("hand.play")}
+      </Button>
+    </div>
+  );
+}
+
 type BaseStripProps = {
+  /** Pendant qu'on joue une carte : l'emplacement est-il permis, survolé, ou éteint ? */
+  drop?: DropState;
   title: string;
   choices: EngineChoice[];
   onAct: (action: EngineAction) => void;
@@ -953,16 +1414,19 @@ type BaseStripProps = {
   children: ReactNode;
 };
 
-function BaseStrip({ title, choices, onAct, mine = false, relief = false, children }: BaseStripProps) {
+function BaseStrip({ title, choices, onAct, mine = false, relief = false, drop, children }: BaseStripProps) {
   return (
     <section
+      data-drop={drop?.key}
       className={cn(
-        "rounded-xl border p-3",
+        "relative rounded-xl border p-3",
         relief ? "play-zone" : "bg-card",
         choices.length > 0 && "ring-2 ring-primary",
+        dropClass(drop),
       )}
       aria-label={title}
     >
+      <DropPick drop={drop} label={title} />
       <div className="mb-2 flex flex-row flex-wrap items-center justify-between gap-2">
         <h3
           className={cn(
@@ -988,10 +1452,14 @@ type RunesProps = {
   cards: TableCards;
   choicesOn: (key: string) => EngineChoice[];
   onAct: (action: EngineAction) => void;
+  /** Ce que le paiement fait de chaque rune : É épuisée, R recyclée. */
+  marks?: Record<number, RuneUse>;
+  /** Paiement personnalisé : un clic change l'usage de la rune. */
+  onRune?: (id: number) => void;
 };
 
 /** Les runes d'une base : une pastille par rune, à la couleur de son domaine. */
-function Runes({ objs, cards, choicesOn, onAct }: RunesProps) {
+function Runes({ objs, cards, choicesOn, onAct, marks = {}, onRune }: RunesProps) {
   const t = useTranslations("Games.Play");
   if (objs.length === 0) return null;
   const ready = objs.filter((obj) => !obj.exhausted).length;
@@ -1008,16 +1476,46 @@ function Runes({ objs, cards, choicesOn, onAct }: RunesProps) {
         const domain = card?.domains[0]?.toLowerCase() ?? "";
         const choices = choicesOn(`obj:${obj.id}`);
         const title = `${card?.name ?? t("player.runes")}${obj.exhausted ? ` · ${t("card.exhausted")}` : ""}`;
+        const mark = marks[obj.id] && marks[obj.id] !== "none" ? marks[obj.id] : null;
         const dot = (
-          <span
-            className={cn(
-              "block size-5 rounded-full border-2 border-background lg:size-6",
-              DOMAIN_COLOR[domain] ?? "bg-muted-foreground",
-              obj.exhausted && "opacity-30",
-              choices.length > 0 && "ring-2 ring-primary",
+          <span className="relative block">
+            <span
+              className={cn(
+                "block size-5 rounded-full border-2 border-background lg:size-6",
+                DOMAIN_COLOR[domain] ?? "bg-muted-foreground",
+                obj.exhausted && "opacity-30",
+                (choices.length > 0 || onRune) && "ring-2 ring-primary/60",
+                mark === "exhaust" && "ring-[3px] ring-primary",
+                mark === "recycle" && "ring-[3px] ring-amber-400",
+                mark === "both" && "ring-[3px] ring-primary outline outline-[3px] outline-offset-2 outline-amber-400",
+              )}
+            />
+            {mark && mark !== "none" && (
+              <span
+                className={cn(
+                  "absolute -right-2 -top-2.5 rounded-full border bg-card px-1 text-[0.55rem] font-extrabold leading-3.5",
+                  mark === "recycle" ? "text-amber-400" : "text-primary",
+                )}
+              >
+                {RUNE_MARK[mark]}
+              </span>
             )}
-          />
+          </span>
         );
+        if (onRune) {
+          return (
+            <button
+              key={obj.id}
+              type="button"
+              title={`${title}${mark && mark !== "none" ? ` · ${t(`payment.mark.${mark}`)}` : ""}`}
+              aria-label={`${title}${mark && mark !== "none" ? ` · ${t(`payment.mark.${mark}`)}` : ""}`}
+              onClick={() => onRune(obj.id)}
+              className="cursor-pointer transition hover:-translate-y-0.5"
+            >
+              {dot}
+            </button>
+          );
+        }
         return choices.length > 0 ? (
           <button
             key={obj.id}
@@ -1066,6 +1564,7 @@ type BattlefieldColumnProps = {
   relief?: boolean;
   /** La couleur d'un joueur, pour le fanion de celui qui contrôle. */
   colorOf?: (seat: number) => string;
+  drop?: DropState;
 };
 
 function BattlefieldColumn({
@@ -1082,6 +1581,7 @@ function BattlefieldColumn({
   renderObj,
   relief = false,
   colorOf,
+  drop,
 }: BattlefieldColumnProps) {
   const t = useTranslations("Games.Play");
   const mineHere = bf.units.filter((obj) => obj.controller === me);
@@ -1108,6 +1608,7 @@ function BattlefieldColumn({
   return (
     <section
       data-bf={bf.index}
+      data-drop={drop?.key}
       aria-label={status}
       className={cn(
         "relative flex min-w-0 flex-col items-center gap-2 rounded-xl border p-2 transition-colors duration-300 sm:p-3",
@@ -1115,8 +1616,10 @@ function BattlefieldColumn({
         showdown && "border-amber-500",
         focus && "border-amber-400",
         choices.length > 0 && "ring-2 ring-primary",
+        dropClass(drop),
       )}
     >
+      <DropPick drop={drop} label={status} />
       {relief && (
         <span
           className="play-pennant self-start"
@@ -1590,6 +2093,20 @@ function PaceSettings({ paced, watching = false }: { paced: PacedFeed; watching?
             <span className="block text-xs text-muted-foreground">{t("pace.effectsHint")}</span>
           </span>
         </label>
+        {!watching && (
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 accent-[var(--primary)]"
+              checked={paced.pace.autoPay}
+              onChange={(event) => paced.setPace({ ...paced.pace, autoPay: event.target.checked })}
+            />
+            <span>
+              {t("pace.autoPay")}
+              <span className="block text-xs text-muted-foreground">{t("pace.autoPayHint")}</span>
+            </span>
+          </label>
+        )}
       </PopoverContent>
     </Popover>
   );

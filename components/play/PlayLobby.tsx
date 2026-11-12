@@ -111,12 +111,12 @@ export function PlayLobby() {
     setBusy(true);
     try {
       const engine = await loadEngine();
-      const players: { name: string; deck: EngineDeckList }[] = [];
+      const players: { name: string; deck: EngineDeckList; manual_pay?: boolean }[] = [];
       const bots: (BotLevel | null)[] = [];
       if (!watching) {
         const deck = await myDeck();
         if (!deck) throw new Error(t("error.INVALID_DECK"));
-        players.push({ name: lobby.name ?? t("lobby.you"), deck });
+        players.push({ name: lobby.name ?? t("lobby.you"), deck, manual_pay: true });
         bots.push(null);
       }
       for (let seat = players.length; seat < seatCount; seat++) {

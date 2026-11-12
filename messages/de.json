@@ -703,7 +703,9 @@
         "play": "Meinen Zug spielen",
         "key": "Leertaste",
         "yourTurn": "Du bist dran",
-        "sinceLastTurn": "Seit deinem letzten Zug:"
+        "sinceLastTurn": "Seit deinem letzten Zug:",
+        "autoPay": "Ohne Bestätigung bezahlen",
+        "autoPayHint": "Die vorgeschlagene Zahlung wird sofort ausgeführt."
       },
       "concede": {
         "action": "Aufgeben",
@@ -986,6 +988,50 @@
           "EMPTY_POOL": "Kein gegnerisches Deck in der gewählten Auswahl.",
           "SERVER": "Der Server hat nicht geantwortet. Versuche es gleich noch einmal.",
           "ENGINE": "Die Engine ist bei einer Partie abgestürzt. Starte die Serie neu; wenn es wieder passiert, melde es bitte."
+        }
+      },
+      "hand": {
+        "play": "Spielen",
+        "playHere": "Hier spielen",
+        "hideHere": "Verdeckt verstecken",
+        "cancel": "Abbrechen",
+        "dropAnywhere": "Irgendwo auf dem Tisch ablegen",
+        "where": "Wo {name} spielen? Klicke auf einen markierten Platz.",
+        "here": "Hier",
+        "playAt": "Spielen auf: {place}",
+        "cost": "Kosten:",
+        "whereSpell": "Ein Zauber: irgendwo auf dem Tisch ablegen, dann Ziele wählen.",
+        "whereList": "Wird gespielt auf: {places}",
+        "base": "deine Basis",
+        "battlefield": "Schlachtfeld {n}"
+      },
+      "payment": {
+        "total": "Gesamtkosten",
+        "energy": "Energie",
+        "anyPower": "Beliebige Macht",
+        "cardPower": "Macht der Karte",
+        "proposed": "Vorgeschlagene Zahlung",
+        "yours": "Deine Zahlung",
+        "nothing": "Nichts gewählt.",
+        "rune": "{domain}-Rune",
+        "alreadyExhausted": "bereits erschöpft",
+        "givesEnergy": "1 Energie",
+        "givesPower": "1 {domain}",
+        "givesBoth": "1 Energie + 1 {domain}",
+        "source": "Ressource",
+        "adds": "fügt ihre Ressource hinzu",
+        "customHint": "Klicke die Runen deiner Basis: erschöpfen, erschöpfen und recyceln, recyceln, nichts. Ein Siegel oder Gold wird mit einem Klick genutzt, auf dem Tisch oder unten.",
+        "extra": "Übrig: {energy} Energie, {power} Macht. Der Pool leert sich am Ende der Phase.",
+        "pay": "Bezahlen",
+        "enter": "Enter",
+        "customize": "Anpassen",
+        "useProposed": "Vorgeschlagene Zahlung",
+        "cancel": "Abbrechen",
+        "use": "{name} zum Bezahlen nutzen",
+        "mark": {
+          "exhaust": "erschöpft",
+          "both": "erschöpft, dann recycelt",
+          "recycle": "recycelt"
         }
       }
     },

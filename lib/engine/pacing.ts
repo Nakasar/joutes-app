@@ -33,6 +33,8 @@ export type PaceSettings = {
   watchStops: boolean;
   /** Les effets des cartes sur la table : éclairs, comètes, flammes… */
   effects: boolean;
+  /** Payer tout de suite ce que le moteur propose, sans montrer le paiement. */
+  autoPay: boolean;
 };
 
 export const DEFAULT_PACE: PaceSettings = {
@@ -42,6 +44,7 @@ export const DEFAULT_PACE: PaceSettings = {
   camera: true,
   watchStops: false,
   effects: true,
+  autoPay: false,
 };
 
 const BASE_MS: Record<Weight, number> = { minor: 350, normal: 900, major: 1500 };

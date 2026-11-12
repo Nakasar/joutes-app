@@ -703,7 +703,9 @@
         "play": "Jouer mon tour",
         "key": "Espace",
         "yourTurn": "À vous de jouer",
-        "sinceLastTurn": "Depuis votre dernier tour :"
+        "sinceLastTurn": "Depuis votre dernier tour :",
+        "autoPay": "Payer sans confirmer",
+        "autoPayHint": "Le paiement proposé part aussitôt, sans le montrer."
       },
       "concede": {
         "action": "Abandonner",
@@ -986,6 +988,50 @@
           "EMPTY_POOL": "Aucun deck adverse dans l'ensemble choisi.",
           "SERVER": "Le serveur n'a pas répondu. Réessayez dans un instant.",
           "ENGINE": "Le moteur a échoué sur une partie. Relancez la série ; si cela se reproduit, signalez-le."
+        }
+      },
+      "hand": {
+        "play": "Jouer",
+        "playHere": "Jouer ici",
+        "hideHere": "Cacher face cachée",
+        "cancel": "Annuler",
+        "dropAnywhere": "Lâchez n'importe où sur la table",
+        "where": "Où jouer {name} ? Cliquez un emplacement entouré.",
+        "here": "Ici",
+        "playAt": "Jouer à : {place}",
+        "cost": "Coût :",
+        "whereSpell": "Un sort : lâchez-le n'importe où sur la table, puis choisissez ses cibles.",
+        "whereList": "Se joue à : {places}",
+        "base": "votre base",
+        "battlefield": "champ de bataille {n}"
+      },
+      "payment": {
+        "total": "Coût total",
+        "energy": "Énergie",
+        "anyPower": "Puissance au choix",
+        "cardPower": "Puissance de la carte",
+        "proposed": "Paiement proposé",
+        "yours": "Votre paiement",
+        "nothing": "Rien de choisi.",
+        "rune": "Rune {domain}",
+        "alreadyExhausted": "déjà épuisée",
+        "givesEnergy": "1 Énergie",
+        "givesPower": "1 {domain}",
+        "givesBoth": "1 Énergie + 1 {domain}",
+        "source": "Ressource",
+        "adds": "ajoute sa ressource",
+        "customHint": "Cliquez les runes de votre base : épuiser, épuiser puis recycler, recycler, rien. Un Seal ou un Or s'active d'un clic, sur la table ou ci-dessous.",
+        "extra": "En trop : {energy} Énergie, {power} Puissance. La réserve se vide à la fin de la phase.",
+        "pay": "Payer",
+        "enter": "Entrée",
+        "customize": "Personnaliser",
+        "useProposed": "Paiement proposé",
+        "cancel": "Annuler",
+        "use": "Utiliser {name} pour payer",
+        "mark": {
+          "exhaust": "épuisée",
+          "both": "épuisée puis recyclée",
+          "recycle": "recyclée"
         }
       }
     },

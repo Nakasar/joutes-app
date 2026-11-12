@@ -28,7 +28,8 @@ export type EngineDeckList = {
 
 export type EngineConfig = {
   mode: EngineMode;
-  players: { name: string; deck: EngineDeckList }[];
+  /** `manual_pay` : le joueur choisit son paiement (les humains ; jamais les IA). */
+  players: { name: string; deck: EngineDeckList; manual_pay?: boolean }[];
   first_player?: number | null;
   auto_pass?: boolean;
   allow_unimplemented?: boolean;
@@ -84,7 +85,7 @@ export type EnginePlayer = {
   rune_deck_count: number;
   trash: EngineObj[];
   banish: EngineObj[];
-  pool: { energy: number; power: number[] };
+  pool: { energy: number; power: number[]; wild?: number };
   legend: EngineObj;
   /** Les légendes ajoutées en cours de partie (Neeko, Blending In). */
   added_legends?: EngineObj[];
@@ -140,11 +141,43 @@ export type EngineTold = {
 
 export type EngineChoice = { action: EngineAction; label: string };
 
+/** Un symbole de Puissance d'un coût : d'un domaine, au choix, ou d'un domaine de la carte. */
+export type EnginePower = { Of: string } | "Any" | "Card";
+
+export type EngineCost = { energy: number; power: EnginePower[] };
+
+/** Une carte jouable vue d'avance : où la poser et comment elle serait payée. */
+export type EnginePlayHint = {
+  card: number;
+  /** Vide pour un sort : il se lâche n'importe où. */
+  locs: EngineLoc[];
+  cost: EngineCost;
+  exhaust: number[];
+  recycle: number[];
+};
+
+/** Une capacité qui ajoute des ressources (Seal, Or…). */
+export type EnginePayAbility = { source: number; ability: number; energy: number; power: EnginePower[] };
+
+/** La question de paiement : le coût final, la proposition du moteur, et avec quoi payer. */
+export type EnginePayment = {
+  cost: EngineCost;
+  domains: string[];
+  exhaust: number[];
+  recycle: number[];
+  runes: number[];
+  abilities: EnginePayAbility[];
+};
+
 export type EnginePrompt = {
   kind: unknown;
   text: string;
   card: string | null;
   choices: EngineChoice[];
+  /** Question de priorité d'un joueur à paiement personnalisé. */
+  plays?: EnginePlayHint[];
+  /** Question de paiement. */
+  payment?: EnginePayment;
 };
 
 export type EngineUpdate = {

@@ -703,7 +703,9 @@
         "play": "Gioca il mio turno",
         "key": "Spazio",
         "yourTurn": "Tocca a te",
-        "sinceLastTurn": "Dal tuo ultimo turno:"
+        "sinceLastTurn": "Dal tuo ultimo turno:",
+        "autoPay": "Paga senza confermare",
+        "autoPayHint": "Il pagamento proposto parte subito, senza mostrarlo."
       },
       "concede": {
         "action": "Arrenditi",
@@ -986,6 +988,50 @@
           "EMPTY_POOL": "Nessun mazzo avversario nell'insieme scelto.",
           "SERVER": "Il server non ha risposto. Riprova tra un attimo.",
           "ENGINE": "Il motore ha avuto un errore in una partita. Riavvia la serie; se succede di nuovo, segnalalo."
+        }
+      },
+      "hand": {
+        "play": "Gioca",
+        "playHere": "Gioca qui",
+        "hideHere": "Nascondi coperta",
+        "cancel": "Annulla",
+        "dropAnywhere": "Rilascia ovunque sul tavolo",
+        "where": "Dove giocare {name}? Clicca un punto evidenziato.",
+        "here": "Qui",
+        "playAt": "Gioca in: {place}",
+        "cost": "Costo:",
+        "whereSpell": "Una magia: rilasciala ovunque sul tavolo, poi scegli i bersagli.",
+        "whereList": "Si gioca in: {places}",
+        "base": "la tua base",
+        "battlefield": "campo di battaglia {n}"
+      },
+      "payment": {
+        "total": "Costo totale",
+        "energy": "Energia",
+        "anyPower": "Potere a scelta",
+        "cardPower": "Potere della carta",
+        "proposed": "Pagamento proposto",
+        "yours": "Il tuo pagamento",
+        "nothing": "Niente scelto.",
+        "rune": "Runa {domain}",
+        "alreadyExhausted": "già esaurita",
+        "givesEnergy": "1 Energia",
+        "givesPower": "1 {domain}",
+        "givesBoth": "1 Energia + 1 {domain}",
+        "source": "Risorsa",
+        "adds": "aggiunge la sua risorsa",
+        "customHint": "Clicca le rune della tua base: esaurire, esaurire poi riciclare, riciclare, niente. Un Sigillo o un Oro si usa con un clic, sul tavolo o qui sotto.",
+        "extra": "In eccesso: {energy} Energia, {power} Potere. La riserva si svuota alla fine della fase.",
+        "pay": "Paga",
+        "enter": "Invio",
+        "customize": "Personalizza",
+        "useProposed": "Pagamento proposto",
+        "cancel": "Annulla",
+        "use": "Usa {name} per pagare",
+        "mark": {
+          "exhaust": "esaurita",
+          "both": "esaurita poi riciclata",
+          "recycle": "riciclata"
         }
       }
     },
