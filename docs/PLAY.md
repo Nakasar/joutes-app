@@ -14,6 +14,11 @@ raconte chaque évènement en citant la règle. Le site ne contient aucune règl
 | En ligne | Sur le serveur de parties (`joutes-server serve`) | Les variables `JOUTES_ENGINE_*` (voir `.env.example`). |
 | Mon serveur (mode hôte) | Sur un serveur lancé par un organisateur (`joutes-server host`) | L'adresse et le code du serveur, saisis dans la page. Joutes ne les voit pas. |
 
+Le mode hôte sert aux deux jeux : `components/play/HostPanel.tsx` reçoit de
+chaque lobby un `HostKit` (sièges, configuration du moteur, deck automatique,
+lecture du deck d'un invité, champ `game` pour le serveur). Le lien d'invitation
+mène à `/games/<jeu>/play/remote` (`RemoteGame`, `swu/SwuRemoteGame`).
+
 Contre l'IA et en IA contre IA, la case « Listes ouvertes » du lobby met
 `open_decklists` dans la configuration : les IA connaissent alors les cartes du
 deck d'en face, sans leur ordre ni la main. Sans elle, une IA ne sait de

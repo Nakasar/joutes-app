@@ -11,14 +11,18 @@ import { swuAutoDeckCards, toSwuLobbyDeck, type SwuLobbyDeck } from "@/lib/engin
 import {
   addBotFor,
   createTableFor,
+  guarded,
   joinTableFor,
   leaveSeatFor,
   readTableFor,
   startTableFor,
   type PlayResult,
   type TableState,
+  playableGame as playableTableGame,
+  viewer as tableViewer,
 } from "@/lib/engine/table-actions.ts";
-import { engineServer, summarize } from "@/lib/engine/tables.ts";
+import { engineServer, resolveSwuDeck, summarize, TableFailure } from "@/lib/engine/tables.ts";
+import type { SwuDeckList } from "@/lib/engine/swu/types.ts";
 import type { GameTableSummary } from "@/lib/types/GameTable.ts";
 
 export type { SwuLobbyDeck } from "@/lib/engine/swu/lobby-decks.ts";
@@ -149,4 +153,22 @@ export async function startSwuTableAction(id: unknown): Promise<PlayResult> {
 
 export async function readSwuTableAction(id: unknown): Promise<PlayResult<{ state: TableState }>> {
   return readTableFor(GAME_SLUG, id);
+}
+
+/**
+ * Le deck d'un invité en mode hôte, donné par son lien ou son identifiant
+ * Joutes. Seuls les decks que le demandeur peut voir sont lus.
+ */
+export async function resolveSwuDeckAction(
+  reference: unknown,
+): Promise<PlayResult<{ name: string; list: SwuDeckList }>> {
+  return guarded(async () => {
+    const game = await playableTableGame(GAME_SLUG);
+    const seated = await tableViewer();
+    if (typeof reference !== "string") throw new TableFailure("INVALID");
+    const deckId = /[a-f0-9]{24}/i.exec(reference)?.[0];
+    if (!deckId) throw new TableFailure("INVALID_DECK");
+    const { deck, deckName } = await resolveSwuDeck({ kind: "deck", deckId }, seated?.userId ?? null, game.id);
+    return { name: deckName, list: deck };
+  });
 }

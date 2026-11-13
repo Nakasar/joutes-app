@@ -1048,7 +1048,8 @@
         "about": "Le moteur de Joutes connaît les règles de Star Wars: Unlimited : il ne vous propose que ce qui est permis, résout chaque capacité et cite la règle appliquée dans le journal.",
         "deckAuto": "Deck automatique autour d'un leader",
         "deckRandomHint": "Un leader tiré au sort à chaque partie",
-        "deckSearch": "Nom du deck, leader, auteur…"
+        "deckSearch": "Nom du deck, leader, auteur…",
+        "hostNeedDeck": "Choisissez d'abord votre deck, juste au-dessus."
       },
       "sim": {
         "fairness": "Votre deck change de siège toutes les deux parties et l'initiative est tirée au sort à chaque partie. Facile joue presque au hasard : il ne sert pas à juger un deck.",

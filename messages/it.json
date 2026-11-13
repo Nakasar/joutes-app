@@ -1048,7 +1048,8 @@
         "about": "Il motore di Joutes conosce le regole di Star Wars: Unlimited: ti propone solo ciò che è permesso, risolve ogni abilità e cita nel registro la regola applicata.",
         "deckAuto": "Mazzo automatico attorno a un leader",
         "deckRandomHint": "Un leader estratto a sorte a ogni partita",
-        "deckSearch": "Nome del mazzo, leader, autore…"
+        "deckSearch": "Nome del mazzo, leader, autore…",
+        "hostNeedDeck": "Scegli prima il tuo mazzo, qui sopra."
       },
       "sim": {
         "fairness": "Il tuo mazzo cambia posto ogni due partite e l'iniziativa è sorteggiata a ogni partita. Facile gioca quasi a caso: non serve a giudicare un mazzo.",

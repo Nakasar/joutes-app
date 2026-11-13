@@ -1,18 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Bot, Eye, FlaskConical, Globe } from "lucide-react";
+import { Bot, Eye, FlaskConical, Globe, Server } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import {
   createSwuTableAction,
   loadSwuLobby,
+  resolveSwuDeckAction,
   searchSwuPlayDecksAction,
   type SwuLobby as Lobby,
   type SwuLobbyDeck,
 } from "@/app/[locale]/(app)/games/swu/play/actions";
 import { DeckPicker } from "@/components/play/DeckPicker";
+import { HostPanel } from "@/components/play/HostPanel";
 import { withDeckProblems } from "@/components/play/deck-problems";
 import { readSwuSave, writeSwuSave, type SwuSave } from "@/components/play/swu/useSwuSoloGame";
 import { useSwuTableCards } from "@/components/play/swu/useSwuTableCards";
@@ -38,7 +40,7 @@ function pickRandom<T>(list: T[]): T {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-type Opponent = "ai" | "watch" | "online";
+type Opponent = "ai" | "watch" | "online" | "host";
 
 const searchDecks = (query: string) =>
   searchSwuPlayDecksAction(query).then((result) => (result.ok ? result.decks : []));
@@ -154,6 +156,7 @@ export function SwuLobby() {
     { key: "ai", icon: Bot, title: t("lobby.ai"), hint: t("lobby.aiHint") },
     { key: "watch", icon: Eye, title: t("lobby.watch"), hint: t("lobby.watchHint") },
     { key: "online", icon: Globe, title: t("lobby.online"), hint: t("lobby.onlineHint") },
+    { key: "host", icon: Server, title: t("lobby.host"), hint: t("lobby.hostHint") },
   ];
   const texts = { auto: ts("lobby.deckAuto"), randomHint: ts("lobby.deckRandomHint"), search: ts("lobby.deckSearch") };
 
@@ -218,7 +221,7 @@ export function SwuLobby() {
 
         <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           <h2 className="font-semibold">{ts("lobby.whoTitle")}</h2>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {modes.map(({ key, icon: Icon, title, hint }) => (
               <button
                 key={key}
@@ -245,7 +248,7 @@ export function SwuLobby() {
                 {picker(0, lobby.name ?? t("lobby.you"), false)}
               </SeatRow>
             )}
-            {(opponent === "online" ? [] : [0, 1])
+            {(opponent === "online" || opponent === "host" ? [] : [0, 1])
               .filter((seat) => watching || seat > 0)
               .map((seat) => {
                 const name = t("lobby.botName", { number: watching ? seat + 1 : seat });
@@ -285,7 +288,7 @@ export function SwuLobby() {
               })}
           </ul>
 
-          {!lobby.signedIn && opponent !== "online" && (
+          {!lobby.signedIn && opponent !== "online" && opponent !== "host" && (
             <div className="flex flex-row flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <span>{t("lobby.signInForDecks")}</span>
               <Button asChild size="sm" variant="outline">
@@ -295,7 +298,7 @@ export function SwuLobby() {
           )}
           <p className="text-xs text-muted-foreground">{ts("lobby.sets")}</p>
 
-          {opponent !== "online" && (
+          {opponent !== "online" && opponent !== "host" && (
             <div className="flex flex-col gap-2">
               {watching && <p className="text-sm text-muted-foreground">{ts("lobby.watchInfo")}</p>}
               <div className="flex flex-row flex-wrap gap-2">
@@ -345,6 +348,21 @@ export function SwuLobby() {
                 </div>
               </div>
             ))}
+
+          {opponent === "host" && (
+            <HostPanel<SwuDeckList>
+              hostName={lobby.name ?? t("lobby.you")}
+              hostDeck={() => listOf(choice)}
+              kit={{
+                seats: 1,
+                game: "swu",
+                config: (players) => ({ players }),
+                auto: () => listOf({ kind: "random" }),
+                resolve: resolveSwuDeckAction,
+                needDeck: ts("lobby.hostNeedDeck"),
+              }}
+            />
+          )}
         </section>
       </div>
 

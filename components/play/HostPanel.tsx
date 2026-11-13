@@ -7,28 +7,38 @@ import { useTranslations } from "next-intl";
 import { withDeckProblems } from "@/components/play/deck-problems";
 import { toast } from "sonner";
 
-import { resolveDeckAction } from "@/app/[locale]/(app)/games/riftbound/play/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { loadEngine } from "@/lib/engine/browser";
-import { BOT_LEVELS, modePlayers, type BotLevel, type EngineDeckList, type EngineMode } from "@/lib/engine/types";
+import type { PlayResult } from "@/lib/engine/table-actions";
+import { BOT_LEVELS, type BotLevel } from "@/lib/engine/types";
 
 type GuestSeat = { kind: "guest" | "bot"; name: string; deck: string; level: BotLevel };
 
 type Invitation = { name: string; link: string; own: boolean };
 
-type HostPanelProps = {
-  mode: EngineMode;
-  hostName: string;
-  /** Le deck choisi plus haut dans la page, ou `null` s'il n'y en a pas. */
-  hostDeck: () => Promise<EngineDeckList | null>;
-  legends: string[];
+/** Ce qu'un jeu fournit au mode hôte : `D` est la liste d'un deck telle que son moteur la veut. */
+export type HostKit<D extends object> = {
+  /** Le nombre de sièges en plus de celui de l'hôte. */
+  seats: number;
+  /** Le nom du jeu pour le serveur de parties ; absent, le serveur joue Riftbound. */
+  game?: string;
+  /** La configuration que le moteur attend pour ces joueurs. */
+  config: (players: { name: string; deck: D }[]) => unknown;
+  /** Un deck automatique pour un siège sans deck. */
+  auto: () => Promise<D | null>;
+  /** Le deck d'un invité, par son lien ou son identifiant Joutes. */
+  resolve: (reference: string) => Promise<PlayResult<{ name: string; list: D }>>;
+  /** Ce qui est dit à l'hôte qui n'a pas encore choisi son deck. */
+  needDeck: string;
 };
 
-function seed(): number {
-  return Math.floor(Math.random() * 2 ** 31) + 1;
-}
+type HostPanelProps<D extends object> = {
+  hostName: string;
+  /** Le deck choisi plus haut dans la page, ou `null` s'il n'y en a pas. */
+  hostDeck: () => Promise<D | null>;
+  kit: HostKit<D>;
+};
 
 /**
  * Mode hôte : la partie tourne sur un serveur de parties lancé par quelqu'un
@@ -36,9 +46,9 @@ function seed(): number {
  * configuration, obtient un ticket par joueur et donne un lien d'invitation à
  * chacun. Joutes ne voit ni l'adresse du serveur ni son code.
  */
-export function HostPanel({ mode, hostName, hostDeck, legends }: HostPanelProps) {
+export function HostPanel<D extends object>({ hostName, hostDeck, kit }: HostPanelProps<D>) {
   const t = useTranslations("Games.Play");
-  const seats = modePlayers(mode) - 1;
+  const seats = kit.seats;
   const [server, setServer] = useState("http://localhost:7777");
   const [token, setToken] = useState("");
   const [guests, setGuests] = useState<GuestSeat[]>([]);
@@ -57,32 +67,29 @@ export function HostPanel({ mode, hostName, hostDeck, legends }: HostPanelProps)
     setBusy(true);
     try {
       const base = server.trim().replace(/\/+$/, "");
-      const engine = await loadEngine();
-      const auto = () => {
-        const deck = JSON.parse(
-          engine.auto_deck(legends[Math.floor(Math.random() * legends.length)], seed()),
-        ) as EngineDeckList | null;
+      const auto = async (): Promise<D> => {
+        const deck: D | null = await kit.auto();
         if (!deck) throw new Error(t("error.SERVER"));
         return deck;
       };
 
-      const mine = await hostDeck();
-      if (!mine) throw new Error(t("host.needDeck"));
-      const players = [{ name: hostName, deck: mine }];
+      const mine: D | null = await hostDeck();
+      if (!mine) throw new Error(kit.needDeck);
+      const players: { name: string; deck: D }[] = [{ name: hostName, deck: mine }];
       const bots: (BotLevel | null)[] = [null];
       for (const [index, row] of rows.entries()) {
         const name =
           row.name.trim() ||
           (row.kind === "bot" ? t("lobby.botName", { number: index + 1 }) : t("host.guestName", { number: index + 1 }));
-        let deck: EngineDeckList;
+        let deck: D;
         if (row.kind === "guest" && row.deck.trim()) {
-          const resolved = await resolveDeckAction(row.deck.trim());
+          const resolved = await kit.resolve(row.deck.trim());
           if (!resolved.ok) {
             throw new Error(withDeckProblems(t, `${name} : ${t(`error.${resolved.error}`)}`, resolved.details));
           }
           deck = resolved.list;
         } else {
-          deck = auto();
+          deck = await auto();
         }
         players.push({ name, deck });
         bots.push(row.kind === "bot" ? row.level : null);
@@ -92,7 +99,7 @@ export function HostPanel({ mode, hostName, hostDeck, legends }: HostPanelProps)
       const created = await fetch(`${base}/games`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ config: { mode, players }, bots }),
+        body: JSON.stringify({ ...(kit.game ? { game: kit.game } : {}), config: kit.config(players), bots }),
       });
       const game = (await created.json().catch(() => null)) as { id?: string; error?: string } | null;
       if (!created.ok || !game?.id) throw new Error(game?.error ?? t("host.refused", { status: created.status }));

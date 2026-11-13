@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import {
   createTableAction,
   loadLobby,
+  resolveDeckAction,
   type Lobby,
   type LobbyDeck,
 } from "@/app/[locale]/(app)/games/riftbound/play/actions";
@@ -386,7 +387,20 @@ export function PlayLobby() {
             ))}
 
           {opponent === "host" && (
-            <HostPanel mode={mode} hostName={lobby.name ?? t("lobby.you")} hostDeck={myDeck} legends={lobby.legends} />
+            <HostPanel<EngineDeckList>
+              hostName={lobby.name ?? t("lobby.you")}
+              hostDeck={myDeck}
+              kit={{
+                seats: modePlayers(mode) - 1,
+                config: (players) => ({ mode, players }),
+                auto: async () => {
+                  const engine = await loadEngine();
+                  return JSON.parse(engine.auto_deck(pickRandom(lobby.legends), randomSeed())) as EngineDeckList | null;
+                },
+                resolve: resolveDeckAction,
+                needDeck: t("host.needDeck"),
+              }}
+            />
           )}
         </section>
       </div>
