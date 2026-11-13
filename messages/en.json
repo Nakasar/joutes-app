@@ -1048,7 +1048,8 @@
         "about": "The Joutes engine knows the rules of Star Wars: Unlimited: it only offers what is allowed, resolves every ability and cites the rule applied in the log.",
         "deckAuto": "Automatic deck around a leader",
         "deckRandomHint": "A leader drawn at random each game",
-        "deckSearch": "Deck name, leader, author…"
+        "deckSearch": "Deck name, leader, author…",
+        "hostNeedDeck": "Choose your deck first, just above."
       },
       "sim": {
         "fairness": "Your deck switches seats every two games and the initiative is drawn at random every game. Easy plays almost at random: it is no use for judging a deck.",

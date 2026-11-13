@@ -1048,7 +1048,8 @@
         "about": "Die Joutes-Engine kennt die Regeln von Star Wars: Unlimited: Sie bietet nur an, was erlaubt ist, wickelt jede Fähigkeit ab und nennt im Protokoll die angewandte Regel.",
         "deckAuto": "Automatisches Deck um einen Anführer",
         "deckRandomHint": "In jeder Partie ein zufällig gezogener Anführer",
-        "deckSearch": "Deckname, Anführer, Autor…"
+        "deckSearch": "Deckname, Anführer, Autor…",
+        "hostNeedDeck": "Wähle zuerst dein Deck, direkt darüber."
       },
       "sim": {
         "fairness": "Dein Deck wechselt alle zwei Partien den Platz, und die Initiative wird in jeder Partie ausgelost. Leicht spielt fast zufällig: Es taugt nicht, um ein Deck zu beurteilen.",

@@ -25,14 +25,10 @@ export function remoteSocketUrl(server: string, ticket: string): string | null {
 }
 
 /**
- * Une partie hébergée par quelqu'un d'autre (mode hôte). Le lien d'invitation
- * porte l'adresse du serveur et le ticket dans son fragment (`#…`), qui n'est
- * jamais envoyé à Joutes.
+ * L'adresse WebSocket que porte le fragment du lien d'invitation : `undefined`
+ * tant qu'il n'est pas lu, `null` s'il est incomplet.
  */
-export function RemoteGame() {
-  const t = useTranslations("Games.Play");
-  const cards = useTableCards();
-  // `undefined` : fragment pas encore lu.
+export function useRemoteUrl(): string | null | undefined {
   const [url, setUrl] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
@@ -48,6 +44,19 @@ export function RemoteGame() {
     window.addEventListener("hashchange", read);
     return () => window.removeEventListener("hashchange", read);
   }, []);
+
+  return url;
+}
+
+/**
+ * Une partie hébergée par quelqu'un d'autre (mode hôte). Le lien d'invitation
+ * porte l'adresse du serveur et le ticket dans son fragment (`#…`), qui n'est
+ * jamais envoyé à Joutes.
+ */
+export function RemoteGame() {
+  const t = useTranslations("Games.Play");
+  const cards = useTableCards();
+  const url = useRemoteUrl();
 
   const feed = useOnlineGame(url ?? null);
 
