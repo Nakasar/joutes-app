@@ -124,9 +124,11 @@ arrêts « Continuer » sont désactivés d'office en spectateur (`watchStops`).
 ## Arbitrage (MCP)
 
 `riftbound_judge_simulate` et `riftbound_judge_review` (`app/mcp/tools-judge.ts`)
-font tourner le moteur dans le processus du site. La relecture d'une table en
+font tourner le moteur dans le processus du site ; `swu_judge_simulate` et
+`swu_judge_review` font de même pour Star Wars: Unlimited (règles des
+Comprehensive Rules 8.0, citées par leur numéro faute de page de règles sur le site). La relecture d'une table en
 ligne n'est ouverte qu'à ses joueurs, une fois la partie finie : le journal
-montre les mains. `riftbound_judge_review` demande un compte, et ce que le
+montre les mains. Les deux outils de relecture demandent un compte, et ce que le
 moteur rejoue est borné en taille.
 
 ## Limites connues

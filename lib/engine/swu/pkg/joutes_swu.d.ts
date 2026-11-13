@@ -24,6 +24,16 @@ export function swu_random_config(seed: number): string;
  */
 export function swu_simulate(config: string, seed: number, bots: string): string;
 /**
+ * Arbitrage SWU : construit la situation décrite (JSON, voir `joutes_judge::swu::Scenario`),
+ * y déroule les choix (`steps` : liste JSON d'indices) et rend le rapport.
+ */
+export function swu_judge_simulate(scenario: string, steps: string): string;
+/**
+ * Arbitrage d'une vraie partie de SWU : rejoue son journal jusqu'à l'action
+ * `upto` (-1 = jusqu'au bout) et raconte les `last` dernières actions.
+ */
+export function swu_judge_review(record: string, upto: number, last: number): string;
+/**
  * Version du moteur.
  */
 export function version(): string;
@@ -78,6 +88,8 @@ export interface InitOutput {
   readonly __wbg_swutable_free: (a: number, b: number) => void;
   readonly swu_auto_deck: (a: number, b: number, c: number, d: number, e: number) => [number, number];
   readonly swu_catalog: () => [number, number];
+  readonly swu_judge_review: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+  readonly swu_judge_simulate: (a: number, b: number, c: number, d: number) => [number, number, number, number];
   readonly swu_random_config: (a: number) => [number, number];
   readonly swu_simulate: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
   readonly swu_validate_deck: (a: number, b: number) => [number, number, number, number];

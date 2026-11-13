@@ -1,7 +1,15 @@
 import "server-only";
 
-import { initSync, swu_auto_deck, swu_catalog, swu_validate_deck } from "@/lib/engine/swu/pkg/joutes_swu.js";
-import type { SwuDeckList, SwuEngineCard } from "@/lib/engine/swu/types";
+import { EngineError } from "@/lib/engine/errors";
+import {
+  initSync,
+  swu_auto_deck,
+  swu_catalog,
+  swu_judge_review,
+  swu_judge_simulate,
+  swu_validate_deck,
+} from "@/lib/engine/swu/pkg/joutes_swu.js";
+import type { SwuDeckList, SwuEngineCard, SwuJudgeReport } from "@/lib/engine/swu/types";
 import { SWU_WASM_BASE64 } from "@/lib/engine/swu/wasm.generated";
 
 /**
@@ -57,4 +65,26 @@ export function autoSwuDeck(leader: string, seed: number): SwuDeckList | null {
   const pool = fitting.length > 0 ? fitting : bases;
   if (pool.length === 0) return null;
   return JSON.parse(swu_auto_deck(leader, pool[seed % pool.length].code, seed)) as SwuDeckList | null;
+}
+
+function guarded<T>(run: () => string): T {
+  engine();
+  try {
+    return JSON.parse(run()) as T;
+  } catch (error) {
+    throw new EngineError(error instanceof Error ? error.message : String(error));
+  }
+}
+
+/** Arbitrage : construit la situation décrite, y déroule les choix et rend le rapport du moteur. */
+export function swuJudgeSimulate(scenario: unknown, steps: number[]): SwuJudgeReport {
+  return guarded(() => swu_judge_simulate(JSON.stringify(scenario), JSON.stringify(steps)));
+}
+
+/**
+ * Le même rapport pour une vraie partie. Le journal reste du texte jusqu'au
+ * moteur : JavaScript abîmerait une graine de plus de 53 bits en le relisant.
+ */
+export function swuJudgeReview(record: string, upto: number | null, last: number): SwuJudgeReport {
+  return guarded(() => swu_judge_review(record, upto ?? -1, last));
 }

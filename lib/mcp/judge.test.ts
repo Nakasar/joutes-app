@@ -31,7 +31,7 @@ const report: JudgeReport = {
 const ruleUrl = (rule: string) => `https://joutes.app/r#${rule}`;
 
 test("le rapport d'arbitrage numérote les choix à partir de 0 et cite les règles en lien", () => {
-    const text = describeJudgeReport(report, { ruleUrl, withChoices: true });
+    const text = describeJudgeReport(report, { ruleUrl, withChoices: true, scope: "extensions OGN et OGS" });
     assert.match(text, /1\. Ada — Votre phase principale\. → Jouer Facebreaker/);
     assert.match(text, /Décision attendue de Bob : Réagir \?/);
     assert.match(text, /\[0\] Passer\n {2}\[1\] Jouer Defy/);
@@ -41,7 +41,7 @@ test("le rapport d'arbitrage numérote les choix à partir de 0 et cite les règ
 });
 
 test("la relecture d'une partie ne propose pas de dérouler des choix", () => {
-    const text = describeJudgeReport(report, { ruleUrl, withChoices: false });
+    const text = describeJudgeReport(report, { ruleUrl, withChoices: false, scope: "extensions OGN et OGS" });
     assert.doesNotMatch(text, /\[0\]/);
     assert.match(text, /Décision attendue de Bob/);
 });
@@ -49,7 +49,17 @@ test("la relecture d'une partie ne propose pas de dérouler des choix", () => {
 test("une partie finie annonce son résultat", () => {
     const text = describeJudgeReport(
         { ...report, asked: null, result: { winners: [0], reason: "Score de victoire atteint." } },
-        { ruleUrl, withChoices: true },
+        { ruleUrl, withChoices: true, scope: "extensions OGN et OGS" },
     );
     assert.match(text, /Partie terminée : Score de victoire atteint\./);
+});
+
+test("sans page de règles sur le site, les numéros sont cités avec leur document", () => {
+    const text = describeJudgeReport(
+        { ...report, rules: ["6.3", "1.16.5"], result: { winners: [0] } },
+        { rulebook: "Comprehensive Rules 8.0", withChoices: true, scope: "format Premier" },
+    );
+    assert.match(text, /Règles citées \(Comprehensive Rules 8\.0\) : 6\.3, 1\.16\.5/);
+    assert.match(text, /Partie terminée\./);
+    assert.match(text, /moteur de jeu Joutes \(format Premier\)/);
 });
