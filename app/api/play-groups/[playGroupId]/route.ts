@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
+import { locales } from "@/i18n/config";
 import { auth } from "@/lib/auth";
 import { readPlayGroupVisitor } from "@/lib/api/play-groups";
 import {
   countPlayGroupFollowers,
+  getPlayGroupById,
   getPlayGroupByIdAndUser,
+  setPlayGroupVisibility,
   updatePlayGroupEnabledGames,
+  updatePlayGroupOptions,
+  updatePlayGroupProfile,
 } from "@/lib/db/play-groups";
+import { mergePlayGroupTheme, playGroupSettingsSchema } from "@/lib/play-groups/settings";
 import { getUsersByIds } from "@/lib/db/users";
 import { readPlayGroupVisibility } from "@/lib/play-groups/access";
 import { playGroupGamesSchema } from "@/lib/schemas/play-group.schema";
@@ -107,12 +114,43 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const body = await request.json();
-    const validate = playGroupGamesSchema.safeParse(body);
-    if (!validate.success) {
-      return NextResponse.json({ error: "Données invalides", details: validate.error }, { status: 400 });
-    }
 
-    const updated = await updatePlayGroupEnabledGames(playGroupId, validate.data.enabledGameIds);
+    // Deux formes : la liste des jeux du groupe (`enabledGameIds`), ou ses
+    // réglages (identité, images, visibilité) envoyés par l'app mobile.
+    let updated;
+    if (body && typeof body === "object" && "enabledGameIds" in body) {
+      const validate = playGroupGamesSchema.safeParse(body);
+      if (!validate.success) {
+        return NextResponse.json({ error: "Données invalides", details: validate.error }, { status: 400 });
+      }
+      updated = await updatePlayGroupEnabledGames(playGroupId, validate.data.enabledGameIds);
+    } else {
+      const validate = playGroupSettingsSchema.safeParse(body);
+      if (!validate.success) {
+        return NextResponse.json({ error: "Données invalides", details: validate.error }, { status: 400 });
+      }
+      const input = validate.data;
+      if (input.name !== undefined || input.description !== undefined) {
+        await updatePlayGroupProfile(playGroupId, {
+          name: input.name ?? group.name,
+          description: input.description !== undefined ? input.description : group.description,
+        });
+      }
+      const theme = mergePlayGroupTheme(group.options?.theme, input);
+      if (theme) {
+        await updatePlayGroupOptions(playGroupId, { theme });
+      }
+      if (input.visibility !== undefined) {
+        await setPlayGroupVisibility(playGroupId, input.visibility);
+      }
+      updated = await getPlayGroupById(playGroupId);
+      // Les pages du groupe (et le rôle d'armes, que la visibilité ou le nom
+      // changent) sont mises en cache par langue, comme pour les actions du site.
+      for (const locale of locales) {
+        revalidatePath(`/${locale}/play-groups/${playGroupId}`, "layout");
+        revalidatePath(`/${locale}/play-groups/explore`);
+      }
+    }
     if (!updated) {
       return NextResponse.json({ error: "Groupe introuvable" }, { status: 404 });
     }

@@ -118,6 +118,30 @@ paths:
         "200":
           description: Response shape depends on the Better Auth sub-route invoked.
 
+  /auth/one-time-token/verify:
+    post:
+      tags: [Auth]
+      summary: Sign in with a code from the website's /app-login page
+      description: >
+        For apps that cannot open the website's social sign-in (Discord) themselves.
+        The signed-in website page `/app-login` shows an 8-character single-use code,
+        valid 5 minutes; posting it here (upper case, without the dash) sets the
+        session cookie of that same session. The code can only be generated server
+        side. Rate-limited to 10 attempts per minute.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string, example: ABCD2345 }
+      responses:
+        "200": { description: Signed in; the body is the session and its user. }
+        "400": { description: Invalid, already used or expired code. }
+
   /auth/get-session:
     get:
       tags: [Auth]
@@ -1707,6 +1731,57 @@ paths:
         "200": { description: Uploaded., content: { application/json: { schema: { type: object, required: [url], properties: { url: { type: string, format: uri } } } } } }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /decks/{deckId}/extras:
+    parameters:
+      - { name: deckId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-fA-F]{24}$" } }
+    get:
+      tags: [Decks]
+      summary: Tournament results and CardNexus link of a deck
+      description: >
+        What a deck sheet shows besides its list: the tournament results its
+        author linked to it that the caller may see (most recent first), and the
+        affiliate link that fills a CardNexus cart with the deck. Same access
+        rule as `GET /decks/{deckId}`. Either part may come back empty (or
+        `null`) when it cannot be read; the other is still returned.
+      security: [{ sessionAuth: [] }, {}]
+      responses:
+        "200":
+          description: Extras.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [results, cardnexusOrder]
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, source, name, date]
+                      properties:
+                        id: { type: string }
+                        source: { type: string, enum: [joutes, locator, declared] }
+                        name: { type: string }
+                        date: { type: string, description: "YYYY-MM-DD" }
+                        visibility: { type: string }
+                        placement: { type: integer }
+                        playerCount: { type: integer }
+                        topCut: { type: integer }
+                        deckVersion: { type: integer }
+                        record: { type: string, example: "4-1-0" }
+                        tournamentHref: { type: string, description: Player portal of a Joutes tournament, for the result's author only. }
+                  cardnexusOrder:
+                    type: object
+                    nullable: true
+                    properties:
+                      url: { type: string, format: uri, description: Absent when no card of the deck is sold on CardNexus. }
+                      matched: { type: integer }
+                      total: { type: integer }
+        "400": { $ref: "#/components/responses/ValidationError" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
@@ -3824,17 +3899,35 @@ paths:
         "500": { $ref: "#/components/responses/ServerError" }
     patch:
       tags: [Play Groups]
-      summary: Set which games are enabled for this group's shared collection (owner/admin only)
+      summary: Update the group's enabled games, or its settings (owner/admin only)
+      description: >
+        Two body shapes. With `enabledGameIds`, sets which games are enabled for
+        the shared collection. Otherwise, updates the group's settings: every key
+        is optional, an absent key changes nothing and an empty string clears
+        the field (except `name`, which is required to be non-empty). `logo` and
+        `banner` are addresses returned by `POST /play-groups/{playGroupId}/images`.
+        Links, rhythm and accent colour are set on the website.
       security: [{ sessionAuth: [] }]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [enabledGameIds]
-              properties:
-                enabledGameIds: { type: array, items: { type: string }, maxItems: 500, nullable: true, description: "null re-enables every game." }
+              oneOf:
+                - type: object
+                  required: [enabledGameIds]
+                  properties:
+                    enabledGameIds: { type: array, items: { type: string }, maxItems: 500, nullable: true, description: "null re-enables every game." }
+                - type: object
+                  additionalProperties: false
+                  minProperties: 1
+                  properties:
+                    name: { type: string, minLength: 1, maxLength: 80 }
+                    description: { type: string, maxLength: 500 }
+                    tagline: { type: string, maxLength: 140, description: The line under the name on the showcase. }
+                    logo: { type: string, maxLength: 2048, description: "http(s) address, or empty to remove." }
+                    banner: { type: string, maxLength: 2048, description: "http(s) address, or empty to remove." }
+                    visibility: { type: string, enum: [public, private] }
       responses:
         "200": { description: Updated., content: { application/json: { schema: { type: object, properties: { group: { $ref: "#/components/schemas/PlayGroup" } } } } } }
         "400": { $ref: "#/components/responses/ValidationError" }
@@ -5414,6 +5507,66 @@ paths:
         "500": { $ref: "#/components/responses/ServerError" }
 
   # ---------------------------------------------------------------- Users
+  /users/me/profile:
+    get:
+      tags: [Users]
+      summary: The caller's editable profile
+      description: >
+        What `/account` edits on the website: name and tag, avatar, area and
+        notification settings. Notification defaults are those of the website
+        (push on until turned off, everything else off until turned on; Discord
+        direct messages need a linked Discord account, `available: false`
+        otherwise). Showcase, price preference, integrations and subscription
+        stay on the website.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200": { description: Profile., content: { application/json: { schema: { type: object, properties: { profile: { $ref: "#/components/schemas/MyProfile" } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Users]
+      summary: Update the caller's profile
+      description: >
+        Every key is optional, at least one is required. `profileImage` is an
+        address returned by `POST /users/me/upload` (an empty string removes the
+        uploaded image), `location: null` removes the area, and `notification`
+        turns one channel/type pair on or off (`emails`: `weekly`, `platform`;
+        `app`: `weekly`, `push`; `discord`: `dm`). The first refused field stops
+        the request with a 400 that names the reason. Returns the updated profile.
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              minProperties: 1
+              properties:
+                displayName: { type: string }
+                profileImage: { type: string, maxLength: 2000 }
+                location:
+                  type: object
+                  nullable: true
+                  required: [latitude, longitude]
+                  properties:
+                    latitude: { type: number, minimum: -90, maximum: 90 }
+                    longitude: { type: number, minimum: -180, maximum: 180 }
+                    label: { type: string }
+                    city: { type: string }
+                    postalCode: { type: string }
+                notification:
+                  type: object
+                  required: [channel, type, enabled]
+                  properties:
+                    channel: { type: string, enum: [emails, app, discord] }
+                    type: { type: string, enum: [weekly, platform, push, dm] }
+                    enabled: { type: boolean }
+      responses:
+        "200": { description: Updated profile., content: { application/json: { schema: { type: object, properties: { profile: { $ref: "#/components/schemas/MyProfile" } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
   /users/me/permissions:
     get:
       tags: [Users]
@@ -7362,6 +7515,32 @@ components:
         joinedAt: { type: string, format: date-time }
         user: { $ref: "#/components/schemas/PublicUser" }
 
+    MyProfile:
+      type: object
+      required: [notifications]
+      properties:
+        displayName: { type: string }
+        discriminator: { type: string }
+        avatar: { type: string, description: The image shown everywhere (uploaded image, then the provider's). }
+        profileImage: { type: string, description: The uploaded image, if any. }
+        location:
+          type: object
+          properties:
+            latitude: { type: number }
+            longitude: { type: number }
+            label: { type: string }
+            city: { type: string }
+            postalCode: { type: string }
+        notifications:
+          type: array
+          items:
+            type: object
+            required: [channel, type, enabled, available]
+            properties:
+              channel: { type: string, enum: [emails, app, discord] }
+              type: { type: string, enum: [weekly, platform, push, dm] }
+              enabled: { type: boolean }
+              available: { type: boolean }
     PlayGroup:
       type: object
       description: >

@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
-import { customSession, emailOTP, jwt } from "better-auth/plugins";
+import { customSession, emailOTP, jwt, oneTimeToken } from "better-auth/plugins";
+import { APP_LOGIN_CODE_TTL_MINUTES, generateAppLoginCode } from "@/lib/users/app-login-code";
 import { genericOAuth, patreon } from "better-auth/plugins/generic-oauth";
 import { Resend } from "resend";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
@@ -259,6 +260,17 @@ export const auth = betterAuth({
       expiresIn: 600, // 10 minutes
     }),
     passkey(),
+    // Connexion de l'app mobile par un compte Discord (ou tout autre fournisseur
+    // du site) : la page /app-login, ouverte dans le navigateur du téléphone,
+    // affiche un code court à usage unique, que l'app échange contre une
+    // session (`POST /api/auth/one-time-token/verify`). Le code ne se génère
+    // que côté serveur, et il est stocké haché.
+    oneTimeToken({
+      expiresIn: APP_LOGIN_CODE_TTL_MINUTES,
+      generateToken: async () => generateAppLoginCode(),
+      storeToken: "hashed",
+      disableClientRequest: true,
+    }),
     genericOAuth({ config: patreonOAuthConfigs() }),
     oauthProvider({
       loginPage: "/login",
@@ -316,6 +328,8 @@ export const auth = betterAuth({
     customRules: {
       "/email-otp/send-verification-otp": { window: 60, max: 5 },
       "/sign-in/email-otp": { window: 60, max: 10 },
+      // Un code de 8 caractères ne se devine pas en dix essais par minute.
+      "/one-time-token/verify": { window: 60, max: 10 },
     },
   },
   databaseHooks: {

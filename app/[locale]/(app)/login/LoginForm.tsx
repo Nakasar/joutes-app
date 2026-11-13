@@ -157,6 +157,9 @@ function LoginForm({ socialProviders }: { socialProviders: LoginSocialProvider[]
 
                 await authClient.signIn.social({
                   provider,
+                  // Revenir où l'on allait (la page de code de l'app mobile,
+                  // par exemple) plutôt qu'à l'accueil.
+                  ...(callbackUrl ? { callbackURL: safeRedirectPath(callbackUrl) } : {}),
                   fetchOptions: {
                     onSuccess() {
                       router.push('/');

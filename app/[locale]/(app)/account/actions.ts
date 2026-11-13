@@ -10,21 +10,16 @@ import {
   removeGameFromUser,
   addLairToUser,
   removeLairFromUser,
-  updateUserDisplayName,
-  getUserDiscriminator,
-  getUserByUsernameAndDiscriminator,
-  generateUniqueDiscriminator,
 } from "@/lib/db/users.ts";
-import { updateDisplayNameSchema } from "@/lib/schemas/user.schema.ts";
-import db from "@/lib/mongodb.ts";
-import {User} from "@/lib/types/User.ts";
-import {ObjectId} from "mongodb";
 import {
-  isNotificationPreference,
-  type NotificationChannel,
-  type NotificationPreferenceType,
+  setNotificationPreference,
+  setProfileDisplayName,
+  setProfileLocation,
+} from "@/lib/users/profile-service.ts";
+import type {
+  NotificationChannel,
+  NotificationPreferenceType,
 } from "@/lib/notifications/preferences.ts";
-import { disableDiscordDm, discordOptInErrorMessage, enableDiscordDm } from "@/lib/notifications/discord-optin.ts";
 import { hasEntitlement } from "@/lib/subscriptions/access.ts";
 import { listAccountPosters } from "@/lib/posters/library.ts";
 import { sanitizeDigestRefs } from "@/lib/posters/digest.ts";
@@ -218,60 +213,19 @@ export async function updateUserDisplayNameAction(
       return { success: false, error: "Non authentifié" };
     }
 
-    // Valider le nom d'utilisateur
-    const validationResult = updateDisplayNameSchema.safeParse({ displayName });
-    
-    if (!validationResult.success) {
-      const errorMessage = validationResult.error.issues[0]?.message || "Nom d'utilisateur invalide";
-      return { success: false, error: errorMessage };
-    }
-
-    // Le discriminateur du compte est gardé, sauf s'il n'en a pas ou si un
-    // autre compte porte déjà ce pseudonyme avec ce nombre : deux comptes ne
-    // partagent jamais un tag.
-    let discriminator = await getUserDiscriminator(session.user.id);
-    const holder = discriminator
-      ? await getUserByUsernameAndDiscriminator(validationResult.data.displayName, discriminator)
-      : null;
-    if (!discriminator || (holder && holder.id !== session.user.id)) {
-      discriminator = await generateUniqueDiscriminator(
-        validationResult.data.displayName,
-        ObjectId.createFromHexString(session.user.id)
-      );
-    }
-
-    // Mettre à jour le nom d'utilisateur
-    const result = await updateUserDisplayName(
-      session.user.id,
-      validationResult.data.displayName,
-      discriminator
-    );
-    
-    if (!result) {
-      return { success: false, error: "Erreur lors de la mise à jour du nom d'utilisateur" };
+    const result = await setProfileDisplayName(session.user.id, displayName);
+    if (!result.ok) {
+      return { success: false, error: result.error };
     }
 
     // Invalider le cache de la page compte pour forcer le rafraîchissement
     revalidatePath("/account");
 
-    return {
-      success: true,
-      fullUsername: `${validationResult.data.displayName}#${discriminator}`,
-    };
+    return { success: true, fullUsername: result.fullUsername };
   } catch (error) {
     console.error("Erreur lors de la mise à jour du nom d'utilisateur:", error);
     return { success: false, error: "Erreur serveur" };
   }
-}
-
-/** Longueur au-delà de laquelle un nom de localité n'en est plus un. */
-const MAX_PLACE_FIELD_LENGTH = 200;
-
-/** Ne garde une chaîne que si elle porte quelque chose, et pas trop. */
-function sanitizePlaceField(value: string | undefined): string | undefined {
-  const trimmed = value?.trim();
-  if (!trimmed) return undefined;
-  return trimmed.slice(0, MAX_PLACE_FIELD_LENGTH);
 }
 
 /**
@@ -294,28 +248,9 @@ export async function updateUserLocation(
       return { success: false, error: "Non authentifié" };
     }
 
-    // Validation des coordonnées
-    if (latitude !== null && longitude !== null) {
-      if (isNaN(latitude) || isNaN(longitude)) {
-        return { success: false, error: "Coordonnées invalides" };
-      }
-      if (latitude < -90 || latitude > 90) {
-        return { success: false, error: "La latitude doit être comprise entre -90 et 90" };
-      }
-      if (longitude < -180 || longitude > 180) {
-        return { success: false, error: "La longitude doit être comprise entre -180 et 180" };
-      }
-    }
-
-    const { updateUserLocation: updateLocation } = await import("@/lib/db/users.ts");
-    const result = await updateLocation(session.user.id, latitude, longitude, {
-      label: sanitizePlaceField(place?.label),
-      city: sanitizePlaceField(place?.city),
-      postalCode: sanitizePlaceField(place?.postalCode),
-    });
-
-    if (!result) {
-      return { success: false, error: "Erreur lors de la mise à jour de la localisation" };
+    const result = await setProfileLocation(session.user.id, latitude, longitude, place);
+    if (!result.ok) {
+      return { success: false, error: result.error };
     }
 
     revalidatePath("/account");
@@ -340,41 +275,10 @@ export async function updateNotificationsPreference(
       return { success: false, error: "Non authentifié" };
     }
 
-    const user = await db.collection<User>('user').findOne({
-      _id: new ObjectId(session.user.id),
-    }, { projection: { _id: 1, notifications: 1 }});
-
-    if (!user) {
-      return { success: false, error: "Non authentifié" };
+    const result = await setNotificationPreference(session.user.id, channel, type, enable);
+    if (!result.ok) {
+      return { success: false, error: result.error };
     }
-
-    // Le contrôle portait sur le canal et le type séparément, ce qui laissait
-    // passer des couples qui n'existent nulle part — un « courriel push », un
-    // « récapitulatif plateforme ». La matrice les nomme un par un.
-    if (!isNotificationPreference(channel, type)) {
-      return { success: false, error: "Réglage de notification inconnu." };
-    }
-
-    // Les messages privés Discord ont leur propre chemin : l'activation vérifie
-    // la liaison du compte et que le bot peut vraiment écrire au joueur.
-    if (channel === "discord") {
-      if (!enable) {
-        await disableDiscordDm(session.user.id);
-        return { success: true };
-      }
-      const result = await enableDiscordDm(session.user.id);
-      return result.ok
-        ? { success: true }
-        : { success: false, error: discordOptInErrorMessage(result.reason) };
-    }
-
-    await db.collection<User>('user').updateOne({
-      _id: new ObjectId(session.user.id),
-    }, {
-      $set: {
-        [`notifications.${channel}.${type}.enabled`]: enable,
-      },
-    });
 
     return { success: true };
   } catch (error) {
