@@ -41,6 +41,8 @@ const eslintConfig = defineConfig([
     'lib/engine/wasm.generated.ts',
     'lib/engine/swu/pkg/**',
     'lib/engine/swu/wasm.generated.ts',
+    'lib/engine/cyberpunk/pkg/**',
+    'lib/engine/cyberpunk/wasm.generated.ts',
   ]),
 ])
  

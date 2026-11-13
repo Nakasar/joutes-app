@@ -767,7 +767,8 @@
           "noChampion": "The chosen champion is missing.",
           "unknownCard": "A card is not recognised.",
           "noLeader": "The leader is missing.",
-          "noBase": "The base is missing."
+          "noBase": "The base is missing.",
+          "noLegends": "The Legends are missing."
         }
       },
       "lobby": {
@@ -1140,6 +1141,117 @@
         "piloting": "Piloting {n}",
         "plot": "Plot",
         "fortify": "Fortify"
+      }
+    },
+    "PlayCp": {
+      "title": "Play Cyberpunk TCG",
+      "description": "Play Cyberpunk TCG in your browser against the AI, with your decks or an automatic deck. The engine applies the constructed duel rules and cites each one.",
+      "lobby": {
+        "whoTitle": "Who plays?",
+        "resumeHint": "{players}, {moves, plural, one {# move played} other {# moves played}}.",
+        "sets": "The engine plays Welcome to Night City, the Embracing Power and The Heist starter decks, and the promos, in constructed duel.",
+        "watchInfo": "You watch the game without playing: the AIs' hands and face-down Legends are visible, and you can pause it.",
+        "about": "The Joutes engine knows the Cyberpunk TCG rules: it only offers what is allowed, resolves each effect and cites the rule applied in the log.",
+        "legends": "Your face-down Legends are unknown to you too, as rule 5.7.4.1 says: you choose which one to call by its position, no. 1 to 3.",
+        "deckAuto": "Automatic deck around a Legend",
+        "deckRandomHint": "Three Legends drawn at random each game",
+        "deckSearch": "Deck name, Legend, author…"
+      },
+      "turn": "Turn {turn}",
+      "overtime": "Overtime",
+      "phase": {
+        "setup": "Setup",
+        "start": "Start of turn",
+        "main": "Main phase",
+        "end": "End of turn",
+        "over": "Game over"
+      },
+      "zone": {
+        "legends": "Legends",
+        "field": "Field",
+        "gigs": "Gigs",
+        "fixer": "Fixer"
+      },
+      "stat": {
+        "hand": "Hand",
+        "deck": "Deck",
+        "trash": "Trash",
+        "removed": "Removed",
+        "eddies": "Eddies",
+        "eddiesValue": "{ready} ready of {total}",
+        "cred": "Street Cred",
+        "credNull": "Null",
+        "gigs": "Gigs",
+        "gigsValue": "{count} / {max}",
+        "soldFree": "Sell this turn: available",
+        "soldDone": "Sell this turn: done",
+        "calledFree": "Call this turn: available",
+        "calledDone": "Call this turn: done"
+      },
+      "tag": {
+        "attacking": "Attacking",
+        "defending": "Defending",
+        "sell": "Sell"
+      },
+      "kw": {
+        "lag": "Lag",
+        "adrenaline": "Adrenaline",
+        "blocker": "Blocker",
+        "go_solo": "Go Solo"
+      },
+      "legend": {
+        "number": "no. {n}",
+        "hidden": "Face-down Legend {number}",
+        "peeked": "Face-down Legend {number}: you looked at it, it is {name}",
+        "peekTag": "seen",
+        "call": "Call",
+        "goSolo": "Go Solo · {cost} €$",
+        "effect": "Effect",
+        "unknownTitle": "Face-down Legend",
+        "unknown": "Nobody knows which Legend this is, not even its owner (rule 5.7.4.1). It is revealed when called.",
+        "peekedHint": "You looked at this Legend: it stays face down for your rival."
+      },
+      "gig": {
+        "title": "{die} at {value}",
+        "fixer": "{die} in the fixer area, not rolled yet",
+        "stolen": "{die} at {value}, stolen from {owner}",
+        "from": "{name}'s"
+      },
+      "cost": "Current cost: {cost} €$",
+      "ask": {
+        "cancel": "Cancel",
+        "pickTarget": "Choose the target: what is circled in red is allowed.",
+        "mainHint": "{ready, plural, =0 {No Eddie ready} one {# Eddie ready} other {# Eddies ready}} · play a card, sell one, call a Legend or attack.",
+        "reactHint": "Only what can react is circled: a Blocker, a Quick effect, or nothing."
+      },
+      "pile": {
+        "trashOf": "{name}'s trash",
+        "removedOf": "{name}'s cards removed from the game",
+        "empty": "No cards."
+      },
+      "inspect": {
+        "kind": "Type",
+        "cost": "Cost",
+        "power": "Power",
+        "printed": "{power} printed",
+        "ram": "RAM",
+        "tags": "Tags",
+        "gears": "Gear",
+        "sell": "Sell Tag",
+        "sellYes": "can be sold for an Eddie",
+        "unsupported": "The engine cannot play this card yet."
+      },
+      "kind": {
+        "unit": "Unit",
+        "program": "Program",
+        "legend": "Legend",
+        "gear": "Gear"
+      },
+      "color": {
+        "red": "red",
+        "blue": "blue",
+        "green": "green",
+        "yellow": "yellow"
       }
     },
     "Developers": {

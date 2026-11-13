@@ -1,5 +1,5 @@
 /** Les refus d'un deck que la page sait dire dans sa langue ; les autres sont des phrases du moteur. */
-const KNOWN = new Set(["noLegend", "noChampion", "unknownCard", "noLeader", "noBase"]);
+const KNOWN = new Set(["noLegend", "noChampion", "unknownCard", "noLeader", "noBase", "noLegends"]);
 
 export function deckProblemText(t: (key: string) => string, problem: string): string {
   return KNOWN.has(problem) ? t(`deck.problem.${problem}`) : problem;

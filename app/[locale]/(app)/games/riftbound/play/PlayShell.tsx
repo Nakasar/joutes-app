@@ -17,7 +17,7 @@ export type PlayPageProps = { params: Promise<{ locale: string }> };
 type PlayShellProps = PlayPageProps & {
   back: "game" | "lobby";
   /** Le jeu dont c'est la page Jouer ; Riftbound sans précision. */
-  game?: "riftbound" | "swu";
+  game?: "riftbound" | "swu" | "cp";
   children: ReactNode;
 };
 
@@ -28,7 +28,12 @@ export async function PlayShell({ params, back, game: slug = "riftbound", childr
   setRequestLocale(locale);
 
   const t = await getTranslations("Games.Play");
-  const title = slug === "swu" ? (await getTranslations("Games.PlaySwu"))("title") : t("title");
+  const title =
+    slug === "swu"
+      ? (await getTranslations("Games.PlaySwu"))("title")
+      : slug === "cp"
+        ? (await getTranslations("Games.PlayCp"))("title")
+        : t("title");
   const game = await readGameBySlugOrId(slug);
   if (!game?.features?.play) notFound();
 

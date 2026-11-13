@@ -767,7 +767,8 @@
           "noChampion": "Manca il campione scelto.",
           "unknownCard": "Una carta non è riconosciuta.",
           "noLeader": "Manca il leader.",
-          "noBase": "Manca la base."
+          "noBase": "Manca la base.",
+          "noLegends": "Mancano le Legend."
         }
       },
       "lobby": {
@@ -1140,6 +1141,117 @@
         "piloting": "Pilotare {n}",
         "plot": "Complotto",
         "fortify": "Fortificare"
+      }
+    },
+    "PlayCp": {
+      "title": "Gioca a Cyberpunk TCG",
+      "description": "Gioca a Cyberpunk TCG nel browser contro l'IA, con i tuoi mazzi o un mazzo automatico. Il motore applica le regole del duello constructed e cita ognuna di esse.",
+      "lobby": {
+        "whoTitle": "Chi gioca?",
+        "resumeHint": "{players}, {moves, plural, one {# mossa giocata} other {# mosse giocate}}.",
+        "sets": "Il motore gioca Welcome to Night City, i mazzi iniziali Embracing Power e The Heist e le promo, in duello constructed.",
+        "watchInfo": "Guardi la partita senza giocare: le mani e le Legend coperte delle IA sono visibili, e puoi metterla in pausa.",
+        "about": "Il motore di Joutes conosce le regole di Cyberpunk TCG: propone solo ciò che è permesso, risolve ogni effetto e cita nel registro la regola applicata.",
+        "legends": "Le tue Legend coperte sono sconosciute anche a te (regola 5.7.4.1): scegli quale chiamare dalla sua posizione, n. 1-3.",
+        "deckAuto": "Mazzo automatico attorno a una Legend",
+        "deckRandomHint": "Tre Legend estratte a caso a ogni partita",
+        "deckSearch": "Nome del mazzo, Legend, autore…"
+      },
+      "turn": "Turno {turn}",
+      "overtime": "Supplementari",
+      "phase": {
+        "setup": "Preparazione",
+        "start": "Inizio turno",
+        "main": "Fase principale",
+        "end": "Fine turno",
+        "over": "Partita finita"
+      },
+      "zone": {
+        "legends": "Legend",
+        "field": "Campo",
+        "gigs": "Gig",
+        "fixer": "Fixer"
+      },
+      "stat": {
+        "hand": "Mano",
+        "deck": "Mazzo",
+        "trash": "Scarti",
+        "removed": "Rimosse",
+        "eddies": "Eddies",
+        "eddiesValue": "{ready} pronte su {total}",
+        "cred": "Street Cred",
+        "credNull": "Null",
+        "gigs": "Gigs",
+        "gigsValue": "{count} / {max}",
+        "soldFree": "Vendita del turno: libera",
+        "soldDone": "Vendita del turno: fatta",
+        "calledFree": "Chiamata del turno: libera",
+        "calledDone": "Chiamata del turno: fatta"
+      },
+      "tag": {
+        "attacking": "Attacca",
+        "defending": "Difende",
+        "sell": "Sell"
+      },
+      "kw": {
+        "lag": "Lag",
+        "adrenaline": "Adrenaline",
+        "blocker": "Blocker",
+        "go_solo": "Go Solo"
+      },
+      "legend": {
+        "number": "n. {n}",
+        "hidden": "Legend coperta {number}",
+        "peeked": "Legend coperta {number}: l'hai guardata, è {name}",
+        "peekTag": "vista",
+        "call": "Chiama",
+        "goSolo": "Go Solo · {cost} €$",
+        "effect": "Effetto",
+        "unknownTitle": "Legend coperta",
+        "unknown": "Nessuno sa quale Legend sia, nemmeno il suo proprietario (regola 5.7.4.1). Si rivela quando viene chiamata.",
+        "peekedHint": "Hai guardato questa Legend: resta coperta per il tuo avversario."
+      },
+      "gig": {
+        "title": "{die} a {value}",
+        "fixer": "{die} nell'area del fixer, non ancora lanciato",
+        "stolen": "{die} a {value}, rubato a {owner}",
+        "from": "di {name}"
+      },
+      "cost": "Costo attuale: {cost} €$",
+      "ask": {
+        "cancel": "Annulla",
+        "pickTarget": "Scegli il bersaglio: ciò che è cerchiato in rosso è permesso.",
+        "mainHint": "{ready, plural, =0 {Nessun Eddie pronto} one {# Eddie pronto} other {# Eddies pronti}} · gioca una carta, vendine una, chiama una Legend o attacca.",
+        "reactHint": "Solo ciò che può reagire è cerchiato: un Blocker, un effetto Quick, o niente."
+      },
+      "pile": {
+        "trashOf": "Scarti di {name}",
+        "removedOf": "Carte di {name} rimosse dalla partita",
+        "empty": "Nessuna carta."
+      },
+      "inspect": {
+        "kind": "Tipo",
+        "cost": "Costo",
+        "power": "Forza",
+        "printed": "{power} stampata",
+        "ram": "RAM",
+        "tags": "Tags",
+        "gears": "Equipaggiamenti",
+        "sell": "Sell Tag",
+        "sellYes": "può essere venduta per un Eddie",
+        "unsupported": "Il motore non sa ancora giocare questa carta."
+      },
+      "kind": {
+        "unit": "Unit",
+        "program": "Program",
+        "legend": "Legend",
+        "gear": "Gear"
+      },
+      "color": {
+        "red": "rosso",
+        "blue": "blu",
+        "green": "verde",
+        "yellow": "giallo"
       }
     },
     "Developers": {

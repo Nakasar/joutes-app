@@ -767,7 +767,8 @@
           "noChampion": "Il manque le champion choisi.",
           "unknownCard": "Une carte n'est pas reconnue.",
           "noLeader": "Il manque le leader.",
-          "noBase": "Il manque la base."
+          "noBase": "Il manque la base.",
+          "noLegends": "Il manque les Légendes."
         }
       },
       "lobby": {
@@ -1140,6 +1141,117 @@
         "piloting": "Pilotage {n}",
         "plot": "Complot",
         "fortify": "Fortification"
+      }
+    },
+    "PlayCp": {
+      "title": "Jouer à Cyberpunk TCG",
+      "description": "Jouez à Cyberpunk TCG dans votre navigateur contre l'IA, avec vos decks ou un deck automatique. Le moteur applique les règles du duel construit et cite chacune d'elles.",
+      "lobby": {
+        "whoTitle": "Qui joue ?",
+        "resumeHint": "{players}, {moves, plural, one {# coup joué} other {# coups joués}}.",
+        "sets": "Le moteur joue Welcome to Night City, les decks de démarrage Embracing Power et The Heist, et les promos, en duel construit.",
+        "watchInfo": "Vous regardez la partie sans y jouer : les mains et les Légendes face cachée des IA sont visibles, et vous pouvez la mettre en pause.",
+        "about": "Le moteur de Joutes connaît les règles de Cyberpunk TCG : il ne vous propose que ce qui est permis, résout chaque effet et cite la règle appliquée dans le journal. Les cartes gardent leur texte anglais.",
+        "legends": "Vos Légendes face cachée vous sont inconnues à vous aussi, comme le veut la règle 5.7.4.1 : on choisit laquelle appeler par sa place, n° 1 à 3.",
+        "deckAuto": "Deck automatique autour d'une Légende",
+        "deckRandomHint": "Trois Légendes tirées au sort à chaque partie",
+        "deckSearch": "Nom du deck, Légende, auteur…"
+      },
+      "turn": "Tour {turn}",
+      "overtime": "Prolongation",
+      "phase": {
+        "setup": "Mise en place",
+        "start": "Début du tour",
+        "main": "Phase principale",
+        "end": "Fin du tour",
+        "over": "Partie terminée"
+      },
+      "zone": {
+        "legends": "Légendes",
+        "field": "Terrain",
+        "gigs": "Gigs",
+        "fixer": "Fixer"
+      },
+      "stat": {
+        "hand": "Main",
+        "deck": "Deck",
+        "trash": "Défausse",
+        "removed": "Retirées",
+        "eddies": "Eddies",
+        "eddiesValue": "{ready, plural, one {# prête} other {# prêtes}} sur {total}",
+        "cred": "Street Cred",
+        "credNull": "Null",
+        "gigs": "Gigs",
+        "gigsValue": "{count} / {max}",
+        "soldFree": "Vente du tour : libre",
+        "soldDone": "Vente du tour : faite",
+        "calledFree": "Appel du tour : libre",
+        "calledDone": "Appel du tour : fait"
+      },
+      "tag": {
+        "attacking": "Attaque",
+        "defending": "Défend",
+        "sell": "Sell"
+      },
+      "kw": {
+        "lag": "Lag",
+        "adrenaline": "Adrenaline",
+        "blocker": "Blocker",
+        "go_solo": "Go Solo"
+      },
+      "legend": {
+        "number": "n° {n}",
+        "hidden": "Légende face cachée {number}",
+        "peeked": "Légende face cachée {number} : vous l'avez regardée, c'est {name}",
+        "peekTag": "vue",
+        "call": "Appeler",
+        "goSolo": "Go Solo · {cost} €$",
+        "effect": "Effet",
+        "unknownTitle": "Légende face cachée",
+        "unknown": "Personne ne sait quelle Légende c'est, pas même son propriétaire (règle 5.7.4.1). Elle se révèle quand elle est appelée.",
+        "peekedHint": "Vous avez regardé cette Légende : elle reste face cachée pour votre adversaire."
+      },
+      "gig": {
+        "title": "{die} à {value}",
+        "fixer": "{die} dans la zone du fixer, pas encore lancé",
+        "stolen": "{die} à {value}, volé à {owner}",
+        "from": "à {name}"
+      },
+      "cost": "Coût actuel : {cost} €$",
+      "ask": {
+        "cancel": "Annuler",
+        "pickTarget": "Choisissez la cible : ce qui est cerclé de rouge est permis.",
+        "mainHint": "{ready, plural, =0 {Aucune Eddie prête} one {# Eddie prête} other {# Eddies prêtes}} · jouez une carte, vendez-en une, appelez une Légende ou attaquez.",
+        "reactHint": "Seul ce qui peut réagir est cerclé : un Blocker, un effet Quick, ou rien."
+      },
+      "pile": {
+        "trashOf": "Défausse de {name}",
+        "removedOf": "Cartes de {name} retirées de la partie",
+        "empty": "Aucune carte."
+      },
+      "inspect": {
+        "kind": "Type",
+        "cost": "Coût",
+        "power": "Puissance",
+        "printed": "{power} imprimée",
+        "ram": "RAM",
+        "tags": "Tags",
+        "gears": "Équipements",
+        "sell": "Sell Tag",
+        "sellYes": "peut être vendue pour une Eddie",
+        "unsupported": "Le moteur ne sait pas encore jouer cette carte."
+      },
+      "kind": {
+        "unit": "Unit",
+        "program": "Program",
+        "legend": "Legend",
+        "gear": "Gear"
+      },
+      "color": {
+        "red": "rouge",
+        "blue": "bleu",
+        "green": "vert",
+        "yellow": "jaune"
       }
     },
     "Developers": {
