@@ -81,6 +81,10 @@
       "description": "Generic admin file upload to blob storage."
     },
     {
+      "name": "Play",
+      "description": "Play a game with the Joutes engine: lobby, decks and online tables (Riftbound, Star Wars: Unlimited)."
+    },
+    {
       "name": "Wishlists",
       "description": "Cards a user or play group is looking for."
     },
@@ -10992,6 +10996,418 @@
           },
           "400": {
             "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/games/{game}/play/lobby": {
+      "parameters": [
+        {
+          "name": "game",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "riftbound",
+              "swu"
+            ]
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Play"
+        ],
+        "summary": "Play lobby",
+        "description": "Playable decks (checked by the engine), my online tables and automatic decks. Works signed out (public decks only).",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "`{ ok: true, ... }`."
+          },
+          "4XX": {
+            "description": "`{ ok: false, error }`: a table error code (UNAUTHENTICATED, NOT_FOUND, INVALID, INVALID_DECK, FULL, ALREADY_SEATED, NOT_FULL, NOT_WAITING, FORBIDDEN, OFFLINE)."
+          }
+        }
+      }
+    },
+    "/games/{game}/play/decks": {
+      "parameters": [
+        {
+          "name": "game",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "riftbound",
+              "swu"
+            ]
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Play"
+        ],
+        "summary": "Search public decks to play",
+        "description": "Public decks whose name, description or legend contains `q` (2 characters at least).",
+        "security": [],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`{ ok: true, ... }`."
+          },
+          "4XX": {
+            "description": "`{ ok: false, error }`: a table error code (UNAUTHENTICATED, NOT_FOUND, INVALID, INVALID_DECK, FULL, ALREADY_SEATED, NOT_FULL, NOT_WAITING, FORBIDDEN, OFFLINE)."
+          }
+        }
+      }
+    },
+    "/games/{game}/play/decks/resolve": {
+      "parameters": [
+        {
+          "name": "game",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "riftbound",
+              "swu"
+            ]
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Play"
+        ],
+        "summary": "Resolve a guest deck",
+        "description": "A Joutes deck link or id, translated for the engine (host mode). Only decks the caller can see.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reference": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`{ ok: true, ... }`."
+          },
+          "4XX": {
+            "description": "`{ ok: false, error }`: a table error code (UNAUTHENTICATED, NOT_FOUND, INVALID, INVALID_DECK, FULL, ALREADY_SEATED, NOT_FULL, NOT_WAITING, FORBIDDEN, OFFLINE)."
+          }
+        }
+      }
+    },
+    "/games/{game}/play/tables": {
+      "parameters": [
+        {
+          "name": "game",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "riftbound",
+              "swu"
+            ]
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Play"
+        ],
+        "summary": "Create an online table",
+        "description": "Riftbound takes `mode` (duel, ffa3, ffa4, 2v2); Star Wars: Unlimited is always a duel.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string"
+                  },
+                  "choice": {
+                    "type": "object",
+                    "description": "`{ kind: \"deck\", deckId }` or `{ kind: \"auto\", legend }`."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`{ ok: true, ... }`."
+          },
+          "4XX": {
+            "description": "`{ ok: false, error }`: a table error code (UNAUTHENTICATED, NOT_FOUND, INVALID, INVALID_DECK, FULL, ALREADY_SEATED, NOT_FULL, NOT_WAITING, FORBIDDEN, OFFLINE)."
+          }
+        }
+      }
+    },
+    "/games/{game}/play/tables/{tableId}": {
+      "parameters": [
+        {
+          "name": "game",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "riftbound",
+              "swu"
+            ]
+          }
+        },
+        {
+          "name": "tableId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Play"
+        ],
+        "summary": "Read an online table",
+        "description": "Seats, my seat and, once started, my WebSocket entry to the game (`access.ws`, ticket included). A visitor gets a spectator entry.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "`{ ok: true, ... }`."
+          },
+          "4XX": {
+            "description": "`{ ok: false, error }`: a table error code (UNAUTHENTICATED, NOT_FOUND, INVALID, INVALID_DECK, FULL, ALREADY_SEATED, NOT_FULL, NOT_WAITING, FORBIDDEN, OFFLINE)."
+          }
+        }
+      }
+    },
+    "/games/{game}/play/tables/{tableId}/join": {
+      "parameters": [
+        {
+          "name": "game",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "riftbound",
+              "swu"
+            ]
+          }
+        },
+        {
+          "name": "tableId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Play"
+        ],
+        "summary": "Sit at a table",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "choice": {
+                    "type": "object",
+                    "description": "`{ kind: \"deck\", deckId }` or `{ kind: \"auto\", legend }`."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`{ ok: true, ... }`."
+          },
+          "4XX": {
+            "description": "`{ ok: false, error }`: a table error code (UNAUTHENTICATED, NOT_FOUND, INVALID, INVALID_DECK, FULL, ALREADY_SEATED, NOT_FULL, NOT_WAITING, FORBIDDEN, OFFLINE)."
+          }
+        }
+      }
+    },
+    "/games/{game}/play/tables/{tableId}/bots": {
+      "parameters": [
+        {
+          "name": "game",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "riftbound",
+              "swu"
+            ]
+          }
+        },
+        {
+          "name": "tableId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Play"
+        ],
+        "summary": "Add a bot (host only)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "level": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`{ ok: true, ... }`."
+          },
+          "4XX": {
+            "description": "`{ ok: false, error }`: a table error code (UNAUTHENTICATED, NOT_FOUND, INVALID, INVALID_DECK, FULL, ALREADY_SEATED, NOT_FULL, NOT_WAITING, FORBIDDEN, OFFLINE)."
+          }
+        }
+      }
+    },
+    "/games/{game}/play/tables/{tableId}/leave": {
+      "parameters": [
+        {
+          "name": "game",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "riftbound",
+              "swu"
+            ]
+          }
+        },
+        {
+          "name": "tableId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Play"
+        ],
+        "summary": "Leave a seat",
+        "description": "The host may free any seat; `name` guards against a room that changed meanwhile.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "seat": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`{ ok: true, ... }`."
+          },
+          "4XX": {
+            "description": "`{ ok: false, error }`: a table error code (UNAUTHENTICATED, NOT_FOUND, INVALID, INVALID_DECK, FULL, ALREADY_SEATED, NOT_FULL, NOT_WAITING, FORBIDDEN, OFFLINE)."
+          }
+        }
+      }
+    },
+    "/games/{game}/play/tables/{tableId}/start": {
+      "parameters": [
+        {
+          "name": "game",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "riftbound",
+              "swu"
+            ]
+          }
+        },
+        {
+          "name": "tableId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Play"
+        ],
+        "summary": "Start the table (host only)",
+        "responses": {
+          "200": {
+            "description": "`{ ok: true, ... }`."
+          },
+          "4XX": {
+            "description": "`{ ok: false, error }`: a table error code (UNAUTHENTICATED, NOT_FOUND, INVALID, INVALID_DECK, FULL, ALREADY_SEATED, NOT_FULL, NOT_WAITING, FORBIDDEN, OFFLINE)."
           }
         }
       }

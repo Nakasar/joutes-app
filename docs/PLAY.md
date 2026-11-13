@@ -164,3 +164,15 @@ ensembles (decks méta, mes decks, groupes, publics, automatiques).
   même graine, mêmes niveaux, donc les mêmes coups — tant que le moteur est le
   même (`ENGINE_VERSION`, gardé dans la série).
 - La fourchette affichée est l'intervalle de Wilson à 95 %.
+
+## Pour l'app mobile
+
+L'app mobile (`joutes-mobile`) ne peut pas appeler les actions serveur : les
+mêmes actions sont exposées en REST sous `/api/games/<jeu>/play/…`
+(`lib/engine/play-api.ts`, une route attrape-tout par jeu à côté de `cards`).
+`GET lobby`, `GET decks?q=`, `POST decks/resolve`, `POST tables`,
+`GET tables/{id}`, `POST tables/{id}/join|bots|leave|start`. Les réponses
+gardent la forme des actions (`{ ok, … }`, ou `{ ok: false, error }` avec un
+statut HTTP qui suit le code). L'app embarque le même moteur WebAssembly pour
+jouer contre l'IA, et ouvre la WebSocket de `access.ws` pour une table en ligne.
+Toute nouvelle action d'une page Jouer se branche aussi là.
