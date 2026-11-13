@@ -3,7 +3,6 @@
 import "./cp-table.css";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Cinzel } from "next/font/google";
 import { useTranslations } from "next-intl";
 
 import type { CpFeed, CpJournalEntry } from "@/components/play/cyberpunk/useCpSoloGame";
@@ -34,10 +33,8 @@ import type {
   CpPlayer,
   CpUnit,
 } from "@/lib/engine/cyberpunk/types";
-import { cn } from "@/lib/utils";
 
 // Les titres gravés du plateau, comme sur les tables Riftbound et SWU.
-const cinzel = Cinzel({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-engrave", display: "swap" });
 
 /** Le temps laissé à chaque ligne du récit, en millisecondes. */
 const SPEEDS = { slow: 1700, normal: 1000, fast: 500, instant: 0 } as const;
@@ -635,7 +632,7 @@ export function CpTable({ feed, cards, afterResult }: CpTableProps) {
   };
 
   return (
-    <div className={cn("cp-table dark", cinzel.variable)}>
+    <div className="cp-table dark">
       <div className="cp-bar">
         <span className="cp-chip">
           {tc("turn", { turn: view.turn })} · {tc.has(`phase.${view.phase}`) ? tc(`phase.${view.phase}`) : view.phase}
