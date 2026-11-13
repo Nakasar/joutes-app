@@ -66,3 +66,4 @@ next-env.d.ts
 
 # moteur de jeu en base64 pour le serveur (scripts/build-engine.mjs, avant dev et build)
 /lib/engine/wasm.generated.ts
+/lib/engine/swu/wasm.generated.ts

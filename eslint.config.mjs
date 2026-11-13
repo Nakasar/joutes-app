@@ -39,6 +39,8 @@ const eslintConfig = defineConfig([
     // Moteur de jeu compilé (dépôt joutes-engine) et son binaire en base64.
     'lib/engine/pkg/**',
     'lib/engine/wasm.generated.ts',
+    'lib/engine/swu/pkg/**',
+    'lib/engine/swu/wasm.generated.ts',
   ]),
 ])
  

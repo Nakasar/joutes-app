@@ -765,7 +765,9 @@
         "problem": {
           "noLegend": "Die Legende fehlt.",
           "noChampion": "Der gewählte Champion fehlt.",
-          "unknownCard": "Eine Karte wird nicht erkannt."
+          "unknownCard": "Eine Karte wird nicht erkannt.",
+          "noLeader": "Der Anführer fehlt.",
+          "noBase": "Die Basis fehlt."
         }
       },
       "lobby": {
@@ -1033,6 +1035,93 @@
           "both": "erschöpft, dann recycelt",
           "recycle": "recycelt"
         }
+      }
+    },
+    "PlaySwu": {
+      "title": "Star Wars: Unlimited spielen",
+      "description": "Spiele Star Wars: Unlimited im Browser gegen die KI, mit deinen eigenen Decks oder einem automatischen Deck. Die Engine wendet die Regeln des Premier-Formats an und nennt jede davon.",
+      "lobby": {
+        "whoTitle": "Wer spielt?",
+        "resumeHint": "{players}, {moves, plural, one {# Zug gespielt} other {# Züge gespielt}}.",
+        "sets": "Die Engine spielt alle neun Sets, von Spark of Rebellion bis Heroes of Mandalore, im Premier-Format.",
+        "watchInfo": "Du schaust der Partie zu, ohne mitzuspielen: Die Hände der KIs sind sichtbar, und du kannst pausieren.",
+        "about": "Die Joutes-Engine kennt die Regeln von Star Wars: Unlimited: Sie bietet nur an, was erlaubt ist, wickelt jede Fähigkeit ab und nennt im Protokoll die angewandte Regel.",
+        "soon": "Online-Spiel und Deck-Simulation folgen für dieses Spiel.",
+        "deckAuto": "Automatisches Deck um einen Anführer",
+        "deckRandomHint": "In jeder Partie ein zufällig gezogener Anführer",
+        "deckSearch": "Deckname, Anführer, Autor…"
+      },
+      "arena": {
+        "ground": "Bodenarena",
+        "space": "Weltraumarena"
+      },
+      "round": "Runde {round}",
+      "phase": {
+        "setup": "Aufbau",
+        "action": "Aktionsphase",
+        "regroup": "Neuordnungsphase",
+        "over": "Partie beendet"
+      },
+      "stat": {
+        "hand": "Hand",
+        "deck": "Deck",
+        "discard": "Ablage",
+        "resources": "Ressourcen",
+        "resourcesValue": "{ready} von {total} bereit",
+        "credits": "Credits",
+        "force": "Macht"
+      },
+      "initiative": "Initiative",
+      "initiativeTaken": "Initiative genommen",
+      "tag": {
+        "exhausted": "erschöpft",
+        "deployed": "aufgestellt",
+        "attacking": "Greift an"
+      },
+      "leader": {
+        "action": "Aktion",
+        "deploy": "Aufstellen",
+        "deployPilot": "Als Pilot aufstellen"
+      },
+      "life": "{left} / {total} LP",
+      "baseOf": "Basis von {name}",
+      "captives": "{count} gefangen",
+      "cost": "Aktuelle Kosten: {cost}",
+      "ask": {
+        "cancel": "Abbrechen",
+        "pickTarget": "Wähle das Ziel: Erlaubt ist, was rot umrandet ist.",
+        "turnHint": "{ready, plural, =0 {Keine Ressource bereit} one {# Ressource bereit} other {# Ressourcen bereit}} · spiele eine Karte, greife an oder nutze deinen Anführer."
+      },
+      "pile": {
+        "discardOf": "Ablage von {name}",
+        "resourcesOf": "Ressourcen von {name}",
+        "empty": "Keine Karte."
+      },
+      "inspect": {
+        "power": "Stärke",
+        "hp": "LP",
+        "damage": "{damage} Schaden erlitten",
+        "keywords": "Schlüsselwörter",
+        "upgrades": "Aufwertungen",
+        "captives": "Gefangene Karten",
+        "unitSide": "Einheitenseite des Anführers",
+        "unsupported": "Die Engine kann diese Karte noch nicht spielen."
+      },
+      "kw": {
+        "ambush": "Hinterhalt",
+        "grit": "Zähigkeit",
+        "overwhelm": "Überwältigen",
+        "raid": "Überfall {n}",
+        "restore": "Wiederherstellen {n}",
+        "saboteur": "Saboteur",
+        "sentinel": "Wächter",
+        "shielded": "Abgeschirmt",
+        "hidden": "Verborgen",
+        "support": "Unterstützung",
+        "exploit": "Ausbeuten {n}",
+        "piloting": "Pilotieren {n}",
+        "plot": "Komplott",
+        "fortify": "Befestigen"
       }
     },
     "Developers": {

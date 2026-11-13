@@ -8,6 +8,8 @@ import {readCardTranslations, searchableTranslations, type CardTranslations} fro
 export type Card = {
   id: string;
   imageUrl: string;
+  /** Le verso : la face unité d'un leader. */
+  backImageUrl?: string;
   lang: string;
   setCode: "string";
   collectorNumber: "string";
@@ -92,6 +94,8 @@ export async function importCardDatabase() {
     cards.push({
       id,
       image: cardRaw.imageUrl,
+      // La face unité d'un leader, que la table de jeu montre une fois déployé.
+      ...(cardRaw.backImageUrl ? { backImage: cardRaw.backImageUrl } : {}),
       lang: cardRaw.lang,
       setCode: cardRaw.setCode,
       collectorNumber: cardRaw.token ? `T${String(cardRaw.collectorNumber).padStart(2, '0')}` : String(cardRaw.collectorNumber),
@@ -237,6 +241,7 @@ async function getCardsListFromFile(): Promise<Card[]> {
     arenas: cardRaw.attributes.arenas.data.map((arena: any) => arena.attributes.name),
     rarity: cardRaw.attributes.rarity.data.attributes.englishName,
     imageUrl: cardRaw.attributes.artFront.data?.attributes.url,
+    backImageUrl: cardRaw.attributes.artBack?.data?.attributes.url,
     collectorNumber: cardRaw.attributes.cardNumber,
     variant: variantTypeOf(cardRaw),
     token: cardRaw.attributes.type.data.attributes.value === 'Token',
@@ -288,6 +293,7 @@ async function getCardsListFromOfficialWebSite(): Promise<Card[]> {
     arenas: cardRaw.attributes.arenas.data.map((arena: any) => arena.attributes.name),
     rarity: cardRaw.attributes.rarity.data.attributes.englishName,
     imageUrl: cardRaw.attributes.artFront.data?.attributes.url,
+    backImageUrl: cardRaw.attributes.artBack?.data?.attributes.url,
     collectorNumber: cardRaw.attributes.cardNumber,
     variant: variantTypeOf(cardRaw),
     token: cardRaw.attributes.type.data.attributes.value === 'Token',

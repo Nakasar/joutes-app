@@ -765,7 +765,9 @@
         "problem": {
           "noLegend": "Manca la leggenda.",
           "noChampion": "Manca il campione scelto.",
-          "unknownCard": "Una carta non è riconosciuta."
+          "unknownCard": "Una carta non è riconosciuta.",
+          "noLeader": "Manca il leader.",
+          "noBase": "Manca la base."
         }
       },
       "lobby": {
@@ -1033,6 +1035,93 @@
           "both": "esaurita poi riciclata",
           "recycle": "riciclata"
         }
+      }
+    },
+    "PlaySwu": {
+      "title": "Giocare a Star Wars: Unlimited",
+      "description": "Gioca a Star Wars: Unlimited nel browser contro l'IA, con i tuoi mazzi o con un mazzo automatico. Il motore applica le regole del formato Premier e cita ciascuna di esse.",
+      "lobby": {
+        "whoTitle": "Chi gioca?",
+        "resumeHint": "{players}, {moves, plural, one {# mossa giocata} other {# mosse giocate}}.",
+        "sets": "Il motore gioca tutte e nove le espansioni, da Spark of Rebellion a Heroes of Mandalore, nel formato Premier.",
+        "watchInfo": "Guardi la partita senza giocare: le mani delle IA sono visibili e puoi metterla in pausa.",
+        "about": "Il motore di Joutes conosce le regole di Star Wars: Unlimited: ti propone solo ciò che è permesso, risolve ogni abilità e cita nel registro la regola applicata.",
+        "soon": "Il gioco online e la simulazione dei mazzi arriveranno in seguito per questo gioco.",
+        "deckAuto": "Mazzo automatico attorno a un leader",
+        "deckRandomHint": "Un leader estratto a sorte a ogni partita",
+        "deckSearch": "Nome del mazzo, leader, autore…"
+      },
+      "arena": {
+        "ground": "Arena terrestre",
+        "space": "Arena spaziale"
+      },
+      "round": "Round {round}",
+      "phase": {
+        "setup": "Preparazione",
+        "action": "Fase di azione",
+        "regroup": "Fase di raggruppamento",
+        "over": "Partita terminata"
+      },
+      "stat": {
+        "hand": "Mano",
+        "deck": "Mazzo",
+        "discard": "Scarti",
+        "resources": "Risorse",
+        "resourcesValue": "{ready} pronte su {total}",
+        "credits": "Crediti",
+        "force": "Forza"
+      },
+      "initiative": "Iniziativa",
+      "initiativeTaken": "Iniziativa presa",
+      "tag": {
+        "exhausted": "esaurita",
+        "deployed": "schierato",
+        "attacking": "Attacca"
+      },
+      "leader": {
+        "action": "Azione",
+        "deploy": "Schierare",
+        "deployPilot": "Schierare come Pilota"
+      },
+      "life": "{left} / {total} PV",
+      "baseOf": "Base di {name}",
+      "captives": "{count, plural, one {# catturata} other {# catturate}}",
+      "cost": "Costo attuale: {cost}",
+      "ask": {
+        "cancel": "Annulla",
+        "pickTarget": "Scegli il bersaglio: è permesso ciò che è cerchiato di rosso.",
+        "turnHint": "{ready, plural, =0 {Nessuna risorsa pronta} one {# risorsa pronta} other {# risorse pronte}} · gioca una carta, attacca o usa il tuo leader."
+      },
+      "pile": {
+        "discardOf": "Scarti di {name}",
+        "resourcesOf": "Risorse di {name}",
+        "empty": "Nessuna carta."
+      },
+      "inspect": {
+        "power": "Potenza",
+        "hp": "PV",
+        "damage": "{damage, plural, one {# danno subito} other {# danni subiti}}",
+        "keywords": "Parole chiave",
+        "upgrades": "Miglioramenti",
+        "captives": "Carte catturate",
+        "unitSide": "Lato unità del leader",
+        "unsupported": "Il motore non sa ancora giocare questa carta."
+      },
+      "kw": {
+        "ambush": "Imboscata",
+        "grit": "Grinta",
+        "overwhelm": "Travolgere",
+        "raid": "Incursione {n}",
+        "restore": "Ripristino {n}",
+        "saboteur": "Sabotatore",
+        "sentinel": "Sentinella",
+        "shielded": "Schermata",
+        "hidden": "Nascosta",
+        "support": "Supporto",
+        "exploit": "Sfruttare {n}",
+        "piloting": "Pilotare {n}",
+        "plot": "Complotto",
+        "fortify": "Fortificare"
       }
     },
     "Developers": {

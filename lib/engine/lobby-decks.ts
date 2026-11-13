@@ -67,15 +67,22 @@ export function toLobbyDeck(deck: Deck, source: LobbyDeckSource, groups?: string
   return { ...base, legend, list, problems, ...(completed.length > 0 ? { completed } : {}) };
 }
 
+/**
+ * Comment un deck Joutes devient un deck proposé : celui de Riftbound par
+ * défaut, celui d'un autre jeu du moteur sinon.
+ */
+type Convert<D> = (deck: Deck, source: LobbyDeckSource, groups?: string[]) => D;
+
 /** Combien de decks publics la page propose d'emblée, et par recherche. */
 const PUBLIC_DECKS = 20;
 
-export async function publicDecks(
+export async function publicDecks<D = LobbyDeck>(
   gameId: string,
   viewerId: string | null,
   search?: string,
   count = PUBLIC_DECKS,
-): Promise<LobbyDeck[]> {
+  convert: Convert<D> = toLobbyDeck as Convert<D>,
+): Promise<D[]> {
   const { decks } = await searchDecks({
     gameId,
     scope: "public",
@@ -87,14 +94,14 @@ export async function publicDecks(
   return decks
     .filter((deck) => deck.playerId !== viewerId)
     .slice(0, count)
-    .map((deck) => toLobbyDeck(deck, deck.meta ? "meta" : "public"));
+    .map((deck) => convert(deck, deck.meta ? "meta" : "public"));
 }
 
 /** Combien de decks méta les combobox proposent d'emblée ; les autres se trouvent par la recherche. */
 export const META_PICKER_DECKS = 60;
 
 /** Plusieurs listes en une : un deck présent deux fois reste dans la première où il apparaît. */
-export function mergeLobbyDecks(...lists: LobbyDeck[][]): LobbyDeck[] {
+export function mergeLobbyDecks<D extends { id: string } = LobbyDeck>(...lists: D[][]): D[] {
   const seen = new Set<string>();
   return lists.flat().filter((deck) => {
     if (seen.has(deck.id)) return false;
@@ -104,7 +111,11 @@ export function mergeLobbyDecks(...lists: LobbyDeck[][]): LobbyDeck[] {
 }
 
 /** Les decks partagés dans mes groupes, sauf les miens. */
-export async function sharedDecks(userId: string, gameId: string): Promise<LobbyDeck[]> {
+export async function sharedDecks<D = LobbyDeck>(
+  userId: string,
+  gameId: string,
+  convert: Convert<D> = toLobbyDeck as Convert<D>,
+): Promise<D[]> {
   const groups = await getPlayGroupsForUser(userId);
   const links = await listPlayGroupDecksOfGroups(
     groups.map((group) => group.id),
@@ -125,7 +136,7 @@ export async function sharedDecks(userId: string, gameId: string): Promise<Lobby
   return decks
     .filter((deck) => deck.gameId === gameId && deck.playerId !== userId)
     .sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
-    .map((deck) => toLobbyDeck(deck, "shared", groupsOf.get(deck.id)));
+    .map((deck) => convert(deck, "shared", groupsOf.get(deck.id)));
 }
 
 /**
