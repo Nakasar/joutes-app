@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { choiceCodes, clickableIds, groupChoices, isDirect, subjectOf, targetOf, viewCodes } from "./table.ts";
+import {
+  choiceCodes,
+  clickableIds,
+  groupChoices,
+  isDirect,
+  subjectOf,
+  targetOf,
+  tellEvents,
+  viewCodes,
+} from "./table.ts";
 import type { SwuPrompt, SwuView } from "./types.ts";
 
 const unit = (id: number, code: string, controller: number) => ({
@@ -98,5 +107,27 @@ test("la main de l'adversaire ne se clique pas, et chaque objet visible a son co
   assert.deepEqual(
     choiceCodes({ action: { type: "attack", attacker: 20, target: 21 }, label: "Attaquer" }, codes),
     ["SOR-049", "SOR-128"],
+  );
+});
+
+test("le récit garde les évènements racontés, avec leur numéro et les cartes qu'ils nomment", () => {
+  const known = new Map([[20, "SOR-049"]]);
+  const byDef = new Map([[7, "SOR-128"]]);
+  const told = tellEvents(
+    [
+      { event: { type: "drew", seat: 0 }, text: "" },
+      { event: { type: "played", card: 20, seat: 1 }, text: "Bob joue Obi-Wan Kenobi." },
+      { event: { type: "created", def: 7, obj: 99 }, text: "Un jeton arrive.", rule: "8.1" },
+    ],
+    12,
+    known,
+    byDef,
+  );
+  assert.deepEqual(
+    told.map((entry) => [entry.key, entry.codes]),
+    [
+      [13, ["SOR-049"]],
+      [14, ["SOR-128"]],
+    ],
   );
 });

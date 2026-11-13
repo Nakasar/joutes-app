@@ -1046,7 +1046,7 @@
         "sets": "The engine plays all nine sets, from Spark of Rebellion to Heroes of Mandalore, in the Premier format.",
         "watchInfo": "You watch the game without playing: the AI hands are visible, and you can pause it.",
         "about": "The Joutes engine knows the rules of Star Wars: Unlimited: it only offers what is allowed, resolves every ability and cites the rule applied in the log.",
-        "soon": "Online play and deck simulation will follow for this game.",
+        "soon": "Deck simulation will follow for this game.",
         "deckAuto": "Automatic deck around a leader",
         "deckRandomHint": "A leader drawn at random each game",
         "deckSearch": "Deck name, leader, author…"

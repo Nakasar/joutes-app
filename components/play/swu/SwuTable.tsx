@@ -135,7 +135,7 @@ export function SwuTable({ feed, cards, afterResult }: SwuTableProps) {
   const { hold } = feed;
   const busy = backlog > 0 || paused;
   useEffect(() => {
-    hold(busy);
+    hold?.(busy);
   }, [busy, hold]);
 
   if (feed.status === "loading" || !view) {
@@ -578,8 +578,14 @@ export function SwuTable({ feed, cards, afterResult }: SwuTableProps) {
         <span className="swu-chip">
           {ts("round", { round: view.round })} · {ts.has(`phase.${view.phase}`) ? ts(`phase.${view.phase}`) : view.phase}
         </span>
+        {feed.status === "reconnecting" && <span className="swu-chip">{t("status.reconnecting")}</span>}
+        {(feed.away ?? []).map((seat) => (
+          <span key={seat} className="swu-chip">
+            {t("player.away")} · {view.players[seat]?.name}
+          </span>
+        ))}
         <span className="swu-sp" />
-        {watching && (
+        {watching && feed.step && (
           <>
             <button type="button" className="swu-btn" data-size="sm" onClick={() => setPaused((value) => !value)}>
               {paused ? t("watch.resume") : t("watch.pause")}

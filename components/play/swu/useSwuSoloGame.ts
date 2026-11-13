@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { loadSwuEngine, type SwuBrowserEngine } from "@/lib/engine/swu/browser";
 import type { SwuTableCards } from "@/lib/engine/swu/cards";
-import { viewCodes } from "@/lib/engine/swu/table";
-import type { BotLevel, SwuAction, SwuRecord, SwuTold, SwuUpdate } from "@/lib/engine/swu/types";
+import { tellEvents, viewCodes, type SwuJournalEntry } from "@/lib/engine/swu/table";
+import type { BotLevel, SwuAction, SwuRecord, SwuUpdate } from "@/lib/engine/swu/types";
 
 /**
  * Une partie de Star Wars: Unlimited contre l'IA telle qu'elle est gardée dans
@@ -49,12 +49,11 @@ export function writeSwuSave(save: SwuSave | null): void {
   }
 }
 
-/** Une ligne du récit, avec les cartes qu'elle nomme (leurs codes). */
-export type SwuJournalEntry = SwuTold & { key: number; codes: string[] };
+export type { SwuJournalEntry };
 
 /** Ce que la table reçoit de la partie. */
 export type SwuFeed = {
-  status: "loading" | "ready" | "error";
+  status: "loading" | "ready" | "reconnecting" | "error";
   error: string | null;
   update: SwuUpdate | null;
   journal: SwuJournalEntry[];
@@ -62,11 +61,16 @@ export type SwuFeed = {
   toldFrom: number;
   /** Mon siège, ou `null` pour un spectateur. */
   seat: number | null;
+  /** Sièges dont le joueur est déconnecté (en ligne seulement). */
+  away?: number[];
   act: (action: SwuAction) => void;
-  /** La table raconte encore : les robots attendent. */
-  hold: (busy: boolean) => void;
-  /** Fait jouer tout de suite le coup suivant d'une IA (pas à pas d'une partie en pause). */
-  step: () => void;
+  /**
+   * La table raconte encore : les robots joués dans le navigateur attendent.
+   * Absent en ligne, où la partie avance au rythme du serveur.
+   */
+  hold?: (busy: boolean) => void;
+  /** Fait jouer tout de suite le coup suivant d'une IA (pas à pas d'une partie en pause). Absent en ligne. */
+  step?: () => void;
 };
 
 const BOT_DELAY_MS = 350;
@@ -110,18 +114,7 @@ export function useSwuSoloGame(save: SwuSave | null, cards: SwuTableCards): SwuF
         const first = seen.current;
         seen.current = next.seq;
         viewCodes(next.view, known.current);
-        const told = next.events
-          .map((entry, index) => ({ entry, key: first + index }))
-          .filter(({ entry }) => entry.text)
-          .map(({ entry, key }): SwuJournalEntry => {
-            const codes = new Set<string>();
-            for (const [field, value] of Object.entries(entry.event)) {
-              if (typeof value !== "number") continue;
-              const code = field === "def" ? byDef.current.get(value) : known.current.get(value);
-              if (code) codes.add(code);
-            }
-            return { ...entry, key, codes: [...codes] };
-          });
+        const told = tellEvents(next.events, first, known.current, byDef.current);
         setUpdate(next);
         setJournal((previous) => (told.length === 0 ? previous : [...previous, ...told]));
         // Une partie reprise ne se raconte pas depuis le début.

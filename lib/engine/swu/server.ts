@@ -1,6 +1,6 @@
 import "server-only";
 
-import { initSync, swu_catalog, swu_validate_deck } from "@/lib/engine/swu/pkg/joutes_swu.js";
+import { initSync, swu_auto_deck, swu_catalog, swu_validate_deck } from "@/lib/engine/swu/pkg/joutes_swu.js";
 import type { SwuDeckList, SwuEngineCard } from "@/lib/engine/swu/types";
 import { SWU_WASM_BASE64 } from "@/lib/engine/swu/wasm.generated";
 
@@ -32,4 +32,29 @@ export function swuEngineCards(): Map<string, SwuEngineCard> {
 export function validateSwuDeck(list: SwuDeckList): string[] {
   engine();
   return JSON.parse(swu_validate_deck(JSON.stringify(list))) as string[];
+}
+
+let leaders: string[] | undefined;
+
+/** Les leaders autour desquels le moteur sait construire un deck automatique. */
+export function swuAutoLeaders(): string[] {
+  leaders ??= [...swuEngineCards().values()]
+    .filter((card) => card.kind === "leader" && card.coverage !== "none")
+    .map((card) => card.code);
+  return leaders;
+}
+
+/**
+ * Un deck automatique autour d'un leader. La base est tirée (par la graine)
+ * parmi celles qui partagent un aspect avec lui, pour un deck sans pénalité.
+ */
+export function autoSwuDeck(leader: string, seed: number): SwuDeckList | null {
+  const cards = swuEngineCards();
+  const chosen = cards.get(leader);
+  if (!chosen || chosen.kind !== "leader" || chosen.coverage === "none") return null;
+  const bases = [...cards.values()].filter((card) => card.kind === "base" && card.coverage !== "none");
+  const fitting = bases.filter((base) => base.aspects.some((aspect) => chosen.aspects.includes(aspect)));
+  const pool = fitting.length > 0 ? fitting : bases;
+  if (pool.length === 0) return null;
+  return JSON.parse(swu_auto_deck(leader, pool[seed % pool.length].code, seed)) as SwuDeckList | null;
 }

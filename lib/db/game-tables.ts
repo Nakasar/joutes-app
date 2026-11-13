@@ -161,10 +161,10 @@ export async function finishGameTable(
   return outcome.modifiedCount === 1;
 }
 
-/** Les tables d'une personne, les plus récentes d'abord. */
-export async function listGameTablesOf(userId: string, limit = 20): Promise<GameTable[]> {
+/** Les tables d'une personne à un jeu, les plus récentes d'abord. */
+export async function listGameTablesOf(userId: string, gameSlug: string, limit = 20): Promise<GameTable[]> {
   const docs = await collection
-    .find({ memberIds: userId, status: { $ne: "cancelled" } }, { projection: { _id: 0 } })
+    .find({ memberIds: userId, gameSlug, status: { $ne: "cancelled" } }, { projection: { _id: 0 } })
     .sort({ createdAt: -1 })
     .limit(limit)
     .toArray();

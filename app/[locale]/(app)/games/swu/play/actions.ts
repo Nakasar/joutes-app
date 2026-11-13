@@ -4,15 +4,32 @@ import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth.ts";
 import { searchDecks } from "@/lib/db/decks.ts";
+import { listGameTablesOf } from "@/lib/db/game-tables.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { mergeLobbyDecks, publicDecks, sharedDecks } from "@/lib/engine/lobby-decks.ts";
 import { swuAutoDeckCards, toSwuLobbyDeck, type SwuLobbyDeck } from "@/lib/engine/swu/lobby-decks.ts";
+import {
+  addBotFor,
+  createTableFor,
+  joinTableFor,
+  leaveSeatFor,
+  readTableFor,
+  startTableFor,
+  type PlayResult,
+  type TableState,
+} from "@/lib/engine/table-actions.ts";
+import { engineServer, summarize } from "@/lib/engine/tables.ts";
+import type { GameTableSummary } from "@/lib/types/GameTable.ts";
 
 export type { SwuLobbyDeck } from "@/lib/engine/swu/lobby-decks.ts";
 
 export type SwuLobby = {
   signedIn: boolean;
   name: string | null;
+  /** Faux si aucun serveur de parties n'est configuré : seule l'IA est proposée. */
+  online: boolean;
+  /** Mes tables en ligne à ce jeu, les plus récentes d'abord. */
+  tables: GameTableSummary[];
   /** Mes decks, puis ceux partagés dans mes groupes, puis les publics les plus aimés. */
   decks: SwuLobbyDeck[];
   /** Leaders et bases (codes du moteur) pour un deck automatique. */
@@ -44,18 +61,21 @@ export async function loadSwuLobby(): Promise<SwuPlayResult<{ lobby: SwuLobby }>
     if (!game) return { ok: false };
     const seated = await viewer();
     const auto = swuAutoDeckCards();
+    const online = engineServer() !== null;
     if (!seated) {
       return {
         ok: true,
         lobby: {
           signedIn: false,
           name: null,
+          online,
+          tables: [],
           decks: await publicDecks(game.id, null, undefined, undefined, toSwuLobbyDeck),
           ...auto,
         },
       };
     }
-    const [{ decks }, shared, popular] = await Promise.all([
+    const [{ decks }, shared, popular, tables] = await Promise.all([
       searchDecks({
         playerId: seated.userId,
         viewerId: seated.userId,
@@ -67,12 +87,15 @@ export async function loadSwuLobby(): Promise<SwuPlayResult<{ lobby: SwuLobby }>
       }),
       sharedDecks(seated.userId, game.id, toSwuLobbyDeck),
       publicDecks(game.id, seated.userId, undefined, undefined, toSwuLobbyDeck),
+      online ? listGameTablesOf(seated.userId, GAME_SLUG, 10) : Promise.resolve([]),
     ]);
     return {
       ok: true,
       lobby: {
         signedIn: true,
         name: seated.name,
+        online,
+        tables: tables.map(summarize),
         decks: mergeLobbyDecks(
           decks.map((deck) => toSwuLobbyDeck(deck, "mine")),
           shared,
@@ -100,4 +123,30 @@ export async function searchSwuPlayDecksAction(query: unknown): Promise<SwuPlayR
     console.error("Table de jeu SWU :", error);
     return { ok: false };
   }
+}
+
+/** Une table en ligne de Star Wars: Unlimited : toujours un duel (format Premier). */
+export async function createSwuTableAction(choice: unknown): Promise<PlayResult<{ id: string }>> {
+  return createTableFor(GAME_SLUG, "duel", choice);
+}
+
+export async function joinSwuTableAction(id: unknown, choice: unknown): Promise<PlayResult> {
+  return joinTableFor(GAME_SLUG, id, choice);
+}
+
+export async function addSwuBotAction(id: unknown, level: unknown): Promise<PlayResult> {
+  return addBotFor(GAME_SLUG, id, level);
+}
+
+/** `name` : le nom affiché au siège visé, pour ne pas retirer quelqu'un d'autre si la salle a bougé. */
+export async function leaveSwuSeatAction(id: unknown, seat: unknown, name: unknown): Promise<PlayResult> {
+  return leaveSeatFor(GAME_SLUG, id, seat, name);
+}
+
+export async function startSwuTableAction(id: unknown): Promise<PlayResult> {
+  return startTableFor(GAME_SLUG, id);
+}
+
+export async function readSwuTableAction(id: unknown): Promise<PlayResult<{ state: TableState }>> {
+  return readTableFor(GAME_SLUG, id);
 }

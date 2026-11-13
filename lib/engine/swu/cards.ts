@@ -79,6 +79,13 @@ function escapeRegExp(text: string): string {
  * moteur écrit en anglais) deviennent ceux du catalogue et sont rendus à part,
  * pour que la table les mette en valeur.
  */
+/** Ce que la liste des decks lit d'un leader : nom, vignette, aspects. */
+export function swuPickerCards(cards: SwuTableCards): Record<string, { name: string; image?: string; domains: string[] }> {
+  return Object.fromEntries(
+    Object.values(cards).map((card) => [card.code, { name: card.name, image: card.image, domains: [...new Set(card.aspects)] }]),
+  );
+}
+
 export type SwuTextPart = { text: string; card?: string };
 
 export function localizeSwuText(text: string, codes: Iterable<string>, cards: SwuTableCards): SwuTextPart[] {

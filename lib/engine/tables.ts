@@ -10,6 +10,9 @@ import * as tablesDb from "@/lib/db/game-tables";
 import { engineDeckOf } from "@/lib/engine/playable-deck";
 import { autoEngineDeck, engineCards } from "@/lib/engine/server";
 import { engineGameId, parseEngineResult, type EngineResult } from "@/lib/engine/results";
+import { swuDeckOf } from "@/lib/engine/swu/lobby-decks";
+import { autoSwuDeck, swuAutoLeaders } from "@/lib/engine/swu/server";
+import type { SwuConfig, SwuDeckList } from "@/lib/engine/swu/types";
 import { signTicket } from "@/lib/engine/tickets";
 import {
   BOT_LEVELS,
@@ -20,7 +23,7 @@ import {
   type EngineDeckList,
   type EngineMode,
 } from "@/lib/engine/types";
-import type { GameTable, GameTableSummary } from "@/lib/types/GameTable";
+import type { GameTable, GameTableSeat, GameTableSummary } from "@/lib/types/GameTable";
 
 /**
  * Les règles d'une table de jeu en ligne : qui la crée, qui s'assoit, qui la
@@ -106,7 +109,21 @@ export function autoDeckLegends(): string[] {
 
 let legends: string[] | undefined;
 
-/** Le deck d'un siège, vérifié par le moteur. */
+/** Le jeu d'une table : son identifiant Joutes et son slug (« riftbound », « swu »). */
+export type TableGame = { id: string; slug: string };
+
+export const SWU_SLUG = "swu";
+
+/** Un deck enregistré que le demandeur a le droit de lire, pour ce jeu. */
+async function readableDeck(deckId: string, userId: string | null, gameId: string) {
+  const stored = await getDeckById(deckId);
+  if (!stored || stored.gameId !== gameId) throw new TableFailure("INVALID_DECK");
+  // Un deck privé s'ouvre à son auteur et aux membres d'un groupe où il est partagé.
+  if (!(await readDeckAccess(stored, userId))) throw new TableFailure("INVALID_DECK");
+  return stored;
+}
+
+/** Le deck Riftbound d'un siège, vérifié par le moteur. */
 export async function resolveDeck(
   choice: DeckChoice,
   userId: string | null,
@@ -118,14 +135,52 @@ export async function resolveDeck(
     return { deck, deckName: "" };
   }
 
-  const stored = await getDeckById(choice.deckId);
-  if (!stored || stored.gameId !== gameId) throw new TableFailure("INVALID_DECK");
-  // Un deck privé s'ouvre à son auteur et aux membres d'un groupe où il est partagé.
-  if (!(await readDeckAccess(stored, userId))) throw new TableFailure("INVALID_DECK");
-
+  const stored = await readableDeck(choice.deckId, userId, gameId);
   const { list, problems } = engineDeckOf(stored);
   if (!list) throw new TableFailure("INVALID_DECK", problems);
   return { deck: list, deckName: stored.name };
+}
+
+/** Le deck Star Wars: Unlimited d'un siège, vérifié par le moteur. `legend` nomme alors un leader. */
+export async function resolveSwuDeck(
+  choice: DeckChoice,
+  userId: string | null,
+  gameId: string,
+): Promise<{ deck: SwuDeckList; deckName: string }> {
+  if (choice.kind === "auto") {
+    const deck = autoSwuDeck(choice.legend, randomInt(1, 2 ** 31));
+    if (!deck) throw new TableFailure("INVALID_DECK");
+    return { deck, deckName: "" };
+  }
+
+  const stored = await readableDeck(choice.deckId, userId, gameId);
+  const { list, problems } = swuDeckOf(stored);
+  if (!list) throw new TableFailure("INVALID_DECK", problems);
+  return { deck: list, deckName: stored.name };
+}
+
+type SeatDeck = Pick<GameTableSeat, "deck" | "deckName" | "legend">;
+
+/** Le deck d'un siège, dans le jeu de la table. `legend` est la carte montrée en salle d'attente. */
+async function seatDeck(choice: DeckChoice, userId: string | null, game: TableGame): Promise<SeatDeck> {
+  if (game.slug === SWU_SLUG) {
+    const { deck, deckName } = await resolveSwuDeck(choice, userId, game.id);
+    return { deck, deckName, legend: deck.leader };
+  }
+  const { deck, deckName } = await resolveDeck(choice, userId, game.id);
+  return { deck, deckName, legend: deck.legend };
+}
+
+/** Le deck tiré au sort d'une IA ajoutée à la table. */
+function botDeck(slug: string): SeatDeck | null {
+  if (slug === SWU_SLUG) {
+    const leaders = swuAutoLeaders();
+    const deck = autoSwuDeck(leaders[randomInt(leaders.length)], randomInt(1, 2 ** 31));
+    return deck ? { deck, deckName: "", legend: deck.leader } : null;
+  }
+  const legends = autoDeckLegends();
+  const deck = autoEngineDeck(legends[randomInt(legends.length)], randomInt(1, 2 ** 31));
+  return deck ? { deck, deckName: "", legend: deck.legend } : null;
 }
 
 export function summarize(table: GameTable): GameTableSummary {
@@ -154,10 +209,12 @@ export async function createTable(
   host: Seated,
   mode: EngineMode,
   choice: DeckChoice,
-  game: { id: string; slug: string },
+  game: TableGame,
 ): Promise<GameTable> {
   requireServer();
-  const { deck, deckName } = await resolveDeck(choice, host.userId, game.id);
+  // Star Wars: Unlimited ne se joue qu'à deux (format Premier).
+  if (game.slug === SWU_SLUG && mode !== "duel") throw new TableFailure("INVALID");
+  const deck = await seatDeck(choice, host.userId, game);
   // Une seule table en attente par hôte : sans cela, rien ne borne le nombre
   // de tables qu'un compte peut ouvrir.
   await tablesDb.cancelWaitingGameTablesOf(host.userId);
@@ -168,7 +225,7 @@ export async function createTable(
       mode,
       hostId: host.userId,
       status: "waiting",
-      seats: [{ userId: host.userId, name: host.name, deckName, legend: deck.legend, deck }],
+      seats: [{ userId: host.userId, name: host.name, ...deck }],
       createdAt: DateTime.utc().toISO(),
     };
     if (await tablesDb.insertGameTable(table)) return table;
@@ -188,27 +245,30 @@ async function waitingTable(id: string): Promise<GameTable> {
  * assis ») ; ce sont les écritures de `lib/db/game-tables.ts`, conditionnelles,
  * qui garantissent l'état de la table quand deux personnes agissent ensemble.
  */
-export async function joinTable(player: Seated, id: string, choice: DeckChoice, gameId: string): Promise<void> {
+export async function joinTable(player: Seated, id: string, choice: DeckChoice, game: TableGame): Promise<void> {
   const table = await waitingTable(id);
+  // Une table ne se rejoint que depuis la page de son jeu : le deck est celui de ce jeu.
+  if (table.gameSlug !== game.slug) throw new TableFailure("NOT_FOUND");
   if (table.seats.some((seat) => seat.userId === player.userId)) throw new TableFailure("ALREADY_SEATED");
   if (table.seats.length >= modePlayers(table.mode)) throw new TableFailure("FULL");
-  const { deck, deckName } = await resolveDeck(choice, player.userId, gameId);
-  const seat = { userId: player.userId, name: player.name, deckName, legend: deck.legend, deck };
+  const deck = await seatDeck(choice, player.userId, game);
+  const seat = { userId: player.userId, name: player.name, ...deck };
   if (!(await tablesDb.addGameTableSeat(id, modePlayers(table.mode), seat))) throw new TableFailure("FULL");
 }
 
 const BOT_NAMES = ["Poro", "Scuttle", "Krug", "Gromp"];
+const SWU_BOT_NAMES = ["R2-D2", "C-3PO"];
 
 export async function addBot(userId: string, id: string, level: BotLevel): Promise<void> {
   const table = await waitingTable(id);
   if (table.hostId !== userId) throw new TableFailure("FORBIDDEN");
   if (table.seats.length >= modePlayers(table.mode)) throw new TableFailure("FULL");
-  const legends = autoDeckLegends();
-  const deck = autoEngineDeck(legends[randomInt(legends.length)], randomInt(1, 2 ** 31));
+  const deck = botDeck(table.gameSlug);
   if (!deck) throw new TableFailure("SERVER");
   const taken = new Set(table.seats.map((seat) => seat.name));
-  const name = BOT_NAMES.find((candidate) => !taken.has(candidate)) ?? `Bot ${table.seats.length + 1}`;
-  const seat = { name, bot: level, deckName: "", legend: deck.legend, deck };
+  const names = table.gameSlug === SWU_SLUG ? SWU_BOT_NAMES : BOT_NAMES;
+  const name = names.find((candidate) => !taken.has(candidate)) ?? `Bot ${table.seats.length + 1}`;
+  const seat = { name, bot: level, ...deck };
   if (!(await tablesDb.addGameTableSeat(id, modePlayers(table.mode), seat))) throw new TableFailure("FULL");
 }
 
@@ -235,13 +295,31 @@ export async function leaveSeat(userId: string, id: string, seat: number, name: 
   if (!removed) throw new TableFailure("NOT_WAITING");
 }
 
-export function engineConfig(table: GameTable): { config: EngineConfig; bots: (BotLevel | null)[] } {
+/**
+ * Ce que le serveur de parties reçoit au lancement. `game` n'est nommé que pour
+ * Star Wars: Unlimited : sans lui, le serveur joue à Riftbound.
+ */
+export function engineConfig(
+  table: GameTable,
+): { game?: string; config: EngineConfig | SwuConfig; bots: (BotLevel | null)[] } {
+  const bots = table.seats.map((seat) => seat.bot ?? null);
+  if (table.gameSlug === SWU_SLUG) {
+    return {
+      game: SWU_SLUG,
+      config: { players: table.seats.map((seat) => ({ name: seat.name, deck: seat.deck as SwuDeckList })) },
+      bots,
+    };
+  }
   return {
     config: {
       mode: table.mode,
-      players: table.seats.map((seat) => ({ name: seat.name, deck: seat.deck, ...(seat.bot ? {} : { manual_pay: true }) })),
+      players: table.seats.map((seat) => ({
+        name: seat.name,
+        deck: seat.deck as EngineDeckList,
+        ...(seat.bot ? {} : { manual_pay: true }),
+      })),
     },
-    bots: table.seats.map((seat) => seat.bot ?? null),
+    bots,
   };
 }
 

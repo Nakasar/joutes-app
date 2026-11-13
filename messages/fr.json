@@ -1046,7 +1046,7 @@
         "sets": "Le moteur joue les neuf extensions, de Spark of Rebellion à Heroes of Mandalore, au format Premier.",
         "watchInfo": "Vous regardez la partie sans y jouer : les mains des IA sont visibles, et vous pouvez la mettre en pause.",
         "about": "Le moteur de Joutes connaît les règles de Star Wars: Unlimited : il ne vous propose que ce qui est permis, résout chaque capacité et cite la règle appliquée dans le journal.",
-        "soon": "Le jeu en ligne et la simulation de decks arrivent ensuite pour ce jeu.",
+        "soon": "La simulation de decks arrive ensuite pour ce jeu.",
         "deckAuto": "Deck automatique autour d'un leader",
         "deckRandomHint": "Un leader tiré au sort à chaque partie",
         "deckSearch": "Nom du deck, leader, auteur…"
