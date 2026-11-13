@@ -1904,6 +1904,38 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /events/{eventId}/registration:
+    parameters:
+      - { name: eventId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Events]
+      summary: Register to an event
+      description: >
+        Same rules as the site: the event must accept registrations, must not have
+        started, and must have a free spot (otherwise `full: true`, join the
+        waitlist instead). A private event is only open to the people who can see
+        it. `registrationStatus` is `PRE_REGISTERED` when the organizer confirms
+        registrations by hand.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200": { description: Registered., content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, registrationStatus: { type: string, nullable: true, enum: [REGISTERED, PRE_REGISTERED] } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "Registrations closed, event started, already registered, or event full (`full: true`).", content: { application/json: { schema: { type: object, properties: { error: { type: string }, full: { type: boolean } } } } } }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Events]
+      summary: Unregister from an event
+      description: The freed spot goes to the first player on the waitlist.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200": { description: Unregistered., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "400": { description: Caller not registered. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /events/{eventId}/waitlist:
     parameters:
       - { name: eventId, in: path, required: true, schema: { type: string } }
@@ -2751,6 +2783,66 @@ paths:
                           properties: { erratas: { type: array, items: { $ref: "#/components/schemas/Errata" } } }
         "400": { $ref: "#/components/responses/NestedValidationError" }
         "404": { $ref: "#/components/responses/NestedNotFound" }
+
+  /games/{gameId}/meta:
+    parameters:
+      - { name: gameId, in: path, required: true, description: "Game slug or Mongo ObjectId.", schema: { type: string } }
+    get:
+      tags: [Games]
+      summary: The game's tournament meta
+      description: >
+        What the page `/games/{game}/meta` shows, for the mobile app: legend and
+        domain shares, most played cards (top 40), tournaments of the period
+        (top 40), the 30 latest decks matching the filters, and the legend and
+        domain winrates of the current set (or all history without set release
+        dates). Shares and rates go from 0 to 1. 404 when the game's meta is not
+        open. Cached five minutes.
+      security: []
+      parameters:
+        - { name: period, in: query, required: false, schema: { type: integer }, description: "Days, one of `periods` (0 = all history); defaults to the game's setting." }
+        - { name: legend, in: query, required: false, schema: { type: string }, description: Legend key from `filters.legends`. }
+        - { name: domain, in: query, required: false, schema: { type: string }, description: Domain from `filters.domains`. }
+        - { name: source, in: query, required: false, schema: { type: string }, description: Tournament name. }
+      responses:
+        "200":
+          description: The meta.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  game: { type: object, properties: { id: { type: string }, slug: { type: string }, name: { type: string } } }
+                  totalDecks: { type: integer }
+                  latestDate: { type: string, nullable: true, description: YYYY-MM-DD. }
+                  periods: { type: array, items: { type: integer } }
+                  params: { type: object }
+                  filters: { type: object, description: "`legends` ({ value, label, decks }) and `domains` ({ value, decks }) of the period." }
+                  overview: { type: object, description: "decks, sources, legends, domains, topPair, cardsPlayed." }
+                  cards: { type: array, items: { type: object } }
+                  tournaments: { type: array, items: { type: object }, description: "source, date, slug, decks, winner, topLegend, topDomains." }
+                  decks: { type: array, items: { type: object }, description: "id, name, legend, legendImage, domains, placement, pilot, source, date." }
+                  winrates: { type: object, nullable: true, description: "period, totals, legends, domains." }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /games/{gameId}/meta/tournaments/{date}/{slug}:
+    parameters:
+      - { name: gameId, in: path, required: true, description: "Game slug or Mongo ObjectId.", schema: { type: string } }
+      - { name: date, in: path, required: true, description: YYYY-MM-DD., schema: { type: string } }
+      - { name: slug, in: path, required: true, description: "Tournament slug, from `tournaments[].slug`.", schema: { type: string } }
+    get:
+      tags: [Games]
+      summary: One tournament of the game's meta
+      description: >
+        Its decks by placement, legends (share, top cut, best placement),
+        domain combinations, and when its matches were imported from the
+        locator, its top cut and legend winrates. Cached five minutes.
+      security: []
+      responses:
+        "200": { description: The tournament., content: { application/json: { schema: { type: object } } } }
+        "400": { description: Invalid date. }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   /games/{gameId}/news:
     parameters:

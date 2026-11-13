@@ -11,7 +11,7 @@ import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
 import { notifyEventAll, notifyUser } from "@/lib/services/notifications.ts";
 import { isUserOrganizer } from "@/lib/utils/permissions.ts";
-import { canJoinDirectly, WAITLIST_RESPONSE_HOURS_OPTIONS } from "@/lib/events/waitlist.ts";
+import { WAITLIST_RESPONSE_HOURS_OPTIONS } from "@/lib/events/waitlist.ts";
 import {
   acceptEventWaitlistOffer,
   advanceEventWaitlist,
@@ -19,6 +19,7 @@ import {
   joinEventWaitlist,
   leaveEventWaitlist,
 } from "@/lib/events/waitlist-service.ts";
+import { registerToEvent, unregisterFromEvent } from "@/lib/events/registration-service.ts";
 import { removeFromEventWaitlist, setWaitlistResponseHours } from "@/lib/db/event-waitlist.ts";
 import { notifyEventDeleted, notifyEventRescheduledIfNeeded } from "@/lib/events/event-notifications.ts";
 import { canManageEvent } from "@/lib/events/tournament-link.ts";
@@ -258,7 +259,7 @@ export async function updateEventDetailsAction(input: UpdateEventDetailsInput) {
   }
 }
 
-export async function joinEventAction(eventId: string) {
+export async function joinEventAction(eventId: string): Promise<{ success: boolean; error?: string; full?: boolean }> {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -268,49 +269,9 @@ export async function joinEventAction(eventId: string) {
       return { success: false, error: "Vous devez être connecté pour rejoindre un événement" };
     }
 
-    // Récupérer l'événement
-    const event = await getEventById(eventId);
-
-    if (!event) {
-      return { success: false, error: "Événement introuvable" };
-    }
-
-    if (!event.allowJoin) {
-      return { success: false, error: "Les inscriptions à cet événement sont fermées" };
-    }
-
-    // Vérifier si l'événement est commencé ou terminé
-    if (event.runningState && event.runningState !== 'not-started') {
-      return { success: false, error: "Impossible de rejoindre un événement déjà commencé ou terminé" };
-    }
-
-    // Vérifier si l'utilisateur est déjà inscrit
-    if (event.participants?.includes(session.user.id)) {
-      return { success: false, error: "Vous êtes déjà inscrit à cet événement" };
-    }
-
-    // Complet — places réservées aux offres de la file comprises —, ou des
-    // joueurs attendent déjà : l'inscription passe par la liste d'attente.
-    if (!canJoinDirectly(event, new Date())) {
-      return { success: false, error: "Cet événement est complet", full: true };
-    }
-
-    const user = await getUserById(session.user.id);
-    if (!user) {
-      return { success: false, error: "Utilisateur introuvable" };
-    }
-    if (!user.displayName || !user.discriminator) {
-      await ensureUserTag(session.user.id);
-    }
-
-    // Déterminer le statut d'inscription
-    const registrationStatus: RegistrationStatus = event.preRegistration ? 'PRE_REGISTERED' : 'REGISTERED';
-
-    // Ajouter le participant
-    const added = await addParticipantToEvent(eventId, session.user.id, registrationStatus);
-
-    if (!added) {
-      return { success: false, error: "Impossible de s'inscrire à l'événement" };
+    const result = await registerToEvent(eventId, session.user.id);
+    if (!result.success) {
+      return { success: false, error: result.error, ...(result.full ? { full: true } : {}) };
     }
 
     revalidatePath(`/events/${eventId}`);
@@ -323,7 +284,7 @@ export async function joinEventAction(eventId: string) {
   }
 }
 
-export async function leaveEventAction(eventId: string) {
+export async function leaveEventAction(eventId: string): Promise<{ success: boolean; error?: string }> {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -333,15 +294,10 @@ export async function leaveEventAction(eventId: string) {
       return { success: false, error: "Vous devez être connecté pour quitter un événement" };
     }
 
-    // Retirer le participant
-    const removed = await removeParticipantFromEvent(eventId, session.user.id);
-
-    if (!removed) {
-      return { success: false, error: "Impossible de quitter l'événement" };
+    const result = await unregisterFromEvent(eventId, session.user.id);
+    if (!result.success) {
+      return { success: false, error: result.error };
     }
-
-    // Une place se libère : elle est offerte au premier de la liste d'attente.
-    await advanceEventWaitlist(eventId);
 
     revalidatePath(`/events/${eventId}`);
     revalidatePath("/events");

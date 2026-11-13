@@ -18,8 +18,11 @@ export const CONTENT_SIGNAL = "search=yes, ai-input=yes, ai-train=yes";
  * filtres se combinent sans fin et chaque adresse recalcule les statistiques.
  * PerplexityBot en a tiré 117 000 en deux jours (9-10 nov. 2026, ~15 Go sortis
  * de nos fonctions). Le proxy les refuse aussi (`lib/net/meta-bots.ts`).
+ * La route de l'app mobile (`/api/games/:jeu/meta`) n'est fermée que par cette
+ * consigne et son cache de cinq minutes : le refus du proxy écarterait aussi
+ * l'app, qui n'envoie pas toujours d'agent.
  */
-export const META_DISALLOWS = ["/games/*/meta", "/*/games/*/meta"];
+export const META_DISALLOWS = ["/games/*/meta", "/*/games/*/meta", "/api/games/*/meta"];
 
 /**
  * Robots sans intérêt pour Joutes, qui parcourent tout le site : SE Ranking
