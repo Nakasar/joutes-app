@@ -1914,11 +1914,11 @@ paths:
         Same rules as the site: the event must accept registrations, must not have
         started, and must have a free spot (otherwise `full: true`, join the
         waitlist instead). A private event is only open to the people who can see
-        it. `registrationStatus` is `pre-registered` when the organizer confirms
+        it. `registrationStatus` is `PRE_REGISTERED` when the organizer confirms
         registrations by hand.
       security: [{ sessionAuth: [] }]
       responses:
-        "200": { description: Registered., content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, registrationStatus: { type: string, enum: [registered, pre-registered] } } } } } }
+        "200": { description: Registered., content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, registrationStatus: { type: string, nullable: true, enum: [REGISTERED, PRE_REGISTERED] } } } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
