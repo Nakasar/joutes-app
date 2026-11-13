@@ -4,6 +4,7 @@ import { ObjectId, type Document } from "mongodb";
 import { displayAvatar, toUser } from "@/lib/users/document";
 import { shouldRefreshDiscordImage } from "@/lib/users/discord-avatar";
 import { generateFriendCode } from "@/lib/utils/friend-codes";
+import { assignMissingTag, uniqueDiscriminator, type AssignedTag } from "@/lib/users/assign-tag";
 import {
   type AdminUserSummary,
   parseAdminUserSearch,
@@ -82,22 +83,22 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   return user ? toUser(user) : null;
 }
 
-// Génère un discriminant à 4 chiffres unique pour un displayName donné.
-async function generateUniqueDiscriminator(displayName: string): Promise<string> {
-  const collection = db.collection(COLLECTION_NAME);
-  // On garde toujours le format à 4 chiffres (username#0000) : en cas de
-  // collision on retente, jusqu'à épuisement raisonnable de l'espace.
-  for (let i = 0; i < 50; i++) {
-    const discriminator = Math.floor(1000 + Math.random() * 9000).toString();
-    const existing = await collection.findOne(
-      { displayName, discriminator },
-      { collation: { locale: "en", strength: 2 } }
-    );
-    if (!existing) {
-      return discriminator;
-    }
-  }
-  throw new Error(`Impossible de générer un discriminateur unique pour "${displayName}"`);
+/**
+ * Un discriminateur à quatre chiffres libre pour ce pseudonyme (voir
+ * lib/users/assign-tag.ts). `exceptUserId` laisse de côté le compte lui-même.
+ */
+export function generateUniqueDiscriminator(displayName: string, exceptUserId?: ObjectId): Promise<string> {
+  return uniqueDiscriminator(db.collection(COLLECTION_NAME), displayName, exceptUserId);
+}
+
+/**
+ * Donne son tag (pseudo#1234) à un compte qui n'en a pas (voir
+ * lib/users/assign-tag.ts). Appelé à chaque nouvelle session (lib/auth.ts) :
+ * c'est le seul passage commun à toutes les façons de se connecter, Discord
+ * compris.
+ */
+export function ensureUserTag(userId: string): Promise<AssignedTag | null> {
+  return assignMissingTag(db.collection(COLLECTION_NAME), userId);
 }
 
 /**
