@@ -4,6 +4,8 @@ export const memory: WebAssembly.Memory;
 export const __wbg_swutable_free: (a: number, b: number) => void;
 export const swu_auto_deck: (a: number, b: number, c: number, d: number, e: number) => [number, number];
 export const swu_catalog: () => [number, number];
+export const swu_judge_review: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+export const swu_judge_simulate: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const swu_random_config: (a: number) => [number, number];
 export const swu_simulate: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
 export const swu_validate_deck: (a: number, b: number) => [number, number, number, number];

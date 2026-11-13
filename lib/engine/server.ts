@@ -10,6 +10,7 @@ import {
   version,
 } from "@/lib/engine/pkg/joutes.js";
 import { ENGINE_WASM_BASE64 } from "@/lib/engine/wasm.generated";
+import { EngineError } from "@/lib/engine/errors";
 import type { EngineCard, EngineDeckList, EngineRecord, JudgeReport } from "@/lib/engine/types";
 
 /**
@@ -61,8 +62,7 @@ export function autoEngineDeck(legend: string, seed: number): EngineDeckList | n
   return JSON.parse(auto_deck(legend, seed)) as EngineDeckList | null;
 }
 
-/** Une erreur du moteur porte un message destiné à celui qui a décrit la situation. */
-export class EngineError extends Error {}
+export { EngineError };
 
 function guarded<T>(run: () => string): T {
   engine();

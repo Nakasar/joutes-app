@@ -8,7 +8,11 @@
  * résumé et sa graine.
  */
 
+import type { SwuConfig, SwuDeckList } from "@/lib/engine/swu/types";
 import type { BotLevel, EngineConfig, EngineDeckList } from "@/lib/engine/types";
+
+/** La liste d'un deck simulé, dans le format du moteur de son jeu. */
+export type SimulationList = EngineDeckList | SwuDeckList;
 
 /** D'où vient un deck adverse possible. */
 export type SimulationSource = "meta" | "mine" | "shared" | "public" | "auto";
@@ -21,11 +25,11 @@ export type SimulationDeck = {
   key: string;
   name: string;
   source: SimulationSource | "fixed";
-  /** Code moteur de la légende. */
+  /** Code moteur de la légende, ou du leader à Star Wars: Unlimited. */
   legend: string;
   domains?: string[];
   deckId?: string;
-  list: EngineDeckList;
+  list: SimulationList;
 };
 
 /** Le résumé d'une partie, tel que le moteur le rend (`GameSummary`). */
@@ -83,9 +87,23 @@ export function gameSeating(n: number): { seat: number; firstPlayer: number } {
  */
 export function gameConfig(n: number, mine: SimulationDeck, opponent: SimulationDeck, names: [string, string]): EngineConfig {
   const { seat, firstPlayer } = gameSeating(n);
-  const me = { name: names[0].slice(0, 40), deck: mine.list };
-  const them = { name: names[1].slice(0, 40), deck: opponent.list };
+  const me = { name: names[0].slice(0, 40), deck: mine.list as EngineDeckList };
+  const them = { name: names[1].slice(0, 40), deck: opponent.list as EngineDeckList };
   return { mode: "duel", players: seat === 0 ? [me, them] : [them, me], first_player: firstPlayer };
+}
+
+/**
+ * La même chose pour Star Wars: Unlimited. Le deck évalué change aussi de
+ * siège toutes les deux parties ; l'initiative, elle, est tirée par le moteur
+ * avec la graine de la partie (un joueur au hasard la choisit).
+ */
+export function swuGameConfig(n: number, mine: SimulationDeck, opponent: SimulationDeck, names: [string, string]): SwuConfig {
+  const { seat } = gameSeating(n);
+  // Un leader porte son titre : le nom d'un deck automatique dépasse vite la place d'un siège.
+  const short = (name: string) => (name.length > 40 ? `${name.slice(0, 39)}…` : name);
+  const me = { name: short(names[0]), deck: mine.list as SwuDeckList };
+  const them = { name: short(names[1]), deck: opponent.list as SwuDeckList };
+  return { players: seat === 0 ? [me, them] : [them, me] };
 }
 
 /** Le résumé du moteur, ramené au deck évalué. */

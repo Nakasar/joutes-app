@@ -7,18 +7,35 @@
  * avec ses choix numérotés, et ce qui ne peut pas être joué.
  */
 
-import type { JudgeReport } from "@/lib/engine/types";
+/** Ce que le texte lit d'un rapport : la même forme pour tous les jeux du moteur. */
+export type JudgeReportText = {
+    summary: string;
+    steps: { player: string; question: string; chose: string }[];
+    asked: {
+        player: string;
+        text: string;
+        choices: { label: string }[];
+        unplayable: { name: string; reason: string; rule: string | null }[];
+    } | null;
+    result: Record<string, unknown> | null;
+    rules: string[];
+    notes: string[];
+};
 
 export type JudgeTextOptions = {
-    /** L'adresse d'une règle par son numéro, pour que l'assistant la cite en lien. */
-    ruleUrl: (rule: string) => string;
+    /** L'adresse d'une règle par son numéro, pour que l'assistant la cite en lien (si le site publie ces règles). */
+    ruleUrl?: (rule: string) => string;
+    /** Le document dont viennent les numéros de règle, quand le site n'a pas de lien à donner. */
+    rulebook?: string;
     /** Montrer les choix possibles (simulation) ou seulement la question (relecture). */
     withChoices: boolean;
+    /** Ce que le moteur couvre, dit en fin de réponse (« extensions OGN et OGS »). */
+    scope: string;
 };
 
 const MAX_CHOICES = 40;
 
-export function describeJudgeReport(report: JudgeReport, options: JudgeTextOptions): string {
+export function describeJudgeReport(report: JudgeReportText, options: JudgeTextOptions): string {
     const lines: string[] = [];
 
     if (report.steps.length > 0) {
@@ -33,7 +50,8 @@ export function describeJudgeReport(report: JudgeReport, options: JudgeTextOptio
     lines.push(report.summary.trim() || "(rien de nouveau)");
 
     if (report.result) {
-        lines.push("", `Partie terminée : ${report.result.reason}`);
+        const reason = typeof report.result.reason === "string" ? ` : ${report.result.reason}` : ".";
+        lines.push("", `Partie terminée${reason}`);
     }
 
     const asked = report.asked;
@@ -62,13 +80,18 @@ export function describeJudgeReport(report: JudgeReport, options: JudgeTextOptio
     }
 
     if (report.rules.length > 0) {
-        lines.push("", "Règles citées :");
-        for (const rule of report.rules) lines.push(`- ${rule} : ${options.ruleUrl(rule)}`);
+        const { ruleUrl } = options;
+        if (ruleUrl) {
+            lines.push("", "Règles citées :");
+            for (const rule of report.rules) lines.push(`- ${rule} : ${ruleUrl(rule)}`);
+        } else {
+            lines.push("", `Règles citées${options.rulebook ? ` (${options.rulebook})` : ""} : ${report.rules.join(", ")}`);
+        }
     }
 
     lines.push(
         "",
-        "Réponse calculée par le moteur de jeu Joutes (extensions OGN et OGS). Ce n'est pas une décision officielle : en tournoi, l'arbitre tranche.",
+        `Réponse calculée par le moteur de jeu Joutes (${options.scope}). Ce n'est pas une décision officielle : en tournoi, l'arbitre tranche.`,
     );
 
     return lines.join("\n");

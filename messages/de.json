@@ -1046,10 +1046,27 @@
         "sets": "Die Engine spielt alle neun Sets, von Spark of Rebellion bis Heroes of Mandalore, im Premier-Format.",
         "watchInfo": "Du schaust der Partie zu, ohne mitzuspielen: Die Hände der KIs sind sichtbar, und du kannst pausieren.",
         "about": "Die Joutes-Engine kennt die Regeln von Star Wars: Unlimited: Sie bietet nur an, was erlaubt ist, wickelt jede Fähigkeit ab und nennt im Protokoll die angewandte Regel.",
-        "soon": "Online-Spiel und Deck-Simulation folgen für dieses Spiel.",
         "deckAuto": "Automatisches Deck um einen Anführer",
         "deckRandomHint": "In jeder Partie ein zufällig gezogener Anführer",
         "deckSearch": "Deckname, Anführer, Autor…"
+      },
+      "sim": {
+        "fairness": "Dein Deck wechselt alle zwei Partien den Platz, und die Initiative wird in jeder Partie ausgelost. Leicht spielt fast zufällig: Es taugt nicht, um ein Deck zu beurteilen.",
+        "about1": "Die Chancen deines Decks, wenn die Joutes-KI es spielt. Die KI liest die Partie mit einem einfachen Raster (Basen, Einheiten im Spiel, Ressourcen, Handkarten) und kennt den Plan eines Decks nicht.",
+        "about2": "Sie bevorzugt direkte, aggressive Decks und unterschätzt Kontrolle und Kombos. Vergleiche lieber zwei Versionen desselben Decks miteinander als mit Turnierergebnissen.",
+        "first": "Mit der Initiative",
+        "second": "Ohne die Initiative",
+        "turnsValue": "{count} Runden",
+        "winTurns": "Siege in {count} Runden",
+        "score": "Verbleibende LP der Basen",
+        "byOpponentHint": "Nach Anführer gruppiert. Unter {count} Partien ist die Zahl ausgegraut.",
+        "opponentLegend": "Gegnerischer Anführer",
+        "startsColumn": "Initiative",
+        "scoreColumn": "Basen",
+        "turnsColumn": "Runden",
+        "sourceHint": {
+          "auto": "Ein zufällig gebautes Deck um jeden Anführer"
+        }
       },
       "arena": {
         "ground": "Bodenarena",

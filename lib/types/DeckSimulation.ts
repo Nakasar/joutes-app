@@ -34,6 +34,8 @@ export type DeckSimulationSummary = {
   id: string;
   deckName: string;
   legend: string;
+  /** Un deck automatique : son nom est celui de sa légende, que la page sait dire dans sa langue. */
+  auto: boolean;
   opponent: SimulationOpponent;
   opponentName: string | null;
   level: BotLevel;

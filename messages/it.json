@@ -1046,10 +1046,27 @@
         "sets": "Il motore gioca tutte e nove le espansioni, da Spark of Rebellion a Heroes of Mandalore, nel formato Premier.",
         "watchInfo": "Guardi la partita senza giocare: le mani delle IA sono visibili e puoi metterla in pausa.",
         "about": "Il motore di Joutes conosce le regole di Star Wars: Unlimited: ti propone solo ciò che è permesso, risolve ogni abilità e cita nel registro la regola applicata.",
-        "soon": "Il gioco online e la simulazione dei mazzi arriveranno in seguito per questo gioco.",
         "deckAuto": "Mazzo automatico attorno a un leader",
         "deckRandomHint": "Un leader estratto a sorte a ogni partita",
         "deckSearch": "Nome del mazzo, leader, autore…"
+      },
+      "sim": {
+        "fairness": "Il tuo mazzo cambia posto ogni due partite e l'iniziativa è sorteggiata a ogni partita. Facile gioca quasi a caso: non serve a giudicare un mazzo.",
+        "about1": "Le probabilità del tuo mazzo quando lo gioca l'IA di Joutes. L'IA legge la partita con una griglia semplice (basi, unità in gioco, risorse, carte in mano) e non conosce il piano di gioco di un mazzo.",
+        "about2": "Favorisce i mazzi diretti e aggressivi e sottovaluta controllo e combo. Confronta piuttosto due versioni dello stesso mazzo tra loro che con i risultati dei tornei.",
+        "first": "Con l'iniziativa",
+        "second": "Senza l'iniziativa",
+        "turnsValue": "{count} round",
+        "winTurns": "vittorie in {count} round",
+        "score": "PV rimasti alle basi",
+        "byOpponentHint": "Raggruppato per leader. Sotto le {count} partite, il numero è in grigio.",
+        "opponentLegend": "Leader avversario",
+        "startsColumn": "Iniziativa",
+        "scoreColumn": "Basi",
+        "turnsColumn": "Round",
+        "sourceHint": {
+          "auto": "Un mazzo costruito a caso attorno a ogni leader"
+        }
       },
       "arena": {
         "ground": "Arena terrestre",

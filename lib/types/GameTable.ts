@@ -1,3 +1,4 @@
+import type { SwuDeckList } from "@/lib/engine/swu/types";
 import type { BotLevel, EngineDeckList, EngineMode } from "@/lib/engine/types";
 
 export type GameTableStatus = "waiting" | "playing" | "finished" | "cancelled";
@@ -9,9 +10,10 @@ export type GameTableSeat = {
   bot?: BotLevel;
   /** Le nom du deck choisi, pour la salle d'attente. Jamais son contenu. */
   deckName: string;
-  /** Carte-légende (code du moteur), montrée en salle d'attente. */
+  /** Carte-légende, ou leader à Star Wars: Unlimited (code du moteur), montrée en salle d'attente. */
   legend: string;
-  deck: EngineDeckList;
+  /** La liste du moteur, dans le format du jeu de la table (`gameSlug`). */
+  deck: EngineDeckList | SwuDeckList;
 };
 
 /**

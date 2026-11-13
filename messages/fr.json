@@ -1046,10 +1046,27 @@
         "sets": "Le moteur joue les neuf extensions, de Spark of Rebellion à Heroes of Mandalore, au format Premier.",
         "watchInfo": "Vous regardez la partie sans y jouer : les mains des IA sont visibles, et vous pouvez la mettre en pause.",
         "about": "Le moteur de Joutes connaît les règles de Star Wars: Unlimited : il ne vous propose que ce qui est permis, résout chaque capacité et cite la règle appliquée dans le journal.",
-        "soon": "Le jeu en ligne et la simulation de decks arrivent ensuite pour ce jeu.",
         "deckAuto": "Deck automatique autour d'un leader",
         "deckRandomHint": "Un leader tiré au sort à chaque partie",
         "deckSearch": "Nom du deck, leader, auteur…"
+      },
+      "sim": {
+        "fairness": "Votre deck change de siège toutes les deux parties et l'initiative est tirée au sort à chaque partie. Facile joue presque au hasard : il ne sert pas à juger un deck.",
+        "about1": "Les chances de votre deck quand l'IA de Joutes le joue. L'IA lit la partie avec une grille simple (bases, unités en jeu, ressources, cartes en main) et ne connaît pas les plans d'un deck.",
+        "about2": "Elle avantage les decks directs et agressifs, et sous-estime le contrôle et les combos. Comparez plutôt deux versions d'un même deck entre elles qu'avec des résultats de tournoi.",
+        "first": "Avec l'initiative",
+        "second": "Sans l'initiative",
+        "turnsValue": "{count} rounds",
+        "winTurns": "victoires en {count} rounds",
+        "score": "PV restants des bases",
+        "byOpponentHint": "Regroupé par leader. En dessous de {count} parties, le chiffre est grisé.",
+        "opponentLegend": "Leader adverse",
+        "startsColumn": "Initiative",
+        "scoreColumn": "Bases",
+        "turnsColumn": "Rounds",
+        "sourceHint": {
+          "auto": "Un deck construit au hasard autour de chaque leader"
+        }
       },
       "arena": {
         "ground": "Arène terrestre",

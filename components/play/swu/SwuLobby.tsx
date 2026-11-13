@@ -1,23 +1,28 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Bot, Eye } from "lucide-react";
+import { Bot, Eye, FlaskConical, Globe } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import {
+  createSwuTableAction,
   loadSwuLobby,
   searchSwuPlayDecksAction,
   type SwuLobby as Lobby,
   type SwuLobbyDeck,
 } from "@/app/[locale]/(app)/games/swu/play/actions";
 import { DeckPicker } from "@/components/play/DeckPicker";
+import { withDeckProblems } from "@/components/play/deck-problems";
 import { readSwuSave, writeSwuSave, type SwuSave } from "@/components/play/swu/useSwuSoloGame";
 import { useSwuTableCards } from "@/components/play/swu/useSwuTableCards";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Link, useRouter } from "@/i18n/navigation";
 import { loadSwuEngine } from "@/lib/engine/swu/browser";
-import { ASPECT_HEX } from "@/lib/engine/swu/cards";
+import { ASPECT_HEX, swuPickerCards } from "@/lib/engine/swu/cards";
 import type { SwuDeckList } from "@/lib/engine/swu/types";
 import type { BotDeckChoice, DeckChoice } from "@/lib/engine/tables";
 import { BOT_LEVELS, type BotLevel } from "@/lib/engine/types";
@@ -33,6 +38,8 @@ function pickRandom<T>(list: T[]): T {
   return list[Math.floor(Math.random() * list.length)];
 }
 
+type Opponent = "ai" | "watch" | "online";
+
 const searchDecks = (query: string) =>
   searchSwuPlayDecksAction(query).then((result) => (result.ok ? result.decks : []));
 
@@ -44,7 +51,8 @@ export function SwuLobby() {
   const cards = useSwuTableCards();
   const [lobby, setLobby] = useState<Lobby | null>(null);
   const [failed, setFailed] = useState(false);
-  const [watching, setWatching] = useState(false);
+  const [opponent, setOpponent] = useState<Opponent>("ai");
+  const [code, setCode] = useState("");
   const [choice, setChoice] = useState<DeckChoice | null>(null);
   const [botDecks, setBotDecks] = useState<BotDeckChoice[]>([]);
   const [botLevels, setBotLevels] = useState<BotLevel[]>([]);
@@ -67,13 +75,8 @@ export function SwuLobby() {
   }, []);
 
   // Ce que la liste des decks lit d'un leader : nom, vignette, aspects.
-  const pickerCards = useMemo(
-    () =>
-      Object.fromEntries(
-        Object.values(cards).map((card) => [card.code, { name: card.name, image: card.image, domains: [...new Set(card.aspects)] }]),
-      ),
-    [cards],
-  );
+  const pickerCards = useMemo(() => swuPickerCards(cards), [cards]);
+  const watching = opponent === "watch";
 
   if (failed) {
     return <p className="rounded-xl border bg-card p-8 text-center text-muted-foreground">{t("error.SERVER")}</p>;
@@ -134,9 +137,23 @@ export function SwuLobby() {
     }
   };
 
-  const modes: { key: boolean; icon: typeof Bot; title: string; hint: string }[] = [
-    { key: false, icon: Bot, title: t("lobby.ai"), hint: t("lobby.aiHint") },
-    { key: true, icon: Eye, title: t("lobby.watch"), hint: t("lobby.watchHint") },
+  const createOnline = async () => {
+    setBusy(true);
+    const result = await createSwuTableAction(choice);
+    if (result.ok) {
+      router.push(`/games/swu/play/table?id=${result.id}`);
+      return;
+    }
+    setBusy(false);
+    toast.error(withDeckProblems(t, t(`error.${result.error}`), result.details));
+  };
+
+  const joinCode = code.trim().toLowerCase().split("id=").pop() ?? "";
+
+  const modes: { key: Opponent; icon: typeof Bot; title: string; hint: string }[] = [
+    { key: "ai", icon: Bot, title: t("lobby.ai"), hint: t("lobby.aiHint") },
+    { key: "watch", icon: Eye, title: t("lobby.watch"), hint: t("lobby.watchHint") },
+    { key: "online", icon: Globe, title: t("lobby.online"), hint: t("lobby.onlineHint") },
   ];
   const texts = { auto: ts("lobby.deckAuto"), randomHint: ts("lobby.deckRandomHint"), search: ts("lobby.deckSearch") };
 
@@ -201,16 +218,16 @@ export function SwuLobby() {
 
         <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           <h2 className="font-semibold">{ts("lobby.whoTitle")}</h2>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-3">
             {modes.map(({ key, icon: Icon, title, hint }) => (
               <button
-                key={String(key)}
+                key={key}
                 type="button"
-                aria-pressed={watching === key}
-                onClick={() => setWatching(key)}
+                aria-pressed={opponent === key}
+                onClick={() => setOpponent(key)}
                 className={cn(
                   "flex flex-col gap-1 rounded-lg border p-3 text-left transition hover:border-primary/60",
-                  watching === key && "border-primary bg-primary/10",
+                  opponent === key && "border-primary bg-primary/10",
                 )}
               >
                 <span className="flex items-center gap-2 font-medium">
@@ -228,7 +245,7 @@ export function SwuLobby() {
                 {picker(0, lobby.name ?? t("lobby.you"), false)}
               </SeatRow>
             )}
-            {[0, 1]
+            {(opponent === "online" ? [] : [0, 1])
               .filter((seat) => watching || seat > 0)
               .map((seat) => {
                 const name = t("lobby.botName", { number: watching ? seat + 1 : seat });
@@ -268,7 +285,7 @@ export function SwuLobby() {
               })}
           </ul>
 
-          {!lobby.signedIn && (
+          {!lobby.signedIn && opponent !== "online" && (
             <div className="flex flex-row flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <span>{t("lobby.signInForDecks")}</span>
               <Button asChild size="sm" variant="outline">
@@ -278,23 +295,100 @@ export function SwuLobby() {
           )}
           <p className="text-xs text-muted-foreground">{ts("lobby.sets")}</p>
 
-          <div className="flex flex-col gap-2">
-            {watching && <p className="text-sm text-muted-foreground">{ts("lobby.watchInfo")}</p>}
-            <div className="flex flex-row flex-wrap gap-2">
-              <Button disabled={busy || (!watching && !choice)} onClick={start}>
-                {watching ? t("lobby.startWatch") : t("lobby.startSolo")}
-              </Button>
+          {opponent !== "online" && (
+            <div className="flex flex-col gap-2">
+              {watching && <p className="text-sm text-muted-foreground">{ts("lobby.watchInfo")}</p>}
+              <div className="flex flex-row flex-wrap gap-2">
+                <Button disabled={busy || (!watching && !choice)} onClick={start}>
+                  {watching ? t("lobby.startWatch") : t("lobby.startSolo")}
+                </Button>
+              </div>
+              {saved && <p className="text-xs text-muted-foreground">{t("lobby.replaces")}</p>}
             </div>
-            {saved && <p className="text-xs text-muted-foreground">{t("lobby.replaces")}</p>}
-          </div>
+          )}
+
+          {opponent === "online" &&
+            (!lobby.online ? (
+              <p className="text-sm text-muted-foreground">{t("lobby.offline")}</p>
+            ) : !lobby.signedIn ? (
+              <div className="flex flex-row flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <span>{t("lobby.signInForOnline")}</span>
+                <Button asChild size="sm">
+                  <Link href="/login">{t("lobby.signIn")}</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-row flex-wrap gap-2">
+                  <Button disabled={busy || !choice} onClick={createOnline}>
+                    {t("lobby.createTable")}
+                  </Button>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="swu-join-code">{t("lobby.joinLabel")}</Label>
+                  <div className="flex flex-row flex-wrap gap-2">
+                    <Input
+                      id="swu-join-code"
+                      value={code}
+                      onChange={(event) => setCode(event.target.value)}
+                      placeholder={t("lobby.joinPlaceholder")}
+                      className="max-w-xs"
+                    />
+                    <Button
+                      variant="outline"
+                      disabled={!/^[a-z0-9]{4,32}$/.test(joinCode)}
+                      onClick={() => router.push(`/games/swu/play/table?id=${joinCode}`)}
+                    >
+                      {t("lobby.join")}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
         </section>
       </div>
 
       <aside className="flex flex-col gap-4">
+        {lobby.online && lobby.signedIn && (
+          <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
+            <h2 className="font-semibold">{t("lobby.tablesTitle")}</h2>
+            {lobby.tables.length === 0 && <p className="text-sm text-muted-foreground">{t("lobby.noTables")}</p>}
+            <ul className="flex flex-col gap-2">
+              {lobby.tables.map((table) => (
+                <li key={table.id}>
+                  <Link
+                    href={`/games/swu/play/table?id=${table.id}`}
+                    className="flex flex-col gap-1 rounded-lg border p-3 transition hover:border-primary/60"
+                  >
+                    <span className="flex flex-row flex-wrap items-center justify-between gap-2">
+                      <span className="font-medium">{table.seats.map((seat) => seat.name).join(" · ")}</span>
+                      <Badge variant={table.status === "finished" ? "outline" : "secondary"}>
+                        {t(`tableStatus.${table.status}`)}
+                      </Badge>
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {table.seats.map((seat) => cards[seat.legend]?.name ?? seat.deckName).filter(Boolean).join(" · ")}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <section className="flex flex-col gap-2 rounded-xl border bg-card p-5">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <FlaskConical className="size-4" aria-hidden />
+            {t("sim.lobbyTitle")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("sim.lobbyHint")}</p>
+          <Button asChild variant="outline" size="sm" className="self-start">
+            <Link href="/games/swu/play/simulate">{t("sim.lobbyOpen")}</Link>
+          </Button>
+        </section>
+
         <section className="flex flex-col gap-2 rounded-xl border bg-card p-5 text-sm text-muted-foreground">
           <h2 className="font-semibold text-foreground">{t("lobby.aboutTitle")}</h2>
           <p>{ts("lobby.about")}</p>
-          <p>{ts("lobby.soon")}</p>
         </section>
       </aside>
     </div>

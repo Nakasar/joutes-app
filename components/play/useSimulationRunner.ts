@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { recordSimulationGamesAction, type SimError } from "@/app/[locale]/(app)/games/riftbound/play/simulate/actions";
+import type { SimError, SimulatorKit } from "@/components/play/simulator-kit";
 import {
   drawOpponent,
-  gameConfig,
   toSimulationGame,
   type EngineGameSummary,
   type SimulationDeck,
@@ -45,7 +44,11 @@ export function useSimulationRunner(
   simulation: DeckSimulation | null,
   /** Les noms des sièges à la table : le deck évalué, puis son adversaire. */
   names: (opponent: SimulationDeck) => [string, string],
+  /** Le jeu : son moteur dans un worker, la forme d'une partie, l'enregistrement. */
+  kit: Pick<SimulatorKit, "createWorker" | "config" | "actions">,
 ): SimulationRunner {
+  const { createWorker, config: configOf } = kit;
+  const record = kit.actions.record;
   const [games, setGames] = useState<SimulationGame[]>(simulation?.games ?? []);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<SimulationRunnerError | null>(null);
@@ -72,7 +75,7 @@ export function useSimulationRunner(
 
   const ensureWorker = useCallback((): Worker => {
     if (worker.current) return worker.current;
-    const created = new Worker(new URL("./simulation.worker.ts", import.meta.url), { type: "module" });
+    const created = createWorker();
     created.onmessage = (message: MessageEvent<{ id: number; summary?: EngineGameSummary; error?: string }>) => {
       const job = pending.current.get(message.data.id);
       if (!job) return;
@@ -82,7 +85,7 @@ export function useSimulationRunner(
     };
     worker.current = created;
     return created;
-  }, []);
+  }, [createWorker]);
 
   const flush = useCallback(async () => {
     if (!simulation) return;
@@ -91,7 +94,7 @@ export function useSimulationRunner(
       unsent.current = unsent.current.slice(MAX_BATCH);
       let code: SimError | null = null;
       try {
-        const result = await recordSimulationGamesAction(simulation.id, batch);
+        const result = await record(simulation.id, batch);
         if (!result.ok) code = result.error;
       } catch {
         // Coupure réseau, serveur redéployé : l'action rejette au lieu de répondre.
@@ -105,7 +108,7 @@ export function useSimulationRunner(
         return;
       }
     }
-  }, [simulation]);
+  }, [simulation, record]);
 
   // En quittant la page : la partie en cours est abandonnée, celles déjà
   // jouées partent au serveur sans attendre la réponse.
@@ -136,7 +139,7 @@ export function useSimulationRunner(
     const playOne = (n: number) => {
       const opponent = drawOpponent(simulation.pool, byLegend, Math.random);
       const seed = Math.floor(Math.random() * 2 ** 31) + 1;
-      const config = gameConfig(n, simulation.deck, opponent, names(opponent));
+      const config = configOf(n, simulation.deck, opponent, names(opponent));
       const id = nextId++;
       return new Promise<SimulationGame>((resolve, reject) => {
         pending.current.set(id, {
@@ -176,7 +179,7 @@ export function useSimulationRunner(
         }
       }
     })();
-  }, [simulation, running, names, ensureWorker, flush]);
+  }, [simulation, running, names, configOf, ensureWorker, flush]);
 
   const pause = useCallback(() => {
     // La partie en cours se termine, puis tout s'arrête et part au serveur.

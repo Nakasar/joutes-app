@@ -5,6 +5,7 @@ import {
   drawOpponent,
   gameConfig,
   gameSeating,
+  swuGameConfig,
   parseSimulationGame,
   simulationStats,
   toSimulationGame,
@@ -112,4 +113,18 @@ test("parseSimulationGame refuse une partie mal formée ou un adversaire inconnu
   assert.equal(parseSimulationGame({ ...valid, score: [1] }, opponents), null);
   assert.equal(parseSimulationGame({ ...valid, win: "oui" }, opponents), null);
   assert.equal(parseSimulationGame(null, opponents), null);
+});
+
+test("à Star Wars: Unlimited, le deck évalué change de siège et un long nom de siège est abrégé", () => {
+  const mine = deck("deck:a", "SOR-005");
+  const theirs = deck("auto:SOR-010", "SOR-010");
+  const long = "Cad Bane, Toujours Plus Rapide Que Toi (deck automatique)";
+  const first = swuGameConfig(0, mine, theirs, ["Mon deck", long]);
+  assert.deepEqual(
+    first.players.map((player) => player.name),
+    ["Mon deck", `${long.slice(0, 39)}…`],
+  );
+  assert.equal(first.players[1].name.length, 40);
+  assert.equal(swuGameConfig(2, mine, theirs, ["Mon deck", "Autre"]).players[1].name, "Mon deck");
+  assert.ok(!("first_player" in first), "l'initiative est tirée par le moteur");
 });

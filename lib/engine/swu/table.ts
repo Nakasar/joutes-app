@@ -4,7 +4,7 @@
  * Sans React, pour être testé seul.
  */
 
-import type { SwuAction, SwuChoice, SwuPrompt, SwuView } from "@/lib/engine/swu/types";
+import type { SwuAction, SwuChoice, SwuPrompt, SwuTold, SwuView } from "@/lib/engine/swu/types";
 
 /** La carte qui agit dans un choix : celle qu'on clique pour le faire. */
 export function subjectOf(action: SwuAction): number | null {
@@ -51,6 +51,34 @@ export function viewCodes(view: SwuView, known: Map<number, string> = new Map())
     note(player.deck_top);
   }
   return known;
+}
+
+/** Une ligne du récit, avec les cartes qu'elle nomme (leurs codes). */
+export type SwuJournalEntry = SwuTold & { key: number; codes: string[] };
+
+/**
+ * Les évènements d'une mise à jour qui se racontent. `first` est le numéro du
+ * premier évènement reçu : il sert de clé stable à chaque ligne. `known` donne
+ * le code d'un objet de la partie, `byDef` celui d'une carte du catalogue.
+ */
+export function tellEvents(
+  events: SwuTold[],
+  first: number,
+  known: Map<number, string>,
+  byDef: Map<number, string>,
+): SwuJournalEntry[] {
+  return events
+    .map((entry, index) => ({ entry, key: first + index }))
+    .filter(({ entry }) => entry.text)
+    .map(({ entry, key }) => {
+      const codes = new Set<string>();
+      for (const [field, value] of Object.entries(entry.event)) {
+        if (typeof value !== "number") continue;
+        const code = field === "def" ? byDef.get(value) : known.get(value);
+        if (code) codes.add(code);
+      }
+      return { ...entry, key, codes: [...codes] };
+    });
 }
 
 /** Les objets que la table dessine et qu'on peut donc cliquer, pour le joueur assis en `me`. */

@@ -1,11 +1,7 @@
 "use server";
 
-import { headers } from "next/headers";
-
-import { auth } from "@/lib/auth.ts";
 import { searchDecks } from "@/lib/db/decks.ts";
-import { getGameTable, listGameTablesOf } from "@/lib/db/game-tables.ts";
-import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
+import { listGameTablesOf } from "@/lib/db/game-tables.ts";
 import {
   META_PICKER_DECKS,
   mergeLobbyDecks,
@@ -16,34 +12,23 @@ import {
   type LobbyDeck,
 } from "@/lib/engine/lobby-decks.ts";
 import {
-  addBot,
-  autoDeckLegends,
-  createTable,
-  engineServer,
-  isBotLevel,
-  isEngineMode,
-  joinTable,
-  leaveSeat,
-  reconcileTable,
-  resolveDeck,
-  startTable,
-  summarize,
-  tableAccess,
-  TableFailure,
-  type DeckChoice,
-  type Seated,
-  type TableAccess,
-  type TableError,
-} from "@/lib/engine/tables.ts";
+  addBotFor,
+  createTableFor,
+  guarded,
+  joinTableFor,
+  leaveSeatFor,
+  playableGame as playable,
+  readTableFor,
+  startTableFor,
+  viewer,
+  type PlayResult,
+  type TableState,
+} from "@/lib/engine/table-actions.ts";
+import { autoDeckLegends, engineServer, resolveDeck, summarize, TableFailure } from "@/lib/engine/tables.ts";
 import type { EngineDeckList } from "@/lib/engine/types.ts";
 import type { GameTableSummary } from "@/lib/types/GameTable.ts";
 
-/**
- * Les échecs sortent en codes, pas en phrases : ces actions ne savent pas dans
- * quelle langue la page est rendue. `details` porte les refus du moteur pour un
- * deck, qui eux n'existent qu'en français pour l'instant.
- */
-export type PlayResult<T = object> = ({ ok: true } & T) | { ok: false; error: TableError; details?: string[] };
+export type { PlayResult, TableState } from "@/lib/engine/table-actions.ts";
 
 export type { LobbyDeck, LobbyDeckSource } from "@/lib/engine/lobby-decks.ts";
 
@@ -61,53 +46,7 @@ export type Lobby = {
 
 const GAME_SLUG = "riftbound";
 
-async function viewer(): Promise<Seated | null> {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const user = session?.user;
-  if (!user?.id) return null;
-  const displayName = (user as { displayName?: string }).displayName;
-  return { userId: user.id, name: (displayName || user.name || "Joueur").slice(0, 40) };
-}
-
-async function playableGame(): Promise<{ id: string; slug: string }> {
-  const game = await readGameBySlugOrId(GAME_SLUG);
-  if (!game?.features?.play) throw new TableFailure("NOT_FOUND");
-  return { id: game.id, slug: game.slug ?? GAME_SLUG };
-}
-
-async function guarded<T extends object>(run: () => Promise<T>): Promise<PlayResult<T>> {
-  try {
-    return { ok: true, ...(await run()) };
-  } catch (error) {
-    if (error instanceof TableFailure) {
-      return { ok: false, error: error.code, ...(error.details.length ? { details: error.details } : {}) };
-    }
-    console.error("Table de jeu :", error);
-    return { ok: false, error: "SERVER" };
-  }
-}
-
-async function requireViewer(): Promise<Seated> {
-  const seated = await viewer();
-  if (!seated) throw new TableFailure("UNAUTHENTICATED");
-  return seated;
-}
-
-function parseChoice(choice: unknown): DeckChoice {
-  const value = choice as { kind?: unknown; deckId?: unknown; legend?: unknown } | null;
-  if (value?.kind === "deck" && typeof value.deckId === "string") {
-    return { kind: "deck", deckId: value.deckId };
-  }
-  if (value?.kind === "auto" && typeof value.legend === "string") {
-    return { kind: "auto", legend: value.legend };
-  }
-  throw new TableFailure("INVALID");
-}
-
-function parseTableId(id: unknown): string {
-  if (typeof id !== "string" || !/^[a-z0-9]{4,32}$/.test(id)) throw new TableFailure("NOT_FOUND");
-  return id;
-}
+const playableGame = () => playable(GAME_SLUG);
 
 /** Ce dont la page Jouer a besoin : les decks jouables (vérifiés par le moteur) et mes tables. */
 export async function loadLobby(): Promise<PlayResult<{ lobby: Lobby }>> {
@@ -141,7 +80,7 @@ export async function loadLobby(): Promise<PlayResult<{ lobby: Lobby }>> {
       sharedDecks(seated.userId, game.id),
       publicDecks(game.id, seated.userId),
       metaDecks(game.id, META_PICKER_DECKS),
-      online ? listGameTablesOf(seated.userId, 10) : Promise.resolve([]),
+      online ? listGameTablesOf(seated.userId, game.slug, 10) : Promise.resolve([]),
     ]);
 
     return {
@@ -180,84 +119,28 @@ export async function searchPlayDecksAction(query: unknown): Promise<PlayResult<
 }
 
 export async function createTableAction(mode: unknown, choice: unknown): Promise<PlayResult<{ id: string }>> {
-  return guarded(async () => {
-    const game = await playableGame();
-    const seated = await requireViewer();
-    if (!isEngineMode(mode)) throw new TableFailure("INVALID");
-    const table = await createTable(seated, mode, parseChoice(choice), game);
-    return { id: table.id };
-  });
+  return createTableFor(GAME_SLUG, mode, choice);
 }
 
 export async function joinTableAction(id: unknown, choice: unknown): Promise<PlayResult> {
-  return guarded(async () => {
-    const game = await playableGame();
-    const seated = await requireViewer();
-    await joinTable(seated, parseTableId(id), parseChoice(choice), game.id);
-    return {};
-  });
+  return joinTableFor(GAME_SLUG, id, choice);
 }
 
 export async function addBotAction(id: unknown, level: unknown): Promise<PlayResult> {
-  return guarded(async () => {
-    await playableGame();
-    const seated = await requireViewer();
-    if (!isBotLevel(level)) throw new TableFailure("INVALID");
-    await addBot(seated.userId, parseTableId(id), level);
-    return {};
-  });
+  return addBotFor(GAME_SLUG, id, level);
 }
 
 /** `name` : le nom affiché au siège visé, pour ne pas retirer quelqu'un d'autre si la salle a bougé. */
 export async function leaveSeatAction(id: unknown, seat: unknown, name: unknown): Promise<PlayResult> {
-  return guarded(async () => {
-    await playableGame();
-    const seated = await requireViewer();
-    if (typeof seat !== "number" || !Number.isInteger(seat) || typeof name !== "string") {
-      throw new TableFailure("INVALID");
-    }
-    await leaveSeat(seated.userId, parseTableId(id), seat, name);
-    return {};
-  });
+  return leaveSeatFor(GAME_SLUG, id, seat, name);
 }
 
 export async function startTableAction(id: unknown): Promise<PlayResult> {
-  return guarded(async () => {
-    await playableGame();
-    const seated = await requireViewer();
-    await startTable(seated.userId, parseTableId(id));
-    return {};
-  });
+  return startTableFor(GAME_SLUG, id);
 }
 
-export type TableState = {
-  table: GameTableSummary;
-  /** Mon siège à cette table, ou `null` si je n'y suis pas assis. */
-  seat: number | null;
-  isHost: boolean;
-  signedIn: boolean;
-  /** L'entrée à la partie, une fois lancée. Un visiteur entre en spectateur. */
-  access: TableAccess | null;
-};
-
 export async function readTableAction(id: unknown): Promise<PlayResult<{ state: TableState }>> {
-  return guarded(async () => {
-    await playableGame();
-    const seated = await viewer();
-    const stored = await getGameTable(parseTableId(id));
-    if (!stored) throw new TableFailure("NOT_FOUND");
-    const table = await reconcileTable(stored);
-    const seat = seated ? table.seats.findIndex((candidate) => candidate.userId === seated.userId) : -1;
-    return {
-      state: {
-        table: summarize(table),
-        seat: seat >= 0 ? seat : null,
-        isHost: seated?.userId === table.hostId,
-        signedIn: seated !== null,
-        access: tableAccess(table, seated),
-      },
-    };
-  });
+  return readTableFor(GAME_SLUG, id);
 }
 
 /**

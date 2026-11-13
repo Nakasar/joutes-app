@@ -146,4 +146,22 @@ export type SwuTold = { event: SwuEvent; text: string; rule?: string | null };
 
 export type SwuUpdate = { seq: number; view: SwuView; events: SwuTold[]; prompt: SwuPrompt | null };
 
+/** Rapport d'arbitrage (`joutes_judge::swu`). */
+export type SwuJudgeReport = {
+  summary: string;
+  steps: { player: string; question: string; chose: string }[];
+  events: SwuTold[];
+  asked:
+    | (SwuPrompt & {
+        seat: number;
+        player: string;
+        unplayable: { card: string; name: string; reason: string; rule: string | null }[];
+      })
+    | null;
+  result: SwuResult | null;
+  rules: string[];
+  notes: string[];
+  table: SwuView;
+};
+
 export type { BotLevel };

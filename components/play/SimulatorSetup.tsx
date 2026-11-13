@@ -4,24 +4,18 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import {
-  createSimulationAction,
-  loadSimulatorAction,
-  type Simulator,
-} from "@/app/[locale]/(app)/games/riftbound/play/simulate/actions";
 import { DeckPicker } from "@/components/play/DeckPicker";
-import { useTableCards } from "@/components/play/useTableCards";
+import type { SimulatorCards, SimulatorKit, SimulatorPickerDeck } from "@/components/play/simulator-kit";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
   expectedMargin,
   MAX_POOL_DECKS,
-  SECONDS_PER_GAME,
   SIMULATION_SIZES,
-  SIMULATION_SOURCES,
   type SimulationSource,
 } from "@/lib/engine/simulation";
+import type { Simulator } from "@/lib/engine/simulation-actions";
 import type { BotDeckChoice } from "@/lib/engine/tables";
 import { BOT_LEVELS, type BotLevel } from "@/lib/engine/types";
 import { cn } from "@/lib/utils";
@@ -38,17 +32,35 @@ export function durationLabel(t: ReturnType<typeof useTranslations>, seconds: nu
     : t("sim.aboutMinutes", { count: Math.round(seconds / 60) });
 }
 
-/** La page Simuler : choisir le deck, l'adversaire, le nombre de parties et le niveau. */
-export function SimulatorSetup() {
+/**
+ * Les textes du simulateur : ceux de `Games.Play`, sauf la clé `sim.*` que le
+ * jeu redit à sa façon dans son propre espace (`kit.words`).
+ */
+export function useSimulatorWords(kit: { words?: SimulatorKit["words"] }) {
   const t = useTranslations("Games.Play");
+  const own = useTranslations("Games.PlaySwu");
+  return (key: string, values?: Record<string, string | number>): string =>
+    kit.words && own.has(`sim.${key}`) ? own(`sim.${key}`, values) : t(`sim.${key}`, values);
+}
+
+type SimulatorSetupProps<D extends SimulatorPickerDeck> = {
+  kit: SimulatorKit<D>;
+  /** Les légendes ou leaders que la page connaît : nom, vignette, couleurs. */
+  cards: SimulatorCards;
+};
+
+/** La page Simuler : choisir le deck, l'adversaire, le nombre de parties et le niveau. */
+export function SimulatorSetup<D extends SimulatorPickerDeck>({ kit, cards }: SimulatorSetupProps<D>) {
+  const t = useTranslations("Games.Play");
+  const s = useSimulatorWords(kit);
   const router = useRouter();
-  const cards = useTableCards();
-  const [simulator, setSimulator] = useState<Simulator | null>(null);
+  const { actions, home } = kit;
+  const [simulator, setSimulator] = useState<Simulator<D> | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [deck, setDeck] = useState<DeckRef | null>(null);
   const [kind, setKind] = useState<OpponentKind>("pool");
   const [opponent, setOpponent] = useState<DeckRef | null>(null);
-  const [sources, setSources] = useState<SimulationSource[]>(["meta"]);
+  const [sources, setSources] = useState<SimulationSource[]>(kit.defaultSources);
   const [byLegend, setByLegend] = useState(false);
   const [games, setGames] = useState<number>(50);
   const [level, setLevel] = useState<BotLevel>("normal");
@@ -56,7 +68,7 @@ export function SimulatorSetup() {
 
   useEffect(() => {
     let cancelled = false;
-    void loadSimulatorAction().then((result) => {
+    void actions.load().then((result) => {
       if (cancelled) return;
       if (result.ok) setSimulator(result.simulator);
       else setFailed(result.error);
@@ -64,7 +76,7 @@ export function SimulatorSetup() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [actions]);
 
   if (failed) {
     return (
@@ -89,7 +101,7 @@ export function SimulatorSetup() {
 
   const toggleSource = (source: SimulationSource, on: boolean) => {
     setSources((previous) =>
-      on ? SIMULATION_SOURCES.filter((s) => s === source || previous.includes(s)) : previous.filter((s) => s !== source),
+      on ? kit.sources.filter((one) => one === source || previous.includes(one)) : previous.filter((one) => one !== source),
     );
     // L'option « une légende à la fois » ne se montre qu'avec la méta : sans elle, on revient au tirage par deck.
     if (source === "meta" && !on) setByLegend(false);
@@ -98,14 +110,14 @@ export function SimulatorSetup() {
   const start = async () => {
     if (!deck) return;
     setBusy(true);
-    const result = await createSimulationAction({
+    const result = await actions.create({
       deck,
       opponent: kind === "fixed" ? { kind, deck: opponent } : { kind, sources, byLegend },
       level,
       games,
     });
     if (result.ok) {
-      router.push(`/games/riftbound/play/simulate/result?id=${result.id}&start=1`);
+      router.push(`${home}/simulate/result?id=${result.id}&start=1`);
       return;
     }
     setBusy(false);
@@ -130,12 +142,15 @@ export function SimulatorSetup() {
 
         <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           <h3 className="font-semibold">{t("sim.deckTitle")}</h3>
-          <DeckPicker
+          <DeckPicker<D>
             id="sim-deck"
             srLabel={t("sim.deckTitle")}
             decks={simulator.decks}
             legends={simulator.legends}
             cards={cards}
+            colors={kit.colors}
+            search={kit.picker?.search}
+            texts={kit.picker?.texts}
             value={deck}
             onChange={(choice) => setDeck(choice.kind === "random" ? null : choice)}
           />
@@ -153,12 +168,15 @@ export function SimulatorSetup() {
           </div>
 
           {kind === "fixed" ? (
-            <DeckPicker
+            <DeckPicker<D>
               id="sim-opponent"
               srLabel={t("sim.opponentTitle")}
               decks={simulator.decks}
               legends={simulator.legends}
               cards={cards}
+              colors={kit.colors}
+              search={kit.picker?.search}
+              texts={kit.picker?.texts}
               value={opponent}
               onChange={(choice) => setOpponent(choice.kind === "random" ? null : choice)}
             />
@@ -166,7 +184,7 @@ export function SimulatorSetup() {
             <div className="flex flex-col gap-1">
               <p className="text-sm text-muted-foreground">{t("sim.poolIntro")}</p>
               <ul className="flex flex-col">
-                {SIMULATION_SOURCES.map((source) => (
+                {kit.sources.map((source) => (
                   <li key={source}>
                     <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-secondary">
                       <Checkbox
@@ -176,7 +194,7 @@ export function SimulatorSetup() {
                       />
                       <span className="flex min-w-0 flex-1 flex-col leading-tight">
                         <span className="font-medium">{t(`sim.source.${source}`)}</span>
-                        <span className="text-xs text-muted-foreground">{t(`sim.sourceHint.${source}`)}</span>
+                        <span className="text-xs text-muted-foreground">{s(`sourceHint.${source}`)}</span>
                       </span>
                       <span className="font-mono text-xs text-muted-foreground">
                         {t("deck.count", { count: simulator.pools[source] })}
@@ -234,11 +252,11 @@ export function SimulatorSetup() {
             </div>
             <div className="flex flex-col rounded-lg border p-3">
               <span className="text-xs text-muted-foreground">{t("sim.duration")}</span>
-              <span className="text-lg font-semibold">{durationLabel(t, SECONDS_PER_GAME[level] * games)}</span>
+              <span className="text-lg font-semibold">{durationLabel(t, kit.secondsPerGame[level] * games)}</span>
               <span className="text-xs text-muted-foreground">{t("sim.durationHint")}</span>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">{t("sim.fairness")}</p>
+          <p className="text-xs text-muted-foreground">{s("fairness")}</p>
           <div className="flex flex-row flex-wrap items-center gap-3">
             <Button disabled={!ready || busy} onClick={start}>
               {t("sim.start", { count: games })}
@@ -264,11 +282,13 @@ export function SimulatorSetup() {
               return (
                 <li key={run.id}>
                   <Link
-                    href={`/games/riftbound/play/simulate/result?id=${run.id}`}
+                    href={`${home}/simulate/result?id=${run.id}`}
                     className="flex items-center gap-3 rounded-lg p-2 transition hover:bg-secondary"
                   >
                     <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                      <span className="truncate font-medium">{run.deckName}</span>
+                      <span className="truncate font-medium">
+                        {run.auto ? t("sim.autoDeck", { legend: cards[run.legend]?.name ?? run.deckName }) : run.deckName}
+                      </span>
                       <span className="truncate text-xs text-muted-foreground">
                         {against} · {t("sim.gamesOf", { played: run.played, target: run.target })} ·{" "}
                         {t(`level.${run.level}`)}
@@ -283,8 +303,8 @@ export function SimulatorSetup() {
         </section>
         <section className="flex flex-col gap-2 rounded-xl border bg-card p-5 text-sm text-muted-foreground">
           <h3 className="font-semibold text-foreground">{t("sim.aboutTitle")}</h3>
-          <p>{t("sim.about1")}</p>
-          <p>{t("sim.about2")}</p>
+          <p>{s("about1")}</p>
+          <p>{s("about2")}</p>
         </section>
       </aside>
     </div>

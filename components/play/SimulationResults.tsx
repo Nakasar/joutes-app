@@ -5,20 +5,12 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import {
-  deleteSimulationAction,
-  extendSimulationAction,
-  getSimulationAction,
-} from "@/app/[locale]/(app)/games/riftbound/play/simulate/actions";
-import { durationLabel } from "@/components/play/SimulatorSetup";
+import type { SimulatorCards, SimulatorKit, SimulatorPickerDeck } from "@/components/play/simulator-kit";
+import { durationLabel, useSimulatorWords } from "@/components/play/SimulatorSetup";
 import { useSimulationRunner } from "@/components/play/useSimulationRunner";
-import { writeSoloSave } from "@/components/play/useSoloGame";
-import { useTableCards } from "@/components/play/useTableCards";
 import { Button } from "@/components/ui/button";
 import { Link, useRouter } from "@/i18n/navigation";
-import { gameConfig, simulationStats, type SimulationDeck, type SimulationGame } from "@/lib/engine/simulation";
-import { DOMAIN_HEX } from "@/lib/engine/told-text";
-import { ENGINE_VERSION } from "@/lib/engine/version";
+import { simulationStats, type SimulationDeck, type SimulationGame } from "@/lib/engine/simulation";
 import type { DeckSimulation } from "@/lib/types/DeckSimulation";
 import { cn } from "@/lib/utils";
 
@@ -32,14 +24,21 @@ type Filter = "all" | "win" | "loss";
 
 const percent = (value: number | null) => (value === null ? "—" : `${Math.round(value * 100)} %`);
 
+type SimulationResultsProps<D extends SimulatorPickerDeck> = {
+  kit: SimulatorKit<D>;
+  /** Les légendes ou leaders que la page connaît : nom et couleurs. */
+  cards: SimulatorCards;
+};
+
 /** Les résultats d'une série, et la série elle-même tant qu'elle n'est pas finie. */
-export function SimulationResults() {
+export function SimulationResults<D extends SimulatorPickerDeck>({ kit, cards }: SimulationResultsProps<D>) {
   const t = useTranslations("Games.Play");
+  const s = useSimulatorWords(kit);
   const router = useRouter();
+  const { actions, home } = kit;
   const params = useSearchParams();
   const id = params.get("id") ?? "";
   const autostart = params.get("start") === "1";
-  const cards = useTableCards();
   const [simulation, setSimulation] = useState<DeckSimulation | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
@@ -47,7 +46,7 @@ export function SimulationResults() {
 
   useEffect(() => {
     let cancelled = false;
-    void getSimulationAction(id).then((result) => {
+    void actions.get(id).then((result) => {
       if (cancelled) return;
       if (result.ok) setSimulation(result.simulation);
       else setFailed(result.error);
@@ -55,18 +54,18 @@ export function SimulationResults() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, actions]);
 
   const legendName = useCallback((code: string) => cards[code]?.name ?? code, [cards]);
   const deckName = useCallback(
-    (deck: SimulationDeck) => (deck.source === "auto" ? t("sim.autoDeck", { legend: legendName(deck.legend) }) : deck.name),
+    (deck: SimulationDeck) => (deck.key.startsWith("auto:") ? t("sim.autoDeck", { legend: legendName(deck.legend) }) : deck.name),
     [t, legendName],
   );
   const names = useCallback(
     (opponent: SimulationDeck): [string, string] => (simulation ? [deckName(simulation.deck), deckName(opponent)] : ["", ""]),
     [simulation, deckName],
   );
-  const runner = useSimulationRunner(simulation, names);
+  const runner = useSimulationRunner(simulation, names, kit);
 
   // Une série tout juste créée démarre seule ; rouverte plus tard, elle attend « Reprendre ».
   const started = useRef(false);
@@ -74,8 +73,8 @@ export function SimulationResults() {
     if (!simulation || !autostart || started.current) return;
     started.current = true;
     runner.start();
-    router.replace(`/games/riftbound/play/simulate/result?id=${simulation.id}`);
-  }, [simulation, autostart, runner, router]);
+    router.replace(`${home}/simulate/result?id=${simulation.id}`);
+  }, [simulation, autostart, runner, router, home]);
 
   const opponents = useMemo(
     () => Object.fromEntries((simulation?.pool ?? []).map((deck) => [deck.key, deck])),
@@ -88,7 +87,7 @@ export function SimulationResults() {
       <div className="flex flex-col items-center gap-4 rounded-xl border bg-card p-8 text-center">
         <p className="text-muted-foreground">{t(`sim.error.${failed}`)}</p>
         <Button asChild>
-          <Link href="/games/riftbound/play/simulate">{t("sim.back")}</Link>
+          <Link href={`${home}/simulate`}>{t("sim.back")}</Link>
         </Button>
       </div>
     );
@@ -107,7 +106,7 @@ export function SimulationResults() {
   const decided = stats.wins + stats.losses;
 
   const extend = async (more: number) => {
-    const result = await extendSimulationAction(simulation.id, more);
+    const result = await actions.extend(simulation.id, more);
     if (!result.ok) {
       toast.error(t(`sim.error.${result.error}`));
       return;
@@ -119,20 +118,15 @@ export function SimulationResults() {
   const remove = async () => {
     if (!window.confirm(t("sim.deleteConfirm"))) return;
     runner.pause();
-    const result = await deleteSimulationAction(simulation.id);
-    if (result.ok) router.push("/games/riftbound/play/simulate");
+    const result = await actions.remove(simulation.id);
+    if (result.ok) router.push(`${home}/simulate`);
     else toast.error(t(`sim.error.${result.error}`));
   };
 
   const watch = (game: SimulationGame) => {
     const opponent = opponents[game.opp];
     if (!opponent) return;
-    writeSoloSave({
-      seat: null,
-      bots: [simulation.level, simulation.level],
-      record: { config: gameConfig(game.n, simulation.deck, opponent, names(opponent)), seed: game.seed, actions: [] },
-    });
-    router.push("/games/riftbound/play/solo");
+    router.push(kit.watch(kit.config(game.n, simulation.deck, opponent, names(opponent)), game.seed, simulation.level));
   };
 
   const listed = [...runner.games]
@@ -147,7 +141,7 @@ export function SimulationResults() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-row flex-wrap items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <Link href="/games/riftbound/play/simulate" className="text-sm text-muted-foreground hover:text-foreground">
+          <Link href={`${home}/simulate`} className="text-sm text-muted-foreground hover:text-foreground">
             ← {t("sim.back")}
           </Link>
           <h2 className="text-xl font-bold sm:text-2xl">
@@ -174,7 +168,7 @@ export function SimulationResults() {
             {t("sim.more", { count: 50 })}
           </Button>
           <Button variant="outline" asChild>
-            <Link href="/games/riftbound/play/simulate">{t("sim.again")}</Link>
+            <Link href={`${home}/simulate`}>{t("sim.again")}</Link>
           </Button>
           <Button variant="ghost" onClick={() => void remove()}>
             {t("sim.delete")}
@@ -182,7 +176,7 @@ export function SimulationResults() {
         </div>
       </div>
 
-      {simulation.engine !== ENGINE_VERSION && (
+      {simulation.engine !== kit.engine && (
         <p className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm">{t("sim.otherEngine")}</p>
       )}
       {runner.error && (
@@ -248,15 +242,15 @@ export function SimulationResults() {
         </section>
 
         <section className="grid grid-cols-2 gap-2">
-          <Tile label={t("sim.first")} value={percent(stats.first.rate)} hint={t("sim.tally", { wins: stats.first.wins, games: stats.first.games })} />
-          <Tile label={t("sim.second")} value={percent(stats.second.rate)} hint={t("sim.tally", { wins: stats.second.wins, games: stats.second.games })} />
+          <Tile label={s("first")} value={percent(stats.first.rate)} hint={t("sim.tally", { wins: stats.first.wins, games: stats.first.games })} />
+          <Tile label={s("second")} value={percent(stats.second.rate)} hint={t("sim.tally", { wins: stats.second.wins, games: stats.second.games })} />
           <Tile
             label={t("sim.turns")}
-            value={stats.turns === null ? "—" : t("sim.turnsValue", { count: stats.turns.toFixed(1) })}
-            hint={stats.winTurns === null ? "" : t("sim.winTurns", { count: stats.winTurns.toFixed(1) })}
+            value={stats.turns === null ? "—" : s("turnsValue", { count: stats.turns.toFixed(1) })}
+            hint={stats.winTurns === null ? "" : s("winTurns", { count: stats.winTurns.toFixed(1) })}
           />
           <Tile
-            label={t("sim.score")}
+            label={s("score")}
             value={stats.score ? `${stats.score[0].toFixed(1)} – ${stats.score[1].toFixed(1)}` : "—"}
             hint={t("sim.undecidedGames", { count: stats.undecided })}
           />
@@ -266,13 +260,13 @@ export function SimulationResults() {
       <section className="flex flex-col gap-2 rounded-xl border bg-card p-5">
         <div className="flex flex-row flex-wrap items-baseline justify-between gap-2">
           <h3 className="font-semibold">{t("sim.byOpponent")}</h3>
-          <span className="text-xs text-muted-foreground">{t("sim.byOpponentHint", { count: FEW_GAMES })}</span>
+          <span className="text-xs text-muted-foreground">{s("byOpponentHint", { count: FEW_GAMES })}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[36rem] text-sm">
             <thead>
               <tr className="text-left text-xs text-muted-foreground">
-                <th className="px-2 py-1.5 font-medium">{t("sim.opponentLegend")}</th>
+                <th className="px-2 py-1.5 font-medium">{s("opponentLegend")}</th>
                 <th className="px-2 py-1.5 text-right font-medium">{t("sim.gamesColumn")}</th>
                 <th className="px-2 py-1.5 text-right font-medium">{t("sim.wlColumn")}</th>
                 <th className="w-2/5 px-2 py-1.5 font-medium">{t("sim.winsColumn")}</th>
@@ -287,7 +281,7 @@ export function SimulationResults() {
                       <span className="flex items-center gap-2">
                         <span className="flex gap-0.5" aria-hidden>
                           {(card?.domains ?? []).map((domain) => (
-                            <span key={domain} className="size-2.5 rounded-full" style={{ background: DOMAIN_HEX[domain] ?? "#64748b" }} />
+                            <span key={domain} className="size-2.5 rounded-full" style={{ background: kit.colors[domain] ?? "#64748b" }} />
                           ))}
                         </span>
                         <span className="flex flex-col leading-tight">
@@ -346,10 +340,10 @@ export function SimulationResults() {
               <tr className="text-left text-xs text-muted-foreground">
                 <th className="px-2 py-1.5 font-medium">{t("sim.number")}</th>
                 <th className="px-2 py-1.5 font-medium">{t("sim.opponentColumn")}</th>
-                <th className="px-2 py-1.5 font-medium">{t("sim.startsColumn")}</th>
+                <th className="px-2 py-1.5 font-medium">{s("startsColumn")}</th>
                 <th className="px-2 py-1.5 font-medium">{t("sim.resultColumn")}</th>
-                <th className="px-2 py-1.5 text-right font-medium">{t("sim.scoreColumn")}</th>
-                <th className="px-2 py-1.5 text-right font-medium">{t("sim.turnsColumn")}</th>
+                <th className="px-2 py-1.5 text-right font-medium">{s("scoreColumn")}</th>
+                <th className="px-2 py-1.5 text-right font-medium">{s("turnsColumn")}</th>
                 <th className="px-2 py-1.5">
                   <span className="sr-only">{t("sim.watch")}</span>
                 </th>
