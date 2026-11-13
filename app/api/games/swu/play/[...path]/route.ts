@@ -12,8 +12,6 @@ import {
 import { playRoutes } from "@/lib/engine/play-api";
 
 /** La page Jouer de Star Wars: Unlimited pour l'app mobile : voir `lib/engine/play-api.ts`. */
-export const dynamic = "force-dynamic";
-
 export const { GET, POST } = playRoutes({
   lobby: loadSwuLobby,
   searchDecks: searchSwuPlayDecksAction,
