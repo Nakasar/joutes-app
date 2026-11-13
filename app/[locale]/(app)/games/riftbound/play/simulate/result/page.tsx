@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import { PlayShell, type PlayPageProps } from "@/app/[locale]/(app)/games/riftbound/play/PlayShell.tsx";
-import { SimulationResults } from "@/components/play/SimulationResults.tsx";
+import { RiftboundSimulationResults } from "@/components/play/RiftboundSimulator.tsx";
 
 export const metadata: Metadata = { robots: { index: false } };
 
@@ -12,7 +12,7 @@ export default function RiftboundSimulationResultPage({ params }: PlayPageProps)
       {/* La série se lit dans l'adresse (`?id=`) : une lecture du navigateur,
           qui attend derrière sa frontière. */}
       <Suspense fallback={null}>
-        <SimulationResults />
+        <RiftboundSimulationResults />
       </Suspense>
     </PlayShell>
   );

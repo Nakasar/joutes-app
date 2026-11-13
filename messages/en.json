@@ -1046,10 +1046,27 @@
         "sets": "The engine plays all nine sets, from Spark of Rebellion to Heroes of Mandalore, in the Premier format.",
         "watchInfo": "You watch the game without playing: the AI hands are visible, and you can pause it.",
         "about": "The Joutes engine knows the rules of Star Wars: Unlimited: it only offers what is allowed, resolves every ability and cites the rule applied in the log.",
-        "soon": "Deck simulation will follow for this game.",
         "deckAuto": "Automatic deck around a leader",
         "deckRandomHint": "A leader drawn at random each game",
         "deckSearch": "Deck name, leader, author…"
+      },
+      "sim": {
+        "fairness": "Your deck switches seats every two games and the initiative is drawn at random every game. Easy plays almost at random: it is no use for judging a deck.",
+        "about1": "Your deck's chances when the Joutes AI plays it. The AI reads the game with a simple grid (bases, units in play, resources, cards in hand) and doesn't know a deck's game plan.",
+        "about2": "It favors straightforward aggressive decks and underrates control and combo. Compare two versions of the same deck with each other rather than with tournament results.",
+        "first": "With the initiative",
+        "second": "Without the initiative",
+        "turnsValue": "{count} rounds",
+        "winTurns": "wins in {count} rounds",
+        "score": "Remaining base HP",
+        "byOpponentHint": "Grouped by leader. Under {count} games, the number is greyed out.",
+        "opponentLegend": "Opposing leader",
+        "startsColumn": "Initiative",
+        "scoreColumn": "Bases",
+        "turnsColumn": "Rounds",
+        "sourceHint": {
+          "auto": "A random deck built around each leader"
+        }
       },
       "arena": {
         "ground": "Ground arena",

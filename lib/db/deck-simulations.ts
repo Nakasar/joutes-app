@@ -123,7 +123,7 @@ export async function listDeckSimulations(userId: string, gameId: string, limit 
   const docs = await collection
     .aggregate<{
       _id: ObjectId;
-      deck: { name: string; legend: string };
+      deck: { name: string; legend: string; key?: string };
       opponent: DeckSimulation["opponent"];
       first: { name: string } | null;
       level: DeckSimulation["level"];
@@ -138,7 +138,7 @@ export async function listDeckSimulations(userId: string, gameId: string, limit 
       { $limit: limit },
       {
         $project: {
-          deck: { name: "$deck.name", legend: "$deck.legend" },
+          deck: { name: "$deck.name", legend: "$deck.legend", key: "$deck.key" },
           opponent: 1,
           first: { $arrayElemAt: [{ $map: { input: "$pool", as: "d", in: { name: "$$d.name" } } }, 0] },
           level: 1,
@@ -155,6 +155,7 @@ export async function listDeckSimulations(userId: string, gameId: string, limit 
     id: doc._id.toString(),
     deckName: doc.deck.name,
     legend: doc.deck.legend,
+    auto: doc.deck.key?.startsWith("auto:") ?? false,
     opponent: doc.opponent,
     opponentName: doc.opponent.kind === "fixed" ? (doc.first?.name ?? null) : null,
     level: doc.level,

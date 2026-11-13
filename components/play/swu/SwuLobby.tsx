@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Bot, Eye, Globe } from "lucide-react";
+import { Bot, Eye, FlaskConical, Globe } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
@@ -375,10 +375,20 @@ export function SwuLobby() {
             </ul>
           </section>
         )}
+        <section className="flex flex-col gap-2 rounded-xl border bg-card p-5">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <FlaskConical className="size-4" aria-hidden />
+            {t("sim.lobbyTitle")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("sim.lobbyHint")}</p>
+          <Button asChild variant="outline" size="sm" className="self-start">
+            <Link href="/games/swu/play/simulate">{t("sim.lobbyOpen")}</Link>
+          </Button>
+        </section>
+
         <section className="flex flex-col gap-2 rounded-xl border bg-card p-5 text-sm text-muted-foreground">
           <h2 className="font-semibold text-foreground">{t("lobby.aboutTitle")}</h2>
           <p>{ts("lobby.about")}</p>
-          <p>{ts("lobby.soon")}</p>
         </section>
       </aside>
     </div>
