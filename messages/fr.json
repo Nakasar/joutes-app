@@ -7859,5 +7859,14 @@
       "REPLY_WITH_CARDS": "Une réponse ne lie pas de carte.",
       "FAILED": "Une erreur est survenue, réessayez."
     }
+  },
+  "AppLogin": {
+    "title": "Se connecter dans l'app",
+    "intro": "Vous êtes connecté en tant que {name}. Recopiez ce code dans l'app Joutes pour vous y connecter avec le même compte.",
+    "codeLabel": "Code de connexion",
+    "copy": "Copier le code",
+    "copied": "Copié",
+    "expires": "Le code sert une fois et expire dans {minutes} minutes. Rechargez la page pour en obtenir un autre.",
+    "warning": "Ne donnez ce code à personne : il ouvre votre compte."
   }
 }

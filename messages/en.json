@@ -7859,5 +7859,14 @@
       "REPLY_WITH_CARDS": "A reply doesn't link cards.",
       "FAILED": "Something went wrong, try again."
     }
+  },
+  "AppLogin": {
+    "title": "Sign in to the app",
+    "intro": "You're signed in as {name}. Type this code in the Joutes app to sign in there with the same account.",
+    "codeLabel": "Sign-in code",
+    "copy": "Copy the code",
+    "copied": "Copied",
+    "expires": "The code works once and expires in {minutes} minutes. Reload the page to get a new one.",
+    "warning": "Never share this code: it opens your account."
   }
 }

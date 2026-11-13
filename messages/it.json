@@ -7859,5 +7859,14 @@
       "REPLY_WITH_CARDS": "Una risposta non collega carte.",
       "FAILED": "Si è verificato un errore, riprova."
     }
+  },
+  "AppLogin": {
+    "title": "Accedi nell'app",
+    "intro": "Hai effettuato l'accesso come {name}. Inserisci questo codice nell'app Joutes per accedere con lo stesso account.",
+    "codeLabel": "Codice di accesso",
+    "copy": "Copia il codice",
+    "copied": "Copiato",
+    "expires": "Il codice vale una volta e scade tra {minutes} minuti. Ricarica la pagina per averne un altro.",
+    "warning": "Non condividere questo codice: apre il tuo account."
   }
 }

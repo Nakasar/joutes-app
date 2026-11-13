@@ -7859,5 +7859,14 @@
       "REPLY_WITH_CARDS": "Eine Antwort verknüpft keine Karten.",
       "FAILED": "Ein Fehler ist aufgetreten, versuche es erneut."
     }
+  },
+  "AppLogin": {
+    "title": "In der App anmelden",
+    "intro": "Du bist als {name} angemeldet. Gib diesen Code in der Joutes-App ein, um dich dort mit demselben Konto anzumelden.",
+    "codeLabel": "Anmeldecode",
+    "copy": "Code kopieren",
+    "copied": "Kopiert",
+    "expires": "Der Code gilt einmal und läuft in {minutes} Minuten ab. Lade die Seite neu für einen neuen.",
+    "warning": "Gib diesen Code niemandem: Er öffnet dein Konto."
   }
 }
