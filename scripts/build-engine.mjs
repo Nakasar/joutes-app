@@ -11,18 +11,26 @@
   Lancé avant `next dev` et `next build` (predev, prebuild).
 
   Pour mettre le moteur à jour : dans joutes-engine, `scripts/build-wasm.sh`,
-  puis copier pkg/web/* dans lib/engine/pkg/ et noter le commit dans VERSION.
+  puis copier pkg/web/* dans lib/engine/pkg/ et pkg/swu/* dans lib/engine/swu/pkg/,
+  et noter le commit dans le fichier VERSION de chacun.
 */
 import {readFile, writeFile} from "node:fs/promises";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const wasm = await readFile(path.join(root, "lib/engine/pkg/joutes_bg.wasm"));
-const out = path.join(root, "lib/engine/wasm.generated.ts");
 
-await writeFile(
-  out,
-  `// Produit par scripts/build-engine.mjs. Ne pas modifier.\nexport const ENGINE_WASM_BASE64 =\n  "${wasm.toString("base64")}";\n`,
-);
-console.log(`moteur de jeu : ${(wasm.length / 1024).toFixed(0)} Ko → lib/engine/wasm.generated.ts`);
+// Un paquet par jeu : Riftbound (pkg/web du moteur) et Star Wars: Unlimited (pkg/swu).
+const engines = [
+  { wasm: "lib/engine/pkg/joutes_bg.wasm", out: "lib/engine/wasm.generated.ts", name: "ENGINE_WASM_BASE64" },
+  { wasm: "lib/engine/swu/pkg/joutes_swu_bg.wasm", out: "lib/engine/swu/wasm.generated.ts", name: "SWU_WASM_BASE64" },
+];
+
+for (const engine of engines) {
+  const wasm = await readFile(path.join(root, engine.wasm));
+  await writeFile(
+    path.join(root, engine.out),
+    `// Produit par scripts/build-engine.mjs. Ne pas modifier.\nexport const ${engine.name} =\n  "${wasm.toString("base64")}";\n`,
+  );
+  console.log(`moteur de jeu : ${(wasm.length / 1024).toFixed(0)} Ko → ${engine.out}`);
+}

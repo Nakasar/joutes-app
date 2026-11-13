@@ -14,16 +14,22 @@ import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
  */
 export type PlayPageProps = { params: Promise<{ locale: string }> };
 
-type PlayShellProps = PlayPageProps & { back: "game" | "lobby"; children: ReactNode };
+type PlayShellProps = PlayPageProps & {
+  back: "game" | "lobby";
+  /** Le jeu dont c'est la page Jouer ; Riftbound sans précision. */
+  game?: "riftbound" | "swu";
+  children: ReactNode;
+};
 
-export async function PlayShell({ params, back, children }: PlayShellProps) {
+export async function PlayShell({ params, back, game: slug = "riftbound", children }: PlayShellProps) {
   // Sans cet appel, next-intl lit la langue à la requête et toute la route
   // devient dynamique ; la langue, elle, est énumérée statiquement.
   const { locale } = await params;
   setRequestLocale(locale);
 
   const t = await getTranslations("Games.Play");
-  const game = await readGameBySlugOrId("riftbound");
+  const title = slug === "swu" ? (await getTranslations("Games.PlaySwu"))("title") : t("title");
+  const game = await readGameBySlugOrId(slug);
   if (!game?.features?.play) notFound();
 
   return (
@@ -31,13 +37,13 @@ export async function PlayShell({ params, back, children }: PlayShellProps) {
       <div className="mb-4 flex flex-row flex-wrap items-center justify-between gap-3">
         <div className="flex flex-row flex-wrap items-center gap-4">
           <Button asChild>
-            <Link href={back === "game" ? "/games/riftbound" : "/games/riftbound/play"}>
+            <Link href={back === "game" ? `/games/${slug}` : `/games/${slug}/play`}>
               ← <span className="hidden lg:inline">{back === "game" ? t("back") : t("backToLobby")}</span>
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold sm:text-3xl">{t("title")}</h1>
+          <h1 className="text-2xl font-bold sm:text-3xl">{title}</h1>
         </div>
-        <GameToolsNavBar gameSlug="riftbound" currentTab="play" />
+        <GameToolsNavBar gameSlug={slug} currentTab="play" />
       </div>
       {children}
     </div>

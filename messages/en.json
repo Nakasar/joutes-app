@@ -765,7 +765,9 @@
         "problem": {
           "noLegend": "The legend is missing.",
           "noChampion": "The chosen champion is missing.",
-          "unknownCard": "A card is not recognised."
+          "unknownCard": "A card is not recognised.",
+          "noLeader": "The leader is missing.",
+          "noBase": "The base is missing."
         }
       },
       "lobby": {
@@ -1033,6 +1035,93 @@
           "both": "exhausted then recycled",
           "recycle": "recycled"
         }
+      }
+    },
+    "PlaySwu": {
+      "title": "Play Star Wars: Unlimited",
+      "description": "Play Star Wars: Unlimited in your browser against the AI, with your own decks or an automatic one. The engine applies the Premier format rules and cites each of them.",
+      "lobby": {
+        "whoTitle": "Who is playing?",
+        "resumeHint": "{players}, {moves, plural, one {# move played} other {# moves played}}.",
+        "sets": "The engine plays all nine sets, from Spark of Rebellion to Heroes of Mandalore, in the Premier format.",
+        "watchInfo": "You watch the game without playing: the AI hands are visible, and you can pause it.",
+        "about": "The Joutes engine knows the rules of Star Wars: Unlimited: it only offers what is allowed, resolves every ability and cites the rule applied in the log.",
+        "soon": "Online play and deck simulation will follow for this game.",
+        "deckAuto": "Automatic deck around a leader",
+        "deckRandomHint": "A leader drawn at random each game",
+        "deckSearch": "Deck name, leader, author…"
+      },
+      "arena": {
+        "ground": "Ground arena",
+        "space": "Space arena"
+      },
+      "round": "Round {round}",
+      "phase": {
+        "setup": "Setup",
+        "action": "Action phase",
+        "regroup": "Regroup phase",
+        "over": "Game over"
+      },
+      "stat": {
+        "hand": "Hand",
+        "deck": "Deck",
+        "discard": "Discard",
+        "resources": "Resources",
+        "resourcesValue": "{ready} ready of {total}",
+        "credits": "Credits",
+        "force": "Force"
+      },
+      "initiative": "Initiative",
+      "initiativeTaken": "Initiative taken",
+      "tag": {
+        "exhausted": "exhausted",
+        "deployed": "deployed",
+        "attacking": "Attacking"
+      },
+      "leader": {
+        "action": "Action",
+        "deploy": "Deploy",
+        "deployPilot": "Deploy as Pilot"
+      },
+      "life": "{left} / {total} HP",
+      "baseOf": "{name}'s base",
+      "captives": "{count} captured",
+      "cost": "Current cost: {cost}",
+      "ask": {
+        "cancel": "Cancel",
+        "pickTarget": "Choose the target: whatever is circled in red is allowed.",
+        "turnHint": "{ready, plural, =0 {No ready resource} one {# ready resource} other {# ready resources}} · play a card, attack or use your leader."
+      },
+      "pile": {
+        "discardOf": "{name}'s discard pile",
+        "resourcesOf": "{name}'s resources",
+        "empty": "No card."
+      },
+      "inspect": {
+        "power": "Power",
+        "hp": "HP",
+        "damage": "{damage} damage taken",
+        "keywords": "Keywords",
+        "upgrades": "Upgrades",
+        "captives": "Captured cards",
+        "unitSide": "Leader unit side",
+        "unsupported": "The engine cannot play this card yet."
+      },
+      "kw": {
+        "ambush": "Ambush",
+        "grit": "Grit",
+        "overwhelm": "Overwhelm",
+        "raid": "Raid {n}",
+        "restore": "Restore {n}",
+        "saboteur": "Saboteur",
+        "sentinel": "Sentinel",
+        "shielded": "Shielded",
+        "hidden": "Hidden",
+        "support": "Support",
+        "exploit": "Exploit {n}",
+        "piloting": "Piloting {n}",
+        "plot": "Plot",
+        "fortify": "Fortify"
       }
     },
     "Developers": {

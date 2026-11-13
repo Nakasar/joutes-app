@@ -12,7 +12,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { TableCards } from "@/lib/engine/cards";
 import type { BotDeckChoice } from "@/lib/engine/tables";
 import { DOMAIN_HEX } from "@/lib/engine/told-text";
 import { cn } from "@/lib/utils";
@@ -37,20 +36,35 @@ type Option = {
   favorites?: number;
   /** Texte où chercher, en minuscules. */
   haystack: string;
-  deck?: LobbyDeck;
+  deck?: PickerDeck;
 };
 
-type DeckPickerProps = {
+const searchRiftboundDecks = (query: string) =>
+  searchPlayDecksAction(query).then((result) => (result.ok ? result.decks : []));
+
+/** Ce que la liste lit d'un deck : la fiche de la page Jouer, quelle que soit la liste du moteur qu'elle porte. */
+export type PickerDeck = Omit<LobbyDeck, "list" | "completed"> & { list: unknown; completed?: unknown[] };
+
+/** Ce que la liste lit d'une carte : la vignette, le nom et les couleurs d'une légende ou d'un leader. */
+type PickerCards = Record<string, { name: string; image?: string; domains?: string[] } | undefined>;
+
+type DeckPickerProps<D extends PickerDeck> = {
   id: string;
   /** L'intitulé au-dessus du champ ; absent, il est lu par les lecteurs d'écran seulement. */
   label?: string;
   srLabel?: string;
-  decks: LobbyDeck[];
+  decks: D[];
   legends: string[];
-  cards: TableCards;
+  cards: PickerCards;
   value: BotDeckChoice | null;
   /** `deck` : le deck Joutes choisi, utile pour un deck public trouvé par une recherche. */
-  onChange: (choice: BotDeckChoice, deck?: LobbyDeck) => void;
+  onChange: (choice: BotDeckChoice, deck?: D) => void;
+  /** La recherche dans les decks publics ; celle de Riftbound sans précision. */
+  search?: (query: string) => Promise<D[]>;
+  /** Les textes qui nomment la légende, pour un jeu qui l'appelle autrement (le leader de SWU). */
+  texts?: { auto?: string; randomHint?: string; search?: string };
+  /** La couleur des pastilles (domaines de Riftbound sans précision). */
+  colors?: Record<string, string>;
   /** Propose « Au hasard » : une légende tirée au sort à chaque partie (pour une IA). */
   allowRandom?: boolean;
   /** Cherche aussi dans les decks publics de Joutes pendant la frappe. */
@@ -67,7 +81,7 @@ const SEARCH_DELAY_MS = 300;
  * pendant la frappe), et les decks automatiques autour d'une légende. Un deck
  * que le moteur refuse reste visible, grisé, avec sa raison.
  */
-export function DeckPicker({
+export function DeckPicker<D extends PickerDeck = LobbyDeck>({
   id,
   label,
   srLabel,
@@ -78,12 +92,15 @@ export function DeckPicker({
   onChange,
   allowRandom = false,
   searchPublic = true,
+  search = searchRiftboundDecks as unknown as (query: string) => Promise<D[]>,
+  colors = DOMAIN_HEX,
+  texts = {},
   className,
-}: DeckPickerProps) {
+}: DeckPickerProps<D>) {
   const t = useTranslations("Games.Play");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [found, setFound] = useState<{ query: string; decks: LobbyDeck[] } | null>(null);
+  const [found, setFound] = useState<{ query: string; decks: D[] } | null>(null);
   const [searching, setSearching] = useState(false);
   // Sur téléphone, la liste s'ouvre en feuille depuis le bas de l'écran : un
   // menu déroulant n'y trouve pas la place de sa recherche et de ses groupes.
@@ -104,19 +121,19 @@ export function DeckPicker({
     let cancelled = false;
     const timer = window.setTimeout(() => {
       setSearching(true);
-      void searchPlayDecksAction(trimmed).then((result) => {
+      void search(trimmed).then((decks) => {
         if (cancelled) return;
         setSearching(false);
-        setFound({ query: trimmed, decks: result.ok ? result.decks : [] });
+        setFound({ query: trimmed, decks });
       });
     }, SEARCH_DELAY_MS);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [remote, open, trimmed]);
+  }, [remote, open, trimmed, search]);
 
-  const fromDeck = (deck: LobbyDeck): Option => {
+  const fromDeck = (deck: D): Option => {
     // Le nom que le deck range (celui du catalogue Joutes), sinon celui de la table.
     const legendName = deck.legendName ?? (deck.legend ? cards[deck.legend]?.name : undefined);
     const details =
@@ -171,7 +188,7 @@ export function DeckPicker({
     key: "random",
     choice: { kind: "random" },
     name: t("deck.random"),
-    hint: t("deck.randomHint"),
+    hint: texts.randomHint ?? t("deck.randomHint"),
     legend: null,
     domains: [],
     haystack: t("deck.random").toLowerCase(),
@@ -213,7 +230,7 @@ export function DeckPicker({
       note: searchPublic ? (remote ? t("deck.publicSearched") : t("deck.publicHint")) : undefined,
       options: [...fromPage("public").filter(matches), ...foundFrom("public")],
     },
-    { key: "auto", title: t("deck.auto"), options: autoOptions.filter(matches) },
+    { key: "auto", title: texts.auto ?? t("deck.auto"), options: autoOptions.filter(matches) },
   ].filter((group) => group.options.length > 0);
 
   const all = [...(allowRandom ? [randomOption] : []), ...known, ...foundOptions, ...autoOptions];
@@ -226,7 +243,7 @@ export function DeckPicker({
   const pick = (option: Option) => {
     if (option.refused) return;
     setRemembered(option);
-    onChange(option.choice, option.deck);
+    onChange(option.choice, option.deck as D | undefined);
     setOpen(false);
     setQuery("");
   };
@@ -234,7 +251,7 @@ export function DeckPicker({
   const list = (
     <Command shouldFilter={false}>
       <div className="relative">
-        <CommandInput value={query} onValueChange={setQuery} placeholder={t("deck.search")} className="pr-20" />
+        <CommandInput value={query} onValueChange={setQuery} placeholder={texts.search ?? t("deck.search")} className="pr-20" />
         <span className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1 font-mono text-xs text-muted-foreground">
           {searching && remote && <Loader2 className="size-3 animate-spin" aria-hidden />}
           {t("deck.count", { count })}
@@ -260,7 +277,7 @@ export function DeckPicker({
                 onSelect={() => pick(option)}
                 className="min-h-11 gap-3 py-1.5"
               >
-                <OptionBody option={option} cards={cards} />
+                <OptionBody option={option} cards={cards} colors={colors} />
                 {option.key === selectedKey && <Check className="size-4 shrink-0 text-primary" aria-hidden />}
               </CommandItem>
             ))}
@@ -291,7 +308,7 @@ export function DeckPicker({
             className="h-auto min-h-11 w-full justify-between gap-3 px-2.5 py-1.5 font-normal"
           >
             {selected ? (
-              <OptionBody option={selected} cards={cards} />
+              <OptionBody option={selected} cards={cards} colors={colors} />
             ) : (
               <span className="truncate text-muted-foreground">{t("deck.placeholder")}</span>
             )}
@@ -316,7 +333,7 @@ export function DeckPicker({
 }
 
 /** La vignette de la légende, le nom, la précision et les domaines d'une ligne. */
-function OptionBody({ option, cards }: { option: Option; cards: TableCards }) {
+function OptionBody({ option, cards, colors }: { option: Option; cards: PickerCards; colors: Record<string, string> }) {
   const image = option.legend ? cards[option.legend]?.image : undefined;
   return (
     <span className="flex min-w-0 flex-1 items-center gap-3 text-left">
@@ -349,7 +366,7 @@ function OptionBody({ option, cards }: { option: Option; cards: TableCards }) {
       {option.domains.length > 0 && (
         <span className="flex shrink-0 gap-1" aria-hidden>
           {option.domains.slice(0, 3).map((domain) => (
-            <span key={domain} className="size-2.5 rounded-full" style={{ background: DOMAIN_HEX[domain] ?? "#64748b" }} />
+            <span key={domain} className="size-2.5 rounded-full" style={{ background: colors[domain] ?? "#64748b" }} />
           ))}
         </span>
       )}

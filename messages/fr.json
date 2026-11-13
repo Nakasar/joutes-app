@@ -765,7 +765,9 @@
         "problem": {
           "noLegend": "Il manque la légende.",
           "noChampion": "Il manque le champion choisi.",
-          "unknownCard": "Une carte n'est pas reconnue."
+          "unknownCard": "Une carte n'est pas reconnue.",
+          "noLeader": "Il manque le leader.",
+          "noBase": "Il manque la base."
         }
       },
       "lobby": {
@@ -1033,6 +1035,93 @@
           "both": "épuisée puis recyclée",
           "recycle": "recyclée"
         }
+      }
+    },
+    "PlaySwu": {
+      "title": "Jouer à Star Wars: Unlimited",
+      "description": "Jouez à Star Wars: Unlimited dans votre navigateur contre l'IA, avec vos decks ou un deck automatique. Le moteur applique les règles du format Premier et cite chacune d'elles.",
+      "lobby": {
+        "whoTitle": "Qui joue ?",
+        "resumeHint": "{players}, {moves, plural, one {# coup joué} other {# coups joués}}.",
+        "sets": "Le moteur joue les neuf extensions, de Spark of Rebellion à Heroes of Mandalore, au format Premier.",
+        "watchInfo": "Vous regardez la partie sans y jouer : les mains des IA sont visibles, et vous pouvez la mettre en pause.",
+        "about": "Le moteur de Joutes connaît les règles de Star Wars: Unlimited : il ne vous propose que ce qui est permis, résout chaque capacité et cite la règle appliquée dans le journal.",
+        "soon": "Le jeu en ligne et la simulation de decks arrivent ensuite pour ce jeu.",
+        "deckAuto": "Deck automatique autour d'un leader",
+        "deckRandomHint": "Un leader tiré au sort à chaque partie",
+        "deckSearch": "Nom du deck, leader, auteur…"
+      },
+      "arena": {
+        "ground": "Arène terrestre",
+        "space": "Arène spatiale"
+      },
+      "round": "Round {round}",
+      "phase": {
+        "setup": "Mise en place",
+        "action": "Phase d'action",
+        "regroup": "Phase de regroupement",
+        "over": "Partie terminée"
+      },
+      "stat": {
+        "hand": "Main",
+        "deck": "Deck",
+        "discard": "Défausse",
+        "resources": "Ressources",
+        "resourcesValue": "{ready, plural, one {# prête} other {# prêtes}} sur {total}",
+        "credits": "Crédits",
+        "force": "Force"
+      },
+      "initiative": "Initiative",
+      "initiativeTaken": "Initiative prise",
+      "tag": {
+        "exhausted": "inclinée",
+        "deployed": "déployé",
+        "attacking": "Attaque"
+      },
+      "leader": {
+        "action": "Action",
+        "deploy": "Déployer",
+        "deployPilot": "Déployer en Pilote"
+      },
+      "life": "{left} / {total} PV",
+      "baseOf": "Base de {name}",
+      "captives": "{count, plural, one {# capturée} other {# capturées}}",
+      "cost": "Coût actuel : {cost}",
+      "ask": {
+        "cancel": "Annuler",
+        "pickTarget": "Choisissez la cible : ce qui est cerclé de rouge est permis.",
+        "turnHint": "{ready, plural, =0 {Aucune ressource prête} one {# ressource prête} other {# ressources prêtes}} · jouez une carte, attaquez ou utilisez votre leader."
+      },
+      "pile": {
+        "discardOf": "Défausse de {name}",
+        "resourcesOf": "Ressources de {name}",
+        "empty": "Aucune carte."
+      },
+      "inspect": {
+        "power": "Puissance",
+        "hp": "PV",
+        "damage": "{damage, plural, one {# dégât subi} other {# dégâts subis}}",
+        "keywords": "Mots-clés",
+        "upgrades": "Améliorations",
+        "captives": "Cartes capturées",
+        "unitSide": "Face unité du leader",
+        "unsupported": "Le moteur ne sait pas encore jouer cette carte."
+      },
+      "kw": {
+        "ambush": "Embuscade",
+        "grit": "Aplomb",
+        "overwhelm": "Débordement",
+        "raid": "Raid {n}",
+        "restore": "Récupération {n}",
+        "saboteur": "Saboteur",
+        "sentinel": "Sentinelle",
+        "shielded": "Protégée",
+        "hidden": "Dissimulée",
+        "support": "Soutien",
+        "exploit": "Exploitation {n}",
+        "piloting": "Pilotage {n}",
+        "plot": "Complot",
+        "fortify": "Fortification"
       }
     },
     "Developers": {
