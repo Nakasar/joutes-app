@@ -11,7 +11,8 @@
   Lancé avant `next dev` et `next build` (predev, prebuild).
 
   Pour mettre le moteur à jour : dans joutes-engine, `scripts/build-wasm.sh`,
-  puis copier pkg/web/* dans lib/engine/pkg/ et pkg/swu/* dans lib/engine/swu/pkg/,
+  puis copier pkg/web/* dans lib/engine/pkg/, pkg/swu/* dans lib/engine/swu/pkg/ et
+  pkg/cyberpunk/* dans lib/engine/cyberpunk/pkg/,
   et noter le commit dans le fichier VERSION de chacun.
 */
 import {readFile, writeFile} from "node:fs/promises";
@@ -20,10 +21,16 @@ import {fileURLToPath} from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-// Un paquet par jeu : Riftbound (pkg/web du moteur) et Star Wars: Unlimited (pkg/swu).
+// Un paquet par jeu : Riftbound (pkg/web du moteur), Star Wars: Unlimited (pkg/swu)
+// et Cyberpunk TCG (pkg/cyberpunk).
 const engines = [
   { wasm: "lib/engine/pkg/joutes_bg.wasm", out: "lib/engine/wasm.generated.ts", name: "ENGINE_WASM_BASE64" },
   { wasm: "lib/engine/swu/pkg/joutes_swu_bg.wasm", out: "lib/engine/swu/wasm.generated.ts", name: "SWU_WASM_BASE64" },
+  {
+    wasm: "lib/engine/cyberpunk/pkg/joutes_cyberpunk_bg.wasm",
+    out: "lib/engine/cyberpunk/wasm.generated.ts",
+    name: "CP_WASM_BASE64",
+  },
 ];
 
 for (const engine of engines) {

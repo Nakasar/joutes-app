@@ -767,7 +767,8 @@
           "noChampion": "Der gewählte Champion fehlt.",
           "unknownCard": "Eine Karte wird nicht erkannt.",
           "noLeader": "Der Anführer fehlt.",
-          "noBase": "Die Basis fehlt."
+          "noBase": "Die Basis fehlt.",
+          "noLegends": "Die Legends fehlen."
         }
       },
       "lobby": {
@@ -1140,6 +1141,117 @@
         "piloting": "Pilotieren {n}",
         "plot": "Komplott",
         "fortify": "Befestigen"
+      }
+    },
+    "PlayCp": {
+      "title": "Cyberpunk TCG spielen",
+      "description": "Spiele Cyberpunk TCG im Browser gegen die KI, mit deinen Decks oder einem automatischen Deck. Die Engine wendet die Regeln des Constructed-Duells an und nennt jede davon.",
+      "lobby": {
+        "whoTitle": "Wer spielt?",
+        "resumeHint": "{players}, {moves, plural, one {# Zug gespielt} other {# Züge gespielt}}.",
+        "sets": "Die Engine spielt Welcome to Night City, die Starterdecks Embracing Power und The Heist sowie die Promos, im Constructed-Duell.",
+        "watchInfo": "Du schaust zu, ohne zu spielen: Hände und verdeckte Legends der KIs sind sichtbar, und du kannst pausieren.",
+        "about": "Die Joutes-Engine kennt die Regeln von Cyberpunk TCG: Sie bietet nur Erlaubtes an, handelt jeden Effekt ab und nennt im Protokoll die angewandte Regel.",
+        "legends": "Deine verdeckten Legends kennst auch du nicht (Regel 5.7.4.1): Du wählst die zu rufende nach ihrem Platz, Nr. 1 bis 3.",
+        "deckAuto": "Automatisches Deck um eine Legend",
+        "deckRandomHint": "Drei zufällige Legends in jeder Partie",
+        "deckSearch": "Deckname, Legend, Autor…"
+      },
+      "turn": "Zug {turn}",
+      "overtime": "Verlängerung",
+      "phase": {
+        "setup": "Vorbereitung",
+        "start": "Zugbeginn",
+        "main": "Hauptphase",
+        "end": "Zugende",
+        "over": "Partie beendet"
+      },
+      "zone": {
+        "legends": "Legends",
+        "field": "Spielfeld",
+        "gigs": "Gigs",
+        "fixer": "Fixer"
+      },
+      "stat": {
+        "hand": "Hand",
+        "deck": "Deck",
+        "trash": "Ablage",
+        "removed": "Entfernt",
+        "eddies": "Eddies",
+        "eddiesValue": "{ready} bereit von {total}",
+        "cred": "Street Cred",
+        "credNull": "Null",
+        "gigs": "Gigs",
+        "gigsValue": "{count} / {max}",
+        "soldFree": "Verkauf diesen Zug: frei",
+        "soldDone": "Verkauf diesen Zug: erledigt",
+        "calledFree": "Ruf diesen Zug: frei",
+        "calledDone": "Ruf diesen Zug: erledigt"
+      },
+      "tag": {
+        "attacking": "Greift an",
+        "defending": "Verteidigt",
+        "sell": "Sell"
+      },
+      "kw": {
+        "lag": "Lag",
+        "adrenaline": "Adrenaline",
+        "blocker": "Blocker",
+        "go_solo": "Go Solo"
+      },
+      "legend": {
+        "number": "Nr. {n}",
+        "hidden": "Verdeckte Legend {number}",
+        "peeked": "Verdeckte Legend {number}: du hast sie angesehen, es ist {name}",
+        "peekTag": "gesehen",
+        "call": "Rufen",
+        "goSolo": "Go Solo · {cost} €$",
+        "effect": "Effekt",
+        "unknownTitle": "Verdeckte Legend",
+        "unknown": "Niemand weiß, welche Legend das ist, nicht einmal ihr Besitzer (Regel 5.7.4.1). Sie wird beim Rufen aufgedeckt.",
+        "peekedHint": "Du hast diese Legend angesehen: Für deinen Gegner bleibt sie verdeckt."
+      },
+      "gig": {
+        "title": "{die} auf {value}",
+        "fixer": "{die} im Fixer-Bereich, noch nicht geworfen",
+        "stolen": "{die} auf {value}, gestohlen von {owner}",
+        "from": "von {name}"
+      },
+      "cost": "Aktuelle Kosten: {cost} €$",
+      "ask": {
+        "cancel": "Abbrechen",
+        "pickTarget": "Wähle das Ziel: Rot Umkreistes ist erlaubt.",
+        "mainHint": "{ready, plural, =0 {Kein Eddie bereit} one {# Eddie bereit} other {# Eddies bereit}} · spiele eine Karte, verkaufe eine, rufe eine Legend oder greife an.",
+        "reactHint": "Nur was reagieren kann, ist umkreist: ein Blocker, ein Quick-Effekt oder nichts."
+      },
+      "pile": {
+        "trashOf": "Ablage von {name}",
+        "removedOf": "Aus dem Spiel entfernte Karten von {name}",
+        "empty": "Keine Karten."
+      },
+      "inspect": {
+        "kind": "Typ",
+        "cost": "Kosten",
+        "power": "Stärke",
+        "printed": "{power} gedruckt",
+        "ram": "RAM",
+        "tags": "Tags",
+        "gears": "Ausrüstung",
+        "sell": "Sell Tag",
+        "sellYes": "kann für einen Eddie verkauft werden",
+        "unsupported": "Die Engine kann diese Karte noch nicht spielen."
+      },
+      "kind": {
+        "unit": "Unit",
+        "program": "Program",
+        "legend": "Legend",
+        "gear": "Gear"
+      },
+      "color": {
+        "red": "rot",
+        "blue": "blau",
+        "green": "grün",
+        "yellow": "gelb"
       }
     },
     "Developers": {
