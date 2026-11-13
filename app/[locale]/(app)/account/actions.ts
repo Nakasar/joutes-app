@@ -12,9 +12,10 @@ import {
   removeLairFromUser,
   updateUserDisplayName,
   getUserDiscriminator,
+  getUserByUsernameAndDiscriminator,
+  generateUniqueDiscriminator,
 } from "@/lib/db/users.ts";
 import { updateDisplayNameSchema } from "@/lib/schemas/user.schema.ts";
-import { generateDiscriminator } from "@/lib/utils.ts";
 import db from "@/lib/mongodb.ts";
 import {User} from "@/lib/types/User.ts";
 import {ObjectId} from "mongodb";
@@ -225,12 +226,18 @@ export async function updateUserDisplayNameAction(
       return { success: false, error: errorMessage };
     }
 
-    // Vérifier si l'utilisateur a déjà un discriminateur
+    // Le discriminateur du compte est gardé, sauf s'il n'en a pas ou si un
+    // autre compte porte déjà ce pseudonyme avec ce nombre : deux comptes ne
+    // partagent jamais un tag.
     let discriminator = await getUserDiscriminator(session.user.id);
-    
-    // Si pas de discriminateur, en générer un
-    if (!discriminator) {
-      discriminator = generateDiscriminator();
+    const holder = discriminator
+      ? await getUserByUsernameAndDiscriminator(validationResult.data.displayName, discriminator)
+      : null;
+    if (!discriminator || (holder && holder.id !== session.user.id)) {
+      discriminator = await generateUniqueDiscriminator(
+        validationResult.data.displayName,
+        ObjectId.createFromHexString(session.user.id)
+      );
     }
 
     // Mettre à jour le nom d'utilisateur

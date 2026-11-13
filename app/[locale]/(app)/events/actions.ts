@@ -4,14 +4,13 @@ import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent, addEventToFavorites, removeEventFromFavorites, deleteEvent, updateEvent, updateParticipantRegistrationStatus, linkEvents, unlinkEvents } from "@/lib/db/events.ts";
 import { getLairsOwnedByUser } from "@/lib/db/lairs.ts";
-import {getUserById, getUserByTagOrId, getUsersByIds, updateUserDisplayName} from "@/lib/db/users.ts";
+import { ensureUserTag, getUserById, getUserByTagOrId, getUsersByIds } from "@/lib/db/users.ts";
 import { nanoid } from 'nanoid';
 import { Event, ParticipantsVisibility, RegistrationStatus } from "@/lib/types/Event.ts";
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
 import { notifyEventAll, notifyUser } from "@/lib/services/notifications.ts";
 import { isUserOrganizer } from "@/lib/utils/permissions.ts";
-import {generateDiscriminator, generateUserNamme} from "@/lib/utils.ts";
 import { canJoinDirectly, WAITLIST_RESPONSE_HOURS_OPTIONS } from "@/lib/events/waitlist.ts";
 import {
   acceptEventWaitlistOffer,
@@ -300,8 +299,8 @@ export async function joinEventAction(eventId: string) {
     if (!user) {
       return { success: false, error: "Utilisateur introuvable" };
     }
-    if (!user.displayName && !user.discriminator) {
-      await updateUserDisplayName(session.user.id, generateUserNamme(), generateDiscriminator());
+    if (!user.displayName || !user.discriminator) {
+      await ensureUserTag(session.user.id);
     }
 
     // Déterminer le statut d'inscription
@@ -896,8 +895,8 @@ export async function joinEventWaitlistAction(eventId: string) {
     if (!user) {
       return { success: false, error: "Utilisateur introuvable" };
     }
-    if (!user.displayName && !user.discriminator) {
-      await updateUserDisplayName(context.userId, generateUserNamme(), generateDiscriminator());
+    if (!user.displayName || !user.discriminator) {
+      await ensureUserTag(context.userId);
     }
 
     const result = await joinEventWaitlist(context.event, context.userId);

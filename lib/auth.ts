@@ -7,7 +7,7 @@ import { passkey } from "@better-auth/passkey";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import db from "@/lib/mongodb";
 import { getOwnBadges, NO_BADGES } from "@/lib/db/user-badges";
-import { getUserDisplayAvatar, refreshDiscordImage } from "@/lib/db/users";
+import { ensureUserTag, getUserDisplayAvatar, refreshDiscordImage } from "@/lib/db/users";
 import {customAlphabet} from "nanoid";
 
 const generateOTP = customAlphabet("0123456789", 6);
@@ -316,6 +316,26 @@ export const auth = betterAuth({
     customRules: {
       "/email-otp/send-verification-otp": { window: 60, max: 5 },
       "/sign-in/email-otp": { window: 60, max: 10 },
+    },
+  },
+  databaseHooks: {
+    session: {
+      create: {
+        /**
+         * Le tag (pseudo#1234) du compte, posé à sa première session s'il n'en
+         * a pas : un compte créé par Discord ou par code e-mail n'en recevait
+         * aucun (voir lib/users/tag.ts). La session est le passage commun à
+         * toutes les connexions, et elle répare aussi un ancien compte resté
+         * sans tag. Une seule lecture quand le compte en a déjà un.
+         *
+         * Un échec ici ne doit jamais empêcher la connexion.
+         */
+        after: async (session) => {
+          await ensureUserTag(session.userId).catch((error) => {
+            console.error("Erreur lors de l'attribution du tag du compte:", error);
+          });
+        },
+      },
     },
   },
   session: {
