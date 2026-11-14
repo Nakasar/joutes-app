@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Bot, Eye, FlaskConical, Globe, Server } from "lucide-react";
+import { Bot, Eye, FlaskConical, Globe, Server, Video } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { withDeckProblems } from "@/components/play/deck-problems";
@@ -54,6 +54,7 @@ export function pickRandom<T>(list: T[]): T {
 /** La page Jouer : choisir un mode, un deck et un adversaire, ou reprendre une table. */
 export function PlayLobby() {
   const t = useTranslations("Games.Play");
+  const tFilmed = useTranslations("Games.Filmed");
   const router = useRouter();
   const cards = useTableCards();
   const [lobby, setLobby] = useState<Lobby | null>(null);
@@ -451,6 +452,17 @@ export function PlayLobby() {
           ) : (
             <PlanUpsell feature="simulate" compact />
           )}
+        </section>
+
+        <section className="flex flex-col gap-2 rounded-xl border bg-card p-5">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <Video className="size-4" aria-hidden />
+            {tFilmed("lobbyTitle")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{tFilmed("lobbyHint")}</p>
+          <Button asChild variant="outline" size="sm" className="self-start">
+            <Link href="/games/riftbound/play/filmed">{tFilmed("lobbyOpen")}</Link>
+          </Button>
         </section>
 
         <section className="flex flex-col gap-2 rounded-xl border bg-card p-5 text-sm text-muted-foreground">

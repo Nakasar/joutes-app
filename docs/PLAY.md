@@ -184,6 +184,41 @@ ensembles (decks méta, mes decks, groupes, publics, automatiques).
   même (`ENGINE_VERSION`, gardé dans la série).
 - La fourchette affichée est l'intervalle de Wilson à 95 %.
 
+## Table filmée
+
+`/games/riftbound/play/filmed` suit une partie réelle filmée du dessus (caméra,
+ou fichier vidéo pour une relecture) : les cartes sont reconnues dans l'image,
+le moteur explique chaque changement de la table et signale ce que les règles
+ne permettent pas. Ouverte à tout compte connecté.
+
+- Tout tourne dans le navigateur, dans un Web Worker
+  (`components/play/filmed/filmed.worker.ts`) qui charge `lib/engine/track/pkg/`
+  (`pkg/track` de joutes-engine : `TableReader` lit l'image, `Tracking` suit la
+  partie ; voir son `docs/suivi.md`). La vidéo ne quitte pas l'ordinateur.
+- Les cartes se reconnaissent à leur illustration, parmi celles des deux decks :
+  les deux listes sont obligatoires. `filmedArtAction` rend les illustrations
+  d'un deck, variantes comprises ; elles passent par
+  `/api/games/riftbound/play/filmed/art/<carte>` parce que le navigateur doit en
+  lire les pixels, ce que l'hébergeur des images n'autorise pas depuis un autre site.
+- `lib/filmed/` : fonctions pures et testées (`layout.ts` : zones, taille des
+  cartes, champs de bataille posés, corrections de l'opérateur ; `journal.ts` :
+  journal et rapport).
+- Écrans : `FilmedSetup` (decks, source, calibrage), `FilmedStage` (image et
+  incrustation, zones réglables), `FilmedLive` (table reconstituée, écart,
+  question, carte à confirmer, journal), `FilmedReport`.
+- Une image toutes les demi-secondes ; seuls les endroits qui ont bougé puis se
+  sont posés sont relus. Un fichier vidéo avance au rythme de la lecture et
+  attend la réponse de l'arbitre à chaque écart ou question.
+- Ce que la caméra ne voit pas se saisit : score, cartes face cachée
+  (« Corriger la table »). « La table a raison » remet le suivi d'accord avec
+  l'image sans passer par les règles.
+- Pas encore : report du résultat au tournoi, identification par IA d'une carte
+  douteuse, saisie des dégâts, enregistrement de la vidéo de la caméra, SWU et
+  Cyberpunk.
+- Le paquet se met à jour comme les autres : `scripts/build-wasm.sh` dans
+  joutes-engine, copier `pkg/track/*` dans `lib/engine/track/pkg/` et noter le
+  commit dans son fichier `VERSION`.
+
 ## Pour l'app mobile
 
 L'app mobile (`joutes-mobile`) ne peut pas appeler les actions serveur : les

@@ -2387,6 +2387,193 @@
       "empty": "Kein öffentlicher Cube",
       "emptyDescription": "Für dieses Spiel wurde noch kein Cube geteilt. Sei die erste Person.",
       "signInToCreate": "Zum Erstellen eines Cubes anmelden"
+    },
+    "Filmed": {
+      "title": "Gefilmter Tisch",
+      "intro": "Filme eine echte Riftbound-Partie oder gib ihr Video an: Joutes erkennt die Karten, verfolgt die Partie und meldet Regelabweichungen.",
+      "lobbyTitle": "Einen gefilmten Tisch leiten",
+      "lobbyHint": "Filme eine echte Partie von oben oder gib ihr Video an: Joutes erkennt die Karten, verfolgt die Partie und meldet Regelabweichungen.",
+      "lobbyOpen": "Gefilmten Tisch öffnen",
+      "loading": "Wird geladen…",
+      "privacy": "Das Video bleibt auf diesem Computer.",
+      "error": {
+        "generic": "Das Lesen des Tisches ist fehlgeschlagen. Lade die Seite neu, wenn es wieder passiert.",
+        "start": "Die Verfolgung konnte nicht starten: {reason}"
+      },
+      "zone": {
+        "base": "Basis von {name}",
+        "trash": "Ablage von {name}",
+        "battlefield": "Schlachtfeld {number}"
+      },
+      "setup": {
+        "player": "Spieler {number}",
+        "decksTitle": "Spieler und Decks",
+        "side": {
+          "bottom": "Untere Bildseite",
+          "top": "Obere Bildseite",
+          "left": "Linke Bildseite",
+          "right": "Rechte Bildseite"
+        },
+        "deckOf": "Deck von {name}",
+        "deckSize": "{count} Karten, {distinct} verschiedene",
+        "learning": "Die Illustrationen des Decks werden gelernt…",
+        "learningProgress": "Gelernte Illustrationen: {done} von {total}",
+        "artFailed": "{count, plural, one {# Illustration konnte nicht geladen werden: Diese Karte wird nicht erkannt.} other {# Illustrationen konnten nicht geladen werden: Diese Karten werden nicht erkannt.}}",
+        "uncovered": "{count, plural, one {# Karte wird von der Engine nicht abgedeckt: erkannt und verfolgt, ihr Effekt wird nicht geprüft.} other {# Karten werden von der Engine nicht abgedeckt: erkannt und verfolgt, ihr Effekt wird nicht geprüft.}}",
+        "sideways": "Die Spieler sitzen links und rechts im Bild",
+        "decksHint": "Beide Listen dienen dazu, die Karten zu erkennen und die Decks zu prüfen.",
+        "sourceTitle": "Bild",
+        "source": {
+          "camera": "Kamera",
+          "file": "Videodatei"
+        },
+        "pickCamera": "Kamera wählen",
+        "cameraNumber": "Kamera {number}",
+        "pickFile": "Video wählen",
+        "fileHint": "Stelle das Video auf den Moment, an dem die Verfolgung beginnen soll.",
+        "sourceSize": "Bild mit {width} × {height} Pixeln",
+        "cameraMissing": "Dieser Browser gibt keinen Zugriff auf eine Kamera.",
+        "cameraRefused": "Die Kamera konnte nicht geöffnet werden. Erlaube sie im Browser oder wähle eine Videodatei.",
+        "sourceHint": "Über dem Tisch, senkrecht nach unten, der ganze Tisch im Bild. Vermeide eine Lampe, die sich in den Kartenhüllen spiegelt.",
+        "calibrationTitle": "Kalibrierung",
+        "calibrationHint": "Lege beide Schlachtfelder aus, starte eine Probelesung und passe dann die Zonen im Bild an: Ziehe eine Zone, um sie zu verschieben, eine Ecke, um ihre Größe zu ändern.",
+        "read": "Probelesung",
+        "readAgain": "Tisch erneut lesen",
+        "reading": "Der Tisch wird gelesen…",
+        "trial": "{sure} Karten erkannt von {found} gefundenen",
+        "cardFine": "Karte {width} px breit: gut.",
+        "cardTight": "Karte {width} px breit: knapp. Rücke die Kamera näher heran, wenn möglich.",
+        "battlefieldOf": "Schlachtfeld von {name}",
+        "pickBattlefield": "Ausgelegtes Schlachtfeld wählen",
+        "first": "Startspieler",
+        "underway": "Die Partie hat schon begonnen",
+        "underwayHint": "Die Verfolgung geht vom Tisch aus, wie er ist, ohne das Vorherige zu prüfen.",
+        "blocked": {
+          "decks": "Wähle beide Decks.",
+          "learning": "Die Illustrationen der Decks werden noch gelernt.",
+          "source": "Öffne eine Kamera oder eine Videodatei.",
+          "battlefields": "Gib das Schlachtfeld an, das jeder Spieler ausgelegt hat."
+        },
+        "start": "Verfolgung starten"
+      },
+      "stage": {
+        "waitingCamera": "Warte auf die Kamera…",
+        "waitingFile": "Wähle eine Videodatei.",
+        "camera": "Kamera",
+        "frames": "Rahmen",
+        "toConfirm": "Zu bestätigen"
+      },
+      "live": {
+        "turn": "Zug {turn}",
+        "stable": "Lesung läuft",
+        "moving": "Bewegung auf dem Tisch",
+        "paused": "Pausiert",
+        "ended": "Video beendet",
+        "pause": "Pause",
+        "resume": "Fortsetzen",
+        "finish": "Beenden und Bericht ansehen",
+        "endedTitle": "Das Video ist zu Ende."
+      },
+      "table": {
+        "title": "Rekonstruierter Tisch",
+        "hint": "was die Engine laut Kamera annimmt",
+        "correct": "Tisch korrigieren",
+        "hand": "Hand {count}, unbekannt",
+        "deck": "Deck {count}",
+        "runes": "Runen {ready} bereit von {total}",
+        "facedown": "{count, plural, one {# verdeckte Karte} other {# verdeckte Karten}}",
+        "base": "Basis",
+        "empty": "leer"
+      },
+      "alert": {
+        "seen": "Gesehen",
+        "seenNothing": "Der Tisch passt zu keiner erlaubten Abfolge von Aktionen.",
+        "rule": "Regel",
+        "ruleNumber": "Regel {rule}",
+        "nearest": "Erwartet",
+        "nearestNothing": "Keine Aktion: Der Tisch hätte unverändert bleiben müssen.",
+        "repaired": "Es ist behoben",
+        "tableRight": "Der Tisch hat recht",
+        "review": "Bild ansehen"
+      },
+      "question": {
+        "title": "{count, plural, =2 {Zwei mögliche Erklärungen} other {# mögliche Erklärungen}}",
+        "hint": "Mehrere Abfolgen von Aktionen führen zu diesem Tisch. Welche hat stattgefunden?"
+      },
+      "doubt": {
+        "title": "Karte bestätigen",
+        "more": "{count, plural, one {danach # weitere} other {danach # weitere}}",
+        "hint": "Die Lesung ist sich bei dieser Karte nicht sicher. Welche ist es?",
+        "points": "{count} Punkte",
+        "other": "Andere Karte aus den Decks",
+        "notACard": "Das ist keine Karte"
+      },
+      "journal": {
+        "title": "Protokoll",
+        "thisTurn": "Dieser Zug",
+        "all": "Ganze Partie",
+        "empty": "Noch nichts. Jede Änderung auf dem Tisch wird hier eingetragen.",
+        "turn": "Zug {turn}: {name}",
+        "score": "Punktestand eingeben",
+        "note": "Notiz hinzufügen",
+        "add": "Hinzufügen",
+        "underway": "Partie schon begonnen: Die Verfolgung geht vom Tisch aus.",
+        "tableRight": "Der Schiedsrichter hat entschieden: Der Tisch hat recht.",
+        "scored": "Punktestand von {name} von Hand eingegeben: {points}.",
+        "resolution": {
+          "repaired": "Behoben",
+          "table": "Der Tisch hatte recht",
+          "answered": "Beantwortet",
+          "superseded": "Durch das Folgende ersetzt",
+          "open": "Unbeantwortet"
+        }
+      },
+      "correct": {
+        "title": "Tisch korrigieren",
+        "hint": "Was die Kamera nicht sieht, wird hier eingegeben.",
+        "score": "Punktestand",
+        "facedown": "Verdeckte Karten",
+        "facedownAt": "{name} bei {battlefield}",
+        "less": "Weniger: {label}",
+        "more": "Mehr: {label}",
+        "tableHint": "Hat sich die Verfolgung verirrt, kann sie vom Tisch ausgehen, wie die Kamera ihn sieht, ohne die Regeln zu durchlaufen.",
+        "close": "Schließen"
+      },
+      "review": {
+        "title": "Bild des Tisches"
+      },
+      "report": {
+        "back": "Verfolgung fortsetzen",
+        "title": "Schiedsrichterbericht",
+        "export": "Protokoll exportieren",
+        "new": "Neue Partie",
+        "result": "Ergebnis",
+        "duration": "Dauer",
+        "turns": "{count, plural, one {# Zug} other {# Züge}}",
+        "deviations": "Festgestellte Abweichungen",
+        "repaired": "{repaired} behoben, {table} zugunsten des Tisches",
+        "explained": "Ohne Frage erklärte Züge",
+        "questions": "{count, plural, one {# Frage} other {# Fragen}}",
+        "cards": "Gesehene Karten",
+        "cardsHint": "verschiedene",
+        "game": "Die Partie",
+        "gameHint": "Ein Abschnitt pro Zug. Klicke auf eine Markierung, um das Bild anzusehen.",
+        "legend": {
+          "deviation": "Abweichung",
+          "question": "Frage",
+          "score": "Punktestand eingegeben"
+        },
+        "noDeviation": "Keine Abweichung festgestellt.",
+        "at": "Zug {turn} · {time}",
+        "repairedIn": "In {seconds} s behoben",
+        "review": "Ansehen",
+        "unchecked": "Was die Verfolgung nicht geprüft hat",
+        "draws": "<b>Das Ziehen.</b> Hand und Deck werden von der Kamera nicht gemessen.",
+        "uncovered": "<b>{count, plural, one {# Karte von der Engine nicht abgedeckt.} other {# Karten von der Engine nicht abgedeckt.}}</b> Erkannt und verfolgt, Effekt nicht geprüft.",
+        "moving": "<b>{time} mit pausierter Lesung.</b> Hände oder Karten bewegten sich über dem Tisch.",
+        "manual": "<b>Punktestand, Schaden und verdeckte Karten.</b> Die Kamera liest sie nicht: {count, plural, =0 {keine Eingabe von Hand} one {# Eingabe von Hand} other {# Eingaben von Hand}}.",
+        "privacy": "Das Video hat diesen Computer nicht verlassen. Die Bilder des Berichts verschwinden, wenn der Tab geschlossen wird: Exportiere das Protokoll, um es zu behalten."
+      }
     }
   },
   "Login": {
