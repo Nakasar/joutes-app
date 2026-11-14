@@ -17,7 +17,9 @@ const FLUSH_EVERY = 5;
 /** Le serveur n'accepte pas plus de parties par envoi. */
 const MAX_BATCH = 50;
 /** Des erreurs qu'un nouvel essai ne corrigera pas : la série s'arrête. */
-const FATAL: SimError[] = ["NOT_FOUND", "INVALID", "UNAUTHENTICATED"];
+// `SUBSCRIPTION` : l'abonnement Expert a pris fin pendant la série ; sans arrêt,
+// le navigateur jouerait des parties que le serveur n'enregistre plus.
+const FATAL: SimError[] = ["NOT_FOUND", "INVALID", "UNAUTHENTICATED", "SUBSCRIPTION"];
 
 /** Un code d'erreur d'enregistrement (`SimError`), ou `ENGINE` pour un échec du moteur. */
 export type SimulationRunnerError = SimError | "ENGINE";
