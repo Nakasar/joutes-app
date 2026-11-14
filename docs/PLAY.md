@@ -25,6 +25,25 @@ deck d'en face, sans leur ordre ni la main. Sans elle, une IA ne sait de
 l'adversaire que sa légende et ce qu'il a déjà montré (voir `docs/ia.md` de
 `joutes-engine`).
 
+## Réservé aux abonnés
+
+Deux fonctionnalités dépendent d'un abonnement (`lib/constants/subscription-plans.ts`) :
+
+| Droit | Offres | Ce qu'il ouvre |
+|---|---|---|
+| `sub:play-host` | Joutes Pro, Joutes Expert | Créer une table en ligne (`createTableFor`) et le mode hôte « Mon serveur » (`resolveDeckAction`, le deck d'un invité). |
+| `sub:play-simulate` | Joutes Expert | Toutes les actions de « Simuler un deck » (`simulation-actions.ts`), sauf supprimer une série. |
+
+Rejoindre une table, jouer contre l'IA et regarder des IA restent libres. Un
+refus sort avec le code `SUBSCRIPTION` (403 sur les routes REST). Le lobby
+reçoit `access: { canHost, canSimulate }` et montre `PlanUpsell` à la place
+d'un bouton qui échouerait. Un administrateur a tous les droits, et
+`devForcedPlans` force un palier hors production.
+
+Le mode hôte tourne dans le navigateur contre un serveur que Joutes ne voit
+pas : le site masque le panneau et refuse de lire le deck d'un invité, mais ne
+peut pas empêcher quelqu'un d'appeler lui-même son propre serveur.
+
 ## Le moteur dans ce dépôt
 
 - `lib/engine/pkg/` : le moteur compilé pour le navigateur, copié depuis

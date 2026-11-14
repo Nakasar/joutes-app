@@ -18,9 +18,12 @@ import {
   joinTableFor,
   leaveSeatFor,
   playableGame as playable,
+  playAccess,
   readTableFor,
+  requireHost,
   startTableFor,
   viewer,
+  type PlayAccess,
   type PlayResult,
   type TableState,
 } from "@/lib/engine/table-actions.ts";
@@ -42,6 +45,8 @@ export type Lobby = {
   tables: GameTableSummary[];
   /** Légendes (codes du moteur) autour desquelles un deck automatique existe. */
   legends: string[];
+  /** Ce que mon abonnement ouvre : héberger une partie, simuler un deck. */
+  access: PlayAccess;
 };
 
 const GAME_SLUG = "riftbound";
@@ -54,6 +59,7 @@ export async function loadLobby(): Promise<PlayResult<{ lobby: Lobby }>> {
     const game = await playableGame();
     const seated = await viewer();
     const online = engineServer() !== null;
+    const access = await playAccess();
     if (!seated) {
       return {
         lobby: {
@@ -63,6 +69,7 @@ export async function loadLobby(): Promise<PlayResult<{ lobby: Lobby }>> {
           decks: mergeLobbyDecks(...(await Promise.all([metaDecks(game.id, META_PICKER_DECKS), publicDecks(game.id, null)]))),
           tables: [],
           legends: autoDeckLegends(),
+          access,
         },
       };
     }
@@ -97,6 +104,7 @@ export async function loadLobby(): Promise<PlayResult<{ lobby: Lobby }>> {
         ),
         tables: tables.map(summarize),
         legends: autoDeckLegends(),
+        access,
       },
     };
   });
@@ -145,7 +153,8 @@ export async function readTableAction(id: unknown): Promise<PlayResult<{ state: 
 
 /**
  * Le deck d'un invité en mode hôte, donné par son lien ou son identifiant
- * Joutes. Seuls les decks que le demandeur peut voir sont lus.
+ * Joutes. Seuls les decks que le demandeur peut voir sont lus. Le mode hôte
+ * étant réservé aux abonnés Pro et Expert, cette lecture l'est aussi.
  */
 export async function resolveDeckAction(
   reference: unknown,
@@ -153,6 +162,8 @@ export async function resolveDeckAction(
   return guarded(async () => {
     const game = await playableGame();
     const seated = await viewer();
+    if (!seated) throw new TableFailure("UNAUTHENTICATED");
+    await requireHost();
     if (typeof reference !== "string") throw new TableFailure("INVALID");
     const deckId = /[a-f0-9]{24}/i.exec(reference)?.[0];
     if (!deckId) throw new TableFailure("INVALID_DECK");

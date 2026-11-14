@@ -15,6 +15,7 @@ import {
 } from "@/app/[locale]/(app)/games/swu/play/actions";
 import { DeckPicker } from "@/components/play/DeckPicker";
 import { HostPanel } from "@/components/play/HostPanel";
+import { PlanUpsell } from "@/components/play/PlanUpsell";
 import { withDeckProblems } from "@/components/play/deck-problems";
 import { readSwuSave, writeSwuSave, type SwuSave } from "@/components/play/swu/useSwuSoloGame";
 import { useSwuTableCards } from "@/components/play/swu/useSwuTableCards";
@@ -322,11 +323,15 @@ export function SwuLobby() {
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                <div className="flex flex-row flex-wrap gap-2">
-                  <Button disabled={busy || !choice} onClick={createOnline}>
-                    {t("lobby.createTable")}
-                  </Button>
-                </div>
+                {lobby.access.canHost ? (
+                  <div className="flex flex-row flex-wrap gap-2">
+                    <Button disabled={busy || !choice} onClick={createOnline}>
+                      {t("lobby.createTable")}
+                    </Button>
+                  </div>
+                ) : (
+                  <PlanUpsell feature="host" />
+                )}
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="swu-join-code">{t("lobby.joinLabel")}</Label>
                   <div className="flex flex-row flex-wrap gap-2">
@@ -349,7 +354,9 @@ export function SwuLobby() {
               </div>
             ))}
 
-          {opponent === "host" && (
+          {opponent === "host" && !lobby.access.canHost && <PlanUpsell feature="host" />}
+
+          {opponent === "host" && lobby.access.canHost && (
             <HostPanel<SwuDeckList>
               hostName={lobby.name ?? t("lobby.you")}
               hostDeck={() => listOf(choice)}
@@ -399,9 +406,13 @@ export function SwuLobby() {
             {t("sim.lobbyTitle")}
           </h2>
           <p className="text-sm text-muted-foreground">{t("sim.lobbyHint")}</p>
-          <Button asChild variant="outline" size="sm" className="self-start">
-            <Link href="/games/swu/play/simulate">{t("sim.lobbyOpen")}</Link>
-          </Button>
+          {lobby.access.canSimulate ? (
+            <Button asChild variant="outline" size="sm" className="self-start">
+              <Link href="/games/swu/play/simulate">{t("sim.lobbyOpen")}</Link>
+            </Button>
+          ) : (
+            <PlanUpsell feature="simulate" compact />
+          )}
         </section>
 
         <section className="flex flex-col gap-2 rounded-xl border bg-card p-5 text-sm text-muted-foreground">

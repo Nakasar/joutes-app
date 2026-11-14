@@ -602,7 +602,20 @@
         "ALREADY_SEATED": "You are already seated at this table.",
         "NOT_FULL": "Some seats are still free.",
         "NOT_WAITING": "The game has already started.",
-        "SERVER": "The game server did not answer. Try again in a moment."
+        "SERVER": "The game server did not answer. Try again in a moment.",
+        "SUBSCRIPTION": "Creating an online game is reserved for Joutes Pro and Joutes Expert subscribers."
+      },
+      "upsell": {
+        "host": {
+          "title": "Host a game: Joutes Pro or Joutes Expert",
+          "body": "Creating an online table or starting a game on your own server is reserved for Joutes Pro and Joutes Expert subscribers. Joining a friend's table stays free: enter their code or open their link.",
+          "cta": "See plans"
+        },
+        "simulate": {
+          "title": "Simulate a deck: Joutes Expert",
+          "body": "Have the AI play your deck over dozens of games, against a specific deck or the meta, and track its odds across versions. This tool is reserved for Joutes Expert subscribers.",
+          "cta": "Discover Joutes Expert"
+        }
       },
       "card": {
         "hidden": "Hidden card",
@@ -990,7 +1003,8 @@
           "INVALID_DECK": "The engine cannot play this deck.",
           "EMPTY_POOL": "No opposing deck in the chosen pool.",
           "SERVER": "The server did not answer. Try again in a moment.",
-          "ENGINE": "The engine failed on a game. Restart the run; if it happens again, please report it."
+          "ENGINE": "The engine failed on a game. Restart the run; if it happens again, please report it.",
+          "SUBSCRIPTION": "Deck simulation is reserved for Joutes Expert subscribers."
         }
       },
       "hand": {
@@ -7297,7 +7311,9 @@
           "Your full trade history, with filters and search",
           "Advanced collection management",
           "Advanced features for your play groups",
-          "Your posters for the week as a Discord direct message, every Monday"
+          "Your posters for the week as a Discord direct message, every Monday",
+          "Simulate your decks: dozens of AI-played games against a specific deck or the meta",
+          "Host games online and on your own server"
         ]
       },
       "pro": {
@@ -7313,7 +7329,8 @@
           "Your events put front and centre",
           "Customization of your venue page",
           "Your agenda posters in your own brand, reserved styles included",
-          "A support channel"
+          "A support channel",
+          "Host games online and on your own server"
         ],
         "billingNote": "Also available on invoice, for stores and associations."
       }

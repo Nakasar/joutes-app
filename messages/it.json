@@ -602,7 +602,20 @@
         "ALREADY_SEATED": "Sei già seduto a questo tavolo.",
         "NOT_FULL": "Ci sono ancora posti liberi.",
         "NOT_WAITING": "La partita è già iniziata.",
-        "SERVER": "Il server di gioco non ha risposto. Riprova tra un momento."
+        "SERVER": "Il server di gioco non ha risposto. Riprova tra un momento.",
+        "SUBSCRIPTION": "Creare una partita online è riservato agli abbonati Joutes Pro e Joutes Expert."
+      },
+      "upsell": {
+        "host": {
+          "title": "Ospitare una partita: Joutes Pro o Joutes Expert",
+          "body": "Creare un tavolo online o avviare una partita sul tuo server è riservato agli abbonati Joutes Pro e Joutes Expert. Unirsi al tavolo di un amico resta gratuito: inserisci il suo codice o apri il suo link.",
+          "cta": "Vedi le offerte"
+        },
+        "simulate": {
+          "title": "Simulare un mazzo: Joutes Expert",
+          "body": "Fai giocare il tuo mazzo all'IA su decine di partite, contro un mazzo preciso o il meta, e segui le sue probabilità versione dopo versione. Questo strumento è riservato agli abbonati Joutes Expert.",
+          "cta": "Scopri Joutes Expert"
+        }
       },
       "card": {
         "hidden": "Carta nascosta",
@@ -990,7 +1003,8 @@
           "INVALID_DECK": "Il motore non può giocare questo mazzo.",
           "EMPTY_POOL": "Nessun mazzo avversario nell'insieme scelto.",
           "SERVER": "Il server non ha risposto. Riprova tra un attimo.",
-          "ENGINE": "Il motore ha avuto un errore in una partita. Riavvia la serie; se succede di nuovo, segnalalo."
+          "ENGINE": "Il motore ha avuto un errore in una partita. Riavvia la serie; se succede di nuovo, segnalalo.",
+          "SUBSCRIPTION": "Simulare un mazzo è riservato agli abbonati Joutes Expert."
         }
       },
       "hand": {
@@ -7297,7 +7311,9 @@
           "Lo storico completo dei tuoi scambi, con filtri e ricerca",
           "Gestione avanzata della collezione",
           "Funzionalità avanzate per i tuoi gruppi di gioco",
-          "Le tue locandine della settimana in messaggio diretto su Discord, ogni lunedì"
+          "Le tue locandine della settimana in messaggio diretto su Discord, ogni lunedì",
+          "Simulare i tuoi mazzi: decine di partite giocate dall'IA contro un mazzo preciso o il meta",
+          "Ospitare partite online e sul tuo server"
         ]
       },
       "pro": {
@@ -7313,7 +7329,8 @@
           "I tuoi eventi messi in primo piano",
           "La personalizzazione della pagina del tuo locale",
           "Le locandine del tuo calendario con il tuo marchio, stili riservati compresi",
-          "Un canale di assistenza"
+          "Un canale di assistenza",
+          "Ospitare partite online e sul tuo server"
         ],
         "billingNote": "Disponibile anche su fattura, per negozi e associazioni."
       }

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import type { SimulatorCards, SimulatorKit, SimulatorPickerDeck } from "@/components/play/simulator-kit";
 import { durationLabel, useSimulatorWords } from "@/components/play/SimulatorSetup";
 import { useSimulationRunner } from "@/components/play/useSimulationRunner";
+import { PlanUpsell } from "@/components/play/PlanUpsell";
 import { Button } from "@/components/ui/button";
 import { Link, useRouter } from "@/i18n/navigation";
 import { simulationStats, type SimulationDeck, type SimulationGame } from "@/lib/engine/simulation";
@@ -82,6 +83,9 @@ export function SimulationResults<D extends SimulatorPickerDeck>({ kit, cards }:
   );
   const stats = useMemo(() => simulationStats(runner.games, opponents), [runner.games, opponents]);
 
+  if (failed === "SUBSCRIPTION") {
+    return <PlanUpsell feature="simulate" className="p-8" />;
+  }
   if (failed) {
     return (
       <div className="flex flex-col items-center gap-4 rounded-xl border bg-card p-8 text-center">

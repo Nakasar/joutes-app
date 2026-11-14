@@ -39,6 +39,8 @@ export type TableError =
   | "OFFLINE"
   | "NOT_FOUND"
   | "FORBIDDEN"
+  /** Réservé à un abonnement (Joutes Pro ou Joutes Expert) que la personne n'a pas. */
+  | "SUBSCRIPTION"
   | "INVALID"
   | "INVALID_DECK"
   | "FULL"
