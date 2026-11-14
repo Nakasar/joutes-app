@@ -615,6 +615,11 @@
           "title": "Ein Deck simulieren: Joutes Expert",
           "body": "Lass die KI dein Deck über Dutzende Partien spielen, gegen ein bestimmtes Deck oder das Meta, und verfolge seine Chancen über die Versionen. Dieses Werkzeug ist Abonnenten von Joutes Expert vorbehalten.",
           "cta": "Joutes Expert entdecken"
+        },
+        "filmed": {
+          "title": "Gefilmter Tisch: Joutes Pro oder Joutes Expert",
+          "body": "Filme eine echte Partie oder gib ihr Video an: Joutes erkennt die Karten, verfolgt die Partie und meldet Regelabweichungen. Dieses Schiedsrichterwerkzeug ist Abonnenten von Joutes Pro und Joutes Expert vorbehalten.",
+          "cta": "Angebote ansehen"
         }
       },
       "card": {
@@ -7500,7 +7505,8 @@
           "Erweiterte Funktionen für deine Spielgruppen",
           "Deine Plakate der Woche als Discord-Direktnachricht, jeden Montag",
           "Deine Decks simulieren: Dutzende von der KI gespielte Partien gegen ein bestimmtes Deck oder das Meta",
-          "Partien online und auf deinem eigenen Server hosten"
+          "Partien online und auf deinem eigenen Server hosten",
+          "Eine echte, gefilmte Partie leiten: Karten erkannt, Regelabweichungen gemeldet"
         ]
       },
       "pro": {
@@ -7517,7 +7523,8 @@
           "Anpassung deiner Spielort-Seite",
           "Deine Programmplakate in deiner Marke, vorbehaltene Stile inbegriffen",
           "Ein Support-Kanal",
-          "Partien online und auf deinem eigenen Server hosten"
+          "Partien online und auf deinem eigenen Server hosten",
+          "Eine echte, gefilmte Partie leiten: Karten erkannt, Regelabweichungen gemeldet"
         ],
         "billingNote": "Auch auf Rechnung erhältlich, für Läden und Vereine."
       }

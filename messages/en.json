@@ -615,6 +615,11 @@
           "title": "Simulate a deck: Joutes Expert",
           "body": "Have the AI play your deck over dozens of games, against a specific deck or the meta, and track its odds across versions. This tool is reserved for Joutes Expert subscribers.",
           "cta": "Discover Joutes Expert"
+        },
+        "filmed": {
+          "title": "Filmed table: Joutes Pro or Joutes Expert",
+          "body": "Film a real game, or provide its video: Joutes recognises the cards, follows the game and flags departures from the rules. This judging tool is reserved for Joutes Pro and Joutes Expert subscribers.",
+          "cta": "See plans"
         }
       },
       "card": {
@@ -7500,7 +7505,8 @@
           "Advanced features for your play groups",
           "Your posters for the week as a Discord direct message, every Monday",
           "Simulate your decks: dozens of AI-played games against a specific deck or the meta",
-          "Host games online and on your own server"
+          "Host games online and on your own server",
+          "Judge a real game filmed by camera: cards recognised, departures from the rules flagged"
         ]
       },
       "pro": {
@@ -7517,7 +7523,8 @@
           "Customization of your venue page",
           "Your agenda posters in your own brand, reserved styles included",
           "A support channel",
-          "Host games online and on your own server"
+          "Host games online and on your own server",
+          "Judge a real game filmed by camera: cards recognised, departures from the rules flagged"
         ],
         "billingNote": "Also available on invoice, for stores and associations."
       }

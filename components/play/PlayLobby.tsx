@@ -460,9 +460,13 @@ export function PlayLobby() {
             {tFilmed("lobbyTitle")}
           </h2>
           <p className="text-sm text-muted-foreground">{tFilmed("lobbyHint")}</p>
-          <Button asChild variant="outline" size="sm" className="self-start">
-            <Link href="/games/riftbound/play/filmed">{tFilmed("lobbyOpen")}</Link>
-          </Button>
+          {lobby.access.canFilm ? (
+            <Button asChild variant="outline" size="sm" className="self-start">
+              <Link href="/games/riftbound/play/filmed">{tFilmed("lobbyOpen")}</Link>
+            </Button>
+          ) : (
+            <PlanUpsell feature="filmed" compact />
+          )}
         </section>
 
         <section className="flex flex-col gap-2 rounded-xl border bg-card p-5 text-sm text-muted-foreground">

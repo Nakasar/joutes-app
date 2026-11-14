@@ -615,6 +615,11 @@
           "title": "Simuler un deck : Joutes Expert",
           "body": "Faites jouer votre deck par l'IA sur des dizaines de parties, contre un deck précis ou la méta, et suivez ses chances au fil des versions. Cet outil est réservé aux abonnés Joutes Expert.",
           "cta": "Découvrir Joutes Expert"
+        },
+        "filmed": {
+          "title": "Table filmée : Joutes Pro ou Joutes Expert",
+          "body": "Filmez une partie réelle, ou donnez sa vidéo : Joutes reconnaît les cartes, suit la partie et signale les écarts aux règles. Cet outil d'arbitrage est réservé aux abonnés Joutes Pro et Joutes Expert.",
+          "cta": "Voir les offres"
         }
       },
       "card": {
@@ -7500,7 +7505,8 @@
           "Des fonctionnalités avancées pour vos groupes de jeu",
           "Vos affiches de la semaine en message privé Discord, chaque lundi",
           "Simuler vos decks : des dizaines de parties jouées par l'IA, contre un deck précis ou la méta",
-          "Héberger des parties en ligne et sur votre propre serveur"
+          "Héberger des parties en ligne et sur votre propre serveur",
+          "Arbitrer une partie réelle filmée à la caméra : cartes reconnues, écarts aux règles signalés"
         ]
       },
       "pro": {
@@ -7517,7 +7523,8 @@
           "La personnalisation de votre page de lieu de jeu",
           "Les affiches de votre agenda à votre marque, styles réservés compris",
           "Un canal d'assistance",
-          "Héberger des parties en ligne et sur votre propre serveur"
+          "Héberger des parties en ligne et sur votre propre serveur",
+          "Arbitrer une partie réelle filmée à la caméra : cartes reconnues, écarts aux règles signalés"
         ],
         "billingNote": "Également disponible sur facturation, pour les boutiques et les associations."
       }

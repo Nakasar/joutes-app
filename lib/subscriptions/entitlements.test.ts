@@ -154,4 +154,11 @@ describe("droits des pages Jouer", () => {
     assert.ok(!grantsEntitlement(["supporter"], "sub:play-host"));
     assert.ok(!grantsEntitlement([], "sub:play-host"));
   });
+
+  it("ouvre la table filmée à Joutes Pro et Joutes Expert", () => {
+    assert.ok(grantsEntitlement(["expert"], "sub:play-filmed"));
+    assert.ok(grantsEntitlement(["pro"], "sub:play-filmed"));
+    assert.ok(!grantsEntitlement(["supporter"], "sub:play-filmed"));
+    assert.ok(!grantsEntitlement([], "sub:play-filmed"));
+  });
 });

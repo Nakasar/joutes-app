@@ -86,12 +86,15 @@ export const SUBSCRIPTION_PLANS = {
     // (`lib/engine/simulation-actions.ts`), réservé à Expert seul.
     // `sub:play-host` : créer une partie en ligne en tant qu'hôte, table Joutes
     // ou « Mon serveur » (`lib/engine/table-actions.ts`). Rejoindre reste libre.
+    // `sub:play-filmed` : la table filmée (suivre une partie réelle à la caméra
+    // ou depuis une vidéo), ouverte aussi à Pro.
     entitlements: [
       "sub:poster-styles",
       "sub:poster-library",
       "sub:poster-digest",
       "sub:play-simulate",
       "sub:play-host",
+      "sub:play-filmed",
     ],
     permissions: ["trades:full_history", "collection:advanced"],
     tone: "amethyst",
@@ -108,8 +111,9 @@ export const SUBSCRIPTION_PLANS = {
     // tient, et une seule affiche gardée là où elle en suit plusieurs.
     // `sub:play-host` est répété pour la même raison : une boutique héberge les
     // parties en ligne de ses joueurs. La simulation de decks, elle, reste à
-    // Expert — c'est un outil de joueur.
-    entitlements: ["sub:lair-pro", "sub:poster-styles", "sub:poster-library", "sub:play-host"],
+    // Expert — c'est un outil de joueur. `sub:play-filmed` aussi : une boutique
+    // arbitre les tables filmées de ses tournois.
+    entitlements: ["sub:lair-pro", "sub:poster-styles", "sub:poster-library", "sub:play-host", "sub:play-filmed"],
     // Répétées et non héritées : Pro n'inclut pas Expert (deux publics, pas deux
     // barreaux). Une boutique qui tient l'historique de ses échanges, ou
     // plusieurs listes de souhaits, y a droit au même titre qu'un joueur.

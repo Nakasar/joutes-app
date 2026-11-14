@@ -12,6 +12,7 @@ import { FilmedSetup, type SeatSetup, type SourceKind } from "@/components/play/
 import { FilmedStage, SEAT_COLORS } from "@/components/play/filmed/FilmedStage";
 import type { FilmedProgress } from "@/components/play/filmed/protocol";
 import { useFilmedWorker } from "@/components/play/filmed/useFilmedWorker";
+import { PlanUpsell } from "@/components/play/PlanUpsell";
 import { useTableCards } from "@/components/play/useTableCards";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -658,6 +659,15 @@ export function FilmedTable() {
         <Button asChild>
           <Link href="/login">{tPlay("lobby.signIn")}</Link>
         </Button>
+      </div>
+    );
+  }
+
+  if (!lobby.access.canFilm) {
+    return (
+      <div className="flex max-w-2xl flex-col gap-3">
+        <h2 className="text-lg font-semibold">{t("title")}</h2>
+        <PlanUpsell feature="filmed" />
       </div>
     );
   }

@@ -27,16 +27,17 @@ l'adversaire que sa légende et ce qu'il a déjà montré (voir `docs/ia.md` de
 
 ## Réservé aux abonnés
 
-Deux fonctionnalités dépendent d'un abonnement (`lib/constants/subscription-plans.ts`) :
+Trois fonctionnalités dépendent d'un abonnement (`lib/constants/subscription-plans.ts`) :
 
 | Droit | Offres | Ce qu'il ouvre |
 |---|---|---|
 | `sub:play-host` | Joutes Pro, Joutes Expert | Créer une table en ligne (`createTableFor`) et le mode hôte « Mon serveur » (`resolveDeckAction`, le deck d'un invité). |
 | `sub:play-simulate` | Joutes Expert | Toutes les actions de « Simuler un deck » (`simulation-actions.ts`), sauf supprimer une série. |
+| `sub:play-filmed` | Joutes Pro, Joutes Expert | La table filmée : la page et `filmedArtAction` (les illustrations à reconnaître). |
 
 Rejoindre une table, jouer contre l'IA et regarder des IA restent libres. Un
 refus sort avec le code `SUBSCRIPTION` (403 sur les routes REST). Le lobby
-reçoit `access: { canHost, canSimulate }` et montre `PlanUpsell` à la place
+reçoit `access: { canHost, canSimulate, canFilm }` et montre `PlanUpsell` à la place
 d'un bouton qui échouerait. Un administrateur a tous les droits, et
 `devForcedPlans` force un palier hors production.
 
@@ -189,7 +190,8 @@ ensembles (decks méta, mes decks, groupes, publics, automatiques).
 `/games/riftbound/play/filmed` suit une partie réelle filmée du dessus (caméra,
 ou fichier vidéo pour une relecture) : les cartes sont reconnues dans l'image,
 le moteur explique chaque changement de la table et signale ce que les règles
-ne permettent pas. Ouverte à tout compte connecté.
+ne permettent pas. Réservée aux abonnés Joutes Pro et Joutes Expert
+(`sub:play-filmed`, voir « Réservé aux abonnés »).
 
 - Tout tourne dans le navigateur, dans un Web Worker
   (`components/play/filmed/filmed.worker.ts`) qui charge `lib/engine/track/pkg/`

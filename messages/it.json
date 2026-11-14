@@ -615,6 +615,11 @@
           "title": "Simulare un mazzo: Joutes Expert",
           "body": "Fai giocare il tuo mazzo all'IA su decine di partite, contro un mazzo preciso o il meta, e segui le sue probabilità versione dopo versione. Questo strumento è riservato agli abbonati Joutes Expert.",
           "cta": "Scopri Joutes Expert"
+        },
+        "filmed": {
+          "title": "Tavolo filmato: Joutes Pro o Joutes Expert",
+          "body": "Filma una partita reale, o fornisci il suo video: Joutes riconosce le carte, segue la partita e segnala gli scostamenti dalle regole. Questo strumento arbitrale è riservato agli abbonati Joutes Pro e Joutes Expert.",
+          "cta": "Vedi le offerte"
         }
       },
       "card": {
@@ -7500,7 +7505,8 @@
           "Funzionalità avanzate per i tuoi gruppi di gioco",
           "Le tue locandine della settimana in messaggio diretto su Discord, ogni lunedì",
           "Simulare i tuoi mazzi: decine di partite giocate dall'IA contro un mazzo preciso o il meta",
-          "Ospitare partite online e sul tuo server"
+          "Ospitare partite online e sul tuo server",
+          "Arbitrare una partita reale filmata: carte riconosciute, scostamenti dalle regole segnalati"
         ]
       },
       "pro": {
@@ -7517,7 +7523,8 @@
           "La personalizzazione della pagina del tuo locale",
           "Le locandine del tuo calendario con il tuo marchio, stili riservati compresi",
           "Un canale di assistenza",
-          "Ospitare partite online e sul tuo server"
+          "Ospitare partite online e sul tuo server",
+          "Arbitrare una partita reale filmata: carte riconosciute, scostamenti dalle regole segnalati"
         ],
         "billingNote": "Disponibile anche su fattura, per negozi e associazioni."
       }
