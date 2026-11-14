@@ -37,6 +37,8 @@ type Context = { params: Promise<{ path?: string[] }> };
 const STATUS: Record<string, number> = {
   UNAUTHENTICATED: 401,
   FORBIDDEN: 403,
+  // Réservé à un abonnement : l'app propose l'offre plutôt qu'une erreur.
+  SUBSCRIPTION: 403,
   NOT_FOUND: 404,
   INVALID: 400,
   INVALID_DECK: 400,

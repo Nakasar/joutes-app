@@ -14,8 +14,11 @@ import {
   guarded,
   joinTableFor,
   leaveSeatFor,
+  playAccess,
   readTableFor,
+  requireHost,
   startTableFor,
+  type PlayAccess,
   type PlayResult,
   type TableState,
   playableGame as playableTableGame,
@@ -39,6 +42,8 @@ export type SwuLobby = {
   /** Leaders et bases (codes du moteur) pour un deck automatique. */
   leaders: string[];
   bases: string[];
+  /** Ce que mon abonnement ouvre : héberger une partie, simuler un deck. */
+  access: PlayAccess;
 };
 
 export type SwuPlayResult<T = object> = ({ ok: true } & T) | { ok: false };
@@ -66,6 +71,7 @@ export async function loadSwuLobby(): Promise<SwuPlayResult<{ lobby: SwuLobby }>
     const seated = await viewer();
     const auto = swuAutoDeckCards();
     const online = engineServer() !== null;
+    const access = await playAccess();
     if (!seated) {
       return {
         ok: true,
@@ -76,6 +82,7 @@ export async function loadSwuLobby(): Promise<SwuPlayResult<{ lobby: SwuLobby }>
           tables: [],
           decks: await publicDecks(game.id, null, undefined, undefined, toSwuLobbyDeck),
           ...auto,
+          access,
         },
       };
     }
@@ -106,6 +113,7 @@ export async function loadSwuLobby(): Promise<SwuPlayResult<{ lobby: SwuLobby }>
           popular,
         ),
         ...auto,
+        access,
       },
     };
   } catch (error) {
@@ -157,7 +165,8 @@ export async function readSwuTableAction(id: unknown): Promise<PlayResult<{ stat
 
 /**
  * Le deck d'un invité en mode hôte, donné par son lien ou son identifiant
- * Joutes. Seuls les decks que le demandeur peut voir sont lus.
+ * Joutes. Seuls les decks que le demandeur peut voir sont lus. Le mode hôte
+ * étant réservé aux abonnés Pro et Expert, cette lecture l'est aussi.
  */
 export async function resolveSwuDeckAction(
   reference: unknown,
@@ -165,6 +174,8 @@ export async function resolveSwuDeckAction(
   return guarded(async () => {
     const game = await playableTableGame(GAME_SLUG);
     const seated = await tableViewer();
+    if (!seated) throw new TableFailure("UNAUTHENTICATED");
+    await requireHost();
     if (typeof reference !== "string") throw new TableFailure("INVALID");
     const deckId = /[a-f0-9]{24}/i.exec(reference)?.[0];
     if (!deckId) throw new TableFailure("INVALID_DECK");

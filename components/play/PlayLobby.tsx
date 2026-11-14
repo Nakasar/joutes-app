@@ -16,6 +16,7 @@ import {
 } from "@/app/[locale]/(app)/games/riftbound/play/actions";
 import { DeckPicker } from "@/components/play/DeckPicker";
 import { HostPanel } from "@/components/play/HostPanel";
+import { PlanUpsell } from "@/components/play/PlanUpsell";
 import { readSoloSave, writeSoloSave, type SoloSave } from "@/components/play/useSoloGame";
 import { useTableCards } from "@/components/play/useTableCards";
 import { Badge } from "@/components/ui/badge";
@@ -359,11 +360,15 @@ export function PlayLobby() {
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                <div className="flex flex-row flex-wrap gap-2">
-                  <Button disabled={busy || !choice} onClick={createOnline}>
-                    {t("lobby.createTable")}
-                  </Button>
-                </div>
+                {lobby.access.canHost ? (
+                  <div className="flex flex-row flex-wrap gap-2">
+                    <Button disabled={busy || !choice} onClick={createOnline}>
+                      {t("lobby.createTable")}
+                    </Button>
+                  </div>
+                ) : (
+                  <PlanUpsell feature="host" />
+                )}
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="join-code">{t("lobby.joinLabel")}</Label>
                   <div className="flex flex-row flex-wrap gap-2">
@@ -386,7 +391,9 @@ export function PlayLobby() {
               </div>
             ))}
 
-          {opponent === "host" && (
+          {opponent === "host" && !lobby.access.canHost && <PlanUpsell feature="host" />}
+
+          {opponent === "host" && lobby.access.canHost && (
             <HostPanel<EngineDeckList>
               hostName={lobby.name ?? t("lobby.you")}
               hostDeck={myDeck}
@@ -437,9 +444,13 @@ export function PlayLobby() {
             {t("sim.lobbyTitle")}
           </h2>
           <p className="text-sm text-muted-foreground">{t("sim.lobbyHint")}</p>
-          <Button asChild variant="outline" size="sm" className="self-start">
-            <Link href="/games/riftbound/play/simulate">{t("sim.lobbyOpen")}</Link>
-          </Button>
+          {lobby.access.canSimulate ? (
+            <Button asChild variant="outline" size="sm" className="self-start">
+              <Link href="/games/riftbound/play/simulate">{t("sim.lobbyOpen")}</Link>
+            </Button>
+          ) : (
+            <PlanUpsell feature="simulate" compact />
+          )}
         </section>
 
         <section className="flex flex-col gap-2 rounded-xl border bg-card p-5 text-sm text-muted-foreground">

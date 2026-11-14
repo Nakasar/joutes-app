@@ -23,6 +23,7 @@ import {
   type TableError,
   type TableGame,
 } from "@/lib/engine/tables";
+import { hasEntitlement } from "@/lib/subscriptions/access";
 import type { GameTableSummary } from "@/lib/types/GameTable";
 
 /**
@@ -57,6 +58,29 @@ export async function requireViewer(): Promise<Seated> {
   const seated = await viewer();
   if (!seated) throw new TableFailure("UNAUTHENTICATED");
   return seated;
+}
+
+/**
+ * Ce que l'abonnement de la personne ouvre dans les pages Jouer. Le lobby s'en
+ * sert pour proposer une offre plutôt qu'un bouton qui échouerait ; le vrai
+ * contrôle reste dans chaque action (`requireHost`, `simulation-actions.ts`).
+ *
+ * - `canHost` : créer une partie en ligne en tant qu'hôte, table Joutes ou
+ *   « Mon serveur » — Joutes Pro ou Joutes Expert (`sub:play-host`) ;
+ * - `canSimulate` : l'écran « Simuler un deck » — Joutes Expert (`sub:play-simulate`).
+ *
+ * Rejoindre une table, jouer contre l'IA et regarder des IA restent libres.
+ */
+export type PlayAccess = { canHost: boolean; canSimulate: boolean };
+
+export async function playAccess(): Promise<PlayAccess> {
+  const [canHost, canSimulate] = await Promise.all([hasEntitlement("sub:play-host"), hasEntitlement("sub:play-simulate")]);
+  return { canHost, canSimulate };
+}
+
+/** Héberger une partie en ligne : réservé à Joutes Pro et Joutes Expert. */
+export async function requireHost(): Promise<void> {
+  if (!(await hasEntitlement("sub:play-host"))) throw new TableFailure("SUBSCRIPTION");
 }
 
 /** Le jeu, s'il est ouvert au jeu en ligne (fonctionnalité « Jouer »). */
@@ -105,6 +129,7 @@ export function createTableFor(slug: string, mode: unknown, choice: unknown): Pr
   return guarded(async () => {
     const game = await playableGame(slug);
     const seated = await requireViewer();
+    await requireHost();
     if (!isEngineMode(mode)) throw new TableFailure("INVALID");
     const table = await createTable(seated, mode, parseChoice(choice), game);
     return { id: table.id };

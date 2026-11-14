@@ -26,6 +26,7 @@ import {
   type SimulationSource,
 } from "@/lib/engine/simulation";
 import { isBotLevel } from "@/lib/engine/tables";
+import { hasEntitlement } from "@/lib/subscriptions/access";
 import type { DeckSimulation, DeckSimulationSummary } from "@/lib/types/DeckSimulation";
 
 /**
@@ -35,7 +36,7 @@ import type { DeckSimulation, DeckSimulationSummary } from "@/lib/types/DeckSimu
  */
 
 /** Les échecs sortent en codes : ces actions ne savent pas dans quelle langue la page est rendue. */
-export type SimError = "UNAUTHENTICATED" | "NOT_FOUND" | "INVALID" | "INVALID_DECK" | "EMPTY_POOL" | "SERVER";
+export type SimError = "UNAUTHENTICATED" | "SUBSCRIPTION" | "NOT_FOUND" | "INVALID" | "INVALID_DECK" | "EMPTY_POOL" | "SERVER";
 export type SimResult<T = object> = ({ ok: true } & T) | { ok: false; error: SimError };
 
 export class SimFailure extends Error {
@@ -76,7 +77,18 @@ export type SimulatorGame<D extends SimulatorDeck> = {
 /** Séries gardées par personne et par jeu ; les plus anciennes sont supprimées. */
 const MAX_SIMULATIONS_PER_USER = 50;
 
+/**
+ * La personne et le jeu. La simulation est réservée à Joutes Expert
+ * (`sub:play-simulate`) : toute action passe par ici, sauf la suppression
+ * d'une série, qu'un ancien abonné doit pouvoir faire (`ownerContext`).
+ */
 async function context(slug: string): Promise<{ userId: string; name: string; gameId: string }> {
+  const found = await ownerContext(slug);
+  if (!(await hasEntitlement("sub:play-simulate"))) throw new SimFailure("SUBSCRIPTION");
+  return found;
+}
+
+async function ownerContext(slug: string): Promise<{ userId: string; name: string; gameId: string }> {
   const game = await readGameBySlugOrId(slug);
   if (!game?.features?.play) throw new SimFailure("NOT_FOUND");
   const session = await auth.api.getSession({ headers: await headers() });
@@ -345,7 +357,7 @@ export function extendSimulationFor(slug: string, id: unknown, more: unknown): P
 
 export function deleteSimulationFor(slug: string, id: unknown): Promise<SimResult> {
   return guarded(async () => {
-    const { userId } = await context(slug);
+    const { userId } = await ownerContext(slug);
     if (typeof id !== "string" || !(await deleteDeckSimulation(id, userId))) throw new SimFailure("NOT_FOUND");
     return {};
   });

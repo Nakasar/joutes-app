@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { DeckPicker } from "@/components/play/DeckPicker";
 import type { SimulatorCards, SimulatorKit, SimulatorPickerDeck } from "@/components/play/simulator-kit";
+import { PlanUpsell } from "@/components/play/PlanUpsell";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -78,6 +79,9 @@ export function SimulatorSetup<D extends SimulatorPickerDeck>({ kit, cards }: Si
     };
   }, [actions]);
 
+  if (failed === "SUBSCRIPTION") {
+    return <PlanUpsell feature="simulate" className="p-8" />;
+  }
   if (failed) {
     return (
       <div className="flex flex-col items-center gap-4 rounded-xl border bg-card p-8 text-center">

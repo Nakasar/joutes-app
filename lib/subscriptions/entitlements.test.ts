@@ -139,3 +139,19 @@ describe("palier auquel attribuer une permission", () => {
     assert.equal(planGrantingPermission([], "trades:full_history"), null);
   });
 });
+
+describe("droits des pages Jouer", () => {
+  it("réserve la simulation de decks à Joutes Expert", () => {
+    assert.ok(grantsEntitlement(["expert"], "sub:play-simulate"));
+    assert.ok(!grantsEntitlement(["pro"], "sub:play-simulate"));
+    assert.ok(!grantsEntitlement(["supporter"], "sub:play-simulate"));
+    assert.ok(!grantsEntitlement([], "sub:play-simulate"));
+  });
+
+  it("ouvre l'hébergement de parties à Joutes Pro et Joutes Expert", () => {
+    assert.ok(grantsEntitlement(["expert"], "sub:play-host"));
+    assert.ok(grantsEntitlement(["pro"], "sub:play-host"));
+    assert.ok(!grantsEntitlement(["supporter"], "sub:play-host"));
+    assert.ok(!grantsEntitlement([], "sub:play-host"));
+  });
+});

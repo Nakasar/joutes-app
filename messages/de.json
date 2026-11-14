@@ -602,7 +602,20 @@
         "ALREADY_SEATED": "Du sitzt bereits an diesem Tisch.",
         "NOT_FULL": "Es sind noch Plätze frei.",
         "NOT_WAITING": "Die Partie wurde bereits gestartet.",
-        "SERVER": "Der Spielserver hat nicht geantwortet. Versuche es gleich noch einmal."
+        "SERVER": "Der Spielserver hat nicht geantwortet. Versuche es gleich noch einmal.",
+        "SUBSCRIPTION": "Online-Partien erstellen ist Abonnenten von Joutes Pro und Joutes Expert vorbehalten."
+      },
+      "upsell": {
+        "host": {
+          "title": "Eine Partie hosten: Joutes Pro oder Joutes Expert",
+          "body": "Einen Online-Tisch erstellen oder eine Partie auf deinem eigenen Server starten ist Abonnenten von Joutes Pro und Joutes Expert vorbehalten. Dem Tisch eines Freundes beitreten bleibt kostenlos: gib seinen Code ein oder öffne seinen Link.",
+          "cta": "Angebote ansehen"
+        },
+        "simulate": {
+          "title": "Ein Deck simulieren: Joutes Expert",
+          "body": "Lass die KI dein Deck über Dutzende Partien spielen, gegen ein bestimmtes Deck oder das Meta, und verfolge seine Chancen über die Versionen. Dieses Werkzeug ist Abonnenten von Joutes Expert vorbehalten.",
+          "cta": "Joutes Expert entdecken"
+        }
       },
       "card": {
         "hidden": "Verdeckte Karte",
@@ -990,7 +1003,8 @@
           "INVALID_DECK": "Die Engine kann dieses Deck nicht spielen.",
           "EMPTY_POOL": "Kein gegnerisches Deck in der gewählten Auswahl.",
           "SERVER": "Der Server hat nicht geantwortet. Versuche es gleich noch einmal.",
-          "ENGINE": "Die Engine ist bei einer Partie abgestürzt. Starte die Serie neu; wenn es wieder passiert, melde es bitte."
+          "ENGINE": "Die Engine ist bei einer Partie abgestürzt. Starte die Serie neu; wenn es wieder passiert, melde es bitte.",
+          "SUBSCRIPTION": "Decks simulieren ist Abonnenten von Joutes Expert vorbehalten."
         }
       },
       "hand": {
@@ -7297,7 +7311,9 @@
           "Deine vollständige Tauschhistorie, mit Filtern und Suche",
           "Erweiterte Sammlungsverwaltung",
           "Erweiterte Funktionen für deine Spielgruppen",
-          "Deine Plakate der Woche als Discord-Direktnachricht, jeden Montag"
+          "Deine Plakate der Woche als Discord-Direktnachricht, jeden Montag",
+          "Deine Decks simulieren: Dutzende von der KI gespielte Partien gegen ein bestimmtes Deck oder das Meta",
+          "Partien online und auf deinem eigenen Server hosten"
         ]
       },
       "pro": {
@@ -7313,7 +7329,8 @@
           "Deine Veranstaltungen nach vorn geholt",
           "Anpassung deiner Spielort-Seite",
           "Deine Programmplakate in deiner Marke, vorbehaltene Stile inbegriffen",
-          "Ein Support-Kanal"
+          "Ein Support-Kanal",
+          "Partien online und auf deinem eigenen Server hosten"
         ],
         "billingNote": "Auch auf Rechnung erhältlich, für Läden und Vereine."
       }

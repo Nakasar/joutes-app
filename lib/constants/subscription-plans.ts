@@ -82,7 +82,17 @@ export const SUBSCRIPTION_PLANS = {
     includes: ["supporter"],
     // `sub:poster-digest` : les affiches choisies envoyées chaque lundi en
     // message privé Discord (`lib/posters/digest.ts`).
-    entitlements: ["sub:poster-styles", "sub:poster-library", "sub:poster-digest"],
+    // `sub:play-simulate` : l'écran « Simuler un deck » des pages Jouer
+    // (`lib/engine/simulation-actions.ts`), réservé à Expert seul.
+    // `sub:play-host` : créer une partie en ligne en tant qu'hôte, table Joutes
+    // ou « Mon serveur » (`lib/engine/table-actions.ts`). Rejoindre reste libre.
+    entitlements: [
+      "sub:poster-styles",
+      "sub:poster-library",
+      "sub:poster-digest",
+      "sub:play-simulate",
+      "sub:play-host",
+    ],
     permissions: ["trades:full_history", "collection:advanced"],
     tone: "amethyst",
   },
@@ -96,7 +106,10 @@ export const SUBSCRIPTION_PLANS = {
     // Expert. Une boutique compose ses affiches comme un joueur les siennes, et
     // se verrait sinon refuser sur son propre compte les styles que son lieu
     // tient, et une seule affiche gardée là où elle en suit plusieurs.
-    entitlements: ["sub:lair-pro", "sub:poster-styles", "sub:poster-library"],
+    // `sub:play-host` est répété pour la même raison : une boutique héberge les
+    // parties en ligne de ses joueurs. La simulation de decks, elle, reste à
+    // Expert — c'est un outil de joueur.
+    entitlements: ["sub:lair-pro", "sub:poster-styles", "sub:poster-library", "sub:play-host"],
     // Répétées et non héritées : Pro n'inclut pas Expert (deux publics, pas deux
     // barreaux). Une boutique qui tient l'historique de ses échanges, ou
     // plusieurs listes de souhaits, y a droit au même titre qu'un joueur.
