@@ -615,6 +615,11 @@
           "title": "Simuler un deck : Joutes Expert",
           "body": "Faites jouer votre deck par l'IA sur des dizaines de parties, contre un deck précis ou la méta, et suivez ses chances au fil des versions. Cet outil est réservé aux abonnés Joutes Expert.",
           "cta": "Découvrir Joutes Expert"
+        },
+        "filmed": {
+          "title": "Table filmée : Joutes Pro ou Joutes Expert",
+          "body": "Filmez une partie réelle, ou donnez sa vidéo : Joutes reconnaît les cartes, suit la partie et signale les écarts aux règles. Cet outil d'arbitrage est réservé aux abonnés Joutes Pro et Joutes Expert.",
+          "cta": "Voir les offres"
         }
       },
       "card": {
@@ -2387,6 +2392,193 @@
       "empty": "Aucun cube public",
       "emptyDescription": "Personne n'a encore partagé de cube pour ce jeu. Créez le premier.",
       "signInToCreate": "Connectez-vous pour créer un cube"
+    },
+    "Filmed": {
+      "title": "Table filmée",
+      "intro": "Filmez une partie réelle de Riftbound, ou donnez sa vidéo : Joutes reconnaît les cartes, suit la partie et signale les écarts aux règles.",
+      "lobbyTitle": "Arbitrer une table filmée",
+      "lobbyHint": "Filmez une partie réelle du dessus, ou donnez sa vidéo : Joutes reconnaît les cartes, suit la partie et signale les écarts aux règles.",
+      "lobbyOpen": "Ouvrir la table filmée",
+      "loading": "Chargement…",
+      "privacy": "La vidéo reste sur cet ordinateur.",
+      "error": {
+        "generic": "La lecture de la table a échoué. Rechargez la page si cela se répète.",
+        "start": "Le suivi n'a pas pu commencer : {reason}"
+      },
+      "zone": {
+        "base": "Base de {name}",
+        "trash": "Défausse de {name}",
+        "battlefield": "Champ de bataille {number}"
+      },
+      "setup": {
+        "player": "Joueur {number}",
+        "decksTitle": "Joueurs et decks",
+        "side": {
+          "bottom": "Côté bas de l'image",
+          "top": "Côté haut de l'image",
+          "left": "Côté gauche de l'image",
+          "right": "Côté droit de l'image"
+        },
+        "deckOf": "Deck de {name}",
+        "deckSize": "{count} cartes, {distinct} différentes",
+        "learning": "Apprentissage des illustrations du deck…",
+        "learningProgress": "Illustrations apprises : {done} sur {total}",
+        "artFailed": "{count, plural, one {# illustration n'a pas pu être chargée : cette carte ne sera pas reconnue.} other {# illustrations n'ont pas pu être chargées : ces cartes ne seront pas reconnues.}}",
+        "uncovered": "{count, plural, one {# carte n'est pas couverte par le moteur : reconnue et suivie, son effet n'est pas contrôlé.} other {# cartes ne sont pas couvertes par le moteur : reconnues et suivies, leur effet n'est pas contrôlé.}}",
+        "sideways": "Les joueurs sont assis à gauche et à droite de l'image",
+        "decksHint": "Les deux listes servent à reconnaître les cartes et à contrôler les decks.",
+        "sourceTitle": "Image",
+        "source": {
+          "camera": "Caméra",
+          "file": "Fichier vidéo"
+        },
+        "pickCamera": "Choisir la caméra",
+        "cameraNumber": "Caméra {number}",
+        "pickFile": "Choisir une vidéo",
+        "fileHint": "Placez la vidéo à l'instant où le suivi doit commencer.",
+        "sourceSize": "Image de {width} × {height} pixels",
+        "cameraMissing": "Ce navigateur ne donne pas accès à une caméra.",
+        "cameraRefused": "La caméra n'a pas pu être ouverte. Autorisez-la dans le navigateur, ou choisissez un fichier vidéo.",
+        "sourceHint": "Au-dessus de la table, à la verticale, toute la table dans l'image. Évitez une lampe qui se reflète sur les protège-cartes.",
+        "calibrationTitle": "Calibrage",
+        "calibrationHint": "Posez les deux champs de bataille, lancez un essai de lecture, puis ajustez les zones sur l'image : glissez une zone pour la déplacer, un coin pour la redimensionner.",
+        "read": "Essai de lecture",
+        "readAgain": "Relire la table",
+        "reading": "Lecture de la table…",
+        "trial": "{sure} cartes reconnues sur {found} trouvées",
+        "cardFine": "Carte de {width} px de large : bien.",
+        "cardTight": "Carte de {width} px de large : juste. Rapprochez la caméra si possible.",
+        "battlefieldOf": "Champ de bataille de {name}",
+        "pickBattlefield": "Choisir le champ de bataille posé",
+        "first": "Premier joueur",
+        "underway": "La partie est déjà commencée",
+        "underwayHint": "Le suivi part de la table telle qu'elle est, sans contrôler ce qui précède.",
+        "blocked": {
+          "decks": "Choisissez les deux decks.",
+          "learning": "Les illustrations des decks sont en cours d'apprentissage.",
+          "source": "Ouvrez une caméra ou un fichier vidéo.",
+          "battlefields": "Indiquez le champ de bataille posé par chaque joueur."
+        },
+        "start": "Commencer le suivi"
+      },
+      "stage": {
+        "waitingCamera": "En attente de la caméra…",
+        "waitingFile": "Choisissez un fichier vidéo.",
+        "camera": "Caméra",
+        "frames": "Cadres",
+        "toConfirm": "À confirmer"
+      },
+      "live": {
+        "turn": "Tour {turn}",
+        "stable": "Lecture en cours",
+        "moving": "Mouvement sur la table",
+        "paused": "En pause",
+        "ended": "Vidéo terminée",
+        "pause": "Pause",
+        "resume": "Reprendre",
+        "finish": "Terminer et voir le rapport",
+        "endedTitle": "La vidéo est terminée."
+      },
+      "table": {
+        "title": "Table reconstituée",
+        "hint": "ce que le moteur croit, d'après la caméra",
+        "correct": "Corriger la table",
+        "hand": "Main {count}, inconnue",
+        "deck": "Deck {count}",
+        "runes": "Runes {ready} prêtes sur {total}",
+        "facedown": "{count, plural, one {# carte face cachée} other {# cartes face cachée}}",
+        "base": "Base",
+        "empty": "vide"
+      },
+      "alert": {
+        "seen": "Vu",
+        "seenNothing": "La table ne correspond à aucune suite d'actions permise.",
+        "rule": "Règle",
+        "ruleNumber": "règle {rule}",
+        "nearest": "Attendu",
+        "nearestNothing": "Aucune action : la table aurait dû rester telle quelle.",
+        "repaired": "C'est réparé",
+        "tableRight": "La table a raison",
+        "review": "Revoir l'image"
+      },
+      "question": {
+        "title": "{count, plural, =2 {Deux explications possibles} other {# explications possibles}}",
+        "hint": "Plusieurs suites d'actions donnent cette table. Laquelle a eu lieu ?"
+      },
+      "doubt": {
+        "title": "Carte à confirmer",
+        "more": "{count, plural, one {# autre ensuite} other {# autres ensuite}}",
+        "hint": "La lecture n'est pas sûre de cette carte. Laquelle est-ce ?",
+        "points": "{count} points",
+        "other": "Autre carte des decks",
+        "notACard": "Ce n'est pas une carte"
+      },
+      "journal": {
+        "title": "Journal",
+        "thisTurn": "Ce tour",
+        "all": "Toute la partie",
+        "empty": "Rien pour l'instant. Chaque changement de la table s'inscrit ici.",
+        "turn": "Tour {turn} : {name}",
+        "score": "Saisir le score",
+        "note": "Ajouter une note",
+        "add": "Ajouter",
+        "underway": "Partie déjà commencée : le suivi part de la table.",
+        "tableRight": "L'arbitre a tranché : la table a raison.",
+        "scored": "Score de {name} saisi à la main : {points}.",
+        "resolution": {
+          "repaired": "Réparé",
+          "table": "La table avait raison",
+          "answered": "Répondu",
+          "superseded": "Remplacé par la suite",
+          "open": "Sans réponse"
+        }
+      },
+      "correct": {
+        "title": "Corriger la table",
+        "hint": "Ce que la caméra ne voit pas se saisit ici.",
+        "score": "Score",
+        "facedown": "Cartes face cachée",
+        "facedownAt": "{name} à {battlefield}",
+        "less": "Moins : {label}",
+        "more": "Plus : {label}",
+        "tableHint": "Si le suivi s'est égaré, il peut repartir de la table telle que la caméra la voit, sans passer par les règles.",
+        "close": "Fermer"
+      },
+      "review": {
+        "title": "Image de la table"
+      },
+      "report": {
+        "back": "Reprendre le suivi",
+        "title": "Rapport d'arbitrage",
+        "export": "Exporter le journal",
+        "new": "Nouvelle partie",
+        "result": "Résultat",
+        "duration": "Durée",
+        "turns": "{count, plural, one {# tour} other {# tours}}",
+        "deviations": "Écarts relevés",
+        "repaired": "{repaired} réparés, {table} à la table",
+        "explained": "Coups expliqués sans question",
+        "questions": "{count, plural, one {# question} other {# questions}}",
+        "cards": "Cartes vues",
+        "cardsHint": "différentes",
+        "game": "La partie",
+        "gameHint": "Un segment par tour. Cliquez sur un repère pour revoir l'image.",
+        "legend": {
+          "deviation": "Écart",
+          "question": "Question",
+          "score": "Score saisi"
+        },
+        "noDeviation": "Aucun écart relevé.",
+        "at": "tour {turn} · {time}",
+        "repairedIn": "Réparé en {seconds} s",
+        "review": "Revoir",
+        "unchecked": "Ce que le suivi n'a pas vérifié",
+        "draws": "<b>Les pioches.</b> La main et le deck ne sont pas mesurés par la caméra.",
+        "uncovered": "<b>{count, plural, one {# carte non couverte par le moteur.} other {# cartes non couvertes par le moteur.}}</b> Reconnues et suivies, effet non contrôlé.",
+        "moving": "<b>{time} de lecture en pause.</b> Des mains ou des cartes bougeaient au-dessus de la table.",
+        "manual": "<b>Score, dégâts et cartes face cachée.</b> La caméra ne les lit pas : {count, plural, =0 {aucune saisie à la main} one {# saisie à la main} other {# saisies à la main}}.",
+        "privacy": "La vidéo n'a pas quitté cet ordinateur. Les images du rapport disparaissent à la fermeture de l'onglet : exportez le journal pour le garder."
+      }
     }
   },
   "Login": {
@@ -7313,7 +7505,8 @@
           "Des fonctionnalités avancées pour vos groupes de jeu",
           "Vos affiches de la semaine en message privé Discord, chaque lundi",
           "Simuler vos decks : des dizaines de parties jouées par l'IA, contre un deck précis ou la méta",
-          "Héberger des parties en ligne et sur votre propre serveur"
+          "Héberger des parties en ligne et sur votre propre serveur",
+          "Arbitrer une partie réelle filmée à la caméra : cartes reconnues, écarts aux règles signalés"
         ]
       },
       "pro": {
@@ -7330,7 +7523,8 @@
           "La personnalisation de votre page de lieu de jeu",
           "Les affiches de votre agenda à votre marque, styles réservés compris",
           "Un canal d'assistance",
-          "Héberger des parties en ligne et sur votre propre serveur"
+          "Héberger des parties en ligne et sur votre propre serveur",
+          "Arbitrer une partie réelle filmée à la caméra : cartes reconnues, écarts aux règles signalés"
         ],
         "billingNote": "Également disponible sur facturation, pour les boutiques et les associations."
       }

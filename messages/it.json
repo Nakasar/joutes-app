@@ -615,6 +615,11 @@
           "title": "Simulare un mazzo: Joutes Expert",
           "body": "Fai giocare il tuo mazzo all'IA su decine di partite, contro un mazzo preciso o il meta, e segui le sue probabilità versione dopo versione. Questo strumento è riservato agli abbonati Joutes Expert.",
           "cta": "Scopri Joutes Expert"
+        },
+        "filmed": {
+          "title": "Tavolo filmato: Joutes Pro o Joutes Expert",
+          "body": "Filma una partita reale, o fornisci il suo video: Joutes riconosce le carte, segue la partita e segnala gli scostamenti dalle regole. Questo strumento arbitrale è riservato agli abbonati Joutes Pro e Joutes Expert.",
+          "cta": "Vedi le offerte"
         }
       },
       "card": {
@@ -2387,6 +2392,193 @@
       "empty": "Nessun cubo pubblico",
       "emptyDescription": "Nessuno ha ancora condiviso un cubo per questo gioco. Crea il primo.",
       "signInToCreate": "Accedi per creare un cubo"
+    },
+    "Filmed": {
+      "title": "Tavolo filmato",
+      "intro": "Filma una partita reale di Riftbound, o fornisci il suo video: Joutes riconosce le carte, segue la partita e segnala gli scostamenti dalle regole.",
+      "lobbyTitle": "Arbitrare un tavolo filmato",
+      "lobbyHint": "Filma una partita reale dall'alto, o fornisci il suo video: Joutes riconosce le carte, segue la partita e segnala gli scostamenti dalle regole.",
+      "lobbyOpen": "Apri il tavolo filmato",
+      "loading": "Caricamento…",
+      "privacy": "Il video resta su questo computer.",
+      "error": {
+        "generic": "La lettura del tavolo non è riuscita. Ricarica la pagina se succede di nuovo.",
+        "start": "Non è stato possibile avviare il monitoraggio: {reason}"
+      },
+      "zone": {
+        "base": "Base di {name}",
+        "trash": "Scarti di {name}",
+        "battlefield": "Campo di battaglia {number}"
+      },
+      "setup": {
+        "player": "Giocatore {number}",
+        "decksTitle": "Giocatori e mazzi",
+        "side": {
+          "bottom": "Lato basso dell'immagine",
+          "top": "Lato alto dell'immagine",
+          "left": "Lato sinistro dell'immagine",
+          "right": "Lato destro dell'immagine"
+        },
+        "deckOf": "Mazzo di {name}",
+        "deckSize": "{count} carte, {distinct} diverse",
+        "learning": "Apprendimento delle illustrazioni del mazzo…",
+        "learningProgress": "Illustrazioni apprese: {done} su {total}",
+        "artFailed": "{count, plural, one {# illustrazione non è stata caricata: questa carta non sarà riconosciuta.} other {# illustrazioni non sono state caricate: queste carte non saranno riconosciute.}}",
+        "uncovered": "{count, plural, one {# carta non è coperta dal motore: riconosciuta e seguita, il suo effetto non è controllato.} other {# carte non sono coperte dal motore: riconosciute e seguite, il loro effetto non è controllato.}}",
+        "sideways": "I giocatori sono seduti a sinistra e a destra dell'immagine",
+        "decksHint": "Le due liste servono a riconoscere le carte e a controllare i mazzi.",
+        "sourceTitle": "Immagine",
+        "source": {
+          "camera": "Videocamera",
+          "file": "File video"
+        },
+        "pickCamera": "Scegli la videocamera",
+        "cameraNumber": "Videocamera {number}",
+        "pickFile": "Scegli un video",
+        "fileHint": "Porta il video all'istante in cui il monitoraggio deve iniziare.",
+        "sourceSize": "Immagine di {width} × {height} pixel",
+        "cameraMissing": "Questo browser non dà accesso a una videocamera.",
+        "cameraRefused": "Non è stato possibile aprire la videocamera. Autorizzala nel browser, o scegli un file video.",
+        "sourceHint": "Sopra il tavolo, in verticale, con tutto il tavolo nell'immagine. Evita una lampada che si riflette sulle bustine.",
+        "calibrationTitle": "Calibrazione",
+        "calibrationHint": "Posa i due campi di battaglia, avvia una lettura di prova, poi regola le zone sull'immagine: trascina una zona per spostarla, un angolo per ridimensionarla.",
+        "read": "Lettura di prova",
+        "readAgain": "Rileggi il tavolo",
+        "reading": "Lettura del tavolo…",
+        "trial": "{sure} carte riconosciute su {found} trovate",
+        "cardFine": "Carta larga {width} px: bene.",
+        "cardTight": "Carta larga {width} px: al limite. Avvicina la videocamera se possibile.",
+        "battlefieldOf": "Campo di battaglia di {name}",
+        "pickBattlefield": "Scegli il campo di battaglia posato",
+        "first": "Primo giocatore",
+        "underway": "La partita è già iniziata",
+        "underwayHint": "Il monitoraggio parte dal tavolo così com'è, senza controllare ciò che precede.",
+        "blocked": {
+          "decks": "Scegli i due mazzi.",
+          "learning": "Le illustrazioni dei mazzi sono ancora in apprendimento.",
+          "source": "Apri una videocamera o un file video.",
+          "battlefields": "Indica il campo di battaglia posato da ogni giocatore."
+        },
+        "start": "Avvia il monitoraggio"
+      },
+      "stage": {
+        "waitingCamera": "In attesa della videocamera…",
+        "waitingFile": "Scegli un file video.",
+        "camera": "Videocamera",
+        "frames": "Riquadri",
+        "toConfirm": "Da confermare"
+      },
+      "live": {
+        "turn": "Turno {turn}",
+        "stable": "Lettura in corso",
+        "moving": "Movimento sul tavolo",
+        "paused": "In pausa",
+        "ended": "Video terminato",
+        "pause": "Pausa",
+        "resume": "Riprendi",
+        "finish": "Termina e vedi il rapporto",
+        "endedTitle": "Il video è terminato."
+      },
+      "table": {
+        "title": "Tavolo ricostruito",
+        "hint": "ciò che il motore crede, secondo la videocamera",
+        "correct": "Correggi il tavolo",
+        "hand": "Mano {count}, sconosciuta",
+        "deck": "Mazzo {count}",
+        "runes": "Rune {ready} pronte su {total}",
+        "facedown": "{count, plural, one {# carta a faccia in giù} other {# carte a faccia in giù}}",
+        "base": "Base",
+        "empty": "vuota"
+      },
+      "alert": {
+        "seen": "Visto",
+        "seenNothing": "Il tavolo non corrisponde a nessuna sequenza di azioni permessa.",
+        "rule": "Regola",
+        "ruleNumber": "regola {rule}",
+        "nearest": "Atteso",
+        "nearestNothing": "Nessuna azione: il tavolo sarebbe dovuto restare com'era.",
+        "repaired": "È riparato",
+        "tableRight": "Il tavolo ha ragione",
+        "review": "Rivedi l'immagine"
+      },
+      "question": {
+        "title": "{count, plural, =2 {Due spiegazioni possibili} other {# spiegazioni possibili}}",
+        "hint": "Più sequenze di azioni portano a questo tavolo. Quale è avvenuta?"
+      },
+      "doubt": {
+        "title": "Carta da confermare",
+        "more": "{count, plural, one {# altra dopo} other {# altre dopo}}",
+        "hint": "La lettura non è sicura di questa carta. Qual è?",
+        "points": "{count} punti",
+        "other": "Altra carta dei mazzi",
+        "notACard": "Non è una carta"
+      },
+      "journal": {
+        "title": "Registro",
+        "thisTurn": "Questo turno",
+        "all": "Tutta la partita",
+        "empty": "Ancora niente. Ogni cambiamento del tavolo viene scritto qui.",
+        "turn": "Turno {turn}: {name}",
+        "score": "Inserisci il punteggio",
+        "note": "Aggiungi una nota",
+        "add": "Aggiungi",
+        "underway": "Partita già iniziata: il monitoraggio parte dal tavolo.",
+        "tableRight": "L'arbitro ha deciso: il tavolo ha ragione.",
+        "scored": "Punteggio di {name} inserito a mano: {points}.",
+        "resolution": {
+          "repaired": "Riparato",
+          "table": "Il tavolo aveva ragione",
+          "answered": "Risposto",
+          "superseded": "Sostituito dal seguito",
+          "open": "Senza risposta"
+        }
+      },
+      "correct": {
+        "title": "Correggi il tavolo",
+        "hint": "Ciò che la videocamera non vede si inserisce qui.",
+        "score": "Punteggio",
+        "facedown": "Carte a faccia in giù",
+        "facedownAt": "{name} a {battlefield}",
+        "less": "Meno: {label}",
+        "more": "Più: {label}",
+        "tableHint": "Se il monitoraggio si è perso, può ripartire dal tavolo così come lo vede la videocamera, senza passare dalle regole.",
+        "close": "Chiudi"
+      },
+      "review": {
+        "title": "Immagine del tavolo"
+      },
+      "report": {
+        "back": "Riprendi il monitoraggio",
+        "title": "Rapporto arbitrale",
+        "export": "Esporta il registro",
+        "new": "Nuova partita",
+        "result": "Risultato",
+        "duration": "Durata",
+        "turns": "{count, plural, one {# turno} other {# turni}}",
+        "deviations": "Scostamenti rilevati",
+        "repaired": "{repaired} riparati, {table} a favore del tavolo",
+        "explained": "Mosse spiegate senza domande",
+        "questions": "{count, plural, one {# domanda} other {# domande}}",
+        "cards": "Carte viste",
+        "cardsHint": "diverse",
+        "game": "La partita",
+        "gameHint": "Un segmento per turno. Clicca su un segno per rivedere l'immagine.",
+        "legend": {
+          "deviation": "Scostamento",
+          "question": "Domanda",
+          "score": "Punteggio inserito"
+        },
+        "noDeviation": "Nessuno scostamento rilevato.",
+        "at": "turno {turn} · {time}",
+        "repairedIn": "Riparato in {seconds} s",
+        "review": "Rivedi",
+        "unchecked": "Ciò che il monitoraggio non ha verificato",
+        "draws": "<b>Le pescate.</b> La mano e il mazzo non sono misurati dalla videocamera.",
+        "uncovered": "<b>{count, plural, one {# carta non coperta dal motore.} other {# carte non coperte dal motore.}}</b> Riconosciute e seguite, effetto non controllato.",
+        "moving": "<b>{time} di lettura in pausa.</b> Mani o carte si muovevano sopra il tavolo.",
+        "manual": "<b>Punteggio, danni e carte a faccia in giù.</b> La videocamera non li legge: {count, plural, =0 {nessun inserimento a mano} one {# inserimento a mano} other {# inserimenti a mano}}.",
+        "privacy": "Il video non ha lasciato questo computer. Le immagini del rapporto spariscono alla chiusura della scheda: esporta il registro per conservarlo."
+      }
     }
   },
   "Login": {
@@ -7313,7 +7505,8 @@
           "Funzionalità avanzate per i tuoi gruppi di gioco",
           "Le tue locandine della settimana in messaggio diretto su Discord, ogni lunedì",
           "Simulare i tuoi mazzi: decine di partite giocate dall'IA contro un mazzo preciso o il meta",
-          "Ospitare partite online e sul tuo server"
+          "Ospitare partite online e sul tuo server",
+          "Arbitrare una partita reale filmata: carte riconosciute, scostamenti dalle regole segnalati"
         ]
       },
       "pro": {
@@ -7330,7 +7523,8 @@
           "La personalizzazione della pagina del tuo locale",
           "Le locandine del tuo calendario con il tuo marchio, stili riservati compresi",
           "Un canale di assistenza",
-          "Ospitare partite online e sul tuo server"
+          "Ospitare partite online e sul tuo server",
+          "Arbitrare una partita reale filmata: carte riconosciute, scostamenti dalle regole segnalati"
         ],
         "billingNote": "Disponibile anche su fattura, per negozi e associazioni."
       }

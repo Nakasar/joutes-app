@@ -67,20 +67,30 @@ export async function requireViewer(): Promise<Seated> {
  *
  * - `canHost` : créer une partie en ligne en tant qu'hôte, table Joutes ou
  *   « Mon serveur » — Joutes Pro ou Joutes Expert (`sub:play-host`) ;
- * - `canSimulate` : l'écran « Simuler un deck » — Joutes Expert (`sub:play-simulate`).
+ * - `canSimulate` : l'écran « Simuler un deck » — Joutes Expert (`sub:play-simulate`) ;
+ * - `canFilm` : la table filmée — Joutes Pro ou Joutes Expert (`sub:play-filmed`).
  *
  * Rejoindre une table, jouer contre l'IA et regarder des IA restent libres.
  */
-export type PlayAccess = { canHost: boolean; canSimulate: boolean };
+export type PlayAccess = { canHost: boolean; canSimulate: boolean; canFilm: boolean };
 
 export async function playAccess(): Promise<PlayAccess> {
-  const [canHost, canSimulate] = await Promise.all([hasEntitlement("sub:play-host"), hasEntitlement("sub:play-simulate")]);
-  return { canHost, canSimulate };
+  const [canHost, canSimulate, canFilm] = await Promise.all([
+    hasEntitlement("sub:play-host"),
+    hasEntitlement("sub:play-simulate"),
+    hasEntitlement("sub:play-filmed"),
+  ]);
+  return { canHost, canSimulate, canFilm };
 }
 
 /** Héberger une partie en ligne : réservé à Joutes Pro et Joutes Expert. */
 export async function requireHost(): Promise<void> {
   if (!(await hasEntitlement("sub:play-host"))) throw new TableFailure("SUBSCRIPTION");
+}
+
+/** La table filmée : réservée à Joutes Pro et Joutes Expert. */
+export async function requireFilmed(): Promise<void> {
+  if (!(await hasEntitlement("sub:play-filmed"))) throw new TableFailure("SUBSCRIPTION");
 }
 
 /** Le jeu, s'il est ouvert au jeu en ligne (fonctionnalité « Jouer »). */

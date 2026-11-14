@@ -615,6 +615,11 @@
           "title": "Simulate a deck: Joutes Expert",
           "body": "Have the AI play your deck over dozens of games, against a specific deck or the meta, and track its odds across versions. This tool is reserved for Joutes Expert subscribers.",
           "cta": "Discover Joutes Expert"
+        },
+        "filmed": {
+          "title": "Filmed table: Joutes Pro or Joutes Expert",
+          "body": "Film a real game, or provide its video: Joutes recognises the cards, follows the game and flags departures from the rules. This judging tool is reserved for Joutes Pro and Joutes Expert subscribers.",
+          "cta": "See plans"
         }
       },
       "card": {
@@ -2387,6 +2392,193 @@
       "empty": "No public cubes",
       "emptyDescription": "Nobody has shared a cube for this game yet. Be the first.",
       "signInToCreate": "Sign in to create a cube"
+    },
+    "Filmed": {
+      "title": "Filmed table",
+      "intro": "Film a real game of Riftbound, or provide its video: Joutes recognises the cards, follows the game and flags departures from the rules.",
+      "lobbyTitle": "Judge a filmed table",
+      "lobbyHint": "Film a real game from above, or provide its video: Joutes recognises the cards, follows the game and flags departures from the rules.",
+      "lobbyOpen": "Open the filmed table",
+      "loading": "Loading…",
+      "privacy": "The video stays on this computer.",
+      "error": {
+        "generic": "Reading the table failed. Reload the page if it happens again.",
+        "start": "Tracking could not start: {reason}"
+      },
+      "zone": {
+        "base": "{name}'s base",
+        "trash": "{name}'s trash",
+        "battlefield": "Battlefield {number}"
+      },
+      "setup": {
+        "player": "Player {number}",
+        "decksTitle": "Players and decks",
+        "side": {
+          "bottom": "Bottom of the image",
+          "top": "Top of the image",
+          "left": "Left of the image",
+          "right": "Right of the image"
+        },
+        "deckOf": "{name}'s deck",
+        "deckSize": "{count} cards, {distinct} different",
+        "learning": "Learning the deck's artwork…",
+        "learningProgress": "Artwork learned: {done} of {total}",
+        "artFailed": "{count, plural, one {# artwork could not be loaded: this card will not be recognised.} other {# artworks could not be loaded: these cards will not be recognised.}}",
+        "uncovered": "{count, plural, one {# card is not covered by the engine: recognised and tracked, its effect is not checked.} other {# cards are not covered by the engine: recognised and tracked, their effect is not checked.}}",
+        "sideways": "The players sit on the left and right of the image",
+        "decksHint": "Both lists are used to recognise the cards and to check the decks.",
+        "sourceTitle": "Image",
+        "source": {
+          "camera": "Camera",
+          "file": "Video file"
+        },
+        "pickCamera": "Choose the camera",
+        "cameraNumber": "Camera {number}",
+        "pickFile": "Choose a video",
+        "fileHint": "Move the video to the moment tracking should start.",
+        "sourceSize": "Image of {width} × {height} pixels",
+        "cameraMissing": "This browser gives no access to a camera.",
+        "cameraRefused": "The camera could not be opened. Allow it in the browser, or choose a video file.",
+        "sourceHint": "Above the table, pointing straight down, with the whole table in the image. Avoid a lamp reflecting on the sleeves.",
+        "calibrationTitle": "Calibration",
+        "calibrationHint": "Put both battlefields down, run a trial reading, then adjust the zones on the image: drag a zone to move it, a corner to resize it.",
+        "read": "Trial reading",
+        "readAgain": "Read the table again",
+        "reading": "Reading the table…",
+        "trial": "{sure} cards recognised out of {found} found",
+        "cardFine": "Card {width} px wide: good.",
+        "cardTight": "Card {width} px wide: tight. Move the camera closer if you can.",
+        "battlefieldOf": "{name}'s battlefield",
+        "pickBattlefield": "Choose the battlefield on the table",
+        "first": "First player",
+        "underway": "The game has already started",
+        "underwayHint": "Tracking starts from the table as it is, without checking what came before.",
+        "blocked": {
+          "decks": "Choose both decks.",
+          "learning": "The decks' artwork is still being learned.",
+          "source": "Open a camera or a video file.",
+          "battlefields": "Pick the battlefield each player put down."
+        },
+        "start": "Start tracking"
+      },
+      "stage": {
+        "waitingCamera": "Waiting for the camera…",
+        "waitingFile": "Choose a video file.",
+        "camera": "Camera",
+        "frames": "Frames",
+        "toConfirm": "To confirm"
+      },
+      "live": {
+        "turn": "Turn {turn}",
+        "stable": "Reading",
+        "moving": "Movement on the table",
+        "paused": "Paused",
+        "ended": "Video finished",
+        "pause": "Pause",
+        "resume": "Resume",
+        "finish": "Finish and see the report",
+        "endedTitle": "The video is finished."
+      },
+      "table": {
+        "title": "Reconstructed table",
+        "hint": "what the engine believes, from the camera",
+        "correct": "Correct the table",
+        "hand": "Hand {count}, unknown",
+        "deck": "Deck {count}",
+        "runes": "Runes {ready} ready of {total}",
+        "facedown": "{count, plural, one {# facedown card} other {# facedown cards}}",
+        "base": "Base",
+        "empty": "empty"
+      },
+      "alert": {
+        "seen": "Seen",
+        "seenNothing": "The table matches no permitted sequence of actions.",
+        "rule": "Rule",
+        "ruleNumber": "rule {rule}",
+        "nearest": "Expected",
+        "nearestNothing": "No action: the table should have stayed as it was.",
+        "repaired": "It is repaired",
+        "tableRight": "The table is right",
+        "review": "Review the image"
+      },
+      "question": {
+        "title": "{count, plural, =2 {Two possible explanations} other {# possible explanations}}",
+        "hint": "Several sequences of actions lead to this table. Which one happened?"
+      },
+      "doubt": {
+        "title": "Card to confirm",
+        "more": "{count, plural, one {# more after this} other {# more after this}}",
+        "hint": "The reading is not sure about this card. Which one is it?",
+        "points": "{count} points",
+        "other": "Another card from the decks",
+        "notACard": "This is not a card"
+      },
+      "journal": {
+        "title": "Log",
+        "thisTurn": "This turn",
+        "all": "Whole game",
+        "empty": "Nothing yet. Every change on the table is written here.",
+        "turn": "Turn {turn}: {name}",
+        "score": "Enter the score",
+        "note": "Add a note",
+        "add": "Add",
+        "underway": "Game already started: tracking starts from the table.",
+        "tableRight": "The judge ruled: the table is right.",
+        "scored": "{name}'s score entered by hand: {points}.",
+        "resolution": {
+          "repaired": "Repaired",
+          "table": "The table was right",
+          "answered": "Answered",
+          "superseded": "Replaced by what followed",
+          "open": "Unanswered"
+        }
+      },
+      "correct": {
+        "title": "Correct the table",
+        "hint": "What the camera cannot see is entered here.",
+        "score": "Score",
+        "facedown": "Facedown cards",
+        "facedownAt": "{name} at {battlefield}",
+        "less": "Less: {label}",
+        "more": "More: {label}",
+        "tableHint": "If tracking has gone astray, it can restart from the table as the camera sees it, without going through the rules.",
+        "close": "Close"
+      },
+      "review": {
+        "title": "Image of the table"
+      },
+      "report": {
+        "back": "Resume tracking",
+        "title": "Judging report",
+        "export": "Export the log",
+        "new": "New game",
+        "result": "Result",
+        "duration": "Duration",
+        "turns": "{count, plural, one {# turn} other {# turns}}",
+        "deviations": "Departures noted",
+        "repaired": "{repaired} repaired, {table} ruled for the table",
+        "explained": "Moves explained without a question",
+        "questions": "{count, plural, one {# question} other {# questions}}",
+        "cards": "Cards seen",
+        "cardsHint": "different",
+        "game": "The game",
+        "gameHint": "One segment per turn. Click a marker to review the image.",
+        "legend": {
+          "deviation": "Departure",
+          "question": "Question",
+          "score": "Score entered"
+        },
+        "noDeviation": "No departure noted.",
+        "at": "turn {turn} · {time}",
+        "repairedIn": "Repaired in {seconds} s",
+        "review": "Review",
+        "unchecked": "What tracking did not check",
+        "draws": "<b>Draws.</b> The hand and the deck are not measured by the camera.",
+        "uncovered": "<b>{count, plural, one {# card not covered by the engine.} other {# cards not covered by the engine.}}</b> Recognised and tracked, effect not checked.",
+        "moving": "<b>{time} with reading on hold.</b> Hands or cards were moving above the table.",
+        "manual": "<b>Score, damage and facedown cards.</b> The camera does not read them: {count, plural, =0 {nothing entered by hand} one {# entry by hand} other {# entries by hand}}.",
+        "privacy": "The video never left this computer. The report's images disappear when the tab closes: export the log to keep it."
+      }
     }
   },
   "Login": {
@@ -7313,7 +7505,8 @@
           "Advanced features for your play groups",
           "Your posters for the week as a Discord direct message, every Monday",
           "Simulate your decks: dozens of AI-played games against a specific deck or the meta",
-          "Host games online and on your own server"
+          "Host games online and on your own server",
+          "Judge a real game filmed by camera: cards recognised, departures from the rules flagged"
         ]
       },
       "pro": {
@@ -7330,7 +7523,8 @@
           "Customization of your venue page",
           "Your agenda posters in your own brand, reserved styles included",
           "A support channel",
-          "Host games online and on your own server"
+          "Host games online and on your own server",
+          "Judge a real game filmed by camera: cards recognised, departures from the rules flagged"
         ],
         "billingNote": "Also available on invoice, for stores and associations."
       }

@@ -117,7 +117,7 @@ export type TableGame = { id: string; slug: string };
 export const SWU_SLUG = "swu";
 
 /** Un deck enregistré que le demandeur a le droit de lire, pour ce jeu. */
-async function readableDeck(deckId: string, userId: string | null, gameId: string) {
+export async function readableDeck(deckId: string, userId: string | null, gameId: string) {
   const stored = await getDeckById(deckId);
   if (!stored || stored.gameId !== gameId) throw new TableFailure("INVALID_DECK");
   // Un deck privé s'ouvre à son auteur et aux membres d'un groupe où il est partagé.

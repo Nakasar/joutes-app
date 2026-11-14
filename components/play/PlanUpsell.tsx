@@ -14,14 +14,15 @@ import { cn } from "@/lib/utils";
  * panneau évite seulement de proposer un bouton qui échouerait.
  *
  * - `host` : créer une partie en ligne en tant qu'hôte (Joutes Pro ou Expert) ;
- * - `simulate` : simuler un deck (Joutes Expert).
+ * - `simulate` : simuler un deck (Joutes Expert) ;
+ * - `filmed` : la table filmée (Joutes Pro ou Expert).
  */
 export function PlanUpsell({
   feature,
   compact = false,
   className,
 }: {
-  feature: "host" | "simulate";
+  feature: "host" | "simulate" | "filmed";
   compact?: boolean;
   className?: string;
 }) {

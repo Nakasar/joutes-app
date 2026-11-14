@@ -27,16 +27,17 @@ l'adversaire que sa légende et ce qu'il a déjà montré (voir `docs/ia.md` de
 
 ## Réservé aux abonnés
 
-Deux fonctionnalités dépendent d'un abonnement (`lib/constants/subscription-plans.ts`) :
+Trois fonctionnalités dépendent d'un abonnement (`lib/constants/subscription-plans.ts`) :
 
 | Droit | Offres | Ce qu'il ouvre |
 |---|---|---|
 | `sub:play-host` | Joutes Pro, Joutes Expert | Créer une table en ligne (`createTableFor`) et le mode hôte « Mon serveur » (`resolveDeckAction`, le deck d'un invité). |
 | `sub:play-simulate` | Joutes Expert | Toutes les actions de « Simuler un deck » (`simulation-actions.ts`), sauf supprimer une série. |
+| `sub:play-filmed` | Joutes Pro, Joutes Expert | La table filmée : la page et `filmedArtAction` (les illustrations à reconnaître). |
 
 Rejoindre une table, jouer contre l'IA et regarder des IA restent libres. Un
 refus sort avec le code `SUBSCRIPTION` (403 sur les routes REST). Le lobby
-reçoit `access: { canHost, canSimulate }` et montre `PlanUpsell` à la place
+reçoit `access: { canHost, canSimulate, canFilm }` et montre `PlanUpsell` à la place
 d'un bouton qui échouerait. Un administrateur a tous les droits, et
 `devForcedPlans` force un palier hors production.
 
@@ -183,6 +184,42 @@ ensembles (decks méta, mes decks, groupes, publics, automatiques).
   même graine, mêmes niveaux, donc les mêmes coups — tant que le moteur est le
   même (`ENGINE_VERSION`, gardé dans la série).
 - La fourchette affichée est l'intervalle de Wilson à 95 %.
+
+## Table filmée
+
+`/games/riftbound/play/filmed` suit une partie réelle filmée du dessus (caméra,
+ou fichier vidéo pour une relecture) : les cartes sont reconnues dans l'image,
+le moteur explique chaque changement de la table et signale ce que les règles
+ne permettent pas. Réservée aux abonnés Joutes Pro et Joutes Expert
+(`sub:play-filmed`, voir « Réservé aux abonnés »).
+
+- Tout tourne dans le navigateur, dans un Web Worker
+  (`components/play/filmed/filmed.worker.ts`) qui charge `lib/engine/track/pkg/`
+  (`pkg/track` de joutes-engine : `TableReader` lit l'image, `Tracking` suit la
+  partie ; voir son `docs/suivi.md`). La vidéo ne quitte pas l'ordinateur.
+- Les cartes se reconnaissent à leur illustration, parmi celles des deux decks :
+  les deux listes sont obligatoires. `filmedArtAction` rend les illustrations
+  d'un deck, variantes comprises ; elles passent par
+  `/api/games/riftbound/play/filmed/art/<carte>` parce que le navigateur doit en
+  lire les pixels, ce que l'hébergeur des images n'autorise pas depuis un autre site.
+- `lib/filmed/` : fonctions pures et testées (`layout.ts` : zones, taille des
+  cartes, champs de bataille posés, corrections de l'opérateur ; `journal.ts` :
+  journal et rapport).
+- Écrans : `FilmedSetup` (decks, source, calibrage), `FilmedStage` (image et
+  incrustation, zones réglables), `FilmedLive` (table reconstituée, écart,
+  question, carte à confirmer, journal), `FilmedReport`.
+- Une image toutes les demi-secondes ; seuls les endroits qui ont bougé puis se
+  sont posés sont relus. Un fichier vidéo avance au rythme de la lecture et
+  attend la réponse de l'arbitre à chaque écart ou question.
+- Ce que la caméra ne voit pas se saisit : score, cartes face cachée
+  (« Corriger la table »). « La table a raison » remet le suivi d'accord avec
+  l'image sans passer par les règles.
+- Pas encore : report du résultat au tournoi, identification par IA d'une carte
+  douteuse, saisie des dégâts, enregistrement de la vidéo de la caméra, SWU et
+  Cyberpunk.
+- Le paquet se met à jour comme les autres : `scripts/build-wasm.sh` dans
+  joutes-engine, copier `pkg/track/*` dans `lib/engine/track/pkg/` et noter le
+  commit dans son fichier `VERSION`.
 
 ## Pour l'app mobile
 
