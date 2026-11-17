@@ -36,6 +36,11 @@ const SECURITY_HEADERS = [
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
+  // La carte de visite d'un deck lit ses polices sur le disque : elles doivent
+  // partir avec la fonction qui la dessine.
+  outputFileTracingIncludes: {
+    "/api/decks/[deckId]/business-card": ["./assets/fonts/**"],
+  },
   images: {
     remotePatterns: [
       {

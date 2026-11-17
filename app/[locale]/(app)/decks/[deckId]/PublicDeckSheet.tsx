@@ -4,6 +4,7 @@ import { ArrowLeft, Trophy } from "lucide-react";
 import ReportButton from "@/components/ReportButton.tsx";
 import FavoriteDeckButton from "../FavoriteDeckButton.tsx";
 import { CopyDeckButton } from "@/components/decks/CopyDeckButton.tsx";
+import { BusinessCardButton } from "@/components/decks/BusinessCardDialog.tsx";
 import { CostCurve, LegalityList } from "@/components/decks/DeckAnalysis.tsx";
 import { DeckVisibilityBadge, DeckSizeLabel } from "@/components/decks/DeckBadges.tsx";
 import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
@@ -109,6 +110,7 @@ export function PublicDeckSheet({
             )}
             {isAuthenticated && <CopyDeckButton deckId={deck.id} />}
             <BuyDeckOnCardnexusButton order={cardnexusOrder} />
+            <BusinessCardButton deckId={deck.id} deckName={deck.name} isPrivate={deck.visibility === "private"} />
             {/* Un drapeau seul se prend pour un signet : le libellé dit ce que
                 le geste fait, et c'est ce qu'on veut d'une action de
                 modération. */}
