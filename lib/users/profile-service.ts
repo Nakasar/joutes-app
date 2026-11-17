@@ -12,6 +12,7 @@ import {
 import { findDiscordAccountId } from "@/lib/db/discord-notifications";
 import { disableDiscordDm, discordOptInErrorMessage, enableDiscordDm } from "@/lib/notifications/discord-optin";
 import { isNotificationPreference } from "@/lib/notifications/preferences";
+import { parseWeeklyEmailSections, readWeeklyEmailSettings, type WeeklyEmailSettings } from "@/lib/notifications/weekly-email";
 import { readNotificationSettings, type NotificationSetting } from "@/lib/notifications/settings-view";
 import { updateDisplayNameSchema } from "@/lib/schemas/user.schema";
 import { displayAvatar } from "@/lib/users/document";
@@ -129,6 +130,37 @@ export async function setNotificationPreference(
     { $set: { [`notifications.${channel}.${type}.enabled`]: enable } },
   );
   return { ok: true };
+}
+
+/**
+ * Les sections de l'email hebdomadaire, et s'il part une semaine sans rien.
+ * Rend les réglages tels qu'ils sont désormais lus.
+ */
+export async function setWeeklyEmailOptions(
+  userId: string,
+  input: { sections?: unknown; skipEmpty?: unknown },
+): Promise<ProfileResult<{ settings: WeeklyEmailSettings }>> {
+  const update: Record<string, unknown> = {};
+  if (input.sections !== undefined) {
+    const sections = parseWeeklyEmailSections(input.sections);
+    if (!sections) return { ok: false, error: "Sections inconnues." };
+    update["notifications.emails.weekly.sections"] = sections;
+  }
+  if (input.skipEmpty !== undefined) {
+    if (typeof input.skipEmpty !== "boolean") return { ok: false, error: "Réglage d'envoi invalide." };
+    update["notifications.emails.weekly.skipEmpty"] = input.skipEmpty;
+  }
+  if (Object.keys(update).length === 0) return { ok: false, error: "Rien à enregistrer." };
+
+  const updated = await db
+    .collection<User>("user")
+    .findOneAndUpdate(
+      { _id: new ObjectId(userId) },
+      { $set: update },
+      { returnDocument: "after", projection: { "notifications.emails.weekly": 1 } },
+    );
+  if (!updated) return { ok: false, error: "Compte introuvable." };
+  return { ok: true, settings: readWeeklyEmailSettings(updated.notifications?.emails?.weekly) };
 }
 
 export type ProfileView = {

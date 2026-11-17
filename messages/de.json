@@ -7839,7 +7839,56 @@
         "title": "Wöchentliche Zusammenfassungen",
         "description": "Erhalte jeden Montag eine Übersicht der Veranstaltungen, die dich interessieren könnten.",
         "emailHint": "Erhalte deine Übersicht per E-Mail.",
-        "appHint": "Erhalte deine Übersicht als Push-Benachrichtigung in der App."
+        "appHint": "Erhalte deine Übersicht als Push-Benachrichtigung in der App.",
+        "email": {
+          "title": "Was die E-Mail enthält",
+          "intro": "Der Kalender deiner Orte ist immer dabei. Den Rest kannst du ankreuzen.",
+          "sections": {
+            "lairPicks": {
+              "label": "Die Auswahl meiner Orte",
+              "description": "Von den gefolgten Orten hervorgehobene Veranstaltungen."
+            },
+            "friends": {
+              "label": "Was meine Freunde entdeckt haben",
+              "description": "Von meinen Freunden favorisierte Veranstaltungen."
+            },
+            "lairNews": {
+              "label": "Neuigkeiten meiner Orte",
+              "description": "Ankündigungen der gefolgten Orte."
+            },
+            "registrations": {
+              "label": "Meine Anmeldungen",
+              "description": "Erinnerungen und Warteliste."
+            },
+            "playGroups": {
+              "label": "Meine Spielgruppen",
+              "description": "Umfragen, Sitzungen, Kommentare."
+            },
+            "meta": {
+              "label": "Das Meta meiner Spiele",
+              "description": "Legenden im Aufwind und im Abwärtstrend."
+            },
+            "wishlist": {
+              "label": "Meine Wunschliste",
+              "description": "Karten im Verkauf bei Freunden und in meinen Gruppen."
+            },
+            "friendResults": {
+              "label": "Ergebnisse meiner Freunde",
+              "description": "Gemeldete Platzierungen."
+            },
+            "nearby": {
+              "label": "In meiner Nähe",
+              "description": "Nicht gefolgte Orte in meiner Umgebung."
+            }
+          },
+          "sending": "Versand",
+          "skipEmpty": "In einer Woche ohne Neuigkeiten nichts senden",
+          "skipEmptyHint": "Ohne Neues in den angekreuzten Bereichen gibt es in dieser Woche keine E-Mail.",
+          "preview": "Vorschau meiner nächsten E-Mail",
+          "save": "Speichern",
+          "saved": "Einstellungen gespeichert.",
+          "error": "Einstellungen nicht gespeichert."
+        }
       },
       "push": {
         "title": "Push-Benachrichtigungen",

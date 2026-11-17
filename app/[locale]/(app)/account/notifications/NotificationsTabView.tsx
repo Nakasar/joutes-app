@@ -25,6 +25,8 @@ import { MAX_DIGEST_POSTERS } from "@/lib/posters/digest.ts";
 import { plansForUserId } from "@/lib/subscriptions/access.ts";
 import { grantsEntitlement } from "@/lib/subscriptions/entitlements.ts";
 import { PosterDigestPicker } from "./PosterDigestPicker.tsx";
+import { WeeklyEmailSectionsPicker } from "./WeeklyEmailSectionsPicker.tsx";
+import { readWeeklyEmailSettings } from "@/lib/notifications/weekly-email.ts";
 
 /**
  * L'onglet « Notifications ».
@@ -75,7 +77,7 @@ export default async function NotificationsTabView({ user }: { user: User }) {
           </CardTitle>
           <CardDescription>{t("weekly.description")}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-5">
           <FieldGroup className="w-full">
             <NotificationPreferenceSwitch
               type="weekly"
@@ -94,6 +96,7 @@ export default async function NotificationsTabView({ user }: { user: User }) {
               initialEnabled={notifications?.app?.weekly?.enabled ?? false}
             />
           </FieldGroup>
+          <WeeklyEmailSectionsPicker initial={readWeeklyEmailSettings(notifications?.emails?.weekly)} />
         </CardContent>
       </Card>
 

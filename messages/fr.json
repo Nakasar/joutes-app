@@ -7839,7 +7839,56 @@
         "title": "Récapitulatifs hebdomadaires",
         "description": "Recevez chaque lundi un récapitulatif des évènements qui peuvent vous intéresser.",
         "emailHint": "Recevez votre récapitulatif par courriel.",
-        "appHint": "Recevez votre récapitulatif par notification push sur l'application."
+        "appHint": "Recevez votre récapitulatif par notification push sur l'application.",
+        "email": {
+          "title": "Ce que contient le courriel",
+          "intro": "L'agenda de vos lieux est toujours là. Le reste se coche.",
+          "sections": {
+            "lairPicks": {
+              "label": "Le choix de mes lieux",
+              "description": "Évènements mis en avant par les lieux suivis."
+            },
+            "friends": {
+              "label": "Ce que mes amis ont repéré",
+              "description": "Évènements mis en favori par mes amis."
+            },
+            "lairNews": {
+              "label": "Les nouvelles de mes lieux",
+              "description": "Annonces des lieux suivis."
+            },
+            "registrations": {
+              "label": "Mes inscriptions",
+              "description": "Rappels et liste d'attente."
+            },
+            "playGroups": {
+              "label": "Mes groupes de jeu",
+              "description": "Sondages, sessions, commentaires."
+            },
+            "meta": {
+              "label": "La méta de mes jeux",
+              "description": "Légendes en hausse et en baisse."
+            },
+            "wishlist": {
+              "label": "Ma wishlist",
+              "description": "Cartes en vente chez mes amis et dans mes groupes."
+            },
+            "friendResults": {
+              "label": "Les résultats de mes amis",
+              "description": "Classements déclarés."
+            },
+            "nearby": {
+              "label": "Près de chez moi",
+              "description": "Lieux non suivis autour de moi."
+            }
+          },
+          "sending": "Envoi",
+          "skipEmpty": "Ne rien envoyer une semaine sans nouveauté",
+          "skipEmptyHint": "Sans nouveauté dans les sections cochées, pas de courriel cette semaine-là.",
+          "preview": "Voir un aperçu de mon prochain courriel",
+          "save": "Enregistrer",
+          "saved": "Réglages enregistrés.",
+          "error": "Réglages non enregistrés."
+        }
       },
       "push": {
         "title": "Notifications push",

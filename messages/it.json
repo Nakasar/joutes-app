@@ -7839,7 +7839,56 @@
         "title": "Riepiloghi settimanali",
         "description": "Ricevi ogni lunedì un riepilogo degli eventi che potrebbero interessarti.",
         "emailHint": "Ricevi il riepilogo per e-mail.",
-        "appHint": "Ricevi il riepilogo come notifica push sull'applicazione."
+        "appHint": "Ricevi il riepilogo come notifica push sull'applicazione.",
+        "email": {
+          "title": "Cosa contiene l'e-mail",
+          "intro": "Il calendario dei tuoi luoghi c'è sempre. Il resto si seleziona.",
+          "sections": {
+            "lairPicks": {
+              "label": "La scelta dei miei luoghi",
+              "description": "Eventi messi in evidenza dai luoghi seguiti."
+            },
+            "friends": {
+              "label": "Cosa hanno notato i miei amici",
+              "description": "Eventi aggiunti ai preferiti dai miei amici."
+            },
+            "lairNews": {
+              "label": "Le novità dei miei luoghi",
+              "description": "Annunci dei luoghi seguiti."
+            },
+            "registrations": {
+              "label": "Le mie iscrizioni",
+              "description": "Promemoria e lista d'attesa."
+            },
+            "playGroups": {
+              "label": "I miei gruppi di gioco",
+              "description": "Sondaggi, sessioni, commenti."
+            },
+            "meta": {
+              "label": "Il meta dei miei giochi",
+              "description": "Leggende in crescita e in calo."
+            },
+            "wishlist": {
+              "label": "La mia wishlist",
+              "description": "Carte in vendita dai miei amici e nei miei gruppi."
+            },
+            "friendResults": {
+              "label": "I risultati dei miei amici",
+              "description": "Classifiche dichiarate."
+            },
+            "nearby": {
+              "label": "Vicino a me",
+              "description": "Luoghi non seguiti intorno a me."
+            }
+          },
+          "sending": "Invio",
+          "skipEmpty": "Non inviare nulla in una settimana senza novità",
+          "skipEmptyHint": "Senza novità nelle sezioni selezionate, nessuna e-mail quella settimana.",
+          "preview": "Anteprima della mia prossima e-mail",
+          "save": "Salva",
+          "saved": "Impostazioni salvate.",
+          "error": "Impostazioni non salvate."
+        }
       },
       "push": {
         "title": "Notifiche push",

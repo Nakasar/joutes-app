@@ -125,6 +125,13 @@ export type User = {
       weekly?: {
         enabled: boolean;
         lastSent?: string | null;
+        /**
+         * Les sections cochées de l'email hebdomadaire. Absent : toutes.
+         * Voir `lib/notifications/weekly-email.ts`.
+         */
+        sections?: string[];
+        /** Faux pour recevoir l'email même une semaine sans rien. Absent : vrai. */
+        skipEmpty?: boolean;
       },
       platform?: {
         enabled: boolean;

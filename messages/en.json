@@ -7839,7 +7839,56 @@
         "title": "Weekly digests",
         "description": "Get a Monday round-up of the events that might interest you.",
         "emailHint": "Get your digest by email.",
-        "appHint": "Get your digest as a push notification in the app."
+        "appHint": "Get your digest as a push notification in the app.",
+        "email": {
+          "title": "What the email contains",
+          "intro": "Your places' agenda is always there. Tick the rest.",
+          "sections": {
+            "lairPicks": {
+              "label": "My places' picks",
+              "description": "Events featured by the places I follow."
+            },
+            "friends": {
+              "label": "What my friends spotted",
+              "description": "Events my friends added to favourites."
+            },
+            "lairNews": {
+              "label": "News from my places",
+              "description": "Announcements from the places I follow."
+            },
+            "registrations": {
+              "label": "My registrations",
+              "description": "Reminders and waiting list."
+            },
+            "playGroups": {
+              "label": "My play groups",
+              "description": "Polls, sessions, comments."
+            },
+            "meta": {
+              "label": "My games' meta",
+              "description": "Legends on the rise and in decline."
+            },
+            "wishlist": {
+              "label": "My wishlist",
+              "description": "Cards for sale by my friends and in my groups."
+            },
+            "friendResults": {
+              "label": "My friends' results",
+              "description": "Declared standings."
+            },
+            "nearby": {
+              "label": "Near me",
+              "description": "Places I don't follow around me."
+            }
+          },
+          "sending": "Sending",
+          "skipEmpty": "Send nothing in a week without news",
+          "skipEmptyHint": "With nothing new in the ticked sections, no email that week.",
+          "preview": "Preview my next email",
+          "save": "Save",
+          "saved": "Settings saved.",
+          "error": "Settings not saved."
+        }
       },
       "push": {
         "title": "Push notifications",
