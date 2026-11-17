@@ -14,6 +14,7 @@ import { DeckCardThumb } from "@/components/decks/DeckCardThumb.tsx";
 import { DeckCoverImage } from "@/components/decks/DeckCover.tsx";
 import { DeckZoneCards, DeckZonesSummary } from "@/components/decks/DeckZoneCards.tsx";
 import { ShareDeckDialog } from "@/components/decks/ShareDeckDialog.tsx";
+import { BusinessCardButton } from "@/components/decks/BusinessCardDialog.tsx";
 import { DeckTournamentResults, type DeckResultView } from "@/components/decks/DeckTournamentResults.tsx";
 import { DeckGroupsSection } from "./DeckGroupsSection.tsx";
 import { DeckCommentsStandalone } from "@/components/decks/comments/DeckComments.tsx";
@@ -356,9 +357,18 @@ export function DeckSheet({
               <Share2 />
               Partager
             </Button>
+            <BusinessCardButton deckId={deck.id} deckName={deck.name} isPrivate={visibility === "private"} />
             {buildButton}
           </div>
         </div>
+
+        {/* Téléphone : la barre basse est pleine, la carte de visite vient sous l'en-tête. */}
+        <BusinessCardButton
+          deckId={deck.id}
+          deckName={deck.name}
+          isPrivate={visibility === "private"}
+          className="w-fit lg:hidden"
+        />
       </header>
 
       {/* Bureau : la fiche et sa colonne d'appui. */}
