@@ -46,7 +46,8 @@ export function WeeklyEmailSectionsPicker({ initial }: { initial: WeeklyEmailSet
         setSaved(result.settings);
         setMessage({ kind: "ok", text: t("saved") });
       } else {
-        setMessage({ kind: "error", text: result.error ?? t("error") });
+        // Les erreurs du serveur sont en français : on affiche la nôtre, traduite.
+        setMessage({ kind: "error", text: t("error") });
       }
     });
   };
@@ -106,11 +107,13 @@ export function WeeklyEmailSectionsPicker({ initial }: { initial: WeeklyEmailSet
         <a href="/api/users/me/weekly-email/preview" target="_blank" rel="noopener" className="text-sm font-medium text-primary hover:underline">
           {t("preview")}
         </a>
-        {message && (
-          <p className={message.kind === "ok" ? "text-sm text-muted-foreground" : "text-sm text-destructive"} role="status">
-            {message.text}
-          </p>
-        )}
+        {/* Toujours présente : une zone live insérée avec son texte n'est pas toujours annoncée. */}
+        <p
+          className={message?.kind === "error" ? "text-sm text-destructive" : "text-sm text-muted-foreground"}
+          role="status"
+        >
+          {message?.text ?? ""}
+        </p>
       </div>
     </div>
   );

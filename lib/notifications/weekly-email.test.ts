@@ -87,6 +87,12 @@ describe("annonces des lieux", () => {
     assert.equal(news[1].category, "Nouveauté");
   });
 
+  it("compare des instants, pas des chaînes au décalage différent", () => {
+    // 08:30Z s'écrit « 09:30+01:00 » : avant le dernier envoi de 09:00Z, donc déjà annoncée.
+    const lair = { id: "l", name: "Lieu", news: [{ id: "x", title: "X", publishedAt: "2026-11-16T09:30:00.000+01:00" }] };
+    assert.deepEqual(selectLairNews([lair], undefined, "2026-11-16T09:00:00.000Z", NOW), []);
+  });
+
   it("respecte un lieu réglé sans annonces", () => {
     const news = selectLairNews(
       lairs,

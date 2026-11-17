@@ -210,6 +210,15 @@ export function isWeeklyEmailEmpty(content: WeeklyEmailContent): boolean {
 // Les choix
 
 /**
+ * L'instant d'une date ISO, en millisecondes. Les dates en base ne portent pas
+ * toutes le même décalage (« …Z », « …+01:00 ») : comparées comme des chaînes,
+ * elles se classeraient mal autour de l'heure de l'envoi.
+ */
+function ms(iso: string | undefined): number {
+  return iso ? Date.parse(iso) : Number.NaN;
+}
+
+/**
  * Le choix des lieux : les événements mis en avant, du plus proche au plus
  * lointain, au plus `MAX_PICKS_PER_LAIR` par lieu et `MAX_PICKS` en tout.
  */
@@ -218,7 +227,7 @@ export function selectLairPicks<T extends { featured?: boolean; lairId?: string;
 ): T[] {
   const perLair = new Map<string, number>();
   const picks: T[] = [];
-  for (const event of [...events].sort((a, b) => a.startDateTime.localeCompare(b.startDateTime))) {
+  for (const event of [...events].sort((a, b) => ms(a.startDateTime) - ms(b.startDateTime))) {
     if (!event.featured || !event.lairId) continue;
     const count = perLair.get(event.lairId) ?? 0;
     if (count >= MAX_PICKS_PER_LAIR) continue;
@@ -240,11 +249,14 @@ export function selectLairNews(
   since: string,
   now: string,
 ): DigestLairNews[] {
+  const after = ms(since);
+  const until = ms(now);
   const news: DigestLairNews[] = [];
   for (const lair of lairs) {
     if (!acceptsLairNotification(lairNotificationPreference(prefs, lair.id), "announcements")) continue;
     for (const item of lair.news ?? []) {
-      if (!item.publishedAt || item.publishedAt <= since || item.publishedAt > now) continue;
+      const published = ms(item.publishedAt);
+      if (!(published > after && published <= until)) continue;
       news.push({
         id: item.id,
         lairId: lair.id,
@@ -256,7 +268,7 @@ export function selectLairNews(
       });
     }
   }
-  return news.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)).slice(0, MAX_LAIR_NEWS);
+  return news.sort((a, b) => ms(b.publishedAt) - ms(a.publishedAt)).slice(0, MAX_LAIR_NEWS);
 }
 
 /**
@@ -280,12 +292,12 @@ export function registrationOf(
     return null;
   }
 
-  const waitlist = [...(event.waitlist ?? [])].sort((a, b) => a.joinedAt.localeCompare(b.joinedAt));
+  const waitlist = [...(event.waitlist ?? [])].sort((a, b) => ms(a.joinedAt) - ms(b.joinedAt));
   const index = waitlist.findIndex((entry) => entry.userId === userId);
   if (index < 0) return null;
 
   const entry = waitlist[index];
-  if (entry.offeredAt && entry.offerExpiresAt && entry.offerExpiresAt > now) {
+  if (entry.offeredAt && entry.offerExpiresAt && ms(entry.offerExpiresAt) > ms(now)) {
     return { status: "offer", offerExpiresAt: entry.offerExpiresAt };
   }
   return { status: "waitlist", position: index + 1 };
@@ -302,7 +314,7 @@ export function playGroupAgenda(
 ): Pick<DigestPlayGroup, "polls" | "sessions"> {
   const polls = sessions
     .filter((session) => session.status === "poll")
-    .filter((session) => !session.pollClosesAt || session.pollClosesAt >= from)
+    .filter((session) => !session.pollClosesAt || ms(session.pollClosesAt) >= ms(from))
     .filter((session) => !(session.slots ?? []).some((slot) => slot.voterIds.includes(userId)))
     .map((session) => ({
       id: session.id,
@@ -313,8 +325,8 @@ export function playGroupAgenda(
 
   const confirmed = sessions
     .filter((session) => session.status === "confirmed" && session.startsAt)
-    .filter((session) => (session.startsAt as string) >= from && (session.startsAt as string) <= to)
-    .sort((a, b) => (a.startsAt as string).localeCompare(b.startsAt as string))
+    .filter((session) => ms(session.startsAt) >= ms(from) && ms(session.startsAt) <= ms(to))
+    .sort((a, b) => ms(a.startsAt) - ms(b.startsAt))
     .map((session) => ({
       id: session.id,
       title: session.title,
@@ -343,11 +355,14 @@ export function metaTrends(
   now: string,
 ): { decks: number; legends: DigestMetaLegend[] } | null {
   const end = DateTime.fromISO(now);
-  const recentStart = end.minus({ days: META_RECENT_DAYS }).toISO() as string;
-  const previousStart = end.minus({ days: META_RECENT_DAYS + META_PREVIOUS_DAYS }).toISO() as string;
+  const recentStart = end.minus({ days: META_RECENT_DAYS }).toMillis();
+  const previousStart = end.minus({ days: META_RECENT_DAYS + META_PREVIOUS_DAYS }).toMillis();
+  const until = end.toMillis();
 
-  const recent = decks.filter((deck) => deck.legend && deck.eventDate >= recentStart && deck.eventDate <= now);
-  const previous = decks.filter((deck) => deck.legend && deck.eventDate >= previousStart && deck.eventDate < recentStart);
+  const recent = decks.filter((deck) => deck.legend && ms(deck.eventDate) >= recentStart && ms(deck.eventDate) <= until);
+  const previous = decks.filter(
+    (deck) => deck.legend && ms(deck.eventDate) >= previousStart && ms(deck.eventDate) < recentStart,
+  );
   if (recent.length < META_MIN_RECENT_DECKS) return null;
 
   const shares = (sample: typeof decks) => {
@@ -381,7 +396,7 @@ export function remainingAgenda<T extends { id: string; startDateTime: string }>
   const skip = new Set(shown);
   return events
     .filter((event) => !skip.has(event.id))
-    .sort((a, b) => a.startDateTime.localeCompare(b.startDateTime))
+    .sort((a, b) => ms(a.startDateTime) - ms(b.startDateTime))
     .slice(0, MAX_AGENDA);
 }
 

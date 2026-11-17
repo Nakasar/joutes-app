@@ -16,6 +16,7 @@ import { legendLabel } from "@/lib/meta/stats";
 import db from "@/lib/mongodb";
 import type { Event } from "@/lib/types/Event";
 import type { Lair } from "@/lib/types/Lair";
+import type { PlayGroup } from "@/lib/types/PlayGroup";
 import type { TournamentResult } from "@/lib/types/TournamentResult";
 import type { User } from "@/lib/types/User";
 
@@ -134,8 +135,12 @@ export async function loadWeeklyEmailContent(
     content.registrations = await guard("registrations", [], () => loadRegistrations(reader.id, now, weekEnd));
   }
 
+  // Les groupes servent à trois sections : une seule lecture.
+  const needsGroups = has("playGroups") || has("wishlist") || (has("friendResults") && viewer.friends.length > 0);
+  const groups = needsGroups ? await guard("groups", [] as PlayGroup[], () => getPlayGroupsForUser(reader.id)) : [];
+
   if (has("playGroups")) {
-    content.playGroups = await guard("playGroups", [], () => loadPlayGroups(reader.id, now, weekEnd));
+    content.playGroups = await guard("playGroups", [], () => loadPlayGroups(reader.id, groups, now, weekEnd));
   }
 
   if (has("meta") && (reader.games ?? []).length > 0) {
@@ -143,11 +148,11 @@ export async function loadWeeklyEmailContent(
   }
 
   if (has("wishlist")) {
-    content.wishlist = await guard("wishlist", [], () => loadWishlistOffers(reader.id, viewer.friends));
+    content.wishlist = await guard("wishlist", [], () => loadWishlistOffers(reader.id, viewer.friends, groups));
   }
 
   if (has("friendResults") && viewer.friends.length > 0) {
-    content.friendResults = await guard("friendResults", [], () => loadFriendResults(reader.id, viewer.friends, since));
+    content.friendResults = await guard("friendResults", [], () => loadFriendResults(viewer.friends, groups, since));
   }
 
   if (has("nearby") && reader.location) {
@@ -162,7 +167,7 @@ export async function loadWeeklyEmailContent(
     ...content.registrations.map((registration) => registration.event),
   ].map((event) => event.id);
   content.agenda = remainingAgenda(
-    followed.filter((event) => event.startDateTime <= weekEnd),
+    followed.filter((event) => Date.parse(event.startDateTime) <= Date.parse(weekEnd)),
     shown,
   ).map(toDigestEvent);
 
@@ -251,8 +256,12 @@ async function readLairNames(ids: string[]): Promise<Map<string, string>> {
 }
 
 /** Pour chaque groupe du joueur : sondages sans réponse, sessions de la semaine, commentaires non lus. */
-async function loadPlayGroups(userId: string, now: string, weekEnd: string): Promise<DigestPlayGroup[]> {
-  const groups = await getPlayGroupsForUser(userId);
+async function loadPlayGroups(
+  userId: string,
+  groups: PlayGroup[],
+  now: string,
+  weekEnd: string,
+): Promise<DigestPlayGroup[]> {
 
   const rows = await Promise.all(
     groups.map(async (group) => {
@@ -298,7 +307,7 @@ async function loadMeta(gameIds: string[], now: string) {
  * Les listes de vente sont publiques : on ne regarde que celles de gens qu'il
  * connaît, pour que l'offre soit à portée de main.
  */
-async function loadWishlistOffers(userId: string, friendIds: string[]) {
+async function loadWishlistOffers(userId: string, friendIds: string[], groups: PlayGroup[]) {
   const wishlists = await db
     .collection("wishlists")
     .find({ ownerType: "user", ownerId: userId }, { projection: { _id: 1 } })
@@ -310,7 +319,6 @@ async function loadWishlistOffers(userId: string, friendIds: string[]) {
     .distinct("cardId", { wishlistId: { $in: wishlists.map((wishlist) => wishlist._id) } });
   if (cardIds.length === 0) return [];
 
-  const groups = await getPlayGroupsForUser(userId);
   const groupNames = new Map(groups.map((group) => [group.id, group.name]));
   const sellLists = await db
     .collection("sellLists")
@@ -362,24 +370,26 @@ async function loadWishlistOffers(userId: string, friendIds: string[]) {
  * réservé aux groupes ne se montre que si l'ami partage un groupe avec le
  * joueur, comme sur la timeline du groupe.
  */
-async function loadFriendResults(userId: string, friendIds: string[], since: string) {
-  const groups = await getPlayGroupsForUser(userId);
+async function loadFriendResults(friendIds: string[], groups: PlayGroup[], since: string) {
   const groupMates = new Set(groups.flatMap((group) => group.members.map((member) => member.userId)));
-  const sinceDay = since.slice(0, 10);
+  const mates = friendIds.filter((id) => groupMates.has(id));
 
+  // Déclarés depuis le dernier email, quelle que soit la date du tournoi ; la
+  // visibilité se règle dans la requête, avant la limite.
   const results = await db
     .collection<TournamentResult>(TOURNAMENT_RESULTS_COLLECTION)
-    .find({ userId: { $in: friendIds }, provisional: { $ne: true }, date: { $gte: sinceDay } })
-    .sort({ date: -1 })
-    .limit(20)
+    .find({
+      userId: { $in: friendIds },
+      provisional: { $ne: true },
+      createdAt: { $gt: since },
+      $or: [{ visibility: "public" }, ...(mates.length > 0 ? [{ userId: { $in: mates } }] : [])],
+    })
+    .sort({ createdAt: -1 })
+    .limit(MAX_RESULTS)
     .toArray();
+  const cards = await getUserCardsByIds(results.map((result) => result.userId));
 
-  const visible = results
-    .filter((result) => result.visibility === "public" || groupMates.has(result.userId))
-    .slice(0, MAX_RESULTS);
-  const cards = await getUserCardsByIds(visible.map((result) => result.userId));
-
-  return visible.map((result) => ({
+  return results.map((result) => ({
     id: result.id,
     friendName: cards.get(result.userId)?.displayName ?? "Un ami",
     name: result.name,

@@ -298,6 +298,11 @@ export const USER_INDEXES: IndexDefinition[] = [
     why: "La timeline d'un groupe : les résultats de ses membres, du plus récent au plus ancien",
   },
   {
+    collection: "tournamentResults",
+    keys: { userId: 1, createdAt: -1 },
+    why: "L'email hebdomadaire : les résultats déclarés par les amis depuis le dernier envoi",
+  },
+  {
     // Un joueur du locator ne peut être reconnu que par un seul compte.
     collection: "tournamentResults",
     keys: { sourceRef: 1 },
