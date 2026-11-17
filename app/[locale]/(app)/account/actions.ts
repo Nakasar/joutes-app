@@ -15,7 +15,9 @@ import {
   setNotificationPreference,
   setProfileDisplayName,
   setProfileLocation,
+  setWeeklyEmailOptions,
 } from "@/lib/users/profile-service.ts";
+import type { WeeklyEmailSection, WeeklyEmailSettings } from "@/lib/notifications/weekly-email.ts";
 import type {
   NotificationChannel,
   NotificationPreferenceType,
@@ -286,6 +288,30 @@ export async function updateNotificationsPreference(
     return { success: false, error: "Erreur serveur" };
   }
 }
+/** Les sections de l'email hebdomadaire et l'envoi des semaines vides. */
+export async function updateWeeklyEmailOptionsAction(input: {
+  sections?: WeeklyEmailSection[];
+  skipEmpty?: boolean;
+}): Promise<{ success: boolean; settings?: WeeklyEmailSettings; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const result = await setWeeklyEmailOptions(session.user.id, input);
+    if (!result.ok) {
+      return { success: false, error: result.error };
+    }
+    return { success: true, settings: result.settings };
+  } catch (error) {
+    console.error("Erreur lors du réglage de l'email hebdomadaire :", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
 /**
  * Les appareils enregistrés du compte, pour la page des notifications.
  *
