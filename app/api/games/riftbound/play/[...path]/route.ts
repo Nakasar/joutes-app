@@ -9,6 +9,7 @@ import {
   searchPlayDecksAction,
   startTableAction,
 } from "@/app/[locale]/(app)/games/riftbound/play/actions";
+import { limitedRoutes } from "@/lib/engine/limited-play-api";
 import { playRoutes } from "@/lib/engine/play-api";
 
 /** La page Jouer de Riftbound pour l'app mobile : voir `lib/engine/play-api.ts`. */
@@ -22,4 +23,5 @@ export const { GET, POST } = playRoutes({
   addBot: addBotAction,
   leaveSeat: leaveSeatAction,
   startTable: startTableAction,
+  limited: limitedRoutes("riftbound"),
 });

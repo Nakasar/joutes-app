@@ -229,7 +229,9 @@ L'app mobile (`joutes-mobile`) ne peut pas appeler les actions serveur : les
 mêmes actions sont exposées en REST sous `/api/games/<jeu>/play/…`
 (`lib/engine/play-api.ts`, une route attrape-tout par jeu à côté de `cards`).
 `GET lobby`, `GET decks?q=`, `POST decks/resolve`, `POST tables`,
-`GET tables/{id}`, `POST tables/{id}/join|bots|leave|start`. Les réponses
+`GET tables/{id}`, `POST tables/{id}/join|bots|leave|start` ; pour le scellé
+et le draft en ligne (Riftbound et Star Wars: Unlimited, `lib/engine/limited-play-api.ts`) :
+`GET events`, `POST events`, `GET events/{id}`, `POST events/{id}/join|bots|leave|start`. Les réponses
 gardent la forme des actions (`{ ok, … }`, ou `{ ok: false, error }` avec un
 statut HTTP qui suit le code). L'app embarque le même moteur WebAssembly pour
 jouer contre l'IA, et ouvre la WebSocket de `access.ws` pour une table en ligne.
