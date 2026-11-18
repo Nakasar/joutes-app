@@ -62,7 +62,10 @@ type Table = InstanceType<BrowserEngine["Table"]>;
  * Une partie contre l'IA, jouée entièrement dans le navigateur. Le journal de
  * la partie est réécrit après chaque coup : recharger la page la reprend.
  */
-export function useSoloGame(save: SoloSave | null, options: { hands?: boolean } = {}): GameFeed {
+export function useSoloGame(
+  save: SoloSave | null,
+  options: { hands?: boolean; onSave?: (save: SoloSave) => void } = {},
+): GameFeed {
   const table = useRef<Table | null>(null);
   const seen = useRef(0);
   const [status, setStatus] = useState<GameFeed["status"]>("loading");
@@ -73,6 +76,12 @@ export function useSoloGame(save: SoloSave | null, options: { hands?: boolean } 
   const [tick, setTick] = useState(0);
   // La table raconte encore le coup précédent : le robot attend.
   const [held, setHeld] = useState(false);
+
+  // Où garder la partie : le match d'un scellé ou d'un draft se garde avec son évènement.
+  const keep = useRef(options.onSave);
+  useEffect(() => {
+    keep.current = options.onSave;
+  });
 
   const seat = save ? save.seat : 0;
   // Spectateur : la vue d'arbitre (-2) montre les mains des IA, celle de
@@ -89,7 +98,7 @@ export function useSoloGame(save: SoloSave | null, options: { hands?: boolean } 
       seen.current = next.seq;
       setUpdate(next);
       setJournal((previous) => appendJournal(previous, next.events));
-      writeSoloSave({ ...save, record: JSON.parse(current.record()) as EngineRecord });
+      (keep.current ?? writeSoloSave)({ ...save, record: JSON.parse(current.record()) as EngineRecord });
       setTick((value) => value + 1);
     } catch (cause) {
       // Le moteur a levé une erreur : la dire plutôt que de laisser la table figée.

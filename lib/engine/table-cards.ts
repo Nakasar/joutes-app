@@ -46,6 +46,7 @@ export async function readTableCards(gameId: string): Promise<TableCards> {
       domains: card.domains,
       ...(card.champion ? { champion: true } : {}),
       ...(card.token ? { token: true } : {}),
+      ...(card.rarity ? { rarity: card.rarity } : {}),
       playable: card.coverage !== "none",
       def: card.id,
       ...(fx !== "domaine" ? { fx } : {}),

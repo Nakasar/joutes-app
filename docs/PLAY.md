@@ -12,6 +12,7 @@ raconte chaque évènement en citant la règle. Le site ne contient aucune règl
 | Contre l'IA | Dans le navigateur (WebAssembly) | Rien. La partie est gardée dans `localStorage` et reprend au rechargement. |
 | IA contre IA (spectateur) | Dans le navigateur, comme contre l'IA | Rien. La sauvegarde a `seat: null` ; voir « Regarder des IA » plus bas. |
 | En ligne | Sur le serveur de parties (`joutes-server serve`) | Les variables `JOUTES_ENGINE_*` (voir `.env.example`). |
+| Scellé et draft contre l'IA | Dans le navigateur, comme contre l'IA | Rien. Voir « Scellé et draft » plus bas. |
 | Mon serveur (mode hôte) | Sur un serveur lancé par un organisateur (`joutes-server host`) | L'adresse et le code du serveur, saisis dans la page. Joutes ne les voit pas. |
 
 Le mode hôte sert aux deux jeux : `components/play/HostPanel.tsx` reçoit de
@@ -232,3 +233,31 @@ gardent la forme des actions (`{ ok, … }`, ou `{ ok: false, error }` avec un
 statut HTTP qui suit le code). L'app embarque le même moteur WebAssembly pour
 jouer contre l'IA, et ouvre la WebSocket de `access.ws` pour une table en ligne.
 Toute nouvelle action d'une page Jouer se branche aussi là.
+
+## Scellé et draft
+
+Le lobby demande d'abord un format : Construit, Scellé ou Draft. En limité,
+`components/play/limited/LimitedSetup.tsx` choisit les boosters (`booster_sets()`
+du moteur), le nombre de joueurs (2 à 8) et le niveau des IA, puis crée un
+`LimitedEvent` dans le navigateur. La page `/games/riftbound/play/limited`
+(`LimitedGame`) tient la suite :
+
+| Phase du moteur | Écran |
+|---|---|
+| `draft` | `DraftScreen` : un paquet, une carte à prendre. |
+| `build` | `SealedOpening` (scellé, tant que tous les boosters n'ont pas été regardés), puis `BuildScreen`. |
+| `play`, `done` | Le match du joueur sur `GameTable` (`useSoloGame`), puis `LimitedResults`. |
+
+- L'évènement est gardé dans `localStorage` (`joutes.play.limited`, forme
+  `LimitedSave` de `lib/engine/limited.ts`) : le journal du moteur, le deck en
+  cours et le journal du match. Recharger reprend où l'on en était.
+- Le site ne juge pas le deck : `LimitedEvent.check` rend les problèmes, dans
+  les mots du moteur, et « Construire pour moi » appelle `suggest`. Les calculs
+  de `lib/engine/limited.ts` (réserve restante, domaines, courbe, répartition
+  des runes) ne servent qu'à l'affichage et ont leurs tests.
+- Pour commencer, un évènement se joue en un seul match d'une partie. Les
+  matchs entre IA tournent dans `simulation.worker.ts` et leur résultat est
+  inscrit par `report`.
+- Les boosters de tous les joueurs sont ouverts dans le navigateur de celui qui
+  joue : c'est sans enjeu contre des IA. En ligne, l'évènement vivra sur le
+  serveur de parties, qui seul verra toutes les cartes (étape suivante).
