@@ -2464,14 +2464,36 @@
         "oneMatch": "Nach dem Deckbau spielst du ein Match mit einer Partie gegen einen Gegner.",
         "startSealed": "Booster öffnen",
         "startDraft": "Draft beginnen",
-        "replaces": "Das ersetzt das laufende Event."
+        "replaces": "Das ersetzt das laufende Event.",
+        "whereAi": "Gegen KIs",
+        "whereAiHint": "Alles läuft in deinem Browser.",
+        "whereOnlineHint": "Erstelle ein Event und lade per Link ein.",
+        "whereHostHint": "Ein Event, das du oder ein Veranstalter hostet.",
+        "noLimit": "Ohne Limit",
+        "seconds": "{count} s",
+        "minutes": "{count} Min.",
+        "timers": "Timer",
+        "pickDelay": "Zeit pro Pick",
+        "buildDelay": "Zeit für den Deckbau",
+        "timersHint": "Läuft die Zeit ab, wählt oder baut der Server anstelle des Spielers.",
+        "playersOnline": "Die Anzahl der Plätze. Im Warteraum lädst du Spieler ein und fügst KIs hinzu.",
+        "oneMatchOnline": "Nach dem Deckbau spielt jeder ein Match über eine Partie gegen einen Gegner.",
+        "create": "Event erstellen",
+        "signIn": "Melde dich an, um ein Online-Event zu erstellen oder beizutreten.",
+        "mineWaiting": "wartet · {players, plural, one {# Spieler} other {# Spieler}}",
+        "minePlaying": "läuft · {players, plural, one {# Spieler} other {# Spieler}}",
+        "mineOpen": "Öffnen",
+        "join": "Einem Event beitreten",
+        "joinPlaceholder": "Code oder Link des Events",
+        "joinButton": "Beitreten"
       },
       "seat": {
         "picking": "wählt",
         "waiting": "wartet auf ein Pack",
         "building": "baut",
         "ready": "Deck abgegeben",
-        "out": "ausgeschieden"
+        "out": "ausgeschieden",
+        "away": "getrennt"
       },
       "sealed": {
         "booster": "Booster {number} · {set}",
@@ -2562,7 +2584,52 @@
         "tableDraw": "Unentschieden",
         "tableWon": "Sieg für {name}",
         "byeOf": "{name} hatte keinen Gegner.",
-        "deck": "Mein Deck ({count} Karten)"
+        "deck": "Mein Deck ({count} Karten)",
+        "over": "Event beendet"
+      },
+      "room": {
+        "title": {
+          "sealed": "Sealed online",
+          "draft": "Draft online"
+        },
+        "settings": "{players} Plätze · Booster {sets}",
+        "timersDraft": "Zeit pro Pick: {pick}. Zeit für den Deckbau: {build}.",
+        "timersSealed": "Zeit für den Deckbau: {build}.",
+        "invite": "Teile den Link dieser Seite, um Spieler einzuladen. Der Spielserver öffnet die Booster: Jeder sieht nur seine eigenen Karten.",
+        "cancelled": "Dieses Event wurde abgesagt.",
+        "cancel": "Event absagen",
+        "needTwo": "Mindestens zwei Spieler nötig",
+        "start": "Mit {count} Spielern starten",
+        "freeHint": "Beim Start noch freie Plätze bleiben leer.",
+        "join": "Diesem Event beitreten",
+        "signIn": "Melde dich an, um Platz zu nehmen.",
+        "joinHint": "Du erhältst deine Booster beim Start.",
+        "sit": "Platz nehmen"
+      },
+      "online": {
+        "unreachable": "Dem Event kann nicht beigetreten werden.",
+        "unreachableHint": "Der Spielserver antwortet nicht oder die Einladung ist abgelaufen. Lade die Seite neu, um es erneut zu versuchen.",
+        "quitBody": "Du gibst das Event auf: Der Server wartet nicht mehr auf dich und dein Match ist verloren.",
+        "quitWatching": "Du kannst über denselben Link zurückkommen.",
+        "reconnecting": "Verbindung verloren. Neuer Versuch…",
+        "watching": "Du schaust diesem Event zu. Die Karten der Spieler bleiben verborgen.",
+        "tableOpening": "Dein Tisch wird geöffnet…",
+        "timeLeft": "Verbleibende Zeit: {time}",
+        "error": {
+          "NOT_FOUND": "Dieses Event existiert nicht.",
+          "FORBIDDEN": "Nur der Host des Events kann das tun.",
+          "FULL": "Das Event ist voll.",
+          "ALREADY_SEATED": "Du hast bereits einen Platz in diesem Event.",
+          "NOT_FULL": "Mindestens zwei Spieler sind nötig.",
+          "NOT_WAITING": "Das Event wurde bereits gestartet."
+        }
+      },
+      "host": {
+        "intro": "Starte den Spielserver (joutes-server host) auf einem Rechner und erstelle das Event dann hier. Der Server öffnet die Booster: Nur er sieht alle Karten.",
+        "created": "Das Event ist erstellt. Sende jedem seinen Link: Er gibt Zugang zu den eigenen Boostern, und nur zu diesen.",
+        "open": "Mein Event öffnen",
+        "another": "Weiteres Event erstellen",
+        "addSeat": "Platz hinzufügen"
       }
     },
     "Filmed": {

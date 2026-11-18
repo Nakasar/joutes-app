@@ -13,6 +13,7 @@ raconte chaque évènement en citant la règle. Le site ne contient aucune règl
 | IA contre IA (spectateur) | Dans le navigateur, comme contre l'IA | Rien. La sauvegarde a `seat: null` ; voir « Regarder des IA » plus bas. |
 | En ligne | Sur le serveur de parties (`joutes-server serve`) | Les variables `JOUTES_ENGINE_*` (voir `.env.example`). |
 | Scellé et draft contre l'IA | Dans le navigateur, comme contre l'IA | Rien. Voir « Scellé et draft » plus bas. |
+| Scellé et draft en ligne | Sur le serveur de parties, qui seul voit les boosters | La salle d'attente (`limitedEvents`) et un ticket par personne. |
 | Mon serveur (mode hôte) | Sur un serveur lancé par un organisateur (`joutes-server host`) | L'adresse et le code du serveur, saisis dans la page. Joutes ne les voit pas. |
 
 Le mode hôte sert aux deux jeux : `components/play/HostPanel.tsx` reçoit de
@@ -32,7 +33,7 @@ Trois fonctionnalités dépendent d'un abonnement (`lib/constants/subscription-p
 
 | Droit | Offres | Ce qu'il ouvre |
 |---|---|---|
-| `sub:play-host` | Joutes Pro, Joutes Expert | Créer une table en ligne (`createTableFor`) et le mode hôte « Mon serveur » (`resolveDeckAction`, le deck d'un invité). |
+| `sub:play-host` | Joutes Pro, Joutes Expert | Créer une table en ligne (`createTableFor`), créer un scellé ou un draft en ligne (`createLimitedEventAction`) et le mode hôte « Mon serveur » (`resolveDeckAction`, le deck d'un invité). |
 | `sub:play-simulate` | Joutes Expert | Toutes les actions de « Simuler un deck » (`simulation-actions.ts`), sauf supprimer une série. |
 | `sub:play-filmed` | Joutes Pro, Joutes Expert | La table filmée : la page et `filmedArtAction` (les illustrations à reconnaître). |
 
@@ -259,5 +260,35 @@ du moteur), le nombre de joueurs (2 à 8) et le niveau des IA, puis crée un
   matchs entre IA tournent dans `simulation.worker.ts` et leur résultat est
   inscrit par `report`.
 - Les boosters de tous les joueurs sont ouverts dans le navigateur de celui qui
-  joue : c'est sans enjeu contre des IA. En ligne, l'évènement vivra sur le
-  serveur de parties, qui seul verra toutes les cartes (étape suivante).
+  joue : c'est sans enjeu contre des IA. En ligne, l'évènement vit sur le
+  serveur de parties, qui seul voit toutes les cartes.
+
+### En ligne et en mode hôte
+
+À l'étape « Qui joue ? », `LimitedSetup` propose trois lieux : contre des IA
+(ci-dessus), en ligne, ou « Mon serveur ».
+
+- **En ligne.** `createLimitedEventAction` (réservée à `sub:play-host`, comme
+  une table) ouvre une salle d'attente : collection `limitedEvents`
+  (`lib/db/limited-events.ts`), règles dans `lib/engine/limited-events.ts`,
+  page `/games/riftbound/play/limited/room?id=` (`LimitedRoom`). Rejoindre est
+  libre ; l'hôte ajoute des IA et lance dès deux joueurs, les places libres
+  restent vides. Au lancement, le site envoie les réglages et les délais à
+  `POST /events` du serveur de parties, puis signe pour chacun un ticket dont
+  le champ `game` vaut `event:<identifiant>`.
+- **Mon serveur.** `LimitedHostPanel` crée l'évènement sur le serveur de
+  l'organisateur depuis le navigateur et donne un lien par joueur, vers
+  `/games/riftbound/play/limited/remote#server=…&ticket=…` (`RemoteLimited`).
+- **La suite est commune** : `OnlineLimited` tient la connexion
+  (`useOnlineLimitedEvent`, route `/events/{id}/ws`) et réemploie `DraftScreen`,
+  `SealedOpening`, `BuildScreen` et `LimitedResults`. Le serveur n'envoie à
+  chacun que son paquet, sa réserve et son deck ; il vérifie le deck (`check`),
+  le construit sur demande (`suggest`), tient les délais (60 s par choix et
+  20 min de construction par défaut, réglables par l'hôte, 0 pour aucun) et, à
+  leur terme, choisit ou construit à la place du joueur. Pour les matchs il
+  ouvre une table par paire et remet à chaque joueur le ticket de la sienne :
+  la table est celle d'une partie en ligne (`useOnlineGame`).
+- Le navigateur ne garde que le deck en chantier
+  (`joutes.play.limited.online.<évènement>.<siège>`). Quitter avant la fin
+  envoie `forfeit`. Un visiteur sans siège suit l'évènement en spectateur, sans
+  voir aucune carte.

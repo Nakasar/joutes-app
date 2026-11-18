@@ -2464,14 +2464,36 @@
         "oneMatch": "Dopo la costruzione giochi un match di una partita contro un avversario.",
         "startSealed": "Apri le buste",
         "startDraft": "Inizia il draft",
-        "replaces": "Questo sostituisce l'evento in corso."
+        "replaces": "Questo sostituisce l'evento in corso.",
+        "whereAi": "Contro le IA",
+        "whereAiHint": "Tutto si gioca nel tuo browser.",
+        "whereOnlineHint": "Crea un evento e invita tramite link.",
+        "whereHostHint": "Un evento ospitato da te o da un organizzatore.",
+        "noLimit": "Senza limite",
+        "seconds": "{count} s",
+        "minutes": "{count} min",
+        "timers": "Timer",
+        "pickDelay": "Tempo per scelta",
+        "buildDelay": "Tempo di costruzione",
+        "timersHint": "Allo scadere del tempo, il server sceglie o costruisce al posto del giocatore.",
+        "playersOnline": "Il numero di posti. Inviterai i giocatori e aggiungerai le IA nella sala d'attesa.",
+        "oneMatchOnline": "Dopo la costruzione, ognuno gioca un match in una partita contro un avversario.",
+        "create": "Crea l'evento",
+        "signIn": "Accedi per creare un evento online o parteciparvi.",
+        "mineWaiting": "in attesa · {players, plural, one {# giocatore} other {# giocatori}}",
+        "minePlaying": "in corso · {players, plural, one {# giocatore} other {# giocatori}}",
+        "mineOpen": "Apri",
+        "join": "Partecipa a un evento",
+        "joinPlaceholder": "Codice o link dell'evento",
+        "joinButton": "Partecipa"
       },
       "seat": {
         "picking": "sceglie",
         "waiting": "aspetta un pacchetto",
         "building": "costruisce",
         "ready": "mazzo consegnato",
-        "out": "uscito"
+        "out": "uscito",
+        "away": "disconnesso"
       },
       "sealed": {
         "booster": "Busta {number} · {set}",
@@ -2562,7 +2584,52 @@
         "tableDraw": "pareggio",
         "tableWon": "vittoria di {name}",
         "byeOf": "{name} non aveva un avversario.",
-        "deck": "Il mio mazzo ({count} carte)"
+        "deck": "Il mio mazzo ({count} carte)",
+        "over": "Evento terminato"
+      },
+      "room": {
+        "title": {
+          "sealed": "Sealed online",
+          "draft": "Draft online"
+        },
+        "settings": "{players} posti · buste {sets}",
+        "timersDraft": "Tempo per scelta: {pick}. Tempo di costruzione: {build}.",
+        "timersSealed": "Tempo di costruzione: {build}.",
+        "invite": "Condividi il link di questa pagina per invitare i giocatori. Il server di gioco apre le buste: ognuno vede solo le proprie carte.",
+        "cancelled": "Questo evento è stato annullato.",
+        "cancel": "Annulla l'evento",
+        "needTwo": "Servono almeno due giocatori",
+        "start": "Avvia con {count} giocatori",
+        "freeHint": "I posti ancora liberi all'avvio restano vuoti.",
+        "join": "Partecipa a questo evento",
+        "signIn": "Accedi per prendere posto.",
+        "joinHint": "Riceverai le tue buste all'avvio.",
+        "sit": "Prendi posto"
+      },
+      "online": {
+        "unreachable": "Impossibile raggiungere l'evento.",
+        "unreachableHint": "Il server di gioco non risponde, oppure l'invito è scaduto. Ricarica la pagina per riprovare.",
+        "quitBody": "Abbandoni l'evento: il server non ti aspetterà più e il tuo match sarà perso.",
+        "quitWatching": "Potrai tornare con lo stesso link.",
+        "reconnecting": "Connessione persa. Nuovo tentativo in corso…",
+        "watching": "Stai guardando questo evento. Le carte dei giocatori restano nascoste.",
+        "tableOpening": "Il tuo tavolo si sta aprendo…",
+        "timeLeft": "Tempo rimasto: {time}",
+        "error": {
+          "NOT_FOUND": "Questo evento non esiste.",
+          "FORBIDDEN": "Solo l'host dell'evento può farlo.",
+          "FULL": "L'evento è al completo.",
+          "ALREADY_SEATED": "Hai già un posto in questo evento.",
+          "NOT_FULL": "Servono almeno due giocatori.",
+          "NOT_WAITING": "L'evento è già stato avviato."
+        }
+      },
+      "host": {
+        "intro": "Avvia il server di gioco (joutes-server host) su una macchina, poi crea l'evento qui. Il server apre le buste: solo lui vede tutte le carte.",
+        "created": "L'evento è stato creato. Invia a ciascuno il suo link: dà accesso alle sue buste, e solo a quelle.",
+        "open": "Apri il mio evento",
+        "another": "Crea un altro evento",
+        "addSeat": "Aggiungi un posto"
       }
     },
     "Filmed": {

@@ -256,7 +256,13 @@ export function PlayLobby() {
         </section>
 
         {format !== "constructed" && (
-          <LimitedSetup key={format} kind={format} name={lobby.name ?? t("lobby.you")} replaces={event !== null} />
+          <LimitedSetup
+            key={format}
+            kind={format}
+            name={lobby.name ?? t("lobby.you")}
+            replaces={event !== null}
+            lobby={{ online: lobby.online, signedIn: lobby.signedIn, canHost: lobby.access.canHost }}
+          />
         )}
 
         {format === "constructed" && (

@@ -2464,14 +2464,36 @@
         "oneMatch": "After deck building, you play a one-game match against one opponent.",
         "startSealed": "Open the boosters",
         "startDraft": "Start the draft",
-        "replaces": "This replaces the event in progress."
+        "replaces": "This replaces the event in progress.",
+        "whereAi": "Against AIs",
+        "whereAiHint": "Everything runs in your browser.",
+        "whereOnlineHint": "Create an event and invite by link.",
+        "whereHostHint": "An event hosted by you or an organizer.",
+        "noLimit": "No limit",
+        "seconds": "{count} s",
+        "minutes": "{count} min",
+        "timers": "Timer",
+        "pickDelay": "Time per pick",
+        "buildDelay": "Deck building time",
+        "timersHint": "When time runs out, the server picks or builds for the player.",
+        "playersOnline": "The number of seats. You will invite players and add AIs in the waiting room.",
+        "oneMatchOnline": "After deck building, everyone plays a one-game match against one opponent.",
+        "create": "Create the event",
+        "signIn": "Sign in to create or join an online event.",
+        "mineWaiting": "waiting · {players, plural, one {# player} other {# players}}",
+        "minePlaying": "in progress · {players, plural, one {# player} other {# players}}",
+        "mineOpen": "Open",
+        "join": "Join an event",
+        "joinPlaceholder": "Event code or link",
+        "joinButton": "Join"
       },
       "seat": {
         "picking": "picking",
         "waiting": "waiting for a pack",
         "building": "building",
         "ready": "deck submitted",
-        "out": "out"
+        "out": "out",
+        "away": "disconnected"
       },
       "sealed": {
         "booster": "Booster {number} · {set}",
@@ -2562,7 +2584,52 @@
         "tableDraw": "draw",
         "tableWon": "{name} won",
         "byeOf": "{name} had no opponent.",
-        "deck": "My deck ({count} cards)"
+        "deck": "My deck ({count} cards)",
+        "over": "Event finished"
+      },
+      "room": {
+        "title": {
+          "sealed": "Online sealed",
+          "draft": "Online draft"
+        },
+        "settings": "{players} seats · {sets} boosters",
+        "timersDraft": "Time per pick: {pick}. Deck building time: {build}.",
+        "timersSealed": "Deck building time: {build}.",
+        "invite": "Share this page's link to invite players. The game server opens the boosters: everyone only sees their own cards.",
+        "cancelled": "This event was cancelled.",
+        "cancel": "Cancel the event",
+        "needTwo": "At least two players are needed",
+        "start": "Start with {count} players",
+        "freeHint": "Seats still free at the start stay empty.",
+        "join": "Join this event",
+        "signIn": "Sign in to take a seat.",
+        "joinHint": "You will receive your boosters when the event starts.",
+        "sit": "Take a seat"
+      },
+      "online": {
+        "unreachable": "Unable to join the event.",
+        "unreachableHint": "The game server is not responding, or the invitation has expired. Reload the page to try again.",
+        "quitBody": "You forfeit the event: the server will no longer wait for you and your match will be lost.",
+        "quitWatching": "You can come back with the same link.",
+        "reconnecting": "Connection lost. Trying again…",
+        "watching": "You are watching this event. The players' cards stay hidden.",
+        "tableOpening": "Your table is opening…",
+        "timeLeft": "Time left: {time}",
+        "error": {
+          "NOT_FOUND": "This event does not exist.",
+          "FORBIDDEN": "Only the event host can do that.",
+          "FULL": "The event is full.",
+          "ALREADY_SEATED": "You already have a seat in this event.",
+          "NOT_FULL": "At least two players are needed.",
+          "NOT_WAITING": "The event has already started."
+        }
+      },
+      "host": {
+        "intro": "Start the game server (joutes-server host) on a machine, then create the event here. The server opens the boosters: it alone sees every card.",
+        "created": "The event is created. Send everyone their link: it gives access to their boosters, and only theirs.",
+        "open": "Open my event",
+        "another": "Create another event",
+        "addSeat": "Add a seat"
       }
     },
     "Filmed": {

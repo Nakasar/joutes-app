@@ -29,15 +29,21 @@ export function LimitedResults({
   const t = useTranslations("Games.Limited");
   const mine = matchOf(view, seat);
   const nameOf = (index: number) => view.seats[index]?.name ?? "?";
-  const outcome = !mine
-    ? "bye"
-    : !mine.match.done
-      ? "pending"
-      : mine.match.winner === null
-        ? "draw"
-        : mine.match.winner === seat
-          ? "won"
-          : "lost";
+  // Un siège négatif : un spectateur, qui n'a ni match ni deck.
+  const outcome =
+    seat < 0
+      ? view.phase === "done"
+        ? "over"
+        : "pending"
+      : !mine
+        ? "bye"
+        : !mine.match.done
+          ? "pending"
+          : mine.match.winner === null
+            ? "draw"
+            : mine.match.winner === seat
+              ? "won"
+              : "lost";
   const opponent = mine ? nameOf(mine.match.seats.find((other) => other !== seat) ?? -1) : "";
   const main = deck ? mainCodes(deck) : [];
 
@@ -61,7 +67,7 @@ export function LimitedResults({
           {onReplay && <p className="text-xs text-muted-foreground">{t("results.replayHint")}</p>}
         </section>
 
-        {view.matches.length > 1 && (
+        {(view.matches.length > 1 || (seat < 0 && view.matches.length > 0)) && (
           <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
             <h2 className="font-semibold">{t("results.tables")}</h2>
             <ul className="flex flex-col">

@@ -391,6 +391,29 @@ export const USER_INDEXES: IndexDefinition[] = [
     keys: { memberIds: 1, createdAt: -1 },
     why: "Mes tables, les plus récentes d'abord (page Jouer)",
   },
+  // Évènements de limité en ligne (`lib/db/limited-events.ts`).
+  {
+    collection: "limitedEvents",
+    keys: { id: 1 },
+    options: { unique: true },
+    why: "Un scellé ou un draft par son code : salle d'attente, lancement",
+  },
+  {
+    collection: "limitedEvents",
+    keys: { hostId: 1, status: 1 },
+    why: "Fermer les évènements en attente d'un hôte quand il en ouvre un autre",
+  },
+  {
+    collection: "limitedEvents",
+    keys: { purgeAt: 1 },
+    options: { expireAfterSeconds: 0 },
+    why: "Effacer les évènements une semaine après leur création, un mois après leur lancement",
+  },
+  {
+    collection: "limitedEvents",
+    keys: { memberIds: 1, createdAt: -1 },
+    why: "Mes scellés et drafts, les plus récents d'abord (page Jouer)",
+  },
   // Simulations de decks (`lib/db/deck-simulations.ts`).
   {
     collection: "deckSimulations",

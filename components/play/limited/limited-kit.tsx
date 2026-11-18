@@ -271,6 +271,7 @@ export function EventHeader({
   kind,
   step,
   onQuit,
+  quitBody,
   children,
 }: {
   title: string;
@@ -278,6 +279,8 @@ export function EventHeader({
   kind: LimitedKind;
   step: EventStep;
   onQuit: () => void;
+  /** Ce que quitter fait perdre, quand ce n'est pas l'évènement gardé dans le navigateur. */
+  quitBody?: string;
   /** Les actions de l'écran (« Valider mon deck »). */
   children?: ReactNode;
 }) {
@@ -316,7 +319,7 @@ export function EventHeader({
         open={asking}
         onOpenChange={setAsking}
         title={t("quitTitle")}
-        description={t("quitBody")}
+        description={quitBody ?? t("quitBody")}
         confirmLabel={t("quitConfirm")}
         cancelLabel={t("quitCancel")}
         destructive
@@ -327,7 +330,7 @@ export function EventHeader({
 }
 
 /** Les joueurs de l'évènement et où chacun en est. */
-export function SeatStrip({ view, seat }: { view: LimitedView; seat: number }) {
+export function SeatStrip({ view, seat, away = [] }: { view: LimitedView; seat: number; away?: number[] }) {
   const t = useTranslations("Games.Limited");
   const tPlay = useTranslations("Games.Play");
   return (
@@ -335,13 +338,15 @@ export function SeatStrip({ view, seat }: { view: LimitedView; seat: number }) {
       {view.seats.map((player, index) => {
         const state = player.out
           ? t("seat.out")
-          : view.phase === "draft"
-            ? player.waiting > 0
-              ? t("seat.picking")
-              : t("seat.waiting")
-            : player.ready
-              ? t("seat.ready")
-              : t("seat.building");
+          : away.includes(index) && !player.bot
+            ? t("seat.away")
+            : view.phase === "draft"
+              ? player.waiting > 0
+                ? t("seat.picking")
+                : t("seat.waiting")
+              : player.ready
+                ? t("seat.ready")
+                : t("seat.building");
         const busy = !player.out && (view.phase === "draft" ? player.waiting > 0 : !player.ready);
         return (
           <li
