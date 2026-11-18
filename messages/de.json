@@ -2684,7 +2684,56 @@
           "baseHint": "Alle gewöhnlichen Basen der Erweiterung stehen dir zur Verfügung.",
           "main": "Deck"
         }
-      }
+      },
+        "cp": {
+          "colorWord": "Farbe",
+          "color": {
+            "red": "Rot",
+            "green": "Grün",
+            "blue": "Blau",
+            "yellow": "Gelb"
+          },
+          "kind": {
+            "unit": "Unit",
+            "program": "Program",
+            "legend": "Legend",
+            "gear": "Gear"
+          },
+          "rarity": {
+            "common": "Gewöhnlich",
+            "uncommon": "Ungewöhnlich",
+            "rare": "Selten",
+            "epic": "Epic",
+            "secret": "Secret",
+            "nova": "Nova Rare"
+          },
+          "cost": "Kosten {cost}",
+          "power": "Stärke {power}",
+          "ram": "RAM {ram}",
+          "boostersSealed": "Jeder Spieler öffnet {boosters} Booster mit {size} Karten und baut ein Deck mit mindestens {min} Karten in höchstens drei Farben und mit bis zu drei Legenden. Kein RAM-Limit und kein Kopienlimit.",
+          "build": {
+            "kind": {
+              "all": "Alle",
+              "unit": "Units",
+              "gear": "Gear",
+              "program": "Programs",
+              "legend": "Legenden"
+            },
+            "colorFilter": "Nach Farbe filtern",
+            "legendFull": "Schon drei Legenden",
+            "legendTwin": "Gleicher Name",
+            "offColor": "Vierte Farbe",
+            "chooseLegend": "{name} als Legende wählen",
+            "hint": "Ein Klick fügt eine Karte zum Deck hinzu oder wählt eine Legende. Eine abgeblendete Karte würde eine vierte Farbe hinzufügen; eine abgeblendete Legende kann nicht mehr gewählt werden.",
+            "colors": "{count} von {max} Farben",
+            "legends": "Legenden",
+            "legendCount": "{count} von {max}",
+            "blankEddie": "Stattdessen ein verdeckter Eddie",
+            "legendHint": "Jede fehlende Legende wird in deinem ersten Zug durch die oberste Karte deines Decks ersetzt, die als verdeckter Eddie ausgelegt wird.",
+            "noLegends": "Ohne Legende",
+            "main": "Deck"
+          }
+        }
     },
     "Filmed": {
       "title": "Gefilmter Tisch",

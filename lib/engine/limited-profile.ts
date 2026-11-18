@@ -26,8 +26,13 @@ export type LimitedEngine = {
 };
 
 export type LimitedProfile = {
-  /** Le nom du jeu sur le serveur de parties, qui est aussi son adresse sur le site. */
-  game: LimitedGameKey;
+  /**
+   * Le nom du jeu sur le serveur de parties, qui est aussi son adresse sur le
+   * site ; `null` pour un jeu qui ne se joue que contre des IA.
+   */
+  game: LimitedGameKey | null;
+  /** Où sont les phrases du jeu dans `Games.Limited` (« setup » pour Riftbound). */
+  words: "setup" | "swu" | "cp";
   /** La page Jouer du jeu. */
   base: string;
   /** Où l'évènement contre des IA est gardé dans le navigateur. */

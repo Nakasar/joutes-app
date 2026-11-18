@@ -65,5 +65,6 @@ export type LimitedKit<D, C, R extends MatchRecord, G> = LimitedProfile & {
   /** Le deck joué, dans le bilan. */
   DeckSummary: ComponentType<{ deck: D; cards: C; faces: Faces }>;
   SoloMatch: ComponentType<SoloMatchProps<C, R>>;
-  OnlineMatch: ComponentType<OnlineMatchProps<C>>;
+  /** Absent pour un jeu qui ne se joue que contre des IA (`game` vaut `null`). */
+  OnlineMatch?: ComponentType<OnlineMatchProps<C>>;
 };

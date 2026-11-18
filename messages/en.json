@@ -2684,7 +2684,56 @@
           "baseHint": "Every common base of the set is available to you.",
           "main": "Deck"
         }
-      }
+      },
+        "cp": {
+          "colorWord": "Color",
+          "color": {
+            "red": "Red",
+            "green": "Green",
+            "blue": "Blue",
+            "yellow": "Yellow"
+          },
+          "kind": {
+            "unit": "Unit",
+            "program": "Program",
+            "legend": "Legend",
+            "gear": "Gear"
+          },
+          "rarity": {
+            "common": "Common",
+            "uncommon": "Uncommon",
+            "rare": "Rare",
+            "epic": "Epic",
+            "secret": "Secret",
+            "nova": "Nova Rare"
+          },
+          "cost": "cost {cost}",
+          "power": "power {power}",
+          "ram": "RAM {ram}",
+          "boostersSealed": "Each player opens {boosters} boosters of {size} cards and builds a deck of at least {min} cards, in up to three colors, with up to three Legends. No RAM limit and no copy limit.",
+          "build": {
+            "kind": {
+              "all": "All",
+              "unit": "Units",
+              "gear": "Gear",
+              "program": "Programs",
+              "legend": "Legends"
+            },
+            "colorFilter": "Filter by color",
+            "legendFull": "Already three Legends",
+            "legendTwin": "Same name",
+            "offColor": "Fourth color",
+            "chooseLegend": "Choose {name} as a Legend",
+            "hint": "Click a card to add it to the deck, or to choose a Legend. A dimmed card would add a fourth color; a dimmed Legend can no longer be chosen.",
+            "colors": "{count} of {max} colors",
+            "legends": "Legends",
+            "legendCount": "{count} of {max}",
+            "blankEddie": "A face-down Eddie instead",
+            "legendHint": "Each missing Legend is replaced, on your first turn, by the top card of your deck, placed as a face-down Eddie.",
+            "noLegends": "No Legend",
+            "main": "Deck"
+          }
+        }
     },
     "Filmed": {
       "title": "Filmed table",

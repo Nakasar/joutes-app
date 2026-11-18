@@ -276,7 +276,7 @@ export function OnlineLimited<D, C, R extends MatchRecord, G>({
   }
 
   // Les matchs : le mien sur la table du serveur, puis le bilan.
-  if (mine && feed.table && (atTable || !mine.match.done) && !summary) {
+  if (kit.OnlineMatch && mine && feed.table && (atTable || !mine.match.done) && !summary) {
     return (
       <>
         <Seated onSeated={() => setAtTable(true)} />

@@ -306,6 +306,7 @@ résumé du deck et la table du match, contre l'IA et en ligne.
 | --- | --- | --- | --- |
 | Riftbound | `lib/engine/limited-riftbound.ts` | `components/play/limited/riftbound-kit.tsx` | `/games/riftbound/play/limited` |
 | Star Wars: Unlimited | `lib/engine/swu/limited-profile.ts` | `components/play/swu/limited/swu-kit.tsx` | `/games/swu/play/limited` |
+| Cyberpunk TCG | `lib/engine/cyberpunk/limited-profile.ts` | `components/play/cyberpunk/limited/cp-kit.tsx` | `/games/cp/play/limited` |
 
 Côté serveur, `LIMITED_GAMES` (`lib/engine/limited.ts`) liste les jeux admis,
 la table `GAMES` de `lib/engine/limited-events.ts` donne leurs règles, leurs
@@ -319,3 +320,12 @@ construit dans `SwuBuildScreen` : un leader de la réserve, une base ouverte ou
 une base commune d'une extension ouverte, 30 cartes au moins. Une carte dont
 les affinités ne viennent ni du leader ni de la base est atténuée et annonce son
 surcoût (`swuAspectPenalty`, `lib/engine/swu/limited.ts`).
+
+Cyberpunk TCG (Tournament Rules, annexe D.2.2) : scellé seulement, le jeu n'a
+pas de draft, et contre des IA seulement, le site n'ayant pas de table en ligne
+pour ce jeu (`game: null` dans le profil : `LimitedSetup` ne propose alors ni
+salle d'attente ni mode hôte, et le kit n'a pas d'`OnlineMatch`). 6 boosters de
+12 cartes ; le deck se construit dans `CpBuildScreen` : trois Légendes au plus,
+de noms différents, 30 cartes au moins de trois couleurs au plus, sans limite de
+RAM ni d'exemplaires. Une Légende qui manque devient, au premier tour, une Eddie
+face cachée prise sur le deck : c'est le moteur qui le fait (`Config.limited`).

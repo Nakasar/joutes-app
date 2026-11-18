@@ -2684,7 +2684,56 @@
           "baseHint": "Tutte le basi comuni dell'espansione sono a tua disposizione.",
           "main": "Mazzo"
         }
-      }
+      },
+        "cp": {
+          "colorWord": "Colore",
+          "color": {
+            "red": "Rosso",
+            "green": "Verde",
+            "blue": "Blu",
+            "yellow": "Giallo"
+          },
+          "kind": {
+            "unit": "Unit",
+            "program": "Program",
+            "legend": "Legend",
+            "gear": "Gear"
+          },
+          "rarity": {
+            "common": "Comune",
+            "uncommon": "Non comune",
+            "rare": "Rara",
+            "epic": "Epic",
+            "secret": "Secret",
+            "nova": "Nova Rare"
+          },
+          "cost": "costo {cost}",
+          "power": "potenza {power}",
+          "ram": "RAM {ram}",
+          "boostersSealed": "Ogni giocatore apre {boosters} buste da {size} carte e costruisce un mazzo di almeno {min} carte, di tre colori al massimo, con fino a tre Leggende. Nessun limite di RAM né di copie.",
+          "build": {
+            "kind": {
+              "all": "Tutto",
+              "unit": "Units",
+              "gear": "Gear",
+              "program": "Programs",
+              "legend": "Leggende"
+            },
+            "colorFilter": "Filtra per colore",
+            "legendFull": "Già tre Leggende",
+            "legendTwin": "Stesso nome",
+            "offColor": "Quarto colore",
+            "chooseLegend": "Scegli {name} come Leggenda",
+            "hint": "Un clic aggiunge una carta al mazzo, o sceglie una Leggenda. Una carta attenuata aggiungerebbe un quarto colore; una Leggenda attenuata non può più essere scelta.",
+            "colors": "{count} su {max} colori",
+            "legends": "Leggende",
+            "legendCount": "{count} su {max}",
+            "blankEddie": "Una Eddie coperta al suo posto",
+            "legendHint": "Ogni Leggenda mancante è sostituita, nel tuo primo turno, dalla prima carta del tuo mazzo, messa come Eddie coperta.",
+            "noLegends": "Senza Leggenda",
+            "main": "Mazzo"
+          }
+        }
     },
     "Filmed": {
       "title": "Tavolo filmato",

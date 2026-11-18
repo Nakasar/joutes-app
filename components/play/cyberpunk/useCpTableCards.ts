@@ -6,7 +6,7 @@ import type { CpTableCards } from "@/lib/engine/cyberpunk/cards";
 import { CP_ENGINE_VERSION } from "@/lib/engine/cyberpunk/version";
 
 /** Change quand la forme des cartes change : elle entre dans l'adresse, gardée une heure par le navigateur. */
-const CP_TABLE_CARDS_SHAPE = 1;
+const CP_TABLE_CARDS_SHAPE = 2;
 
 let shared: Promise<CpTableCards> | undefined;
 

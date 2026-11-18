@@ -82,7 +82,7 @@ export function LimitedSetup({
   const errorText = useLimitedError();
   const delayLabel = useDelayLabel();
 
-  const listed = lobby.online && lobby.signedIn;
+  const listed = game !== null && lobby.online && lobby.signedIn;
   useEffect(() => {
     if (!listed) return;
     let cancelled = false;
@@ -246,7 +246,7 @@ export function LimitedSetup({
       <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
         <h2 className="font-semibold">{t("setup.boostersTitle")}</h2>
         <p className="text-sm text-muted-foreground">
-          {t(`${game === "swu" ? "swu" : "setup"}.${kind === "draft" ? "boostersDraft" : "boostersSealed"}`, {
+          {t(`${profile.words}.${kind === "draft" ? "boostersDraft" : "boostersSealed"}`, {
             boosters: rules.boosters,
             size: rules.packSize,
             min: rules.minMain,
@@ -264,7 +264,13 @@ export function LimitedSetup({
         ) : (
           <div className="max-w-xs">{setSelect(0, t("setup.set"))}</div>
         )}
-        <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-secondary">
+        <label
+          className={cn(
+            "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-secondary",
+            // Une seule extension : rien à mêler.
+            sets !== null && sets.length < 2 && "hidden",
+          )}
+        >
           <Checkbox checked={mixed} onCheckedChange={(checked) => setMixed(checked === true)} />
           <span className="flex min-w-0 flex-1 flex-col leading-tight">
             <span className="text-sm font-medium">{t("setup.mixed")}</span>
@@ -275,7 +281,7 @@ export function LimitedSetup({
 
       <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
         <h2 className="font-semibold">{t("setup.whoTitle")}</h2>
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className={cn("grid gap-2 sm:grid-cols-3", !game && "hidden")}>
           {places.map(({ key, icon: Icon, title, hint }) => (
             <button
               key={key}
@@ -401,6 +407,7 @@ export function LimitedSetup({
           ))}
 
         {where === "host" &&
+          game &&
           (lobby.canHost ? (
             <LimitedHostPanel game={game} kind={kind} packs={chosen} hostName={name} timers={timers}>
               {timersBlock}

@@ -48,6 +48,8 @@ export type CpTableCard = {
   ram: number;
   sell: boolean;
   tags: string[];
+  /** « Common », « Uncommon », « Rare », « Epic », « Secret », « Nova Rare ». */
+  rarity?: string;
   /** Faux pour une carte que le moteur ne sait pas jouer. */
   playable: boolean;
 };

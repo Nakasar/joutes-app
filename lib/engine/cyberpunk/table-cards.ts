@@ -51,6 +51,7 @@ export async function readCpTableCards(gameId: string): Promise<CpTableCards> {
       ram: card.ram,
       sell: card.sell,
       tags: card.tags,
+      ...(card.rarity ? { rarity: card.rarity } : {}),
       playable: card.coverage !== "none",
     };
   }

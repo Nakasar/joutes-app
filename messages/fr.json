@@ -2684,7 +2684,56 @@
           "baseHint": "Toutes les bases communes de l'extension sont à votre disposition.",
           "main": "Deck"
         }
-      }
+      },
+        "cp": {
+          "colorWord": "Couleur",
+          "color": {
+            "red": "Rouge",
+            "green": "Vert",
+            "blue": "Bleu",
+            "yellow": "Jaune"
+          },
+          "kind": {
+            "unit": "Unit",
+            "program": "Program",
+            "legend": "Legend",
+            "gear": "Gear"
+          },
+          "rarity": {
+            "common": "Commune",
+            "uncommon": "Peu commune",
+            "rare": "Rare",
+            "epic": "Epic",
+            "secret": "Secret",
+            "nova": "Nova Rare"
+          },
+          "cost": "coût {cost}",
+          "power": "puissance {power}",
+          "ram": "RAM {ram}",
+          "boostersSealed": "Chaque joueur ouvre {boosters} boosters de {size} cartes et construit un deck d'au moins {min} cartes, de trois couleurs au plus, avec jusqu'à trois Légendes. Ni limite de RAM ni limite d'exemplaires.",
+          "build": {
+            "kind": {
+              "all": "Tout",
+              "unit": "Units",
+              "gear": "Gear",
+              "program": "Programs",
+              "legend": "Légendes"
+            },
+            "colorFilter": "Filtrer par couleur",
+            "legendFull": "Déjà trois Légendes",
+            "legendTwin": "Même nom",
+            "offColor": "Quatrième couleur",
+            "chooseLegend": "Choisir {name} comme Légende",
+            "hint": "Un clic ajoute une carte au deck, ou choisit une Légende. Une carte atténuée ajouterait une quatrième couleur ; une Légende atténuée ne peut plus être choisie.",
+            "colors": "{count} sur {max} couleurs",
+            "legends": "Légendes",
+            "legendCount": "{count} sur {max}",
+            "blankEddie": "Une Eddie face cachée à la place",
+            "legendHint": "Chaque Légende qui manque est remplacée, à votre premier tour, par la carte du dessus de votre deck, posée en Eddie face cachée.",
+            "noLegends": "Sans Légende",
+            "main": "Deck"
+          }
+        }
     },
     "Filmed": {
       "title": "Table filmée",

@@ -31,7 +31,8 @@ export type CpEngineCard = {
 /** Un deck construit : trois Légendes et le reste (codes du moteur, « WNC-001 »). */
 export type CpDeckList = { legends: string[]; cards: string[] };
 
-export type CpConfig = { players: { name: string; deck: CpDeckList }[] };
+/** `limited` : une partie de scellé (decks de 30 cartes, 3 Légendes au plus). */
+export type CpConfig = { players: { name: string; deck: CpDeckList }[]; limited?: boolean };
 
 export type CpDie = "d4" | "d6" | "d8" | "d10" | "d12" | "d20";
 
