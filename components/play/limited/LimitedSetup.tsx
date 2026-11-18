@@ -19,15 +19,14 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link, useRouter } from "@/i18n/navigation";
-import { loadEngine } from "@/lib/engine/browser";
 import {
-  limitedRules,
   writeLimitedSave,
   type BoosterSet,
   type LimitedKind,
   type LimitedRecord,
   type LimitedSettings,
 } from "@/lib/engine/limited";
+import type { LimitedProfile } from "@/lib/engine/limited-profile";
 import { BOT_LEVELS, type BotLevel } from "@/lib/engine/types";
 import type { LimitedEventSummary, LimitedTimers } from "@/lib/types/LimitedEvent";
 import { cn } from "@/lib/utils";
@@ -43,20 +42,20 @@ const BUILD_DELAYS = [0, 600, 1200, 1800, 2700];
 /** Ce que la page Jouer sait de la personne : connectée, abonnée, serveur de parties branché. */
 export type LimitedLobby = { online: boolean; signedIn: boolean; canHost: boolean };
 
-const ROOM = "/games/riftbound/play/limited/room";
-
 /**
  * Les réglages d'un scellé ou d'un draft : les boosters, puis où il se joue.
  * Contre des IA, l'évènement est créé par le moteur dans le navigateur et gardé
  * dans `localStorage`. En ligne, Joutes ouvre une salle d'attente ; en mode
- * hôte, il est créé sur le serveur de l'organisateur.
+ * hôte, il est créé sur le serveur de l'organisateur. `profile` dit de quel jeu.
  */
 export function LimitedSetup({
+  profile,
   kind,
   name,
   replaces,
   lobby,
 }: {
+  profile: LimitedProfile;
   kind: LimitedKind;
   name: string;
   replaces: boolean;
@@ -65,7 +64,9 @@ export function LimitedSetup({
   const t = useTranslations("Games.Limited");
   const tPlay = useTranslations("Games.Play");
   const router = useRouter();
-  const rules = limitedRules(kind);
+  const rules = profile.rules(kind);
+  const ROOM = `${profile.base}/limited/room`;
+  const { game } = profile;
   const [sets, setSets] = useState<BoosterSet[] | null>(null);
   const [failed, setFailed] = useState(false);
   // L'extension de chaque booster ; `null` : la première extension proposée.
@@ -85,19 +86,20 @@ export function LimitedSetup({
   useEffect(() => {
     if (!listed) return;
     let cancelled = false;
-    void listLimitedEventsAction().then((result) => {
+    void listLimitedEventsAction(game).then((result) => {
       if (!cancelled && result.ok) setMine(result.events.filter((event) => event.kind === kind));
     });
     return () => {
       cancelled = true;
     };
-  }, [listed, kind]);
+  }, [listed, kind, game]);
 
   useEffect(() => {
     let cancelled = false;
-    loadEngine()
+    profile
+      .engine()
       .then((engine) => {
-        if (!cancelled) setSets(JSON.parse(engine.booster_sets()) as BoosterSet[]);
+        if (!cancelled) setSets(engine.sets());
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
@@ -105,7 +107,7 @@ export function LimitedSetup({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [profile]);
 
   if (failed) return <p className="rounded-xl border bg-card p-5 text-sm text-muted-foreground">{t("setup.failed")}</p>;
   if (!sets) return <p className="rounded-xl border bg-card p-5 text-sm text-muted-foreground">{t("setup.loading")}</p>;
@@ -124,7 +126,7 @@ export function LimitedSetup({
   const start = async () => {
     setBusy(true);
     try {
-      const engine = await loadEngine();
+      const engine = await profile.engine();
       const settings: LimitedSettings = {
         kind,
         packs: chosen,
@@ -137,11 +139,11 @@ export function LimitedSetup({
         ],
       };
       // Le moteur ouvre les boosters ici : il refuse des réglages qu'il ne sait pas tenir.
-      const event = new engine.LimitedEvent(JSON.stringify(settings), Math.floor(Math.random() * 2 ** 31) + 1);
+      const event = engine.create(settings, Math.floor(Math.random() * 2 ** 31) + 1);
       const record = JSON.parse(event.record()) as LimitedRecord;
       event.free();
-      writeLimitedSave({ record });
-      router.push("/games/riftbound/play/limited");
+      writeLimitedSave({ record }, profile.storageKey);
+      router.push(`${profile.base}/limited`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
       setBusy(false);
@@ -150,7 +152,7 @@ export function LimitedSetup({
 
   const createOnline = async () => {
     setBusy(true);
-    const result = await createLimitedEventAction({ kind, packs: chosen, players: count, timers });
+    const result = await createLimitedEventAction(game, { kind, packs: chosen, players: count, timers });
     if (result.ok) {
       router.push(`${ROOM}?id=${result.id}`);
       return;
@@ -244,7 +246,7 @@ export function LimitedSetup({
       <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
         <h2 className="font-semibold">{t("setup.boostersTitle")}</h2>
         <p className="text-sm text-muted-foreground">
-          {t(kind === "draft" ? "setup.boostersDraft" : "setup.boostersSealed", {
+          {t(`${game === "swu" ? "swu" : "setup"}.${kind === "draft" ? "boostersDraft" : "boostersSealed"}`, {
             boosters: rules.boosters,
             size: rules.packSize,
             min: rules.minMain,
@@ -400,7 +402,7 @@ export function LimitedSetup({
 
         {where === "host" &&
           (lobby.canHost ? (
-            <LimitedHostPanel kind={kind} packs={chosen} hostName={name} timers={timers}>
+            <LimitedHostPanel game={game} kind={kind} packs={chosen} hostName={name} timers={timers}>
               {timersBlock}
             </LimitedHostPanel>
           ) : (

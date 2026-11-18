@@ -2502,7 +2502,7 @@
         "skip": "Apri tutto",
         "build": "Costruisci il mio mazzo",
         "poolTitle": "La mia riserva: {count} carte su {total}",
-        "rares": "{count, plural, =0 {Ancora nessuna carta rara o epica.} one {# carta rara o epica.} other {# carte rare o epiche.}}"
+        "rares": "{count, plural, =0 {Ancora nessuna carta rara o migliore.} one {# carta rara o migliore.} other {# carte rare o migliori.}}"
       },
       "draft": {
         "title": "Busta {round} di {rounds} · scelta {pick} di {size}",
@@ -2522,7 +2522,11 @@
         "selected": "Carta selezionata",
         "none": "Clicca su una carta del pacchetto per leggerne il testo.",
         "picks": "Le mie scelte ({count})",
-        "noPicks": "Le tue carte appariranno qui."
+        "noPicks": "Le tue carte appariranno qui.",
+        "titleLeaders": "Leader · scelta {pick} di {size}",
+        "titleLeadersWaiting": "Leader",
+        "leadersNext": "Ognuno prende un leader, poi passa gli altri al giocatore successivo. Le buste arrivano dopo.",
+        "leadersPrevious": "Ognuno prende un leader, poi passa gli altri al giocatore precedente. Le buste arrivano dopo."
       },
       "build": {
         "pool": "Riserva ({count})",
@@ -2630,6 +2634,56 @@
         "open": "Apri il mio evento",
         "another": "Crea un altro evento",
         "addSeat": "Aggiungi un posto"
+      },
+      "swu": {
+        "aspectWord": "Aspetto",
+        "aspect": {
+          "vigilance": "Vigilanza",
+          "command": "Comando",
+          "aggression": "Aggressività",
+          "cunning": "Astuzia",
+          "heroism": "Eroismo",
+          "villainy": "Malvagità"
+        },
+        "kind": {
+          "leader": "Leader",
+          "base": "Base",
+          "unit": "Unità",
+          "event": "Evento",
+          "upgrade": "Miglioria"
+        },
+        "rarity": {
+          "common": "Comune",
+          "uncommon": "Non comune",
+          "rare": "Rara",
+          "legendary": "Leggendaria",
+          "special": "Speciale"
+        },
+        "cost": "costo {cost}",
+        "hp": "{hp} PV",
+        "boostersSealed": "Ogni giocatore apre {boosters} buste da {size} carte e costruisce un mazzo di almeno {min} carte attorno a un leader e a una base.",
+        "boostersDraft": "Ogni giocatore riceve {boosters} buste. Prima si draftano i leader, uno per busta. Poi si prende una carta e si passa il resto al vicino, fino all'ultima ({size} carte per busta). Il mazzo ha almeno {min} carte.",
+        "build": {
+          "kind": {
+            "all": "Tutto",
+            "unit": "Unità",
+            "event": "Eventi",
+            "upgrade": "Migliorie",
+            "leader": "Leader"
+          },
+          "aspectFilter": "Filtra per aspetto",
+          "penalty": "+{count} di costo",
+          "penaltyTitle": "Penalità di aspetto: {count} in più",
+          "penalized": "{count, plural, one {# carta costa di più} other {# carte costano di più}}: i loro aspetti non sono né del leader né della base.",
+          "chooseLeader": "Scegli {name} come leader",
+          "hint": "Un clic aggiunge una carta al mazzo, o sceglie un leader. Una carta attenuata costa 2 in più per ogni aspetto che né il leader né la base forniscono.",
+          "noLeader": "Scegli un leader dalla riserva",
+          "noBase": "Scegli una base",
+          "basesOpened": "Basi delle tue buste",
+          "basesCommon": "Basi comuni dell'espansione",
+          "baseHint": "Tutte le basi comuni dell'espansione sono a tua disposizione.",
+          "main": "Mazzo"
+        }
       }
     },
     "Filmed": {

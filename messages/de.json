@@ -2502,7 +2502,7 @@
         "skip": "Alle öffnen",
         "build": "Mein Deck bauen",
         "poolTitle": "Mein Pool: {count} von {total} Karten",
-        "rares": "{count, plural, =0 {Noch keine seltene oder epische Karte.} one {# seltene oder epische Karte.} other {# seltene oder epische Karten.}}"
+        "rares": "{count, plural, =0 {Noch keine seltene oder bessere Karte.} one {# seltene oder bessere Karte.} other {# seltene oder bessere Karten.}}"
       },
       "draft": {
         "title": "Booster {round} von {rounds} · Wahl {pick} von {size}",
@@ -2522,7 +2522,11 @@
         "selected": "Ausgewählte Karte",
         "none": "Klicke auf eine Karte im Pack, um ihren Text zu lesen.",
         "picks": "Meine Wahl ({count})",
-        "noPicks": "Deine Karten erscheinen hier."
+        "noPicks": "Deine Karten erscheinen hier.",
+        "titleLeaders": "Anführer · Wahl {pick} von {size}",
+        "titleLeadersWaiting": "Anführer",
+        "leadersNext": "Jeder nimmt einen Anführer und gibt die anderen an den nächsten Spieler weiter. Danach kommen die Booster.",
+        "leadersPrevious": "Jeder nimmt einen Anführer und gibt die anderen an den vorherigen Spieler weiter. Danach kommen die Booster."
       },
       "build": {
         "pool": "Pool ({count})",
@@ -2630,6 +2634,56 @@
         "open": "Mein Event öffnen",
         "another": "Weiteres Event erstellen",
         "addSeat": "Platz hinzufügen"
+      },
+      "swu": {
+        "aspectWord": "Aspekt",
+        "aspect": {
+          "vigilance": "Wachsamkeit",
+          "command": "Kommando",
+          "aggression": "Aggression",
+          "cunning": "List",
+          "heroism": "Heldentum",
+          "villainy": "Schurkentum"
+        },
+        "kind": {
+          "leader": "Anführer",
+          "base": "Basis",
+          "unit": "Einheit",
+          "event": "Ereignis",
+          "upgrade": "Aufwertung"
+        },
+        "rarity": {
+          "common": "Gewöhnlich",
+          "uncommon": "Ungewöhnlich",
+          "rare": "Selten",
+          "legendary": "Legendär",
+          "special": "Spezial"
+        },
+        "cost": "Kosten {cost}",
+        "hp": "{hp} LP",
+        "boostersSealed": "Jeder Spieler öffnet {boosters} Booster mit {size} Karten und baut ein Deck mit mindestens {min} Karten um einen Anführer und eine Basis.",
+        "boostersDraft": "Jeder Spieler erhält {boosters} Booster. Zuerst werden die Anführer gedraftet, einer pro Booster. Dann nimmt man eine Karte und gibt den Rest an den Nachbarn weiter, bis zur letzten ({size} Karten pro Booster). Das Deck hat mindestens {min} Karten.",
+        "build": {
+          "kind": {
+            "all": "Alle",
+            "unit": "Einheiten",
+            "event": "Ereignisse",
+            "upgrade": "Aufwertungen",
+            "leader": "Anführer"
+          },
+          "aspectFilter": "Nach Aspekt filtern",
+          "penalty": "+{count} Kosten",
+          "penaltyTitle": "Aspektstrafe: {count} mehr",
+          "penalized": "{count, plural, one {# Karte kostet mehr} other {# Karten kosten mehr}}: Ihre Aspekte gehören weder zum Anführer noch zur Basis.",
+          "chooseLeader": "{name} als Anführer wählen",
+          "hint": "Ein Klick fügt eine Karte zum Deck hinzu oder wählt einen Anführer. Eine abgeblendete Karte kostet 2 mehr für jeden Aspekt, den weder Anführer noch Basis liefern.",
+          "noLeader": "Wähle einen Anführer aus dem Pool",
+          "noBase": "Wähle eine Basis",
+          "basesOpened": "Basen aus deinen Boostern",
+          "basesCommon": "Gewöhnliche Basen der Erweiterung",
+          "baseHint": "Alle gewöhnlichen Basen der Erweiterung stehen dir zur Verfügung.",
+          "main": "Deck"
+        }
       }
     },
     "Filmed": {

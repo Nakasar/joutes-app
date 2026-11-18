@@ -17,6 +17,7 @@ import {
 import { DeckPicker } from "@/components/play/DeckPicker";
 import { HostPanel } from "@/components/play/HostPanel";
 import { LimitedSetup } from "@/components/play/limited/LimitedSetup";
+import { riftboundLimited } from "@/lib/engine/limited-riftbound";
 import { PlanUpsell } from "@/components/play/PlanUpsell";
 import { readSoloSave, writeSoloSave, type SoloSave } from "@/components/play/useSoloGame";
 import { useTableCards } from "@/components/play/useTableCards";
@@ -257,6 +258,7 @@ export function PlayLobby() {
 
         {format !== "constructed" && (
           <LimitedSetup
+            profile={riftboundLimited}
             key={format}
             kind={format}
             name={lobby.name ?? t("lobby.you")}

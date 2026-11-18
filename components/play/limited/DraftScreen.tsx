@@ -6,45 +6,43 @@ import { toast } from "sonner";
 
 import {
   CardZoom,
-  cardName,
   CostCurve,
-  DomainCounts,
-  isMainCard,
+  GroupCounts,
   LimitedCard,
   SeatStrip,
-  useCardLine,
+  useFaceLine,
 } from "@/components/play/limited/limited-kit";
 import { Button } from "@/components/ui/button";
-import type { TableCards } from "@/lib/engine/cards";
+import { stacks, type LimitedView, type Pulled } from "@/lib/engine/limited";
 import {
-  costCurve,
-  domainCounts,
-  limitedRules,
+  faceCurve,
+  groupCounts,
+  mainOnly,
+  PACK_SORTS,
   sortPack,
-  stacks,
-  type LimitedView,
+  type Faces,
   type PackSort,
-  type Pulled,
-} from "@/lib/engine/limited";
+} from "@/lib/engine/limited-faces";
 import { cn } from "@/lib/utils";
-
-const SORTS: PackSort[] = ["rarity", "domain", "cost"];
 
 /** Le draft : un paquet devant soi, une carte à prendre, le reste passe au voisin. */
 export function DraftScreen({
   view,
   seat,
-  cards,
+  faces,
+  packSize,
   onPick,
 }: {
-  view: LimitedView;
+  view: LimitedView<unknown>;
   seat: number;
-  cards: TableCards;
+  faces: Faces;
+  /** Le nombre de cartes d'un booster au début d'un tour de table. */
+  packSize: number;
   /** Prend une carte ; rend le refus du moteur, s'il y en a un. */
   onPick: (card: Pulled) => string | null;
 }) {
   const t = useTranslations("Games.Limited");
-  const line = useCardLine();
+  const line = useFaceLine();
   const [sort, setSort] = useState<PackSort>("rarity");
   // La carte regardée, par sa place dans le paquet du moteur.
   const [selected, setSelected] = useState<number | null>(null);
@@ -52,10 +50,28 @@ export function DraftScreen({
 
   const pack = view.you?.pack ?? null;
   const pool = view.you?.pool ?? [];
-  const size = limitedRules("draft").packSize;
+  // Avant les boosters, un jeu peut faire tourner d'autres paquets : les leaders
+  // de Star Wars: Unlimited, un par booster (règle 10.3.3.a).
+  const prelude = view.prelude ?? 0;
+  const leaders = view.round < prelude;
+  const size = leaders ? view.rounds : packSize;
+  const booster = view.round - prelude;
   const chosen = pack && selected !== null ? (pack[selected] ?? null) : null;
-  const poolCodes = pool.map((card) => card.code);
-  const mainPool = poolCodes.filter((code) => isMainCard(cards[code]));
+  const mainPool = mainOnly(
+    pool.map((card) => card.code),
+    faces,
+  );
+  const chosenFace = chosen ? faces.get(chosen.code) : undefined;
+  const title = leaders
+    ? pack
+      ? t("draft.titleLeaders", { pick: size - pack.length + 1, size })
+      : t("draft.titleLeadersWaiting")
+    : pack
+      ? t("draft.title", { round: booster + 1, rounds: view.rounds, pick: size - pack.length + 1, size })
+      : t("draft.titleWaiting", { round: booster + 1, rounds: view.rounds });
+  const passing = leaders
+    ? t(view.pass_next ? "draft.leadersNext" : "draft.leadersPrevious")
+    : t(view.pass_next ? "draft.passNext" : "draft.passPrevious", { set: view.packs[booster] ?? "" });
 
   const pick = (card: Pulled) => {
     const refused = onPick(card);
@@ -77,22 +93,11 @@ export function DraftScreen({
         <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
           <div className="flex flex-row flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="font-semibold">
-                {pack
-                  ? t("draft.title", {
-                      round: view.round + 1,
-                      rounds: view.rounds,
-                      pick: size - pack.length + 1,
-                      size,
-                    })
-                  : t("draft.titleWaiting", { round: view.round + 1, rounds: view.rounds })}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {t(view.pass_next ? "draft.passNext" : "draft.passPrevious", { set: view.packs[view.round] ?? "" })}
-              </p>
+              <h2 className="font-semibold">{title}</h2>
+              <p className="text-sm text-muted-foreground">{passing}</p>
             </div>
             <div className="inline-flex overflow-hidden rounded-lg border" role="group" aria-label={t("draft.sort")}>
-              {SORTS.map((value) => (
+              {PACK_SORTS.map((value) => (
                 <button
                   key={value}
                   type="button"
@@ -103,7 +108,7 @@ export function DraftScreen({
                     sort === value ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {t(`draft.sortBy.${value}`)}
+                  {value === "group" ? faces.groupWord : t(`draft.sortBy.${value}`)}
                 </button>
               ))}
             </div>
@@ -111,17 +116,17 @@ export function DraftScreen({
 
           {pack ? (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7">
-              {sortPack(pack, cards, sort).map((card) => {
+              {sortPack(pack, faces, sort).map((card) => {
                 const index = pack.indexOf(card);
                 return (
                   <LimitedCard
                     key={index}
                     code={card.code}
                     foil={card.foil}
-                    cards={cards}
+                    faces={faces}
                     showRarity
                     selected={selected === index}
-                    label={t("draft.look", { name: cardName(card.code, cards, t) })}
+                    label={t("draft.look", { name: faces.name(card.code) })}
                     onClick={() => setSelected(index)}
                     onDoubleClick={() => pick(card)}
                     onInspect={() => {
@@ -147,15 +152,13 @@ export function DraftScreen({
           {chosen ? (
             <>
               <div className="flex flex-row gap-3">
-                <LimitedCard code={chosen.code} foil={chosen.foil} cards={cards} className="w-24 shrink-0" />
+                <LimitedCard code={chosen.code} foil={chosen.foil} faces={faces} className="w-24 shrink-0" />
                 <div className="flex min-w-0 flex-col gap-1">
-                  <span className="font-medium">{cardName(chosen.code, cards, t)}</span>
-                  <span className="text-xs text-muted-foreground">{line(cards[chosen.code], chosen.foil)}</span>
+                  <span className="font-medium">{faces.name(chosen.code)}</span>
+                  <span className="text-xs text-muted-foreground">{line(chosenFace, chosen.foil)}</span>
                 </div>
               </div>
-              {cards[chosen.code]?.text && (
-                <p className="whitespace-pre-line text-sm text-muted-foreground">{cards[chosen.code]?.text}</p>
-              )}
+              {chosenFace?.text && <p className="whitespace-pre-line text-sm text-muted-foreground">{chosenFace.text}</p>}
               {take}
             </>
           ) : (
@@ -169,8 +172,8 @@ export function DraftScreen({
             <p className="text-sm text-muted-foreground">{t("draft.noPicks")}</p>
           ) : (
             <>
-              <DomainCounts counts={domainCounts(mainPool, cards)} />
-              <CostCurve curve={costCurve(mainPool, cards)} />
+              <GroupCounts counts={groupCounts(mainPool, faces)} faces={faces} />
+              <CostCurve curve={faceCurve(mainPool, faces)} />
               <ul className="flex max-h-72 flex-col gap-0.5 overflow-y-auto text-sm">
                 {stacks(pool).map((stack) => (
                   <li key={stack.code}>
@@ -180,7 +183,7 @@ export function DraftScreen({
                       className="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-secondary"
                     >
                       <span className="w-6 shrink-0 text-muted-foreground">×{stack.count}</span>
-                      <span className="truncate">{cardName(stack.code, cards, t)}</span>
+                      <span className="truncate">{faces.name(stack.code)}</span>
                     </button>
                   </li>
                 ))}
@@ -193,7 +196,7 @@ export function DraftScreen({
       <CardZoom
         code={zoom?.code ?? null}
         foil={zoom?.foil}
-        cards={cards}
+        faces={faces}
         onClose={() => setZoom(null)}
         action={
           zoom && chosen && zoom.code === chosen.code && Boolean(zoom.foil) === Boolean(chosen.foil) ? take : undefined

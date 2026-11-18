@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { LimitedKind, LimitedSettings } from "@/lib/engine/limited";
+import type { LimitedGameKey, LimitedKind, LimitedSettings } from "@/lib/engine/limited";
 import { BOT_LEVELS, type BotLevel } from "@/lib/engine/types";
 import type { LimitedTimers } from "@/lib/types/LimitedEvent";
 
@@ -25,12 +25,15 @@ const MAX_GUESTS = 7;
  * chacun. Le serveur ouvre les boosters : ni cette page ni Joutes ne les voient.
  */
 export function LimitedHostPanel({
+  game,
   kind,
   packs,
   hostName,
   timers,
   children,
 }: {
+  /** Le jeu, tel que le serveur de parties le nomme. */
+  game: LimitedGameKey;
   kind: LimitedKind;
   /** L'extension de chaque booster, choisie plus haut dans la page. */
   packs: string[];
@@ -74,7 +77,7 @@ export function LimitedHostPanel({
       const created = await fetch(`${base}/events`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ game: "riftbound", settings, timers }),
+        body: JSON.stringify({ game, settings, timers }),
       });
       const event = (await created.json().catch(() => null)) as { id?: string; error?: string } | null;
       if (!created.ok || !event?.id) throw new Error(event?.error ?? tPlay("host.refused", { status: created.status }));

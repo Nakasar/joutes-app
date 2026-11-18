@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
+import type { LimitedKit, MatchRecord } from "@/components/play/limited/kit";
 import { OnlineLimited } from "@/components/play/limited/OnlineLimited";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
@@ -41,7 +42,7 @@ export function remoteLimited(server: string, ticket: string): Remote | null {
  * d'invitation porte l'adresse du serveur et le ticket dans son fragment
  * (`#…`), qui n'est jamais envoyé à Joutes.
  */
-export function RemoteLimited() {
+export function RemoteLimited<D, C, R extends MatchRecord, G>({ kit }: { kit: LimitedKit<D, C, R, G> }) {
   const tPlay = useTranslations("Games.Play");
   // `undefined` tant que le fragment n'est pas lu, `null` s'il est incomplet.
   const [remote, setRemote] = useState<Remote | null | undefined>(undefined);
@@ -64,7 +65,7 @@ export function RemoteLimited() {
       <div className="flex flex-col items-center gap-4 rounded-xl border bg-card p-8 text-center">
         <p className="text-muted-foreground">{tPlay("remote.badLink")}</p>
         <Button asChild>
-          <Link href="/games/riftbound/play">{tPlay("solo.toLobby")}</Link>
+          <Link href={kit.base}>{tPlay("solo.toLobby")}</Link>
         </Button>
       </div>
     );
@@ -75,6 +76,7 @@ export function RemoteLimited() {
       {/* Les noms et les cartes de cet évènement viennent de ce serveur, pas de Joutes : on dit lequel. */}
       <p className="text-xs text-muted-foreground">{tPlay("remote.server", { host: remote.host })}</p>
       <OnlineLimited
+        kit={kit}
         key={remote.url}
         url={remote.url}
         server={remote.server}

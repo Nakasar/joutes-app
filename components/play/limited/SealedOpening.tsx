@@ -4,10 +4,10 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { CardZoom, cardName, DomainCounts, isMainCard, LimitedCard, SeatStrip } from "@/components/play/limited/limited-kit";
+import { CardZoom, GroupCounts, LimitedCard, SeatStrip } from "@/components/play/limited/limited-kit";
 import { Button } from "@/components/ui/button";
-import type { TableCards } from "@/lib/engine/cards";
-import { domainCounts, sortPack, type LimitedView, type Pulled } from "@/lib/engine/limited";
+import type { LimitedView, Pulled } from "@/lib/engine/limited";
+import { groupCounts, mainOnly, sortPack, type Faces } from "@/lib/engine/limited-faces";
 import { cn } from "@/lib/utils";
 
 /**
@@ -17,13 +17,13 @@ import { cn } from "@/lib/utils";
 export function SealedOpening({
   view,
   seat,
-  cards,
+  faces,
   opened,
   onOpened,
 }: {
-  view: LimitedView;
+  view: LimitedView<unknown>;
   seat: number;
-  cards: TableCards;
+  faces: Faces;
   opened: number;
   onOpened: (opened: number) => void;
 }) {
@@ -36,10 +36,7 @@ export function SealedOpening({
   const pack = pool.slice(current * size, (current + 1) * size);
   const seen = pool.slice(0, (current + 1) * size);
   const last = current >= boosters - 1;
-  const rares = seen.filter((card) => {
-    const rarity = cards[card.code]?.rarity;
-    return rarity === "rare" || rarity === "epic";
-  }).length;
+  const rares = seen.filter((card) => faces.get(card.code)?.ring).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -77,14 +74,14 @@ export function SealedOpening({
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 xl:grid-cols-7">
-          {sortPack(pack, cards, "rarity").map((card, index) => (
+          {sortPack(pack, faces, "rarity").map((card, index) => (
             <LimitedCard
               key={`${current}-${index}`}
               code={card.code}
               foil={card.foil}
-              cards={cards}
+              faces={faces}
               showRarity
-              label={t("inspect", { name: cardName(card.code, cards, t) })}
+              label={t("inspect", { name: faces.name(card.code) })}
               onClick={() => setZoom(card)}
             />
           ))}
@@ -92,15 +89,19 @@ export function SealedOpening({
       </section>
       <section className="flex flex-col gap-2 rounded-xl border bg-card p-5">
         <h2 className="font-semibold">{t("sealed.poolTitle", { count: seen.length, total: pool.length })}</h2>
-        <DomainCounts
-          counts={domainCounts(
-            seen.map((card) => card.code).filter((code) => isMainCard(cards[code])),
-            cards,
+        <GroupCounts
+          counts={groupCounts(
+            mainOnly(
+              seen.map((card) => card.code),
+              faces,
+            ),
+            faces,
           )}
+          faces={faces}
         />
         <p className="text-sm text-muted-foreground">{t("sealed.rares", { count: rares })}</p>
       </section>
-      <CardZoom code={zoom?.code ?? null} foil={zoom?.foil} cards={cards} onClose={() => setZoom(null)} />
+      <CardZoom code={zoom?.code ?? null} foil={zoom?.foil} faces={faces} onClose={() => setZoom(null)} />
     </div>
   );
 }

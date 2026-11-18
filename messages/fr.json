@@ -2502,7 +2502,7 @@
         "skip": "Tout ouvrir",
         "build": "Construire mon deck",
         "poolTitle": "Ma réserve : {count} cartes sur {total}",
-        "rares": "{count, plural, =0 {Aucune carte rare ou épique pour l'instant.} one {# carte rare ou épique.} other {# cartes rares ou épiques.}}"
+        "rares": "{count, plural, =0 {Aucune carte rare ou mieux pour l'instant.} one {# carte rare ou mieux.} other {# cartes rares ou mieux.}}"
       },
       "draft": {
         "title": "Booster {round} sur {rounds} · choix {pick} sur {size}",
@@ -2522,7 +2522,11 @@
         "selected": "Carte regardée",
         "none": "Cliquez sur une carte du paquet pour lire son texte.",
         "picks": "Mes choix ({count})",
-        "noPicks": "Vos cartes apparaîtront ici."
+        "noPicks": "Vos cartes apparaîtront ici.",
+        "titleLeaders": "Leaders · choix {pick} sur {size}",
+        "titleLeadersWaiting": "Leaders",
+        "leadersNext": "Chacun prend un leader, puis passe les autres au joueur suivant. Les boosters viennent ensuite.",
+        "leadersPrevious": "Chacun prend un leader, puis passe les autres au joueur précédent. Les boosters viennent ensuite."
       },
       "build": {
         "pool": "Réserve ({count})",
@@ -2630,6 +2634,56 @@
         "open": "Ouvrir mon évènement",
         "another": "Créer un autre évènement",
         "addSeat": "Ajouter un siège"
+      },
+      "swu": {
+        "aspectWord": "Affinité",
+        "aspect": {
+          "vigilance": "Vigilance",
+          "command": "Commandement",
+          "aggression": "Agressivité",
+          "cunning": "Ruse",
+          "heroism": "Héroïsme",
+          "villainy": "Infamie"
+        },
+        "kind": {
+          "leader": "Leader",
+          "base": "Base",
+          "unit": "Unité",
+          "event": "Évènement",
+          "upgrade": "Amélioration"
+        },
+        "rarity": {
+          "common": "Commune",
+          "uncommon": "Peu commune",
+          "rare": "Rare",
+          "legendary": "Légendaire",
+          "special": "Spéciale"
+        },
+        "cost": "coût {cost}",
+        "hp": "{hp} PV",
+        "boostersSealed": "Chaque joueur ouvre {boosters} boosters de {size} cartes et construit un deck d'au moins {min} cartes autour d'un leader et d'une base.",
+        "boostersDraft": "Chaque joueur reçoit {boosters} boosters. Les leaders se draftent d'abord, un par booster. Puis on prend une carte et on passe le reste au voisin, jusqu'à la dernière ({size} cartes par booster). Le deck compte au moins {min} cartes.",
+        "build": {
+          "kind": {
+            "all": "Tout",
+            "unit": "Unités",
+            "event": "Évènements",
+            "upgrade": "Améliorations",
+            "leader": "Leaders"
+          },
+          "aspectFilter": "Filtrer par affinité",
+          "penalty": "+{count} de coût",
+          "penaltyTitle": "Pénalité d'affinité : {count} de plus",
+          "penalized": "{count, plural, one {# carte coûte plus cher} other {# cartes coûtent plus cher}} : leurs affinités ne sont ni celles du leader ni celles de la base.",
+          "chooseLeader": "Choisir {name} comme leader",
+          "hint": "Un clic ajoute une carte au deck, ou choisit un leader. Une carte atténuée coûte 2 de plus par affinité que ni votre leader ni votre base ne donnent.",
+          "noLeader": "Choisissez un leader dans la réserve",
+          "noBase": "Choisissez une base",
+          "basesOpened": "Bases de vos boosters",
+          "basesCommon": "Bases communes de l'extension",
+          "baseHint": "Toutes les bases communes de l'extension sont à votre disposition.",
+          "main": "Deck"
+        }
       }
     },
     "Filmed": {

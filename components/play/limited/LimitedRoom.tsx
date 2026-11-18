@@ -14,6 +14,7 @@ import {
   startLimitedEventAction,
   type LimitedEventState,
 } from "@/app/[locale]/(app)/games/riftbound/play/limited/actions";
+import type { LimitedKit, MatchRecord } from "@/components/play/limited/kit";
 import { OnlineLimited } from "@/components/play/limited/OnlineLimited";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,6 @@ import type { PlayResult } from "@/lib/engine/table-actions";
 import { BOT_LEVELS, type BotLevel } from "@/lib/engine/types";
 
 const POLL_MS = 3000;
-const LOBBY = "/games/riftbound/play";
 
 /** Un délai en clair : « 60 s », « 20 min », ou « sans limite ». */
 export function useDelayLabel(): (seconds: number) => string {
@@ -46,7 +46,9 @@ export function useLimitedError(): (code: string) => string {
  * Un scellé ou un draft en ligne : la salle d'attente tenue par Joutes, puis
  * l'évènement sur le serveur de parties. Le code est lu dans l'adresse (`?id=`).
  */
-export function LimitedRoom() {
+export function LimitedRoom<D, C, R extends MatchRecord, G>({ kit }: { kit: LimitedKit<D, C, R, G> }) {
+  const LOBBY = kit.base;
+  const { game } = kit;
   const t = useTranslations("Games.Limited");
   const tPlay = useTranslations("Games.Play");
   const errorText = useLimitedError();
@@ -61,7 +63,7 @@ export function LimitedRoom() {
   const [socket, setSocket] = useState<{ event: string; url: string; server: string } | null>(null);
 
   const refresh = useCallback(async (): Promise<LimitedEventState | null> => {
-    const result = await readLimitedEventAction(id);
+    const result = await readLimitedEventAction(game, id);
     if (!result.ok) {
       setFailure(result.error);
       return null;
@@ -77,7 +79,7 @@ export function LimitedRoom() {
         : null,
     );
     return result.state;
-  }, [id]);
+  }, [id, game]);
 
   const renew = useCallback(async () => (await refresh())?.access?.ws ?? null, [refresh]);
 
@@ -126,6 +128,7 @@ export function LimitedRoom() {
   if (event.status === "playing") {
     return (
       <OnlineLimited
+        kit={kit}
         key={socket?.event ?? "none"}
         url={socket?.url ?? null}
         server={socket?.server ?? ""}
@@ -189,7 +192,7 @@ export function LimitedRoom() {
                   disabled={busy}
                   onClick={() =>
                     run(async () => {
-                      const result = await leaveLimitedSeatAction(event.id, index, seat.name);
+                      const result = await leaveLimitedSeatAction(game, event.id, index, seat.name);
                       if (result.ok && state.seat === index && state.isHost) router.push(LOBBY);
                       return result;
                     })
@@ -218,7 +221,7 @@ export function LimitedRoom() {
                     variant="outline"
                     size="sm"
                     disabled={busy}
-                    onClick={() => run(() => addLimitedBotAction(event.id, level))}
+                    onClick={() => run(() => addLimitedBotAction(game, event.id, level))}
                   >
                     <Bot aria-hidden />
                     {tPlay("room.addBot", { level: tPlay(`level.${level}`) })}
@@ -227,7 +230,7 @@ export function LimitedRoom() {
               <Button
                 className="ml-auto"
                 disabled={busy || event.seats.length < 2}
-                onClick={() => run(() => startLimitedEventAction(event.id))}
+                onClick={() => run(() => startLimitedEventAction(game, event.id))}
               >
                 {event.seats.length < 2 ? t("room.needTwo") : t("room.start", { count: event.seats.length })}
               </Button>
@@ -253,7 +256,7 @@ export function LimitedRoom() {
           ) : (
             <div className="flex flex-row flex-wrap items-center gap-2">
               <p className="text-sm text-muted-foreground">{t("room.joinHint")}</p>
-              <Button disabled={busy} onClick={() => run(() => joinLimitedEventAction(event.id))}>
+              <Button disabled={busy} onClick={() => run(() => joinLimitedEventAction(game, event.id))}>
                 {t("room.sit")}
               </Button>
             </div>

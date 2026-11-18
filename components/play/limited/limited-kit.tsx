@@ -1,71 +1,48 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Search, Sparkles } from "lucide-react";
+import { CircleAlert, CircleCheck, Search, Sparkles, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import type { TableCard, TableCards } from "@/lib/engine/cards";
-import {
-  BLANK_BATTLEFIELD,
-  BLANK_LEGEND,
-  DOMAIN_COLORS,
-  DOMAINS,
-  RARITY_COLORS,
-  type Domain,
-  type LimitedKind,
-  type LimitedView,
-} from "@/lib/engine/limited";
+import type { TableCard } from "@/lib/engine/cards";
+import { DOMAIN_COLORS, type Domain, type LimitedKind, type LimitedView } from "@/lib/engine/limited";
+import type { CardFace, Faces } from "@/lib/engine/limited-faces";
 import { cn } from "@/lib/utils";
 
-type Translate = ReturnType<typeof useTranslations>;
-
-/** Le nom d'une carte, y compris celles que seul le limité connaît. */
-export function cardName(code: string, cards: TableCards, t: Translate): string {
-  if (code === BLANK_BATTLEFIELD) return t("blankBattlefield");
-  if (code === BLANK_LEGEND) return t("noLegend");
-  return cards[code]?.name ?? code;
+export function DomainDot({ domain, className }: { domain: Domain; className?: string }) {
+  return <Dot color={DOMAIN_COLORS[domain]} className={className} />;
 }
 
-export function DomainDot({ domain, className }: { domain: Domain; className?: string }) {
+/** La pastille d'un domaine ou d'un aspect. */
+export function Dot({ color, className }: { color: string; className?: string }) {
   return (
     <span
       aria-hidden
-      className={cn("inline-block size-2.5 shrink-0 rounded-full", className)}
-      style={{ background: DOMAIN_COLORS[domain] }}
+      className={cn("inline-block size-2.5 shrink-0 rounded-full border border-foreground/20", className)}
+      style={{ background: color }}
     />
   );
 }
 
-function domainsOf(card: TableCard | undefined): Domain[] {
-  return DOMAINS.filter((domain) => card?.domains.includes(domain));
-}
-
-/** « Unité · champion · Ordre · coût 4 · Rare » */
-export function useCardLine(): (card: TableCard | undefined, foil?: boolean) => string {
-  const t = useTranslations("Games.Limited");
-  const tPlay = useTranslations("Games.Play");
-  return (card, foil = false) => {
-    if (!card) return "";
-    const parts: string[] = [tPlay(`kind.${card.kind}`)];
-    if (card.champion) parts.push(t("champion"));
-    const domains = domainsOf(card).map((domain) => tPlay(`domain.${domain}`));
-    if (domains.length > 0) parts.push(domains.join(", "));
-    if (card.kind === "unit" || card.kind === "spell" || card.kind === "gear") {
-      parts.push(t("cost", { energy: card.energy }));
-    }
-    if (card.kind === "unit" && card.might !== undefined) parts.push(t("might", { might: card.might }));
-    if (card.rarity) parts.push(t(`rarity.${card.rarity}`));
-    if (foil) parts.push(t("foil"));
-    return parts.join(" · ");
-  };
+/** Les pastilles des groupes d'une carte. */
+export function FaceDots({ face, faces, className }: { face: CardFace | undefined; faces: Faces; className?: string }) {
+  return (
+    <>
+      {faces.groups
+        .filter((group) => face?.groups.includes(group.key))
+        .map((group) => (
+          <Dot key={group.key} color={group.color} className={className} />
+        ))}
+    </>
+  );
 }
 
 type LimitedCardProps = {
   code: string;
-  cards: TableCards;
+  faces: Faces;
   foil?: boolean;
   /** Atténuée : hors de l'identité du deck. */
   dim?: boolean;
@@ -79,7 +56,7 @@ type LimitedCardProps = {
   onClick?: () => void;
   onDoubleClick?: () => void;
   onInspect?: () => void;
-  /** Entoure les rares et les épiques de leur couleur (ouverture d'un booster). */
+  /** Entoure les rares et mieux de leur couleur (ouverture d'un booster). */
   showRarity?: boolean;
   className?: string;
 };
@@ -87,7 +64,7 @@ type LimitedCardProps = {
 /** Une carte d'un booster, d'une réserve ou d'un deck : son illustration, ou son nom à défaut. */
 export function LimitedCard({
   code,
-  cards,
+  faces,
   foil = false,
   dim = false,
   selected = false,
@@ -101,11 +78,9 @@ export function LimitedCard({
   className,
 }: LimitedCardProps) {
   const t = useTranslations("Games.Limited");
-  const tPlay = useTranslations("Games.Play");
-  const card = cards[code];
-  const name = cardName(code, cards, t);
-  const ring =
-    showRarity && card?.rarity && (card.rarity === "rare" || card.rarity === "epic") ? RARITY_COLORS[card.rarity] : null;
+  const card = faces.get(code);
+  const name = faces.name(code);
+  const ring = showRarity ? (card?.ring ?? null) : null;
   const face = (
     <span
       className={cn(
@@ -120,18 +95,16 @@ export function LimitedCard({
         // eslint-disable-next-line @next/next/no-img-element
         <img src={card.image} alt="" loading="lazy" className="size-full object-cover" draggable={false} />
       ) : (
-        // Sans illustration au catalogue : le nom, le coût et les domaines suffisent à choisir.
+        // Sans illustration au catalogue : le nom, le coût et les groupes suffisent à choisir.
         <span className="flex size-full flex-col items-center justify-between p-1.5 text-center text-xs leading-tight">
           <span className="flex w-full items-center justify-between gap-1">
-            <span className="font-bold tabular-nums">{card && isMainCard(card) ? card.energy : ""}</span>
+            <span className="font-bold tabular-nums">{card?.main && card.cost !== null ? card.cost : ""}</span>
             <span className="flex gap-0.5">
-              {domainsOf(card).map((domain) => (
-                <DomainDot key={domain} domain={domain} className="size-2" />
-              ))}
+              <FaceDots face={card} faces={faces} className="size-2" />
             </span>
           </span>
           <span className="font-medium">{name}</span>
-          <span className="text-[0.65rem] text-muted-foreground">{card ? tPlay(`kind.${card.kind}`) : ""}</span>
+          <span className="text-[0.65rem] text-muted-foreground">{card?.kind ?? ""}</span>
         </span>
       )}
       {foil && (
@@ -179,29 +152,35 @@ export function LimitedCard({
   );
 }
 
+/** La ligne d'une carte, avec « Brillante » pour un exemplaire brillant. */
+export function useFaceLine(): (face: CardFace | undefined, foil?: boolean) => string {
+  const t = useTranslations("Games.Limited");
+  return (face, foil = false) => (!face ? "" : foil ? `${face.line} · ${t("foil")}` : face.line);
+}
+
 /** Une carte en grand, avec son texte. */
 export function CardZoom({
   code,
   foil = false,
-  cards,
+  faces,
   onClose,
   action,
 }: {
   code: string | null;
   foil?: boolean;
-  cards: TableCards;
+  faces: Faces;
   onClose: () => void;
   /** Un bouton sous le texte (« Prendre cette carte »). */
   action?: ReactNode;
 }) {
   const t = useTranslations("Games.Limited");
-  const line = useCardLine();
-  const card = code ? cards[code] : undefined;
+  const line = useFaceLine();
+  const card = code ? faces.get(code) : undefined;
   return (
     <Dialog open={code !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>{code ? cardName(code, cards, t) : ""}</DialogTitle>
+          <DialogTitle>{code ? faces.name(code) : ""}</DialogTitle>
           <DialogDescription>{line(card, foil)}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-row flex-wrap gap-4">
@@ -247,17 +226,26 @@ export function CostCurve({ curve, className }: { curve: number[]; className?: s
   );
 }
 
-/** Le nombre de cartes de chaque domaine, en pastilles. */
-export function DomainCounts({ counts, className }: { counts: Record<Domain, number>; className?: string }) {
-  const tPlay = useTranslations("Games.Play");
+/** Le nombre de cartes de chaque domaine ou aspect, en pastilles. */
+export function GroupCounts({
+  counts,
+  faces,
+  className,
+}: {
+  counts: Record<string, number>;
+  faces: Faces;
+  className?: string;
+}) {
   return (
     <div className={cn("flex flex-row flex-wrap gap-x-4 gap-y-1 text-sm", className)}>
-      {DOMAINS.filter((domain) => counts[domain] > 0).map((domain) => (
-        <span key={domain} className="inline-flex items-center gap-1.5">
-          <DomainDot domain={domain} />
-          {tPlay(`domain.${domain}`)} <strong>{counts[domain]}</strong>
-        </span>
-      ))}
+      {faces.groups
+        .filter((group) => (counts[group.key] ?? 0) > 0)
+        .map((group) => (
+          <span key={group.key} className="inline-flex items-center gap-1.5">
+            <Dot color={group.color} />
+            {group.label} <strong>{counts[group.key]}</strong>
+          </span>
+        ))}
     </div>
   );
 }
@@ -330,7 +318,15 @@ export function EventHeader({
 }
 
 /** Les joueurs de l'évènement et où chacun en est. */
-export function SeatStrip({ view, seat, away = [] }: { view: LimitedView; seat: number; away?: number[] }) {
+export function SeatStrip({
+  view,
+  seat,
+  away = [],
+}: {
+  view: Pick<LimitedView, "seats" | "phase">;
+  seat: number;
+  away?: number[];
+}) {
   const t = useTranslations("Games.Limited");
   const tPlay = useTranslations("Games.Play");
   return (
@@ -374,4 +370,118 @@ export function SeatStrip({ view, seat, away = [] }: { view: LimitedView; seat: 
 /** Les cartes qui entrent dans un deck principal (ni Légende, ni champ de bataille, ni rune). */
 export function isMainCard(card: TableCard | undefined): boolean {
   return card !== undefined && (card.kind === "unit" || card.kind === "spell" || card.kind === "gear");
+}
+
+/** Une place du deck qui ne tient qu'une carte : la Légende, un champ de bataille, le leader. */
+export function Slot({
+  name,
+  empty,
+  onInspect,
+  onRemove,
+  removeLabel,
+}: {
+  name: string;
+  empty: boolean;
+  onInspect?: () => void;
+  onRemove?: () => void;
+  removeLabel: string;
+}) {
+  const t = useTranslations("Games.Limited");
+  return (
+    <span
+      className={cn(
+        "flex min-h-10 items-center gap-1 rounded-lg border px-3 text-sm",
+        empty && "border-dashed text-muted-foreground",
+      )}
+    >
+      <span className="flex-1 truncate">{name}</span>
+      {onInspect && (
+        <button type="button" onClick={onInspect} className="rounded p-1.5 text-muted-foreground hover:text-foreground">
+          <Search className="size-3.5" aria-hidden />
+          <span className="sr-only">{t("inspect", { name })}</span>
+        </button>
+      )}
+      {onRemove && (
+        <button type="button" onClick={onRemove} className="rounded p-1.5 text-muted-foreground hover:text-foreground">
+          <X className="size-3.5" aria-hidden />
+          <span className="sr-only">{removeLabel}</span>
+        </button>
+      )}
+    </span>
+  );
+}
+
+/** Une ligne du deck principal : un clic retire un exemplaire. */
+export function DeckRow({
+  code,
+  count,
+  name,
+  faces,
+  badge,
+  cost,
+  removeLabel,
+  onRemove,
+  onInspect,
+}: {
+  code: string;
+  count: number;
+  name: string;
+  faces: Faces;
+  badge?: string;
+  /** Ce qui s'affiche à droite à la place du coût de la carte (un coût avec pénalité). */
+  cost?: ReactNode;
+  removeLabel: string;
+  onRemove: () => void;
+  onInspect: () => void;
+}) {
+  const t = useTranslations("Games.Limited");
+  const card = faces.get(code);
+  return (
+    <li className="flex items-center gap-1 border-b last:border-b-0">
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={removeLabel}
+        title={removeLabel}
+        className="flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded px-1 text-left hover:bg-secondary"
+      >
+        <span className="w-6 shrink-0 text-muted-foreground">×{count}</span>
+        <span className="flex shrink-0 gap-0.5">
+          <FaceDots face={card} faces={faces} className="size-2" />
+        </span>
+        <span className="truncate">{name}</span>
+        {badge && <span className="shrink-0 rounded bg-secondary px-1.5 text-[0.7rem]">{badge}</span>}
+        <span className="ml-auto shrink-0 tabular-nums text-muted-foreground">{cost ?? card?.cost ?? ""}</span>
+      </button>
+      <button type="button" onClick={onInspect} className="rounded p-1.5 text-muted-foreground hover:text-foreground">
+        <Search className="size-3.5" aria-hidden />
+        <span className="sr-only">{t("inspect", { name })}</span>
+      </button>
+    </li>
+  );
+}
+
+/** Ce que le moteur reproche au deck, ou « Deck légal ». */
+export function DeckProblems({ problems }: { problems: string[] }) {
+  const t = useTranslations("Games.Limited");
+  return (
+    <section className="flex flex-col gap-2 rounded-xl border bg-card p-5" aria-live="polite">
+      <h2 className="flex items-center gap-2 font-semibold">
+        {problems.length === 0 ? (
+          <CircleCheck className="size-4 text-emerald-500" aria-hidden />
+        ) : (
+          <CircleAlert className="size-4 text-amber-500" aria-hidden />
+        )}
+        {t(problems.length === 0 ? "build.legal" : "build.problems", { count: problems.length })}
+      </h2>
+      {problems.length > 0 && (
+        <ul className="list-disc pl-5 text-sm text-muted-foreground">
+          {problems.map((problem) => (
+            <li key={problem}>{problem}</li>
+          ))}
+        </ul>
+      )}
+      <p className="text-xs text-muted-foreground">{t("build.checked")}</p>
+    </section>
+  );
 }

@@ -2502,7 +2502,7 @@
         "skip": "Open them all",
         "build": "Build my deck",
         "poolTitle": "My pool: {count} of {total} cards",
-        "rares": "{count, plural, =0 {No rare or epic card yet.} one {# rare or epic card.} other {# rare or epic cards.}}"
+        "rares": "{count, plural, =0 {No rare or better card yet.} one {# rare or better card.} other {# rare or better cards.}}"
       },
       "draft": {
         "title": "Booster {round} of {rounds} · pick {pick} of {size}",
@@ -2522,7 +2522,11 @@
         "selected": "Selected card",
         "none": "Click a card in the pack to read its text.",
         "picks": "My picks ({count})",
-        "noPicks": "Your cards will appear here."
+        "noPicks": "Your cards will appear here.",
+        "titleLeaders": "Leaders · pick {pick} of {size}",
+        "titleLeadersWaiting": "Leaders",
+        "leadersNext": "Everyone takes a leader, then passes the others to the next player. Boosters come after.",
+        "leadersPrevious": "Everyone takes a leader, then passes the others to the previous player. Boosters come after."
       },
       "build": {
         "pool": "Pool ({count})",
@@ -2630,6 +2634,56 @@
         "open": "Open my event",
         "another": "Create another event",
         "addSeat": "Add a seat"
+      },
+      "swu": {
+        "aspectWord": "Aspect",
+        "aspect": {
+          "vigilance": "Vigilance",
+          "command": "Command",
+          "aggression": "Aggression",
+          "cunning": "Cunning",
+          "heroism": "Heroism",
+          "villainy": "Villainy"
+        },
+        "kind": {
+          "leader": "Leader",
+          "base": "Base",
+          "unit": "Unit",
+          "event": "Event",
+          "upgrade": "Upgrade"
+        },
+        "rarity": {
+          "common": "Common",
+          "uncommon": "Uncommon",
+          "rare": "Rare",
+          "legendary": "Legendary",
+          "special": "Special"
+        },
+        "cost": "cost {cost}",
+        "hp": "{hp} HP",
+        "boostersSealed": "Each player opens {boosters} boosters of {size} cards and builds a deck of at least {min} cards around a leader and a base.",
+        "boostersDraft": "Each player gets {boosters} boosters. Leaders are drafted first, one per booster. Then take a card and pass the rest to your neighbour, down to the last one ({size} cards per booster). The deck has at least {min} cards.",
+        "build": {
+          "kind": {
+            "all": "All",
+            "unit": "Units",
+            "event": "Events",
+            "upgrade": "Upgrades",
+            "leader": "Leaders"
+          },
+          "aspectFilter": "Filter by aspect",
+          "penalty": "+{count} cost",
+          "penaltyTitle": "Aspect penalty: {count} more",
+          "penalized": "{count, plural, one {# card costs more} other {# cards cost more}}: their aspects are neither your leader's nor your base's.",
+          "chooseLeader": "Choose {name} as leader",
+          "hint": "Click a card to add it to the deck, or to choose a leader. A dimmed card costs 2 more for each aspect that neither your leader nor your base provides.",
+          "noLeader": "Choose a leader from the pool",
+          "noBase": "Choose a base",
+          "basesOpened": "Bases from your boosters",
+          "basesCommon": "Common bases of the set",
+          "baseHint": "Every common base of the set is available to you.",
+          "main": "Deck"
+        }
       }
     },
     "Filmed": {

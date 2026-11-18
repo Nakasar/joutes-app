@@ -5,40 +5,33 @@ import { Timer } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { GameTable } from "@/components/play/GameTable";
-import { BuildScreen } from "@/components/play/limited/BuildScreen";
 import { DraftScreen } from "@/components/play/limited/DraftScreen";
+import type { LimitedKit, MatchRecord } from "@/components/play/limited/kit";
 import { EventHeader, SeatStrip, type EventStep } from "@/components/play/limited/limited-kit";
 import { LimitedResults } from "@/components/play/limited/LimitedResults";
 import { SealedOpening } from "@/components/play/limited/SealedOpening";
-import { useOnlineLimitedEvent, type MatchSeat } from "@/components/play/limited/useOnlineLimitedEvent";
-import { useOnlineGame } from "@/components/play/useOnlineGame";
-import { useTableCards } from "@/components/play/useTableCards";
+import { useOnlineLimitedEvent } from "@/components/play/limited/useOnlineLimitedEvent";
 import { Button } from "@/components/ui/button";
 import { Link, useRouter } from "@/i18n/navigation";
-import type { TableCards } from "@/lib/engine/cards";
-import { emptyDeck, fitToPool, matchOf } from "@/lib/engine/limited";
-import type { EngineDeckList } from "@/lib/engine/types";
+import { matchOf } from "@/lib/engine/limited";
 import { cn } from "@/lib/utils";
 
-const LOBBY = "/games/riftbound/play";
-
 /** Ce que le navigateur garde d'un évènement en ligne : le deck en chantier, rien que le serveur ne sache déjà. */
-type Draft = { deck?: EngineDeckList; runesByHand?: boolean; opened?: number };
+type Draft<D> = { deck?: D; runesByHand?: boolean; opened?: number };
 
 const draftKey = (key: string) => `joutes.play.limited.online.${key}`;
 
-function readDraft(key: string): Draft {
+function readDraft<D>(key: string): Draft<D> {
   try {
     const raw = window.localStorage.getItem(draftKey(key));
-    const draft = raw ? (JSON.parse(raw) as Draft | null) : null;
+    const draft = raw ? (JSON.parse(raw) as Draft<D> | null) : null;
     return draft && typeof draft === "object" ? draft : {};
   } catch {
     return {};
   }
 }
 
-function writeDraft(key: string, draft: Draft | null): void {
+function writeDraft<D>(key: string, draft: Draft<D> | null): void {
   try {
     if (draft) window.localStorage.setItem(draftKey(key), JSON.stringify(draft));
     else window.localStorage.removeItem(draftKey(key));
@@ -54,15 +47,17 @@ function writeDraft(key: string, draft: Draft | null): void {
  *
  * `url` est l'adresse WebSocket de l'évènement, `server` celle du serveur (les
  * tables des matchs s'y ouvrent), `storageKey` nomme le deck en chantier gardé
- * dans le navigateur.
+ * dans le navigateur. `kit` dit de quel jeu.
  */
-export function OnlineLimited({
+export function OnlineLimited<D, C, R extends MatchRecord, G>({
+  kit,
   url,
   server,
   renew,
   storageKey,
   note,
 }: {
+  kit: LimitedKit<D, C, R, G>;
   url: string | null;
   server: string;
   renew?: () => Promise<string | null>;
@@ -73,20 +68,21 @@ export function OnlineLimited({
   const t = useTranslations("Games.Limited");
   const tPlay = useTranslations("Games.Play");
   const router = useRouter();
-  const cards = useTableCards();
-  const feed = useOnlineLimitedEvent(url, renew);
+  const { cards, faces } = kit.useCards();
+  const LOBBY = kit.base;
+  const feed = useOnlineLimitedEvent<D>(url, renew);
   const { view, seat } = feed;
-  const [draft, setDraft] = useState<Draft>({});
+  const [draft, setDraft] = useState<Draft<D>>({});
   const [atTable, setAtTable] = useState(false);
   const [summary, setSummary] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lecture du stockage après le montage
-    setDraft(readDraft(storageKey));
+    setDraft(readDraft<D>(storageKey));
   }, [storageKey]);
 
   const patch = useCallback(
-    (change: Draft) =>
+    (change: Draft<D>) =>
       setDraft((previous) => {
         const next = { ...previous, ...change };
         writeDraft(storageKey, next);
@@ -103,7 +99,10 @@ export function OnlineLimited({
 
   const me = seat === null ? null : (view?.seats[seat] ?? null);
   const pool = view?.you?.pool;
-  const deck = useMemo(() => (draft.deck && pool ? fitToPool(draft.deck, pool) : emptyDeck()), [draft.deck, pool]);
+  const deck = useMemo(
+    () => (draft.deck && pool ? kit.fitToPool(draft.deck, pool) : kit.emptyDeck()),
+    [draft.deck, pool, kit],
+  );
   const building = view?.phase === "build" && me !== null && !me.ready && !me.out;
 
   // Le serveur vérifie le deck à chaque changement, après un court répit.
@@ -179,7 +178,7 @@ export function OnlineLimited({
         {header(step)}
         {offline}
         {view.phase === "play" || view.phase === "done" ? (
-          <LimitedResults view={view} seat={seat ?? -1} cards={cards} deck={null} onLeave={leave} />
+          <LimitedResults view={view} seat={seat ?? -1} onLeave={leave} />
         ) : (
           <>
             {strip}
@@ -200,7 +199,8 @@ export function OnlineLimited({
         <DraftScreen
           view={view}
           seat={seat}
-          cards={cards}
+          faces={faces}
+          packSize={kit.rules("draft").packSize}
           onPick={(card) => {
             // Un refus du serveur arrive plus tard, par la connexion.
             feed.act({ type: "pick", code: card.code, foil: card.foil === true });
@@ -233,7 +233,7 @@ export function OnlineLimited({
           <SealedOpening
             view={view}
             seat={seat}
-            cards={cards}
+            faces={faces}
             opened={opened}
             onOpened={(next) => patch({ opened: next })}
           />
@@ -261,14 +261,15 @@ export function OnlineLimited({
         )}
         {offline}
         {strip}
-        <BuildScreen
+        <kit.Build
           view={view}
           seat={seat}
           cards={cards}
+          faces={faces}
           deck={deck}
-          runesByHand={draft.runesByHand === true}
+          byHand={draft.runesByHand === true}
           problems={problems}
-          onDeck={(next: EngineDeckList, runesByHand: boolean) => patch({ deck: next, runesByHand })}
+          onDeck={(next: D, runesByHand: boolean) => patch({ deck: next, runesByHand })}
         />
       </div>
     );
@@ -277,15 +278,21 @@ export function OnlineLimited({
   // Les matchs : le mien sur la table du serveur, puis le bilan.
   if (mine && feed.table && (atTable || !mine.match.done) && !summary) {
     return (
-      <MatchTable
-        key={feed.table.game}
-        table={feed.table}
-        server={server}
-        cards={cards}
-        note={note ?? `${title} · ${t("step.match")}`}
-        onSeated={() => setAtTable(true)}
-        onLeave={() => setSummary(true)}
-      />
+      <>
+        <Seated onSeated={() => setAtTable(true)} />
+        <kit.OnlineMatch
+          key={feed.table.game}
+          table={feed.table}
+          server={server}
+          cards={cards}
+          note={note ?? `${title} · ${t("step.match")}`}
+          afterResult={
+            <div className="flex flex-row flex-wrap gap-2">
+              <Button onClick={() => setSummary(true)}>{t("match.toResults")}</Button>
+            </div>
+          }
+        />
+      </>
     );
   }
 
@@ -298,45 +305,21 @@ export function OnlineLimited({
           {t("online.tableOpening")}
         </p>
       )}
-      <LimitedResults view={view} seat={seat} cards={cards} deck={view.you.deck} onLeave={leave} />
+      <LimitedResults
+        view={view}
+        seat={seat}
+        deck={view.you.deck ? <kit.DeckSummary deck={view.you.deck} cards={cards} faces={faces} /> : undefined}
+        onLeave={leave}
+      />
     </div>
   );
 }
 
-/** Mon match, sur la table que le serveur a ouverte pour lui. */
-function MatchTable({
-  table,
-  server,
-  cards,
-  note,
-  onSeated,
-  onLeave,
-}: {
-  table: MatchSeat;
-  server: string;
-  cards: TableCards;
-  note: string;
-  onSeated: () => void;
-  onLeave: () => void;
-}) {
-  const t = useTranslations("Games.Limited");
+/** Dit une fois que la table du match est ouverte : on y reste après la fin de la partie. */
+function Seated({ onSeated }: { onSeated: () => void }) {
   const seated = useRef(onSeated);
   useEffect(() => seated.current(), []);
-  const feed = useOnlineGame(
-    `${server}/games/${encodeURIComponent(table.game)}/ws?ticket=${encodeURIComponent(table.ticket)}`,
-  );
-  return (
-    <GameTable
-      feed={feed}
-      cards={cards}
-      note={note}
-      afterResult={
-        <div className="flex flex-row flex-wrap gap-2">
-          <Button onClick={onLeave}>{t("match.toResults")}</Button>
-        </div>
-      }
-    />
-  );
+  return null;
 }
 
 /** Le temps qu'il me reste pour choisir ou construire ; rien sans délai. */

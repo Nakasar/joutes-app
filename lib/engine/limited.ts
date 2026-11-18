@@ -35,43 +35,59 @@ export type LimitedSeat = {
   out: boolean;
 };
 
-export type LimitedPrivate = { seat: number; pack: Pulled[] | null; pool: Pulled[]; deck: EngineDeckList | null };
+/** Ce qu'un joueur est seul à voir. `D` : la forme d'un deck dans le jeu de l'évènement. */
+export type LimitedPrivate<D = EngineDeckList> = { seat: number; pack: Pulled[] | null; pool: Pulled[]; deck: D | null };
 
-export type LimitedView = {
+export type LimitedView<D = EngineDeckList> = {
   game: string;
   kind: LimitedKind;
   phase: LimitedPhase;
+  /** Le tour de table en cours d'un draft : d'abord ceux de `prelude`, puis un par booster. */
   round: number;
+  /** Nombre de boosters. */
   rounds: number;
+  /** Tours de table qui précèdent les boosters (les leaders de Star Wars: Unlimited). */
+  prelude?: number;
   packs: string[];
   pass_next: boolean;
   seq: number;
   seats: LimitedSeat[];
   matches: LimitedMatch[];
   bye: number | null;
-  you?: LimitedPrivate;
+  you?: LimitedPrivate<D>;
 };
 
 /** Le journal d'un évènement : de quoi le rouvrir à l'identique. */
 export type LimitedRecord = { version: number; settings: LimitedSettings; seed: number; log: unknown[] };
 
 /** La partie d'un match, telle que `LimitedEvent.game` la rend. */
-export type LimitedGame = { config: EngineConfig; seed: number; bots: (BotLevel | null)[] };
+export type LimitedGame<C = EngineConfig> = { config: C; seed: number; bots: (BotLevel | null)[] };
 
 export type BoosterSet = { code: string; name: string; size: number; cards: number };
 
 /** Un évènement contre des IA, tel qu'il est gardé dans le navigateur. */
-export type LimitedSave = {
+export type LimitedSave<D = EngineDeckList, R = EngineRecord> = {
   record: LimitedRecord;
   /** Scellé : nombre de boosters déjà regardés. */
   opened?: number;
   /** Le deck en cours de construction, tant qu'il n'est pas rendu. */
-  deck?: EngineDeckList;
+  deck?: D;
   /** Vrai dès que le joueur a réparti ses runes lui-même. */
   runesByHand?: boolean;
   /** Le match du joueur, une fois lancé. */
-  match?: { index: number; bots: (BotLevel | null)[]; record: EngineRecord };
+  match?: { index: number; bots: (BotLevel | null)[]; record: R };
 };
+
+/** Les jeux qui ont un scellé et un draft : leur nom sur le serveur de parties, qui est aussi leur adresse. */
+export const LIMITED_GAMES = ["riftbound", "swu"] as const;
+export type LimitedGameKey = (typeof LIMITED_GAMES)[number];
+
+export function isLimitedGame(value: unknown): value is LimitedGameKey {
+  return (LIMITED_GAMES as readonly unknown[]).includes(value);
+}
+
+/** Les nombres d'un format, pour l'affichage et pour vérifier des réglages. */
+export type LimitedRules = { boosters: number; minMain: number; packSize: number; picks: number };
 
 export const LIMITED_STORAGE_KEY = "joutes.play.limited";
 
@@ -102,16 +118,16 @@ export const RARITY_COLORS: Record<Rarity, string> = {
 };
 
 /** Les nombres du format (Tournament Rules 602.4), pour l'affichage seulement. */
-export function limitedRules(kind: LimitedKind): { boosters: number; minMain: number; packSize: number; picks: number } {
+export function limitedRules(kind: LimitedKind): LimitedRules {
   return kind === "sealed"
     ? { boosters: 6, minMain: 25, packSize: 14, picks: 0 }
     : { boosters: 3, minMain: 20, packSize: 13, picks: 39 };
 }
 
-export function readLimitedSave(): LimitedSave | null {
+export function readLimitedSave<D = EngineDeckList, R = EngineRecord>(key = LIMITED_STORAGE_KEY): LimitedSave<D, R> | null {
   try {
-    const raw = window.localStorage.getItem(LIMITED_STORAGE_KEY);
-    const save = raw ? (JSON.parse(raw) as Partial<LimitedSave> | null) : null;
+    const raw = window.localStorage.getItem(key);
+    const save = raw ? (JSON.parse(raw) as Partial<LimitedSave<D, R>> | null) : null;
     // Une sauvegarde d'une autre forme est oubliée plutôt que de faire tomber la page.
     if (
       !save ||
@@ -120,19 +136,22 @@ export function readLimitedSave(): LimitedSave | null {
       !Array.isArray(save.record.settings?.players) ||
       !Array.isArray(save.record.settings.packs)
     ) {
-      if (raw) window.localStorage.removeItem(LIMITED_STORAGE_KEY);
+      if (raw) window.localStorage.removeItem(key);
       return null;
     }
-    return save as LimitedSave;
+    return save as LimitedSave<D, R>;
   } catch {
     return null;
   }
 }
 
-export function writeLimitedSave(save: LimitedSave | null): void {
+export function writeLimitedSave<D = EngineDeckList, R = EngineRecord>(
+  save: LimitedSave<D, R> | null,
+  key = LIMITED_STORAGE_KEY,
+): void {
   try {
-    if (save) window.localStorage.setItem(LIMITED_STORAGE_KEY, JSON.stringify(save));
-    else window.localStorage.removeItem(LIMITED_STORAGE_KEY);
+    if (save) window.localStorage.setItem(key, JSON.stringify(save));
+    else window.localStorage.removeItem(key);
   } catch {
     // Stockage refusé (navigation privée) : l'évènement se joue, sans reprise.
   }
@@ -164,8 +183,13 @@ function usedCodes(deck: EngineDeckList): string[] {
 
 /** Ce qui reste de la réserve une fois le deck servi, dans l'ordre de la réserve. */
 export function leftInPool(pool: Pulled[], deck: EngineDeckList): Pulled[] {
+  return leftAfter(pool, usedCodes(deck));
+}
+
+/** La réserve privée de ces cartes, un exemplaire par code donné, dans l'ordre de la réserve. */
+export function leftAfter(pool: Pulled[], codes: string[]): Pulled[] {
   const used = new Map<string, number>();
-  for (const code of usedCodes(deck)) used.set(code, (used.get(code) ?? 0) + 1);
+  for (const code of codes) used.set(code, (used.get(code) ?? 0) + 1);
   const left: Pulled[] = [];
   // Une carte brillante part en dernier : elle reste visible dans la réserve.
   const ordered = [...pool.entries()].sort(([a, x], [b, y]) => Number(x.foil ?? false) - Number(y.foil ?? false) || a - b);
@@ -363,24 +387,7 @@ export function matchWinner(match: LimitedMatch, winners: number[]): number | nu
 }
 
 /** Le match de ce siège, s'il en a un. */
-export function matchOf(view: LimitedView, seat: number): { index: number; match: LimitedMatch } | null {
+export function matchOf(view: Pick<LimitedView, "matches">, seat: number): { index: number; match: LimitedMatch } | null {
   const index = view.matches.findIndex((match) => match.seats.includes(seat));
   return index < 0 ? null : { index, match: view.matches[index] };
-}
-
-export type PackSort = "rarity" | "domain" | "cost";
-
-/** Trie un paquet pour l'affichage, sans toucher à l'ordre que le moteur connaît. */
-export function sortPack(pack: Pulled[], cards: TableCards, sort: PackSort): Pulled[] {
-  const rarity = (card: Pulled) => RARITIES.indexOf((cards[card.code]?.rarity ?? "common") as Rarity);
-  const domain = (card: Pulled) => {
-    const first = domainsOf(cards[card.code])[0];
-    return first ? DOMAINS.indexOf(first) : DOMAINS.length;
-  };
-  const cost = (card: Pulled) => cards[card.code]?.energy ?? 0;
-  const key = sort === "rarity" ? (card: Pulled) => -rarity(card) : sort === "domain" ? domain : cost;
-  return pack
-    .map((card, index) => ({ card, index }))
-    .sort((a, b) => key(a.card) - key(b.card) || a.index - b.index)
-    .map(({ card }) => card);
 }

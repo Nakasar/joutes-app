@@ -1,17 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CircleAlert, CircleCheck, Minus, Plus, Search, X } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import type { BuildProps } from "@/components/play/limited/kit";
 import {
   CardZoom,
-  cardName,
   CostCurve,
+  DeckProblems,
+  DeckRow,
   DomainDot,
   isMainCard,
   LimitedCard,
   SeatStrip,
+  Slot,
 } from "@/components/play/limited/limited-kit";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,7 +38,6 @@ import {
   splitRunes,
   stacks,
   type Domain,
-  type LimitedView,
   type Pulled,
 } from "@/lib/engine/limited";
 import type { EngineDeckList } from "@/lib/engine/types";
@@ -60,21 +62,14 @@ export function BuildScreen({
   view,
   seat,
   cards,
+  faces,
   deck,
-  runesByHand,
+  // Vrai : les runes ont été réparties à la main, on n'y touche plus.
+  byHand: runesByHand,
   problems,
   onDeck,
-}: {
-  view: LimitedView;
-  seat: number;
-  cards: TableCards;
-  deck: EngineDeckList;
-  /** Vrai : les runes ont été réparties à la main, on n'y touche plus. */
-  runesByHand: boolean;
-  /** Ce que le moteur reproche au deck ; vide s'il est légal. */
-  problems: string[];
-  onDeck: (deck: EngineDeckList, runesByHand: boolean) => void;
-}) {
+}: BuildProps<EngineDeckList, TableCards>) {
+  const cardName = (code: string) => faces.name(code);
   const t = useTranslations("Games.Limited");
   const tPlay = useTranslations("Games.Play");
   const [domains, setDomains] = useState<Domain[]>([]);
@@ -114,10 +109,7 @@ export function BuildScreen({
   const champions = [...new Set(main)].filter((code) => cards[code]?.champion);
   const mainStacks = stacks(
     [...deck.main]
-      .sort(
-        (a, b) =>
-          (cards[a]?.energy ?? 0) - (cards[b]?.energy ?? 0) || cardName(a, cards, t).localeCompare(cardName(b, cards, t)),
-      )
+      .sort((a, b) => (cards[a]?.energy ?? 0) - (cards[b]?.energy ?? 0) || cardName(a).localeCompare(cardName(b)))
       .map((code) => ({ code })),
   );
 
@@ -184,14 +176,14 @@ export function BuildScreen({
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7">
               {shown.map((stack) => {
                 const card = cards[stack.code];
-                const name = cardName(stack.code, cards, t);
+                const name = cardName(stack.code);
                 return (
                   <LimitedCard
                     key={stack.code}
                     code={stack.code}
                     foil={stack.foil}
                     count={stack.count}
-                    cards={cards}
+                    faces={faces}
                     dim={isMainCard(card) && !fitsDomains(card, identity)}
                     label={t("build.add", { name })}
                     onClick={card ? () => commit(addToDeck(deck, card)) : undefined}
@@ -221,11 +213,11 @@ export function BuildScreen({
                 {tPlay("kind.legend")}
               </span>
               <Slot
-                name={deck.legend ? cardName(deck.legend, cards, t) : t("noLegend")}
+                name={deck.legend ? cardName(deck.legend) : t("noLegend")}
                 empty={!deck.legend}
                 onInspect={deck.legend ? () => setZoom({ code: deck.legend }) : undefined}
                 onRemove={deck.legend ? () => commit({ ...deck, legend: "" }) : undefined}
-                removeLabel={deck.legend ? t("build.remove", { name: cardName(deck.legend, cards, t) }) : ""}
+                removeLabel={deck.legend ? t("build.remove", { name: cardName(deck.legend) }) : ""}
               />
             </div>
 
@@ -244,7 +236,7 @@ export function BuildScreen({
                   <SelectItem value={NO_CHAMPION}>{t("build.noChampion")}</SelectItem>
                   {champions.map((code) => (
                     <SelectItem key={code} value={code}>
-                      {cardName(code, cards, t)}
+                      {cardName(code)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -272,10 +264,10 @@ export function BuildScreen({
                     <DeckRow
                       code={deck.champion}
                       count={1}
-                      cards={cards}
-                      name={cardName(deck.champion, cards, t)}
+                      faces={faces}
+                      name={cardName(deck.champion)}
                       badge={t("build.chosen")}
-                      removeLabel={t("build.remove", { name: cardName(deck.champion, cards, t) })}
+                      removeLabel={t("build.remove", { name: cardName(deck.champion) })}
                       onRemove={() => commit({ ...deck, champion: "" })}
                       onInspect={() => setZoom({ code: deck.champion })}
                     />
@@ -285,9 +277,9 @@ export function BuildScreen({
                       key={stack.code}
                       code={stack.code}
                       count={stack.count}
-                      cards={cards}
-                      name={cardName(stack.code, cards, t)}
-                      removeLabel={t("build.remove", { name: cardName(stack.code, cards, t) })}
+                      faces={faces}
+                      name={cardName(stack.code)}
+                      removeLabel={t("build.remove", { name: cardName(stack.code) })}
                       onRemove={() => commit(removeFromMain(deck, stack.code))}
                       onInspect={() => setZoom({ code: stack.code })}
                     />
@@ -348,7 +340,7 @@ export function BuildScreen({
             <ul className="flex flex-col gap-1.5">
               {deck.battlefields.map((code, index) => {
                 const blank = code === BLANK_BATTLEFIELD;
-                const name = cardName(code, cards, t);
+                const name = cardName(code);
                 return (
                   <li key={index}>
                     <Slot
@@ -365,115 +357,10 @@ export function BuildScreen({
             <p className="text-xs text-muted-foreground">{t("build.battlefieldsHint")}</p>
           </section>
 
-          <section className="flex flex-col gap-2 rounded-xl border bg-card p-5" aria-live="polite">
-            <h2 className="flex items-center gap-2 font-semibold">
-              {problems.length === 0 ? (
-                <CircleCheck className="size-4 text-emerald-500" aria-hidden />
-              ) : (
-                <CircleAlert className="size-4 text-amber-500" aria-hidden />
-              )}
-              {t(problems.length === 0 ? "build.legal" : "build.problems", { count: problems.length })}
-            </h2>
-            {problems.length > 0 && (
-              <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                {problems.map((problem) => (
-                  <li key={problem}>{problem}</li>
-                ))}
-              </ul>
-            )}
-            <p className="text-xs text-muted-foreground">{t("build.checked")}</p>
-          </section>
+          <DeckProblems problems={problems} />
         </aside>
       </div>
-      <CardZoom code={zoom?.code ?? null} foil={zoom?.foil} cards={cards} onClose={() => setZoom(null)} />
+      <CardZoom code={zoom?.code ?? null} foil={zoom?.foil} faces={faces} onClose={() => setZoom(null)} />
     </div>
-  );
-}
-
-/** Une place du deck qui ne tient qu'une carte : la Légende, un champ de bataille. */
-function Slot({
-  name,
-  empty,
-  onInspect,
-  onRemove,
-  removeLabel,
-}: {
-  name: string;
-  empty: boolean;
-  onInspect?: () => void;
-  onRemove?: () => void;
-  removeLabel: string;
-}) {
-  const t = useTranslations("Games.Limited");
-  return (
-    <span
-      className={cn(
-        "flex min-h-10 items-center gap-1 rounded-lg border px-3 text-sm",
-        empty && "border-dashed text-muted-foreground",
-      )}
-    >
-      <span className="flex-1 truncate">{name}</span>
-      {onInspect && (
-        <button type="button" onClick={onInspect} className="rounded p-1.5 text-muted-foreground hover:text-foreground">
-          <Search className="size-3.5" aria-hidden />
-          <span className="sr-only">{t("inspect", { name })}</span>
-        </button>
-      )}
-      {onRemove && (
-        <button type="button" onClick={onRemove} className="rounded p-1.5 text-muted-foreground hover:text-foreground">
-          <X className="size-3.5" aria-hidden />
-          <span className="sr-only">{removeLabel}</span>
-        </button>
-      )}
-    </span>
-  );
-}
-
-/** Une ligne du deck principal : un clic retire un exemplaire. */
-function DeckRow({
-  code,
-  count,
-  name,
-  cards,
-  badge,
-  removeLabel,
-  onRemove,
-  onInspect,
-}: {
-  code: string;
-  count: number;
-  name: string;
-  cards: TableCards;
-  badge?: string;
-  removeLabel: string;
-  onRemove: () => void;
-  onInspect: () => void;
-}) {
-  const t = useTranslations("Games.Limited");
-  const card = cards[code];
-  return (
-    <li className="flex items-center gap-1 border-b last:border-b-0">
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={removeLabel}
-        title={removeLabel}
-        className="flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded px-1 text-left hover:bg-secondary"
-      >
-        <span className="w-6 shrink-0 text-muted-foreground">×{count}</span>
-        <span className="flex shrink-0 gap-0.5">
-          {DOMAINS.filter((domain) => card?.domains.includes(domain)).map((domain) => (
-            <DomainDot key={domain} domain={domain} className="size-2" />
-          ))}
-        </span>
-        <span className="truncate">{name}</span>
-        {badge && <span className="shrink-0 rounded bg-secondary px-1.5 text-[0.7rem]">{badge}</span>}
-        <span className="ml-auto shrink-0 tabular-nums text-muted-foreground">{card?.energy ?? ""}</span>
-      </button>
-      <button type="button" onClick={onInspect} className="rounded p-1.5 text-muted-foreground hover:text-foreground">
-        <Search className="size-3.5" aria-hidden />
-        <span className="sr-only">{t("inspect", { name })}</span>
-      </button>
-    </li>
   );
 }

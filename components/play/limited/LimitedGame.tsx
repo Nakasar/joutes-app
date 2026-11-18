@@ -4,81 +4,77 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { GameTable } from "@/components/play/GameTable";
-import { BuildScreen } from "@/components/play/limited/BuildScreen";
 import { DraftScreen } from "@/components/play/limited/DraftScreen";
+import type { LimitedKit, MatchRecord } from "@/components/play/limited/kit";
 import { EventHeader, SeatStrip, type EventStep } from "@/components/play/limited/limited-kit";
 import { LimitedResults } from "@/components/play/limited/LimitedResults";
 import { SealedOpening } from "@/components/play/limited/SealedOpening";
 import { useLimitedEvent, type LimitedFeed } from "@/components/play/limited/useLimitedEvent";
-import { useSoloGame, type SoloSave } from "@/components/play/useSoloGame";
-import { useTableCards } from "@/components/play/useTableCards";
 import { Button } from "@/components/ui/button";
 import { Link, useRouter } from "@/i18n/navigation";
-import type { TableCards } from "@/lib/engine/cards";
 import {
-  emptyDeck,
-  fitToPool,
   matchOf,
   matchWinner,
   readLimitedSave,
   writeLimitedSave,
-  type LimitedMatch,
   type LimitedSave,
   type LimitedView,
 } from "@/lib/engine/limited";
-import type { EngineDeckList } from "@/lib/engine/types";
-
-const LOBBY = "/games/riftbound/play";
 
 /**
  * Un scellé ou un draft contre des IA, du premier booster au match : ouvrir
  * (ou drafter), construire, puis jouer un match sur la table. Tout se passe
  * dans le navigateur ; l'évènement est gardé dans `localStorage` et reprend au
- * rechargement.
+ * rechargement. `kit` dit de quel jeu : ses cartes, sa construction, sa table.
  */
-export function LimitedGame() {
+export function LimitedGame<D, C, R extends MatchRecord, G>({ kit }: { kit: LimitedKit<D, C, R, G> }) {
   const t = useTranslations("Games.Limited");
   const tPlay = useTranslations("Games.Play");
   const router = useRouter();
-  const cards = useTableCards();
+  const { cards, faces } = kit.useCards();
+  const LOBBY = kit.base;
+  const { storageKey } = kit;
   // `undefined` : pas encore lu (le stockage n'existe que dans le navigateur).
-  const [save, setSave] = useState<LimitedSave | null | undefined>(undefined);
-  const latest = useRef<LimitedSave | null>(null);
+  const [save, setSave] = useState<LimitedSave<D, R> | null | undefined>(undefined);
+  const latest = useRef<LimitedSave<D, R> | null>(null);
   // Le match vient de finir sous nos yeux : on reste à la table jusqu'à ce que le joueur la quitte.
   const [atTable, setAtTable] = useState(false);
   const [summary, setSummary] = useState(false);
 
   useEffect(() => {
-    const read = readLimitedSave();
+    const read = readLimitedSave<D, R>(storageKey);
     latest.current = read;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lecture du stockage après le montage, pour ne pas diverger du rendu serveur
     setSave(read);
-  }, []);
+  }, [storageKey]);
 
   /** Change la sauvegarde : dans la page et dans le stockage. */
-  const patch = useCallback((change: Partial<LimitedSave>, quiet = false) => {
-    if (!latest.current) return;
-    const next = { ...latest.current, ...change };
-    latest.current = next;
-    writeLimitedSave(next);
-    if (!quiet) setSave(next);
-  }, []);
+  const patch = useCallback(
+    (change: Partial<LimitedSave<D, R>>, quiet = false) => {
+      if (!latest.current) return;
+      const next = { ...latest.current, ...change };
+      latest.current = next;
+      writeLimitedSave(next, storageKey);
+      if (!quiet) setSave(next);
+    },
+    [storageKey],
+  );
 
-  const feed = useLimitedEvent(save ?? null, (record) => patch({ record }));
+  const feed = useLimitedEvent<D, G>(kit, save ?? null, (record) => patch({ record }));
   const { view, seat } = feed;
 
   const quit = () => {
-    writeLimitedSave(null);
+    writeLimitedSave(null, storageKey);
     router.push(LOBBY);
   };
 
   // Les matchs entre IA se jouent hors de la page, un par un.
-  useBotMatches(feed);
+  useBotMatches(feed, kit.worker);
 
   const mine = view ? matchOf(view, seat) : null;
   const pool = view?.you?.pool;
-  const deck = useMemo(() => (save?.deck && pool ? fitToPool(save.deck, pool) : emptyDeck()), [save?.deck, pool]);
+  const kept = save?.deck;
+  const deck = useMemo(() => (kept && pool ? kit.fitToPool(kept, pool) : kit.emptyDeck()), [kept, pool, kit]);
   const building = view?.phase === "build" && !view.seats[seat]?.ready;
   const problems = useMemo(
     () => (building && feed.status === "ready" ? feed.check(deck) : []),
@@ -94,23 +90,8 @@ export function LimitedGame() {
     const game = feed.game(mine.index);
     if (!game) return;
     const table = mine.match.seats.indexOf(seat);
-    patch({
-      match: {
-        index: mine.index,
-        bots: game.bots,
-        record: {
-          config: {
-            ...game.config,
-            players: game.config.players.map((player, index) =>
-              index === table ? { ...player, manual_pay: true } : player,
-            ),
-          },
-          seed: game.seed,
-          actions: [],
-        },
-      },
-    });
-  }, [playing, mine, seat, feed, patch]);
+    patch({ match: { index: mine.index, bots: game.bots, record: kit.soloRecord(game, table) } });
+  }, [playing, mine, seat, feed, patch, kit]);
 
   if (save === undefined || (save && feed.status === "loading")) {
     return <p className="rounded-xl border bg-card p-8 text-center text-muted-foreground">{t("loading")}</p>;
@@ -180,7 +161,8 @@ export function LimitedGame() {
         <DraftScreen
           view={view}
           seat={seat}
-          cards={cards}
+          faces={faces}
+          packSize={kit.rules("draft").packSize}
           onPick={(card) => feed.act({ type: "pick", code: card.code, foil: card.foil === true })}
         />
       </div>
@@ -207,7 +189,7 @@ export function LimitedGame() {
           <SealedOpening
             view={view}
             seat={seat}
-            cards={cards}
+            faces={faces}
             opened={opened}
             onOpened={(next) => patch({ opened: next })}
           />
@@ -227,14 +209,15 @@ export function LimitedGame() {
             </Button>
           </>,
         )}
-        <BuildScreen
+        <kit.Build
           view={view}
           seat={seat}
           cards={cards}
+          faces={faces}
           deck={deck}
-          runesByHand={save.runesByHand === true}
+          byHand={save.runesByHand === true}
           problems={problems}
-          onDeck={(next: EngineDeckList, runesByHand: boolean) => patch({ deck: next, runesByHand })}
+          onDeck={(next: D, runesByHand: boolean) => patch({ deck: next, runesByHand })}
         />
       </div>
     );
@@ -242,19 +225,27 @@ export function LimitedGame() {
 
   // Les matchs : le mien sur la table, puis le bilan.
   if (mine && save.match && (atTable || !mine.match.done) && !summary) {
+    const { match, index } = mine;
     return (
-      <MatchTable
-        key={save.match.record.seed}
-        save={save}
-        cards={cards}
-        match={mine.match}
-        seat={seat}
-        note={`${title} · ${t("step.match")}`}
-        onRecord={(record) => patch({ match: latest.current?.match && { ...latest.current.match, record } }, true)}
-        onResult={(winner) => feed.report(mine.index, winner)}
-        onSeated={() => setAtTable(true)}
-        onLeave={() => setSummary(true)}
-      />
+      <>
+        <Seated onSeated={() => setAtTable(true)} />
+        <kit.SoloMatch
+          key={save.match.record.seed}
+          save={save.match}
+          place={match.seats.indexOf(seat)}
+          cards={cards}
+          note={`${title} · ${t("step.match")}`}
+          onRecord={(record) => patch({ match: latest.current?.match && { ...latest.current.match, record } }, true)}
+          onResult={(winners) => {
+            if (!match.done) feed.report(index, matchWinner(match, winners));
+          }}
+          afterResult={
+            <div className="flex flex-row flex-wrap gap-2">
+              <Button onClick={() => setSummary(true)}>{t("match.toResults")}</Button>
+            </div>
+          }
+        />
+      </>
     );
   }
 
@@ -264,8 +255,7 @@ export function LimitedGame() {
       <LimitedResults
         view={view}
         seat={seat}
-        cards={cards}
-        deck={view.you?.deck ?? null}
+        deck={view.you?.deck ? <kit.DeckSummary deck={view.you.deck} cards={cards} faces={faces} /> : undefined}
         onReplay={
           mine && save.match
             ? () => {
@@ -287,57 +277,11 @@ export function LimitedGame() {
   );
 }
 
-/** Le match du joueur, sur la table de jeu habituelle. */
-function MatchTable({
-  save,
-  cards,
-  match,
-  seat,
-  note,
-  onRecord,
-  onResult,
-  onSeated,
-  onLeave,
-}: {
-  save: LimitedSave;
-  cards: TableCards;
-  match: LimitedMatch;
-  seat: number;
-  note: string;
-  onRecord: (record: SoloSave["record"]) => void;
-  onResult: (winner: number | null) => void;
-  /** La table est ouverte : on y reste après la fin de la partie. */
-  onSeated: () => void;
-  onLeave: () => void;
-}) {
-  const t = useTranslations("Games.Limited");
+/** Dit une fois que la table du match est ouverte : on y reste après la fin de la partie. */
+function Seated({ onSeated }: { onSeated: () => void }) {
   const seated = useRef(onSeated);
   useEffect(() => seated.current(), []);
-  // La partie est ouverte une fois : la sauvegarde change à chaque coup, la table reste.
-  const [solo] = useState<SoloSave | null>(() =>
-    save.match ? { seat: match.seats.indexOf(seat), bots: save.match.bots, record: save.match.record } : null,
-  );
-  const feed = useSoloGame(solo, { onSave: (next) => onRecord(next.record) });
-  const result = feed.update?.view.result ?? null;
-  const told = useRef(false);
-  useEffect(() => {
-    if (!result || told.current) return;
-    told.current = true;
-    if (!match.done) onResult(matchWinner(match, result.winners));
-  }, [result, match, onResult]);
-
-  return (
-    <GameTable
-      feed={feed}
-      cards={cards}
-      note={note}
-      afterResult={
-        <div className="flex flex-row flex-wrap gap-2">
-          <Button onClick={onLeave}>{t("match.toResults")}</Button>
-        </div>
-      }
-    />
-  );
+  return null;
 }
 
 type SimulationReply = { id: number; summary?: { winners: number[]; finished: boolean }; error?: string };
@@ -346,7 +290,7 @@ type SimulationReply = { id: number; summary?: { winners: number[]; finished: bo
  * Fait jouer les matchs qui n'opposent que des IA, dans un Web Worker (une
  * partie prend jusqu'à une seconde de calcul), et inscrit leur résultat.
  */
-function useBotMatches(feed: LimitedFeed): void {
+function useBotMatches<D, G>(feed: LimitedFeed<D, G>, open: () => Worker): void {
   const { view, game, report } = feed;
   const running = useRef<number | null>(null);
   const worker = useRef<Worker | null>(null);
@@ -365,7 +309,7 @@ function useBotMatches(feed: LimitedFeed): void {
     if (!job) return;
     const match = view.matches[next];
     running.current = next;
-    worker.current ??= new Worker(new URL("../simulation.worker.ts", import.meta.url), { type: "module" });
+    worker.current ??= open();
     const current = worker.current;
     current.onmessage = (message: MessageEvent<SimulationReply>) => {
       if (message.data.id !== next) return;
@@ -375,11 +319,11 @@ function useBotMatches(feed: LimitedFeed): void {
       report(next, summary?.finished ? matchWinner(match, summary.winners) : null);
     };
     current.postMessage({ id: next, config: job.config, seed: job.seed, bots: job.bots });
-  }, [next, view, game, report]);
+  }, [next, view, game, report, open]);
 }
 
 /** Le premier match encore à jouer dont les deux joueurs sont des IA. */
-function nextBotMatch(view: LimitedView | null): number | null {
+function nextBotMatch(view: LimitedView<unknown> | null): number | null {
   if (!view || view.phase !== "play") return null;
   const index = view.matches.findIndex((match) => !match.done && match.seats.every((seat) => view.seats[seat]?.bot));
   return index < 0 ? null : index;

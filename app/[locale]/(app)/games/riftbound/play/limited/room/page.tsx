@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import { PlayShell, type PlayPageProps } from "@/app/[locale]/(app)/games/riftbound/play/PlayShell.tsx";
-import { LimitedRoom } from "@/components/play/limited/LimitedRoom.tsx";
+import { RiftboundLimitedRoom } from "@/components/play/limited/riftbound-pages.tsx";
 
 export const metadata: Metadata = { robots: { index: false } };
 
@@ -12,7 +12,7 @@ export default function RiftboundLimitedRoomPage({ params }: PlayPageProps) {
       {/* La salle lit son code dans l'adresse (`?id=`) : c'est une lecture du
           navigateur, qui attend derrière sa frontière. */}
       <Suspense fallback={null}>
-        <LimitedRoom />
+        <RiftboundLimitedRoom />
       </Suspense>
     </PlayShell>
   );

@@ -2,35 +2,29 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { loadEngine, type BrowserEngine } from "@/lib/engine/browser";
-import type { LimitedGame, LimitedRecord, LimitedSave, LimitedView } from "@/lib/engine/limited";
-import type { EngineDeckList } from "@/lib/engine/types";
-
-type Event = InstanceType<BrowserEngine["LimitedEvent"]>;
+import type { LimitedGame, LimitedRecord, LimitedView } from "@/lib/engine/limited";
+import type { LimitedHandle, LimitedProfile } from "@/lib/engine/limited-profile";
 
 /** Le temps entre deux choix des IA : assez pour voir la table avancer, sans faire attendre. */
 const BOT_DELAY_MS = 110;
 
-export type LimitedAction =
-  | { type: "pick"; code: string; foil: boolean }
-  | { type: "submit"; deck: EngineDeckList }
-  | { type: "auto" }
-  | { type: "forfeit" };
+export type LimitedAction<D> =
+  { type: "pick"; code: string; foil: boolean } | { type: "submit"; deck: D } | { type: "auto" } | { type: "forfeit" };
 
-export type LimitedFeed = {
+export type LimitedFeed<D, G> = {
   status: "loading" | "ready" | "error";
   error: string | null;
-  view: LimitedView | null;
+  view: LimitedView<D> | null;
   /** Mon siège. */
   seat: number;
   /** Joue une action ; rend le message du moteur s'il la refuse. */
-  act: (action: LimitedAction) => string | null;
+  act: (action: LimitedAction<D>) => string | null;
   /** Les problèmes d'un deck, dans les mots du moteur. Vide s'il est légal. */
-  check: (deck: EngineDeckList) => string[];
+  check: (deck: D) => string[];
   /** Un deck construit par le moteur avec ma réserve, ou `null`. */
-  suggest: () => EngineDeckList | null;
+  suggest: () => D | null;
   /** La partie d'un match : configuration, graine, robots. */
-  game: (index: number) => LimitedGame | null;
+  game: (index: number) => LimitedGame<G> | null;
   /** Inscrit le résultat d'un match (`null` : partie nulle). */
   report: (index: number, winner: number | null) => void;
 };
@@ -42,11 +36,15 @@ const SEAT = 0;
  * les boosters de tout le monde sont ouverts ici et ne quittent pas la page.
  * Le journal est réécrit à chaque avancée (`onRecord`) : recharger reprend.
  */
-export function useLimitedEvent(save: LimitedSave | null, onRecord: (record: LimitedRecord) => void): LimitedFeed {
-  const event = useRef<Event | null>(null);
-  const [status, setStatus] = useState<LimitedFeed["status"]>("loading");
+export function useLimitedEvent<D, G>(
+  profile: LimitedProfile,
+  save: { record: LimitedRecord } | null,
+  onRecord: (record: LimitedRecord) => void,
+): LimitedFeed<D, G> {
+  const event = useRef<LimitedHandle | null>(null);
+  const [status, setStatus] = useState<LimitedFeed<D, G>["status"]>("loading");
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<LimitedView | null>(null);
+  const [view, setView] = useState<LimitedView<D> | null>(null);
   const keep = useRef(onRecord);
   useEffect(() => {
     keep.current = onRecord;
@@ -64,7 +62,7 @@ export function useLimitedEvent(save: LimitedSave | null, onRecord: (record: Lim
     const current = event.current;
     if (!current) return;
     try {
-      setView(JSON.parse(current.view(SEAT)) as LimitedView);
+      setView(JSON.parse(current.view(SEAT)) as LimitedView<D>);
       if (persist) keep.current(JSON.parse(current.record()) as LimitedRecord);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -75,10 +73,11 @@ export function useLimitedEvent(save: LimitedSave | null, onRecord: (record: Lim
     const record = opening.current?.record;
     if (seed === undefined || !record) return;
     let cancelled = false;
-    loadEngine()
+    profile
+      .engine()
       .then((engine) => {
         if (cancelled) return;
-        event.current = engine.LimitedEvent.restore(JSON.stringify(record));
+        event.current = engine.restore(JSON.stringify(record));
         setStatus("ready");
         setError(null);
         refresh(false);
@@ -93,7 +92,7 @@ export function useLimitedEvent(save: LimitedSave | null, onRecord: (record: Lim
       event.current?.free();
       event.current = null;
     };
-  }, [seed, refresh]);
+  }, [seed, refresh, profile]);
 
   // Les IA choisissent une à une tant qu'il leur reste quelque chose à faire.
   const seq = view?.seq;
@@ -115,7 +114,7 @@ export function useLimitedEvent(save: LimitedSave | null, onRecord: (record: Lim
   }, [seq, busy, status, refresh]);
 
   const act = useCallback(
-    (action: LimitedAction): string | null => {
+    (action: LimitedAction<D>): string | null => {
       const current = event.current;
       if (!current) return null;
       try {
@@ -129,7 +128,7 @@ export function useLimitedEvent(save: LimitedSave | null, onRecord: (record: Lim
     [refresh],
   );
 
-  const check = useCallback((deck: EngineDeckList): string[] => {
+  const check = useCallback((deck: D): string[] => {
     const current = event.current;
     if (!current) return [];
     try {
@@ -139,14 +138,14 @@ export function useLimitedEvent(save: LimitedSave | null, onRecord: (record: Lim
     }
   }, []);
 
-  const suggest = useCallback((): EngineDeckList | null => {
+  const suggest = useCallback((): D | null => {
     const current = event.current;
-    return current ? (JSON.parse(current.suggest(SEAT)) as EngineDeckList | null) : null;
+    return current ? (JSON.parse(current.suggest(SEAT)) as D | null) : null;
   }, []);
 
-  const game = useCallback((index: number): LimitedGame | null => {
+  const game = useCallback((index: number): LimitedGame<G> | null => {
     const current = event.current;
-    return current ? (JSON.parse(current.game(index)) as LimitedGame | null) : null;
+    return current ? (JSON.parse(current.game(index)) as LimitedGame<G> | null) : null;
   }, []);
 
   const report = useCallback(

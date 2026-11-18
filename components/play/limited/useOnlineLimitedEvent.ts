@@ -4,24 +4,23 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { LimitedAction } from "@/components/play/limited/useLimitedEvent";
 import type { LimitedView } from "@/lib/engine/limited";
-import type { EngineDeckList } from "@/lib/engine/types";
 
 /** La table d'un match, telle que le serveur la donne au joueur qui y est assis. */
 export type MatchSeat = { index: number; game: string; seat: number; ticket: string };
 
-type ServerMessage =
+type ServerMessage<D> =
   | { type: "welcome"; event: string; role: string; seat: number | null; name: string }
   | { type: "presence"; seat: number; connected: boolean }
   | {
       type: "event";
-      view: LimitedView;
+      view: LimitedView<D>;
       /** Secondes qu'il me reste pour choisir ou construire ; `null` sans délai. */
       due: number | null;
       timers: { pick: number; build: number };
       table: MatchSeat | null;
     }
   | { type: "checked"; problems: string[] }
-  | { type: "suggested"; deck: EngineDeckList | null }
+  | { type: "suggested"; deck: D | null }
   | { type: "error"; message: string }
   | { type: "pong" };
 
@@ -29,11 +28,11 @@ const PING_MS = 25_000;
 const MAX_RETRY_MS = 15_000;
 const RENEW_AFTER = 3;
 
-export type OnlineLimitedFeed = {
+export type OnlineLimitedFeed<D> = {
   status: "loading" | "ready" | "reconnecting" | "error";
   /** Le dernier refus du serveur, numéroté pour qu'un même message reparaisse. */
   error: { id: number; message: string } | null;
-  view: LimitedView | null;
+  view: LimitedView<D> | null;
   /** Mon siège, ou `null` pour un spectateur. */
   seat: number | null;
   /** L'instant (horloge du navigateur) où mon délai s'achève, ou `null`. */
@@ -44,11 +43,11 @@ export type OnlineLimitedFeed = {
   away: number[];
   /** Les problèmes du dernier deck vérifié, avec ce deck (sérialisé) ; `null` tant que rien n'est revenu. */
   checked: { deck: string; problems: string[] } | null;
-  act: (action: LimitedAction) => void;
+  act: (action: LimitedAction<D>) => void;
   /** Demande au serveur de vérifier ce deck : la réponse arrive dans `checked`. */
-  check: (deck: EngineDeckList) => void;
+  check: (deck: D) => void;
   /** Un deck construit par le serveur avec ma réserve, ou `null`. */
-  suggest: () => Promise<EngineDeckList | null>;
+  suggest: () => Promise<D | null>;
 };
 
 /**
@@ -57,7 +56,7 @@ export type OnlineLimitedFeed = {
  * complète, ticket compris. La connexion se rétablit seule : le serveur renvoie
  * alors l'état entier. `renew` rend une adresse fraîche quand elle ne revient pas.
  */
-export function useOnlineLimitedEvent(url: string | null, renew?: () => Promise<string | null>): OnlineLimitedFeed {
+export function useOnlineLimitedEvent<D>(url: string | null, renew?: () => Promise<string | null>): OnlineLimitedFeed<D> {
   const renewRef = useRef(renew);
   useEffect(() => {
     renewRef.current = renew;
@@ -65,16 +64,16 @@ export function useOnlineLimitedEvent(url: string | null, renew?: () => Promise<
 
   const socket = useRef<WebSocket | null>(null);
   const asked = useRef<string[]>([]);
-  const waiting = useRef<((deck: EngineDeckList | null) => void)[]>([]);
+  const waiting = useRef<((deck: D | null) => void)[]>([]);
   const errors = useRef(0);
-  const [status, setStatus] = useState<OnlineLimitedFeed["status"]>("loading");
-  const [error, setError] = useState<OnlineLimitedFeed["error"]>(null);
-  const [view, setView] = useState<LimitedView | null>(null);
+  const [status, setStatus] = useState<OnlineLimitedFeed<D>["status"]>("loading");
+  const [error, setError] = useState<OnlineLimitedFeed<D>["error"]>(null);
+  const [view, setView] = useState<LimitedView<D> | null>(null);
   const [seat, setSeat] = useState<number | null>(null);
   const [deadline, setDeadline] = useState<number | null>(null);
   const [table, setTable] = useState<MatchSeat | null>(null);
   const [away, setAway] = useState<number[]>([]);
-  const [checked, setChecked] = useState<OnlineLimitedFeed["checked"]>(null);
+  const [checked, setChecked] = useState<OnlineLimitedFeed<D>["checked"]>(null);
 
   useEffect(() => {
     if (!url) return;
@@ -99,9 +98,9 @@ export function useOnlineLimitedEvent(url: string | null, renew?: () => Promise<
       };
 
       ws.onmessage = (event) => {
-        let message: ServerMessage;
+        let message: ServerMessage<D>;
         try {
-          message = JSON.parse(String(event.data)) as ServerMessage;
+          message = JSON.parse(String(event.data)) as ServerMessage<D>;
         } catch {
           return;
         }
@@ -186,10 +185,10 @@ export function useOnlineLimitedEvent(url: string | null, renew?: () => Promise<
     return true;
   }, []);
 
-  const act = useCallback((action: LimitedAction) => void send({ type: "act", action }), [send]);
+  const act = useCallback((action: LimitedAction<D>) => void send({ type: "act", action }), [send]);
 
   const check = useCallback(
-    (deck: EngineDeckList) => {
+    (deck: D) => {
       if (send({ type: "check", deck })) asked.current.push(JSON.stringify(deck));
     },
     [send],
@@ -197,7 +196,7 @@ export function useOnlineLimitedEvent(url: string | null, renew?: () => Promise<
 
   const suggest = useCallback(
     () =>
-      new Promise<EngineDeckList | null>((resolve) => {
+      new Promise<D | null>((resolve) => {
         if (send({ type: "suggest" })) waiting.current.push(resolve);
         else resolve(null);
       }),

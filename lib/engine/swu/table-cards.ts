@@ -82,6 +82,7 @@ export async function readSwuTableCards(gameId: string): Promise<SwuTableCards> 
       hp: card.hp,
       aspects: card.aspects,
       arena: card.arena,
+      ...(card.rarity ? { rarity: card.rarity } : {}),
       playable: card.coverage !== "none",
     };
   }

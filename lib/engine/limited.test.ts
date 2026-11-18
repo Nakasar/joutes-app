@@ -16,7 +16,6 @@ import {
   matchWinner,
   removeFromMain,
   runesFrom,
-  sortPack,
   splitRunes,
   stacks,
   type LimitedView,
@@ -122,19 +121,6 @@ test("douze runes, au moins une par domaine joué, la rune de base de chaque dom
   assert.equal(runes.length, 12);
   assert.ok(!runes.includes("R-FURY-ALT"));
   assert.deepEqual(splitRunes(emptyDeck(), cards), { fury: 0, calm: 0, mind: 0, body: 0, chaos: 0, order: 0 });
-});
-
-test("le tri d'un paquet garde l'ordre du moteur à égalité", () => {
-  const pack = [{ code: "U-FURY" }, { code: "U-MIND" }, { code: "U-CALM" }, { code: "U-BODY" }];
-  assert.deepEqual(
-    sortPack(pack, cards, "rarity").map((entry) => entry.code),
-    ["U-MIND", "U-CALM", "U-FURY", "U-BODY"],
-  );
-  assert.deepEqual(
-    sortPack(pack, cards, "cost").map((entry) => entry.code),
-    ["U-FURY", "U-BODY", "U-CALM", "U-MIND"],
-  );
-  assert.equal(pack[0].code, "U-FURY");
 });
 
 test("le vainqueur d'un match est un siège de l'évènement, pas de la table", () => {

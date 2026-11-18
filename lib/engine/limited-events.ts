@@ -5,8 +5,18 @@ import { randomBytes, randomInt } from "node:crypto";
 import { DateTime } from "luxon";
 
 import * as eventsDb from "@/lib/db/limited-events";
-import { LIMITED_KINDS, limitedRules, type LimitedKind, type LimitedSettings } from "@/lib/engine/limited";
+import {
+  isLimitedGame,
+  LIMITED_KINDS,
+  limitedRules,
+  type LimitedGameKey,
+  type LimitedKind,
+  type LimitedRules,
+  type LimitedSettings,
+} from "@/lib/engine/limited";
 import { boosterSetCodes } from "@/lib/engine/server";
+import { swuLimitedRules } from "@/lib/engine/swu/limited";
+import { swuBoosterSetCodes } from "@/lib/engine/swu/server";
 import { engineServer, TableFailure, type Seated, type TableGame } from "@/lib/engine/tables";
 import { signTicket } from "@/lib/engine/tickets";
 import type { BotLevel } from "@/lib/engine/types";
@@ -22,8 +32,19 @@ import type { LimitedEvent, LimitedEventSummary, LimitedTimers } from "@/lib/typ
  * ouvre les boosters, tient les délais et ouvre une table par match.
  */
 
-/** Le limité en ligne n'existe que pour Riftbound pour l'instant. */
-export const LIMITED_SLUG = "riftbound";
+/** Ce que le site vérifie des réglages d'un jeu avant de les garder : ses nombres et ses extensions. */
+const GAMES: Record<LimitedGameKey, { rules: (kind: LimitedKind) => LimitedRules; sets: () => string[]; bots: string[] }> = {
+  riftbound: {
+    rules: limitedRules,
+    sets: boosterSetCodes,
+    bots: ["Poro", "Scuttle", "Krug", "Gromp", "Raptor", "Herald", "Baron"],
+  },
+  swu: {
+    rules: swuLimitedRules,
+    sets: swuBoosterSetCodes,
+    bots: ["Astro", "Protocole", "Sonde", "Vigie", "Mécano", "Éclaireur", "Navigateur"],
+  },
+};
 
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 8;
@@ -48,12 +69,14 @@ function delay(value: unknown, [min, max]: readonly [number, number]): number {
 }
 
 /** Les réglages reçus d'un navigateur, vérifiés. */
-export function parseLimitedOptions(input: unknown): LimitedEventOptions {
+export function parseLimitedOptions(input: unknown, slug: string): LimitedEventOptions {
+  if (!isLimitedGame(slug)) throw new TableFailure("INVALID");
+  const game = GAMES[slug];
   const value = input as { kind?: unknown; packs?: unknown; players?: unknown; timers?: unknown } | null;
   const kind = value?.kind;
   if (!LIMITED_KINDS.includes(kind as LimitedKind)) throw new TableFailure("INVALID");
-  const rules = limitedRules(kind as LimitedKind);
-  const sets = boosterSetCodes();
+  const rules = game.rules(kind as LimitedKind);
+  const sets = game.sets();
   const packs = value?.packs;
   if (!Array.isArray(packs) || packs.length !== rules.boosters || !packs.every((code) => sets.includes(code))) {
     throw new TableFailure("INVALID");
@@ -97,7 +120,7 @@ export async function createLimitedEvent(
   game: TableGame,
 ): Promise<LimitedEvent> {
   if (!engineServer()) throw new TableFailure("OFFLINE");
-  if (game.slug !== LIMITED_SLUG) throw new TableFailure("INVALID");
+  if (!isLimitedGame(game.slug)) throw new TableFailure("INVALID");
   // Un seul évènement en attente par hôte, comme pour les tables.
   await eventsDb.cancelWaitingLimitedEventsOf(host.userId);
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -143,14 +166,13 @@ export async function joinLimitedEvent(player: Seated, id: string, game: TableGa
   if (!(await eventsDb.addLimitedEventSeat(id, event.players, seat))) throw new TableFailure("FULL");
 }
 
-const BOT_NAMES = ["Poro", "Scuttle", "Krug", "Gromp", "Raptor", "Herald", "Baron"];
-
 export async function addLimitedBot(userId: string, id: string, level: BotLevel, game: TableGame): Promise<void> {
   const event = await waitingEvent(id, game);
   if (event.hostId !== userId) throw new TableFailure("FORBIDDEN");
   if (event.seats.length >= event.players) throw new TableFailure("FULL");
   const taken = new Set(event.seats.map((seat) => seat.name));
-  const name = BOT_NAMES.find((candidate) => !taken.has(candidate)) ?? freeName(event, "Bot");
+  const names = isLimitedGame(game.slug) ? GAMES[game.slug].bots : [];
+  const name = names.find((candidate) => !taken.has(candidate)) ?? freeName(event, "Bot");
   if (!(await eventsDb.addLimitedEventSeat(id, event.players, { name, bot: level }))) throw new TableFailure("FULL");
 }
 
@@ -210,7 +232,7 @@ export async function startLimitedEvent(userId: string, id: string, game: TableG
       headers: { "content-type": "application/json", authorization: `Bearer ${server.adminToken}` },
       body: JSON.stringify({
         id: engineId,
-        game: LIMITED_SLUG,
+        game: event.gameSlug,
         seed: randomInt(1, 2 ** 48 - 1),
         settings: limitedSettings(event),
         timers: event.timers,

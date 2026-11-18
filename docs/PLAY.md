@@ -292,3 +292,30 @@ du moteur), le nombre de joueurs (2 à 8) et le niveau des IA, puis crée un
   (`joutes.play.limited.online.<évènement>.<siège>`). Quitter avant la fin
   envoie `forfeit`. Un visiteur sans siège suit l'évènement en spectateur, sans
   voir aucune carte.
+
+### Un jeu de plus en limité
+
+Les écrans du limité ne connaissent aucun jeu : chacun reçoit un « kit »
+(`LimitedKit`, `components/play/limited/kit.ts`). Le kit étend le profil du jeu
+(`LimitedProfile`, `lib/engine/limited-profile.ts` : adresse des pages, clé de
+sauvegarde, règles, moteur wasm) et y ajoute ce qui s'affiche : le visage des
+cartes (`Faces`, `lib/engine/limited-faces.ts`), l'écran de construction, le
+résumé du deck et la table du match, contre l'IA et en ligne.
+
+| Jeu | Profil | Kit | Pages |
+| --- | --- | --- | --- |
+| Riftbound | `lib/engine/limited-riftbound.ts` | `components/play/limited/riftbound-kit.tsx` | `/games/riftbound/play/limited` |
+| Star Wars: Unlimited | `lib/engine/swu/limited-profile.ts` | `components/play/swu/limited/swu-kit.tsx` | `/games/swu/play/limited` |
+
+Côté serveur, `LIMITED_GAMES` (`lib/engine/limited.ts`) liste les jeux admis,
+la table `GAMES` de `lib/engine/limited-events.ts` donne leurs règles, leurs
+extensions et les noms de leurs IA, et chaque action de
+`riftbound/play/limited/actions.ts` prend le jeu en premier paramètre.
+
+Star Wars: Unlimited (règle 10 des Comprehensive Rules) : 6 boosters en scellé,
+3 en draft ; le draft commence par les leaders (`view.prelude`, un leader par
+choix, passés au joueur précédent), puis viennent les paquets. Le deck se
+construit dans `SwuBuildScreen` : un leader de la réserve, une base ouverte ou
+une base commune d'une extension ouverte, 30 cartes au moins. Une carte dont
+les affinités ne viennent ni du leader ni de la base est atténuée et annonce son
+surcoût (`swuAspectPenalty`, `lib/engine/swu/limited.ts`).

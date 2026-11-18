@@ -7,7 +7,6 @@ import {
   joinLimitedEvent,
   leaveLimitedSeat,
   limitedAccess,
-  LIMITED_SLUG,
   parseLimitedOptions,
   reconcileLimitedEvent,
   startLimitedEvent,
@@ -23,6 +22,7 @@ import {
   viewer,
   type PlayResult,
 } from "@/lib/engine/table-actions.ts";
+import { isLimitedGame } from "@/lib/engine/limited.ts";
 import { engineServer, isBotLevel, TableFailure } from "@/lib/engine/tables.ts";
 import type { LimitedEventSummary } from "@/lib/types/LimitedEvent.ts";
 
@@ -42,29 +42,33 @@ export type LimitedEventState = {
   access: LimitedAccess | null;
 };
 
-const game = () => playableGame(LIMITED_SLUG);
+/** Le jeu de l'évènement : `riftbound` ou `swu`, dit par la page qui appelle. */
+const game = (slug: unknown) => {
+  if (!isLimitedGame(slug)) throw new TableFailure("INVALID");
+  return playableGame(slug);
+};
 
-export async function createLimitedEventAction(options: unknown): Promise<PlayResult<{ id: string }>> {
+export async function createLimitedEventAction(slug: unknown, options: unknown): Promise<PlayResult<{ id: string }>> {
   return guarded(async () => {
-    const played = await game();
+    const played = await game(slug);
     const seated = await requireViewer();
     await requireHost();
-    const event = await createLimitedEvent(seated, parseLimitedOptions(options), played);
+    const event = await createLimitedEvent(seated, parseLimitedOptions(options, played.slug), played);
     return { id: event.id };
   });
 }
 
-export async function joinLimitedEventAction(id: unknown): Promise<PlayResult> {
+export async function joinLimitedEventAction(slug: unknown, id: unknown): Promise<PlayResult> {
   return guarded(async () => {
-    const played = await game();
+    const played = await game(slug);
     await joinLimitedEvent(await requireViewer(), parseTableId(id), played);
     return {};
   });
 }
 
-export async function addLimitedBotAction(id: unknown, level: unknown): Promise<PlayResult> {
+export async function addLimitedBotAction(slug: unknown, id: unknown, level: unknown): Promise<PlayResult> {
   return guarded(async () => {
-    const played = await game();
+    const played = await game(slug);
     const seated = await requireViewer();
     if (!isBotLevel(level)) throw new TableFailure("INVALID");
     await addLimitedBot(seated.userId, parseTableId(id), level, played);
@@ -73,9 +77,9 @@ export async function addLimitedBotAction(id: unknown, level: unknown): Promise<
 }
 
 /** `name` : le nom affiché au siège visé, pour ne pas retirer quelqu'un d'autre si la salle a bougé. */
-export async function leaveLimitedSeatAction(id: unknown, seat: unknown, name: unknown): Promise<PlayResult> {
+export async function leaveLimitedSeatAction(slug: unknown, id: unknown, seat: unknown, name: unknown): Promise<PlayResult> {
   return guarded(async () => {
-    const played = await game();
+    const played = await game(slug);
     const seated = await requireViewer();
     if (typeof seat !== "number" || !Number.isInteger(seat) || typeof name !== "string") {
       throw new TableFailure("INVALID");
@@ -85,18 +89,18 @@ export async function leaveLimitedSeatAction(id: unknown, seat: unknown, name: u
   });
 }
 
-export async function startLimitedEventAction(id: unknown): Promise<PlayResult> {
+export async function startLimitedEventAction(slug: unknown, id: unknown): Promise<PlayResult> {
   return guarded(async () => {
-    const played = await game();
+    const played = await game(slug);
     const seated = await requireViewer();
     await startLimitedEvent(seated.userId, parseTableId(id), played);
     return {};
   });
 }
 
-export async function readLimitedEventAction(id: unknown): Promise<PlayResult<{ state: LimitedEventState }>> {
+export async function readLimitedEventAction(slug: unknown, id: unknown): Promise<PlayResult<{ state: LimitedEventState }>> {
   return guarded(async () => {
-    const played = await game();
+    const played = await game(slug);
     const seated = await viewer();
     const stored = await getLimitedEvent(parseTableId(id));
     if (!stored || stored.gameSlug !== played.slug) throw new TableFailure("NOT_FOUND");
@@ -115,9 +119,9 @@ export async function readLimitedEventAction(id: unknown): Promise<PlayResult<{ 
 }
 
 /** Mes scellés et drafts en ligne, les plus récents d'abord. */
-export async function listLimitedEventsAction(): Promise<PlayResult<{ events: LimitedEventSummary[] }>> {
+export async function listLimitedEventsAction(slug: unknown): Promise<PlayResult<{ events: LimitedEventSummary[] }>> {
   return guarded(async () => {
-    const played = await game();
+    const played = await game(slug);
     const seated = await viewer();
     if (!seated || !engineServer()) return { events: [] };
     const events = await listLimitedEventsOf(seated.userId, played.slug, 5);
