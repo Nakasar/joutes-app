@@ -12,7 +12,10 @@ import { NextResponse, type NextRequest } from "next/server";
  * - `POST decks/resolve` `{ reference }` : le deck d'un invité en mode hôte ;
  * - `POST tables` `{ mode?, choice }` : créer une table en ligne ;
  * - `GET  tables/{id}` : l'état de la table, avec mon entrée à la partie ;
- * - `POST tables/{id}/join` `{ choice }`, `bots` `{ level }`, `leave` `{ seat, name }`, `start`.
+ * - `POST tables/{id}/join` `{ choice }`, `bots` `{ level }`, `leave` `{ seat, name }`, `start` ;
+ * - scellé et draft en ligne (`limited`, pour un jeu qui en a) : `GET events` (les miens),
+ *   `POST events` `{ options }`, `GET events/{id}`, `POST events/{id}/join`, `bots` `{ level }`,
+ *   `leave` `{ seat, name }`, `start`.
  *
  * Les réponses gardent la forme des actions (`{ ok, … }` ou `{ ok: false, error }`)
  * pour que l'app et le site lisent les mêmes codes d'échec.
@@ -30,6 +33,18 @@ export type PlayApi = {
   addBot: (id: unknown, level: unknown) => Promise<Result>;
   leaveSeat: (id: unknown, seat: unknown, name: unknown) => Promise<Result>;
   startTable: (id: unknown) => Promise<Result>;
+  /** Le scellé et le draft en ligne ; absent pour un jeu qui n'en a pas. */
+  limited?: LimitedApi;
+};
+
+export type LimitedApi = {
+  list: () => Promise<Result>;
+  create: (options: unknown) => Promise<Result>;
+  read: (id: unknown) => Promise<Result>;
+  join: (id: unknown) => Promise<Result>;
+  addBot: (id: unknown, level: unknown) => Promise<Result>;
+  leaveSeat: (id: unknown, seat: unknown, name: unknown) => Promise<Result>;
+  start: (id: unknown) => Promise<Result>;
 };
 
 type Context = { params: Promise<{ path?: string[] }> };
@@ -72,6 +87,10 @@ export function playRoutes(api: PlayApi) {
       return reply(await api.searchDecks(request.nextUrl.searchParams.get("q") ?? ""));
     }
     if (path.length === 2 && path[0] === "tables") return reply(await api.readTable(path[1]));
+    if (api.limited && path[0] === "events") {
+      if (path.length === 1) return reply(await api.limited.list());
+      if (path.length === 2) return reply(await api.limited.read(path[1]));
+    }
     return notFound();
   }
 
@@ -91,6 +110,22 @@ export function playRoutes(api: PlayApi) {
           return reply(await api.leaveSeat(id, input.seat, input.name));
         case "start":
           return reply(await api.startTable(id));
+      }
+    }
+    if (api.limited && path[0] === "events") {
+      if (path.length === 1) return reply(await api.limited.create(input.options));
+      if (path.length === 3) {
+        const id = path[1];
+        switch (path[2]) {
+          case "join":
+            return reply(await api.limited.join(id));
+          case "bots":
+            return reply(await api.limited.addBot(id, input.level));
+          case "leave":
+            return reply(await api.limited.leaveSeat(id, input.seat, input.name));
+          case "start":
+            return reply(await api.limited.start(id));
+        }
       }
     }
     return notFound();

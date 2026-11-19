@@ -1,10 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * Version du moteur.
- */
-export function version(): string;
-/**
  * Toutes les cartes de Cyberpunk TCG connues du moteur, avec leur niveau de prise en charge.
  */
 export function cp_catalog(): string;
@@ -37,6 +33,73 @@ export function cp_judge_simulate(scenario: string, steps: string): string;
  * (-1 = jusqu'au bout) et raconte les `last` dernières actions.
  */
 export function cp_judge_review(record: string, upto: number, last: number): string;
+/**
+ * Les extensions de Cyberpunk TCG dont on peut ouvrir des boosters.
+ */
+export function cp_booster_sets(): string;
+/**
+ * Version du moteur.
+ */
+export function version(): string;
+/**
+ * Un évènement de scellé de Cyberpunk TCG tenu dans le navigateur : celui qui le tient
+ * voit toutes les cartes, chaque joueur ne reçoit que sa vue (`view`).
+ */
+export class CpLimitedEvent {
+  free(): void;
+  /**
+   * L'action d'un humain : `{"type":"pick","code":…,"foil":…}`, `{"type":"submit","deck":…}`,
+   * `{"type":"auto"}` (un robot choisit pour lui) ou `{"type":"forfeit"}`.
+   */
+  act(seat: number, action: string): void;
+  /**
+   * `settings` (JSON) : `kind` (`"sealed"`, le seul format), `packs` (l'extension de
+   * chaque booster) et `players` (`name`, et `bot` : un niveau ou `null`).
+   */
+  constructor(settings: string, seed: number);
+  /**
+   * La partie d'un match : `config`, `seed` et `bots`, à donner tels quels à `CyberpunkTable`.
+   * `null` tant que les matchs ne sont pas connus.
+   */
+  game(index: number): string;
+  /**
+   * L'évènement vu d'un siège (0, 1…), d'un spectateur (-1) ou d'un arbitre (-2).
+   */
+  view(seat: number): string;
+  /**
+   * Les problèmes d'un deck pour ce joueur (liste vide s'il est légal).
+   */
+  check(seat: number, deck: string): string;
+  /**
+   * Le journal complet : réglages, graine et tout ce qui s'est passé.
+   */
+  record(): string;
+  /**
+   * Inscrit le résultat d'un match : le siège du vainqueur, ou -1 pour une nulle.
+   */
+  report(index: number, winner: number): void;
+  /**
+   * Rouvre un évènement depuis son journal (`record()`).
+   */
+  static restore(record: string): CpLimitedEvent;
+  /**
+   * Confie un siège à un robot (`level` : `"normal"`…) ou le rend à un humain (`null`).
+   */
+  set_bot(seat: number, level: string): void;
+  /**
+   * Un deck proposé à ce joueur (« Construire pour moi »), ou `null`.
+   */
+  suggest(seat: number): string;
+  /**
+   * Fait faire un choix à un robot qui en a un à faire. Rend son siège, ou -1.
+   */
+  bot_step(): number;
+  /**
+   * Joue un match entre deux robots et inscrit son résultat. Synchrone et parfois
+   * long (voir `simulate`) : l'appeler depuis un Web Worker.
+   */
+  simulate(index: number): string;
+}
 /**
  * Une partie de Cyberpunk TCG tenue dans le navigateur : les mêmes appels
  * que [`Table`], avec la configuration, les actions et la vue de Cyberpunk.
@@ -85,15 +148,28 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly version: () => [number, number];
+  readonly __wbg_cplimitedevent_free: (a: number, b: number) => void;
   readonly __wbg_cyberpunktable_free: (a: number, b: number) => void;
   readonly cp_auto_deck: (a: number, b: number, c: number) => [number, number, number, number];
+  readonly cp_booster_sets: () => [number, number];
   readonly cp_catalog: () => [number, number];
   readonly cp_judge_review: (a: number, b: number, c: number, d: number) => [number, number, number, number];
   readonly cp_judge_simulate: (a: number, b: number, c: number, d: number) => [number, number, number, number];
   readonly cp_random_config: (a: number) => [number, number, number, number];
   readonly cp_simulate: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
   readonly cp_validate_deck: (a: number, b: number) => [number, number, number, number];
+  readonly cplimitedevent_act: (a: number, b: number, c: number, d: number) => [number, number];
+  readonly cplimitedevent_bot_step: (a: number) => number;
+  readonly cplimitedevent_check: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+  readonly cplimitedevent_game: (a: number, b: number) => [number, number];
+  readonly cplimitedevent_new: (a: number, b: number, c: number) => [number, number, number];
+  readonly cplimitedevent_record: (a: number) => [number, number];
+  readonly cplimitedevent_report: (a: number, b: number, c: number) => [number, number];
+  readonly cplimitedevent_restore: (a: number, b: number) => [number, number, number];
+  readonly cplimitedevent_set_bot: (a: number, b: number, c: number, d: number) => [number, number];
+  readonly cplimitedevent_simulate: (a: number, b: number) => [number, number, number, number];
+  readonly cplimitedevent_suggest: (a: number, b: number) => [number, number];
+  readonly cplimitedevent_view: (a: number, b: number) => [number, number];
   readonly cyberpunktable_act: (a: number, b: number, c: number, d: number) => [number, number, number];
   readonly cyberpunktable_bot_step: (a: number) => number;
   readonly cyberpunktable_is_bot: (a: number, b: number) => number;
@@ -104,6 +180,7 @@ export interface InitOutput {
   readonly cyberpunktable_seq: (a: number) => number;
   readonly cyberpunktable_to_act: (a: number) => number;
   readonly cyberpunktable_update: (a: number, b: number, c: number) => [number, number];
+  readonly version: () => [number, number];
   readonly __wbindgen_export_0: WebAssembly.Table;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;

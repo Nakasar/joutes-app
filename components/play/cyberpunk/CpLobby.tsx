@@ -14,11 +14,14 @@ import {
 import { DeckPicker } from "@/components/play/DeckPicker";
 import { readCpSave, writeCpSave, type CpSave } from "@/components/play/cyberpunk/useCpSoloGame";
 import { useCpTableCards } from "@/components/play/cyberpunk/useCpTableCards";
+import { LimitedSetup } from "@/components/play/limited/LimitedSetup";
 import { Button } from "@/components/ui/button";
 import { Link, useRouter } from "@/i18n/navigation";
 import { loadCpEngine } from "@/lib/engine/cyberpunk/browser";
 import { autoLegends, COLOR_HEX, cpPickerCards, type LegendInfo } from "@/lib/engine/cyberpunk/cards";
+import { CP_LIMITED_STORAGE_KEY, cpLimited } from "@/lib/engine/cyberpunk/limited-profile";
 import type { CpDeckList, CpEngineCard } from "@/lib/engine/cyberpunk/types";
+import { readLimitedSave, writeLimitedSave, type LimitedSave } from "@/lib/engine/limited";
 import type { BotDeckChoice, DeckChoice } from "@/lib/engine/tables";
 import { BOT_LEVELS, type BotLevel } from "@/lib/engine/types";
 import { cn } from "@/lib/utils";
@@ -34,14 +37,17 @@ function pickRandom<T>(list: T[]): T {
 }
 
 type Opponent = "ai" | "watch";
+// Le jeu n'a pas de draft (Tournament Rules, annexe D.2.2).
+type Format = "constructed" | "sealed";
+const FORMATS: Format[] = ["constructed", "sealed"];
 
-const searchDecks = (query: string) =>
-  searchCpPlayDecksAction(query).then((result) => (result.ok ? result.decks : []));
+const searchDecks = (query: string) => searchCpPlayDecksAction(query).then((result) => (result.ok ? result.decks : []));
 
 /** La page Jouer de Cyberpunk TCG : choisir les decks et le niveau de l'IA, ou reprendre une partie. */
 export function CpLobby() {
   const t = useTranslations("Games.Play");
   const tc = useTranslations("Games.PlayCp");
+  const tLimited = useTranslations("Games.Limited");
   const router = useRouter();
   const cards = useCpTableCards();
   const [lobby, setLobby] = useState<Lobby | null>(null);
@@ -53,6 +59,9 @@ export function CpLobby() {
   const [found, setFound] = useState<Record<string, CpLobbyDeck>>({});
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<CpSave | null>(null);
+  const [format, setFormat] = useState<Format>("constructed");
+  // Un scellé contre des IA gardé dans le navigateur.
+  const [event, setEvent] = useState<LimitedSave<unknown, unknown> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +72,7 @@ export function CpLobby() {
     });
     // eslint-disable-next-line react-hooks/set-state-in-effect -- le stockage n'existe que dans le navigateur
     setSaved(readCpSave());
+    setEvent(readLimitedSave<unknown, unknown>(CP_LIMITED_STORAGE_KEY));
     return () => {
       cancelled = true;
     };
@@ -199,95 +209,153 @@ export function CpLobby() {
           </section>
         )}
 
+        {event && (
+          <section className="flex flex-row flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/50 bg-card p-5">
+            <div>
+              <h2 className="font-semibold">{tLimited(`resume.${event.record.settings.kind}`)}</h2>
+              <p className="text-sm text-muted-foreground">
+                {tLimited("resume.hint", { players: event.record.settings.players.length })}
+              </p>
+            </div>
+            <div className="flex flex-row flex-wrap gap-2">
+              <Button asChild>
+                <Link href="/games/cp/play/limited">{t("lobby.resume")}</Link>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  writeLimitedSave(null, CP_LIMITED_STORAGE_KEY);
+                  setEvent(null);
+                }}
+              >
+                {tLimited("resume.discard")}
+              </Button>
+            </div>
+          </section>
+        )}
+
         <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
-          <h2 className="font-semibold">{tc("lobby.whoTitle")}</h2>
+          <h2 className="font-semibold">{tLimited("format.title")}</h2>
           <div className="grid gap-2 sm:grid-cols-2">
-            {modes.map(({ key, icon: Icon, title, hint }) => (
+            {FORMATS.map((value) => (
               <button
-                key={key}
+                key={value}
                 type="button"
-                aria-pressed={opponent === key}
-                onClick={() => setOpponent(key)}
+                aria-pressed={format === value}
+                onClick={() => setFormat(value)}
                 className={cn(
                   "flex flex-col gap-1 rounded-lg border p-3 text-left transition hover:border-primary/60",
-                  opponent === key && "border-primary bg-primary/10",
+                  format === value && "border-primary bg-primary/10",
                 )}
               >
-                <span className="flex items-center gap-2 font-medium">
-                  <Icon className="size-4" aria-hidden />
-                  {title}
-                </span>
-                <span className="text-xs text-muted-foreground">{hint}</span>
+                <span className="font-medium">{tLimited(`format.${value}`)}</span>
+                <span className="text-xs text-muted-foreground">{tLimited(`format.${value}Hint`)}</span>
               </button>
             ))}
           </div>
-
-          <ul className="flex flex-col">
-            {!watching && (
-              <SeatRow color={SEAT_COLORS[0]} name={lobby.name ?? t("lobby.you")} you={t("lobby.youBadge")}>
-                {picker(0, lobby.name ?? t("lobby.you"), false)}
-              </SeatRow>
-            )}
-            {[0, 1]
-              .filter((seat) => watching || seat > 0)
-              .map((seat) => {
-                const name = t("lobby.botName", { number: watching ? seat + 1 : seat });
-                return (
-                  <SeatRow key={seat} color={SEAT_COLORS[seat]} name={name}>
-                    {picker(seat, name, true)}
-                    <div
-                      className="inline-flex overflow-hidden rounded-lg border"
-                      role="group"
-                      aria-label={t("lobby.levelOf", { name })}
-                    >
-                      {BOT_LEVELS.map((value) => (
-                        <button
-                          key={value}
-                          type="button"
-                          aria-pressed={botLevelOf(seat) === value}
-                          onClick={() =>
-                            setBotLevels((previous) => {
-                              const copy = [...previous];
-                              copy[seat] = value;
-                              return copy;
-                            })
-                          }
-                          className={cn(
-                            "min-h-9 px-3 text-xs transition",
-                            botLevelOf(seat) === value
-                              ? "bg-secondary text-foreground"
-                              : "text-muted-foreground hover:text-foreground",
-                          )}
-                        >
-                          {t(`level.${value}`)}
-                        </button>
-                      ))}
-                    </div>
-                  </SeatRow>
-                );
-              })}
-          </ul>
-
-          {!lobby.signedIn && (
-            <div className="flex flex-row flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span>{t("lobby.signInForDecks")}</span>
-              <Button asChild size="sm" variant="outline">
-                <Link href="/login">{t("lobby.signIn")}</Link>
-              </Button>
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground">{tc("lobby.sets")}</p>
-
-          <div className="flex flex-col gap-2">
-            {watching && <p className="text-sm text-muted-foreground">{tc("lobby.watchInfo")}</p>}
-            <div className="flex flex-row flex-wrap gap-2">
-              <Button disabled={busy || (!watching && !choice)} onClick={start}>
-                {watching ? t("lobby.startWatch") : t("lobby.startSolo")}
-              </Button>
-            </div>
-            {saved && <p className="text-xs text-muted-foreground">{t("lobby.replaces")}</p>}
-          </div>
         </section>
+
+        {format === "sealed" && (
+          <LimitedSetup
+            profile={cpLimited}
+            kind="sealed"
+            name={lobby.name ?? t("lobby.you")}
+            replaces={event !== null}
+            lobby={{ online: false, signedIn: lobby.signedIn, canHost: false }}
+          />
+        )}
+
+        {format === "constructed" && (
+          <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
+            <h2 className="font-semibold">{tc("lobby.whoTitle")}</h2>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {modes.map(({ key, icon: Icon, title, hint }) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={opponent === key}
+                  onClick={() => setOpponent(key)}
+                  className={cn(
+                    "flex flex-col gap-1 rounded-lg border p-3 text-left transition hover:border-primary/60",
+                    opponent === key && "border-primary bg-primary/10",
+                  )}
+                >
+                  <span className="flex items-center gap-2 font-medium">
+                    <Icon className="size-4" aria-hidden />
+                    {title}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{hint}</span>
+                </button>
+              ))}
+            </div>
+
+            <ul className="flex flex-col">
+              {!watching && (
+                <SeatRow color={SEAT_COLORS[0]} name={lobby.name ?? t("lobby.you")} you={t("lobby.youBadge")}>
+                  {picker(0, lobby.name ?? t("lobby.you"), false)}
+                </SeatRow>
+              )}
+              {[0, 1]
+                .filter((seat) => watching || seat > 0)
+                .map((seat) => {
+                  const name = t("lobby.botName", { number: watching ? seat + 1 : seat });
+                  return (
+                    <SeatRow key={seat} color={SEAT_COLORS[seat]} name={name}>
+                      {picker(seat, name, true)}
+                      <div
+                        className="inline-flex overflow-hidden rounded-lg border"
+                        role="group"
+                        aria-label={t("lobby.levelOf", { name })}
+                      >
+                        {BOT_LEVELS.map((value) => (
+                          <button
+                            key={value}
+                            type="button"
+                            aria-pressed={botLevelOf(seat) === value}
+                            onClick={() =>
+                              setBotLevels((previous) => {
+                                const copy = [...previous];
+                                copy[seat] = value;
+                                return copy;
+                              })
+                            }
+                            className={cn(
+                              "min-h-9 px-3 text-xs transition",
+                              botLevelOf(seat) === value
+                                ? "bg-secondary text-foreground"
+                                : "text-muted-foreground hover:text-foreground",
+                            )}
+                          >
+                            {t(`level.${value}`)}
+                          </button>
+                        ))}
+                      </div>
+                    </SeatRow>
+                  );
+                })}
+            </ul>
+
+            {!lobby.signedIn && (
+              <div className="flex flex-row flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <span>{t("lobby.signInForDecks")}</span>
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/login">{t("lobby.signIn")}</Link>
+                </Button>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">{tc("lobby.sets")}</p>
+
+            <div className="flex flex-col gap-2">
+              {watching && <p className="text-sm text-muted-foreground">{tc("lobby.watchInfo")}</p>}
+              <div className="flex flex-row flex-wrap gap-2">
+                <Button disabled={busy || (!watching && !choice)} onClick={start}>
+                  {watching ? t("lobby.startWatch") : t("lobby.startSolo")}
+                </Button>
+              </div>
+              {saved && <p className="text-xs text-muted-foreground">{t("lobby.replaces")}</p>}
+            </div>
+          </section>
+        )}
       </div>
 
       <aside className="flex flex-col gap-4">

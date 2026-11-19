@@ -12,6 +12,8 @@ raconte chaque évènement en citant la règle. Le site ne contient aucune règl
 | Contre l'IA | Dans le navigateur (WebAssembly) | Rien. La partie est gardée dans `localStorage` et reprend au rechargement. |
 | IA contre IA (spectateur) | Dans le navigateur, comme contre l'IA | Rien. La sauvegarde a `seat: null` ; voir « Regarder des IA » plus bas. |
 | En ligne | Sur le serveur de parties (`joutes-server serve`) | Les variables `JOUTES_ENGINE_*` (voir `.env.example`). |
+| Scellé et draft contre l'IA | Dans le navigateur, comme contre l'IA | Rien. Voir « Scellé et draft » plus bas. |
+| Scellé et draft en ligne | Sur le serveur de parties, qui seul voit les boosters | La salle d'attente (`limitedEvents`) et un ticket par personne. |
 | Mon serveur (mode hôte) | Sur un serveur lancé par un organisateur (`joutes-server host`) | L'adresse et le code du serveur, saisis dans la page. Joutes ne les voit pas. |
 
 Le mode hôte sert aux deux jeux : `components/play/HostPanel.tsx` reçoit de
@@ -31,7 +33,7 @@ Trois fonctionnalités dépendent d'un abonnement (`lib/constants/subscription-p
 
 | Droit | Offres | Ce qu'il ouvre |
 |---|---|---|
-| `sub:play-host` | Joutes Pro, Joutes Expert | Créer une table en ligne (`createTableFor`) et le mode hôte « Mon serveur » (`resolveDeckAction`, le deck d'un invité). |
+| `sub:play-host` | Joutes Pro, Joutes Expert | Créer une table en ligne (`createTableFor`), créer un scellé ou un draft en ligne (`createLimitedEventAction`) et le mode hôte « Mon serveur » (`resolveDeckAction`, le deck d'un invité). |
 | `sub:play-simulate` | Joutes Expert | Toutes les actions de « Simuler un deck » (`simulation-actions.ts`), sauf supprimer une série. |
 | `sub:play-filmed` | Joutes Pro, Joutes Expert | La table filmée : la page et `filmedArtAction` (les illustrations à reconnaître). |
 
@@ -227,8 +229,105 @@ L'app mobile (`joutes-mobile`) ne peut pas appeler les actions serveur : les
 mêmes actions sont exposées en REST sous `/api/games/<jeu>/play/…`
 (`lib/engine/play-api.ts`, une route attrape-tout par jeu à côté de `cards`).
 `GET lobby`, `GET decks?q=`, `POST decks/resolve`, `POST tables`,
-`GET tables/{id}`, `POST tables/{id}/join|bots|leave|start`. Les réponses
+`GET tables/{id}`, `POST tables/{id}/join|bots|leave|start` ; pour le scellé
+et le draft en ligne (Riftbound et Star Wars: Unlimited, `lib/engine/limited-play-api.ts`) :
+`GET events`, `POST events`, `GET events/{id}`, `POST events/{id}/join|bots|leave|start`. Les réponses
 gardent la forme des actions (`{ ok, … }`, ou `{ ok: false, error }` avec un
 statut HTTP qui suit le code). L'app embarque le même moteur WebAssembly pour
 jouer contre l'IA, et ouvre la WebSocket de `access.ws` pour une table en ligne.
 Toute nouvelle action d'une page Jouer se branche aussi là.
+
+## Scellé et draft
+
+Le lobby demande d'abord un format : Construit, Scellé ou Draft. En limité,
+`components/play/limited/LimitedSetup.tsx` choisit les boosters (`booster_sets()`
+du moteur), le nombre de joueurs (2 à 8) et le niveau des IA, puis crée un
+`LimitedEvent` dans le navigateur. La page `/games/riftbound/play/limited`
+(`LimitedGame`) tient la suite :
+
+| Phase du moteur | Écran |
+|---|---|
+| `draft` | `DraftScreen` : un paquet, une carte à prendre. |
+| `build` | `SealedOpening` (scellé, tant que tous les boosters n'ont pas été regardés), puis `BuildScreen`. |
+| `play`, `done` | Le match du joueur sur `GameTable` (`useSoloGame`), puis `LimitedResults`. |
+
+- L'évènement est gardé dans `localStorage` (`joutes.play.limited`, forme
+  `LimitedSave` de `lib/engine/limited.ts`) : le journal du moteur, le deck en
+  cours et le journal du match. Recharger reprend où l'on en était.
+- Le site ne juge pas le deck : `LimitedEvent.check` rend les problèmes, dans
+  les mots du moteur, et « Construire pour moi » appelle `suggest`. Les calculs
+  de `lib/engine/limited.ts` (réserve restante, domaines, courbe, répartition
+  des runes) ne servent qu'à l'affichage et ont leurs tests.
+- Pour commencer, un évènement se joue en un seul match d'une partie. Les
+  matchs entre IA tournent dans `simulation.worker.ts` et leur résultat est
+  inscrit par `report`.
+- Les boosters de tous les joueurs sont ouverts dans le navigateur de celui qui
+  joue : c'est sans enjeu contre des IA. En ligne, l'évènement vit sur le
+  serveur de parties, qui seul voit toutes les cartes.
+
+### En ligne et en mode hôte
+
+À l'étape « Qui joue ? », `LimitedSetup` propose trois lieux : contre des IA
+(ci-dessus), en ligne, ou « Mon serveur ».
+
+- **En ligne.** `createLimitedEventAction` (réservée à `sub:play-host`, comme
+  une table) ouvre une salle d'attente : collection `limitedEvents`
+  (`lib/db/limited-events.ts`), règles dans `lib/engine/limited-events.ts`,
+  page `/games/riftbound/play/limited/room?id=` (`LimitedRoom`). Rejoindre est
+  libre ; l'hôte ajoute des IA et lance dès deux joueurs, les places libres
+  restent vides. Au lancement, le site envoie les réglages et les délais à
+  `POST /events` du serveur de parties, puis signe pour chacun un ticket dont
+  le champ `game` vaut `event:<identifiant>`.
+- **Mon serveur.** `LimitedHostPanel` crée l'évènement sur le serveur de
+  l'organisateur depuis le navigateur et donne un lien par joueur, vers
+  `/games/riftbound/play/limited/remote#server=…&ticket=…` (`RemoteLimited`).
+- **La suite est commune** : `OnlineLimited` tient la connexion
+  (`useOnlineLimitedEvent`, route `/events/{id}/ws`) et réemploie `DraftScreen`,
+  `SealedOpening`, `BuildScreen` et `LimitedResults`. Le serveur n'envoie à
+  chacun que son paquet, sa réserve et son deck ; il vérifie le deck (`check`),
+  le construit sur demande (`suggest`), tient les délais (60 s par choix et
+  20 min de construction par défaut, réglables par l'hôte, 0 pour aucun) et, à
+  leur terme, choisit ou construit à la place du joueur. Pour les matchs il
+  ouvre une table par paire et remet à chaque joueur le ticket de la sienne :
+  la table est celle d'une partie en ligne (`useOnlineGame`).
+- Le navigateur ne garde que le deck en chantier
+  (`joutes.play.limited.online.<évènement>.<siège>`). Quitter avant la fin
+  envoie `forfeit`. Un visiteur sans siège suit l'évènement en spectateur, sans
+  voir aucune carte.
+
+### Un jeu de plus en limité
+
+Les écrans du limité ne connaissent aucun jeu : chacun reçoit un « kit »
+(`LimitedKit`, `components/play/limited/kit.ts`). Le kit étend le profil du jeu
+(`LimitedProfile`, `lib/engine/limited-profile.ts` : adresse des pages, clé de
+sauvegarde, règles, moteur wasm) et y ajoute ce qui s'affiche : le visage des
+cartes (`Faces`, `lib/engine/limited-faces.ts`), l'écran de construction, le
+résumé du deck et la table du match, contre l'IA et en ligne.
+
+| Jeu | Profil | Kit | Pages |
+| --- | --- | --- | --- |
+| Riftbound | `lib/engine/limited-riftbound.ts` | `components/play/limited/riftbound-kit.tsx` | `/games/riftbound/play/limited` |
+| Star Wars: Unlimited | `lib/engine/swu/limited-profile.ts` | `components/play/swu/limited/swu-kit.tsx` | `/games/swu/play/limited` |
+| Cyberpunk TCG | `lib/engine/cyberpunk/limited-profile.ts` | `components/play/cyberpunk/limited/cp-kit.tsx` | `/games/cp/play/limited` |
+
+Côté serveur, `LIMITED_GAMES` (`lib/engine/limited.ts`) liste les jeux admis,
+la table `GAMES` de `lib/engine/limited-events.ts` donne leurs règles, leurs
+extensions et les noms de leurs IA, et chaque action de
+`riftbound/play/limited/actions.ts` prend le jeu en premier paramètre.
+
+Star Wars: Unlimited (règle 10 des Comprehensive Rules) : 6 boosters en scellé,
+3 en draft ; le draft commence par les leaders (`view.prelude`, un leader par
+choix, passés au joueur précédent), puis viennent les paquets. Le deck se
+construit dans `SwuBuildScreen` : un leader de la réserve, une base ouverte ou
+une base commune d'une extension ouverte, 30 cartes au moins. Une carte dont
+les affinités ne viennent ni du leader ni de la base est atténuée et annonce son
+surcoût (`swuAspectPenalty`, `lib/engine/swu/limited.ts`).
+
+Cyberpunk TCG (Tournament Rules, annexe D.2.2) : scellé seulement, le jeu n'a
+pas de draft, et contre des IA seulement, le site n'ayant pas de table en ligne
+pour ce jeu (`game: null` dans le profil : `LimitedSetup` ne propose alors ni
+salle d'attente ni mode hôte, et le kit n'a pas d'`OnlineMatch`). 6 boosters de
+12 cartes ; le deck se construit dans `CpBuildScreen` : trois Légendes au plus,
+de noms différents, 30 cartes au moins de trois couleurs au plus, sans limite de
+RAM ni d'exemplaires. Une Légende qui manque devient, au premier tour, une Eddie
+face cachée prise sur le deck : c'est le moteur qui le fait (`Config.limited`).

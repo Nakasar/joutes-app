@@ -82,8 +82,18 @@ type Table = InstanceType<CpBrowserEngine["CyberpunkTable"]>;
  * navigateur. Le journal de la partie est réécrit après chaque coup : recharger
  * la page la reprend. `cards` sert à retrouver une carte par son numéro du moteur.
  */
-export function useCpSoloGame(save: CpSave | null, cards: CpTableCards): CpFeed {
+export function useCpSoloGame(
+  save: CpSave | null,
+  cards: CpTableCards,
+  options: { onSave?: (save: CpSave) => void } = {},
+): CpFeed {
   const table = useRef<Table | null>(null);
+  // Où la partie est gardée : la sauvegarde d'une partie contre l'IA, sauf si l'appelant la tient lui-même
+  // (le match d'un scellé).
+  const keep = useRef(options.onSave);
+  useEffect(() => {
+    keep.current = options.onSave;
+  });
   const seen = useRef(0);
   const known = useRef(new Map<number, string>());
   const byDef = useRef(new Map<number, string>());
@@ -119,7 +129,7 @@ export function useCpSoloGame(save: CpSave | null, cards: CpTableCards): CpFeed 
         setJournal((previous) => (told.length === 0 ? previous : [...previous, ...told]));
         // Une partie reprise ne se raconte pas depuis le début.
         if (opening) setToldFrom(next.seq);
-        writeCpSave({ ...save, record: JSON.parse(current.record()) as CpRecord });
+        (keep.current ?? writeCpSave)({ ...save, record: JSON.parse(current.record()) as CpRecord });
         setTick((value) => value + 1);
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause));

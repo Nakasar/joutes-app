@@ -9,6 +9,7 @@ import {
   searchSwuPlayDecksAction,
   startSwuTableAction,
 } from "@/app/[locale]/(app)/games/swu/play/actions";
+import { limitedRoutes } from "@/lib/engine/limited-play-api";
 import { playRoutes } from "@/lib/engine/play-api";
 
 /** La page Jouer de Star Wars: Unlimited pour l'app mobile : voir `lib/engine/play-api.ts`. */
@@ -23,4 +24,5 @@ export const { GET, POST } = playRoutes({
   addBot: addSwuBotAction,
   leaveSeat: leaveSwuSeatAction,
   startTable: startSwuTableAction,
+  limited: limitedRoutes("swu"),
 });

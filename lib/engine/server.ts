@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   auto_deck,
+  booster_sets,
   catalog,
   initSync,
   judge_review,
@@ -60,6 +61,17 @@ export function validateEngineDeck(list: EngineDeckList): string[] {
 export function autoEngineDeck(legend: string, seed: number): EngineDeckList | null {
   engine();
   return JSON.parse(auto_deck(legend, seed)) as EngineDeckList | null;
+}
+
+let sets: string[] | undefined;
+
+/** Les extensions dont le moteur sait ouvrir des boosters (scellé et draft), par code. */
+export function boosterSetCodes(): string[] {
+  if (!sets) {
+    engine();
+    sets = (JSON.parse(booster_sets()) as { code: string }[]).map((set) => set.code);
+  }
+  return sets;
 }
 
 export { EngineError };

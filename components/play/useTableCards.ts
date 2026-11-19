@@ -6,11 +6,11 @@ import type { TableCards } from "@/lib/engine/cards";
 import { ENGINE_VERSION } from "@/lib/engine/version";
 
 /**
- * Change quand la forme des cartes change (ici : `def` et `fx` pour les effets).
+ * Change quand la forme des cartes change (ici : `rarity` pour le scellé et le draft).
  * Avec la version du moteur, elle entre dans l'adresse : la réponse se garde une
  * heure dans le navigateur, et un déploiement ne doit pas servir l'ancienne.
  */
-const TABLE_CARDS_SHAPE = 2;
+const TABLE_CARDS_SHAPE = 3;
 
 let shared: Promise<TableCards> | undefined;
 

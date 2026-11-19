@@ -16,6 +16,8 @@ import {
 } from "@/app/[locale]/(app)/games/riftbound/play/actions";
 import { DeckPicker } from "@/components/play/DeckPicker";
 import { HostPanel } from "@/components/play/HostPanel";
+import { LimitedSetup } from "@/components/play/limited/LimitedSetup";
+import { riftboundLimited } from "@/lib/engine/limited-riftbound";
 import { PlanUpsell } from "@/components/play/PlanUpsell";
 import { readSoloSave, writeSoloSave, type SoloSave } from "@/components/play/useSoloGame";
 import { useTableCards } from "@/components/play/useTableCards";
@@ -26,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useRouter } from "@/i18n/navigation";
 import { loadEngine } from "@/lib/engine/browser";
+import { LIMITED_KINDS, readLimitedSave, writeLimitedSave, type LimitedKind, type LimitedSave } from "@/lib/engine/limited";
 import type { BotDeckChoice, DeckChoice } from "@/lib/engine/tables";
 import {
   BOT_LEVELS,
@@ -39,6 +42,10 @@ import { cn } from "@/lib/utils";
 
 /** Qui joue : moi contre l'IA, des IA entre elles (je regarde), en ligne, ou sur un serveur. */
 type Opponent = "ai" | "watch" | "online" | "host";
+
+/** Avec ses propres decks, ou avec des boosters ouverts sur place. */
+type Format = "constructed" | LimitedKind;
+const FORMATS: Format[] = ["constructed", ...LIMITED_KINDS];
 
 /** Couleurs des sièges, dans l'ordre de la table (comme `playerColor`). */
 const SEAT_COLORS = ["#2bb7dc", "#f05a7e", "#f5b041", "#8e7cf0"];
@@ -55,10 +62,13 @@ export function pickRandom<T>(list: T[]): T {
 export function PlayLobby() {
   const t = useTranslations("Games.Play");
   const tFilmed = useTranslations("Games.Filmed");
+  const tLimited = useTranslations("Games.Limited");
   const router = useRouter();
   const cards = useTableCards();
   const [lobby, setLobby] = useState<Lobby | null>(null);
   const [failed, setFailed] = useState(false);
+  const [format, setFormat] = useState<Format>("constructed");
+  const [event, setEvent] = useState<LimitedSave | null>(null);
   const [mode, setMode] = useState<EngineMode>("duel");
   const [choice, setChoice] = useState<DeckChoice | null>(null);
   const [opponent, setOpponent] = useState<Opponent>("ai");
@@ -82,6 +92,7 @@ export function PlayLobby() {
     });
     // eslint-disable-next-line react-hooks/set-state-in-effect -- le stockage n'existe que dans le navigateur
     setSaved(readSoloSave());
+    setEvent(readLimitedSave());
     return () => {
       cancelled = true;
     };
@@ -199,218 +210,279 @@ export function PlayLobby() {
           </section>
         )}
 
+        {event && (
+          <section className="flex flex-row flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/50 bg-card p-5">
+            <div>
+              <h2 className="font-semibold">{tLimited(`resume.${event.record.settings.kind}`)}</h2>
+              <p className="text-sm text-muted-foreground">
+                {tLimited("resume.hint", { players: event.record.settings.players.length })}
+              </p>
+            </div>
+            <div className="flex flex-row flex-wrap gap-2">
+              <Button asChild>
+                <Link href="/games/riftbound/play/limited">{t("lobby.resume")}</Link>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  writeLimitedSave(null);
+                  setEvent(null);
+                }}
+              >
+                {tLimited("resume.discard")}
+              </Button>
+            </div>
+          </section>
+        )}
+
         <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
-          <h2 className="font-semibold">{t("lobby.modeTitle")}</h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {ENGINE_MODES.map((value) => (
+          <h2 className="font-semibold">{tLimited("format.title")}</h2>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {FORMATS.map((value) => (
               <button
                 key={value}
                 type="button"
-                aria-pressed={mode === value}
-                onClick={() => setMode(value)}
+                aria-pressed={format === value}
+                onClick={() => setFormat(value)}
                 className={cn(
                   "flex flex-col gap-1 rounded-lg border p-3 text-left transition hover:border-primary/60",
-                  mode === value && "border-primary bg-primary/10",
+                  format === value && "border-primary bg-primary/10",
                 )}
               >
-                <span className="font-medium">{t(`mode.${value}`)}</span>
-                <span className="text-xs text-muted-foreground">{t(`modeHint.${value}`)}</span>
+                <span className="font-medium">{tLimited(`format.${value}`)}</span>
+                <span className="text-xs text-muted-foreground">{tLimited(`format.${value}Hint`)}</span>
               </button>
             ))}
           </div>
         </section>
 
-        <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
-          <h2 className="font-semibold">{t("lobby.whoTitle")}</h2>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            {opponents.map(({ key, icon: Icon, title, hint }) => (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={opponent === key}
-                onClick={() => setOpponent(key)}
-                className={cn(
-                  "flex flex-col gap-1 rounded-lg border p-3 text-left transition hover:border-primary/60",
-                  opponent === key && "border-primary bg-primary/10",
+        {format !== "constructed" && (
+          <LimitedSetup
+            profile={riftboundLimited}
+            key={format}
+            kind={format}
+            name={lobby.name ?? t("lobby.you")}
+            replaces={event !== null}
+            lobby={{ online: lobby.online, signedIn: lobby.signedIn, canHost: lobby.access.canHost }}
+          />
+        )}
+
+        {format === "constructed" && (
+          <>
+            <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
+              <h2 className="font-semibold">{t("lobby.modeTitle")}</h2>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {ENGINE_MODES.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={mode === value}
+                    onClick={() => setMode(value)}
+                    className={cn(
+                      "flex flex-col gap-1 rounded-lg border p-3 text-left transition hover:border-primary/60",
+                      mode === value && "border-primary bg-primary/10",
+                    )}
+                  >
+                    <span className="font-medium">{t(`mode.${value}`)}</span>
+                    <span className="text-xs text-muted-foreground">{t(`modeHint.${value}`)}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="flex flex-col gap-3 rounded-xl border bg-card p-5">
+              <h2 className="font-semibold">{t("lobby.whoTitle")}</h2>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                {opponents.map(({ key, icon: Icon, title, hint }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={opponent === key}
+                    onClick={() => setOpponent(key)}
+                    className={cn(
+                      "flex flex-col gap-1 rounded-lg border p-3 text-left transition hover:border-primary/60",
+                      opponent === key && "border-primary bg-primary/10",
+                    )}
+                  >
+                    <span className="flex items-center gap-2 font-medium">
+                      <Icon className="size-4" aria-hidden />
+                      {title}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{hint}</span>
+                  </button>
+                ))}
+              </div>
+
+              <ul className="flex flex-col">
+                {!watching && (
+                  <SeatRow color={SEAT_COLORS[0]} name={lobby.name ?? t("lobby.you")} you={t("lobby.youBadge")}>
+                    <DeckPicker
+                      id="lobby-deck"
+                      srLabel={t("deck.of", { name: lobby.name ?? t("lobby.you") })}
+                      decks={lobby.decks}
+                      legends={lobby.legends}
+                      cards={cards}
+                      value={choice}
+                      onChange={(next, deck) => {
+                        if (next.kind === "random") return;
+                        if (deck) setFound((previous) => ({ ...previous, [deck.id]: deck }));
+                        setChoice(next);
+                      }}
+                      className="flex-1 basis-72"
+                    />
+                  </SeatRow>
                 )}
-              >
-                <span className="flex items-center gap-2 font-medium">
-                  <Icon className="size-4" aria-hidden />
-                  {title}
-                </span>
-                <span className="text-xs text-muted-foreground">{hint}</span>
-              </button>
-            ))}
-          </div>
-
-          <ul className="flex flex-col">
-            {!watching && (
-              <SeatRow color={SEAT_COLORS[0]} name={lobby.name ?? t("lobby.you")} you={t("lobby.youBadge")}>
-                <DeckPicker
-                  id="lobby-deck"
-                  srLabel={t("deck.of", { name: lobby.name ?? t("lobby.you") })}
-                  decks={lobby.decks}
-                  legends={lobby.legends}
-                  cards={cards}
-                  value={choice}
-                  onChange={(next, deck) => {
-                    if (next.kind === "random") return;
-                    if (deck) setFound((previous) => ({ ...previous, [deck.id]: deck }));
-                    setChoice(next);
-                  }}
-                  className="flex-1 basis-72"
-                />
-              </SeatRow>
-            )}
-            {(opponent === "ai" || watching) &&
-              Array.from({ length: seatCount }, (_, seat) => seat)
-                .filter((seat) => watching || seat > 0)
-                .map((seat) => {
-                  const name = t("lobby.botName", { number: watching ? seat + 1 : seat });
-                  return (
-                    <SeatRow key={seat} color={SEAT_COLORS[seat]} name={name}>
-                      <DeckPicker
-                        id={`bot-deck-${seat}`}
-                        srLabel={t("deck.of", { name })}
-                        decks={lobby.decks}
-                        legends={lobby.legends}
-                        cards={cards}
-                        value={botDeckOf(seat)}
-                        allowRandom
-                        onChange={(next, deck) => {
-                          if (deck) setFound((previous) => ({ ...previous, [deck.id]: deck }));
-                          setBotDecks((previous) => {
-                            const copy = [...previous];
-                            copy[seat] = next;
-                            return copy;
-                          });
-                        }}
-                        className="flex-1 basis-72"
-                      />
-                      <div
-                        className="inline-flex overflow-hidden rounded-lg border"
-                        role="group"
-                        aria-label={t("lobby.levelOf", { name })}
-                      >
-                        {BOT_LEVELS.map((value) => (
-                          <button
-                            key={value}
-                            type="button"
-                            aria-pressed={botLevelOf(seat) === value}
-                            onClick={() =>
-                              setBotLevels((previous) => {
+                {(opponent === "ai" || watching) &&
+                  Array.from({ length: seatCount }, (_, seat) => seat)
+                    .filter((seat) => watching || seat > 0)
+                    .map((seat) => {
+                      const name = t("lobby.botName", { number: watching ? seat + 1 : seat });
+                      return (
+                        <SeatRow key={seat} color={SEAT_COLORS[seat]} name={name}>
+                          <DeckPicker
+                            id={`bot-deck-${seat}`}
+                            srLabel={t("deck.of", { name })}
+                            decks={lobby.decks}
+                            legends={lobby.legends}
+                            cards={cards}
+                            value={botDeckOf(seat)}
+                            allowRandom
+                            onChange={(next, deck) => {
+                              if (deck) setFound((previous) => ({ ...previous, [deck.id]: deck }));
+                              setBotDecks((previous) => {
                                 const copy = [...previous];
-                                copy[seat] = value;
+                                copy[seat] = next;
                                 return copy;
-                              })
-                            }
-                            className={cn(
-                              "min-h-9 px-3 text-xs transition",
-                              botLevelOf(seat) === value
-                                ? "bg-secondary text-foreground"
-                                : "text-muted-foreground hover:text-foreground",
-                            )}
+                              });
+                            }}
+                            className="flex-1 basis-72"
+                          />
+                          <div
+                            className="inline-flex overflow-hidden rounded-lg border"
+                            role="group"
+                            aria-label={t("lobby.levelOf", { name })}
                           >
-                            {t(`level.${value}`)}
-                          </button>
-                        ))}
-                      </div>
-                    </SeatRow>
-                  );
-                })}
-          </ul>
+                            {BOT_LEVELS.map((value) => (
+                              <button
+                                key={value}
+                                type="button"
+                                aria-pressed={botLevelOf(seat) === value}
+                                onClick={() =>
+                                  setBotLevels((previous) => {
+                                    const copy = [...previous];
+                                    copy[seat] = value;
+                                    return copy;
+                                  })
+                                }
+                                className={cn(
+                                  "min-h-9 px-3 text-xs transition",
+                                  botLevelOf(seat) === value
+                                    ? "bg-secondary text-foreground"
+                                    : "text-muted-foreground hover:text-foreground",
+                                )}
+                              >
+                                {t(`level.${value}`)}
+                              </button>
+                            ))}
+                          </div>
+                        </SeatRow>
+                      );
+                    })}
+              </ul>
 
-          {!lobby.signedIn && (
-            <div className="flex flex-row flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span>{t("lobby.signInForDecks")}</span>
-              <Button asChild size="sm" variant="outline">
-                <Link href="/login">{t("lobby.signIn")}</Link>
-              </Button>
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground">{t("lobby.sets")}</p>
+              {!lobby.signedIn && (
+                <div className="flex flex-row flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  <span>{t("lobby.signInForDecks")}</span>
+                  <Button asChild size="sm" variant="outline">
+                    <Link href="/login">{t("lobby.signIn")}</Link>
+                  </Button>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">{t("lobby.sets")}</p>
 
-          {(opponent === "ai" || watching) && (
-            <div className="flex flex-col gap-2">
-              {watching && <p className="text-sm text-muted-foreground">{t("lobby.watchInfo")}</p>}
-              <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-secondary">
-                <Checkbox checked={openLists} onCheckedChange={(checked) => setOpenLists(checked === true)} />
-                <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                  <span className="text-sm font-medium">{t("lobby.openLists")}</span>
-                  <span className="text-xs text-muted-foreground">{t("lobby.openListsHint")}</span>
-                </span>
-              </label>
-              <div className="flex flex-row flex-wrap gap-2">
-                <Button disabled={busy || (!watching && !choice)} onClick={startSolo}>
-                  {watching ? t("lobby.startWatch") : t("lobby.startSolo")}
-                </Button>
-              </div>
-              {saved && <p className="text-xs text-muted-foreground">{t("lobby.replaces")}</p>}
-            </div>
-          )}
-
-          {opponent === "online" &&
-            (!lobby.online ? (
-              <p className="text-sm text-muted-foreground">{t("lobby.offline")}</p>
-            ) : !lobby.signedIn ? (
-              <div className="flex flex-row flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <span>{t("lobby.signInForOnline")}</span>
-                <Button asChild size="sm">
-                  <Link href="/login">{t("lobby.signIn")}</Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {lobby.access.canHost ? (
+              {(opponent === "ai" || watching) && (
+                <div className="flex flex-col gap-2">
+                  {watching && <p className="text-sm text-muted-foreground">{t("lobby.watchInfo")}</p>}
+                  <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-secondary">
+                    <Checkbox checked={openLists} onCheckedChange={(checked) => setOpenLists(checked === true)} />
+                    <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                      <span className="text-sm font-medium">{t("lobby.openLists")}</span>
+                      <span className="text-xs text-muted-foreground">{t("lobby.openListsHint")}</span>
+                    </span>
+                  </label>
                   <div className="flex flex-row flex-wrap gap-2">
-                    <Button disabled={busy || !choice} onClick={createOnline}>
-                      {t("lobby.createTable")}
+                    <Button disabled={busy || (!watching && !choice)} onClick={startSolo}>
+                      {watching ? t("lobby.startWatch") : t("lobby.startSolo")}
+                    </Button>
+                  </div>
+                  {saved && <p className="text-xs text-muted-foreground">{t("lobby.replaces")}</p>}
+                </div>
+              )}
+
+              {opponent === "online" &&
+                (!lobby.online ? (
+                  <p className="text-sm text-muted-foreground">{t("lobby.offline")}</p>
+                ) : !lobby.signedIn ? (
+                  <div className="flex flex-row flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    <span>{t("lobby.signInForOnline")}</span>
+                    <Button asChild size="sm">
+                      <Link href="/login">{t("lobby.signIn")}</Link>
                     </Button>
                   </div>
                 ) : (
-                  <PlanUpsell feature="host" />
-                )}
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="join-code">{t("lobby.joinLabel")}</Label>
-                  <div className="flex flex-row flex-wrap gap-2">
-                    <Input
-                      id="join-code"
-                      value={code}
-                      onChange={(event) => setCode(event.target.value)}
-                      placeholder={t("lobby.joinPlaceholder")}
-                      className="max-w-xs"
-                    />
-                    <Button
-                      variant="outline"
-                      disabled={!/^[a-z0-9]{4,32}$/.test(joinCode)}
-                      onClick={() => router.push(`/games/riftbound/play/table?id=${joinCode}`)}
-                    >
-                      {t("lobby.join")}
-                    </Button>
+                  <div className="flex flex-col gap-4">
+                    {lobby.access.canHost ? (
+                      <div className="flex flex-row flex-wrap gap-2">
+                        <Button disabled={busy || !choice} onClick={createOnline}>
+                          {t("lobby.createTable")}
+                        </Button>
+                      </div>
+                    ) : (
+                      <PlanUpsell feature="host" />
+                    )}
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="join-code">{t("lobby.joinLabel")}</Label>
+                      <div className="flex flex-row flex-wrap gap-2">
+                        <Input
+                          id="join-code"
+                          value={code}
+                          onChange={(event) => setCode(event.target.value)}
+                          placeholder={t("lobby.joinPlaceholder")}
+                          className="max-w-xs"
+                        />
+                        <Button
+                          variant="outline"
+                          disabled={!/^[a-z0-9]{4,32}$/.test(joinCode)}
+                          onClick={() => router.push(`/games/riftbound/play/table?id=${joinCode}`)}
+                        >
+                          {t("lobby.join")}
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                ))}
 
-          {opponent === "host" && !lobby.access.canHost && <PlanUpsell feature="host" />}
+              {opponent === "host" && !lobby.access.canHost && <PlanUpsell feature="host" />}
 
-          {opponent === "host" && lobby.access.canHost && (
-            <HostPanel<EngineDeckList>
-              hostName={lobby.name ?? t("lobby.you")}
-              hostDeck={myDeck}
-              kit={{
-                seats: modePlayers(mode) - 1,
-                config: (players) => ({ mode, players }),
-                auto: async () => {
-                  const engine = await loadEngine();
-                  return JSON.parse(engine.auto_deck(pickRandom(lobby.legends), randomSeed())) as EngineDeckList | null;
-                },
-                resolve: resolveDeckAction,
-                needDeck: t("host.needDeck"),
-              }}
-            />
-          )}
-        </section>
+              {opponent === "host" && lobby.access.canHost && (
+                <HostPanel<EngineDeckList>
+                  hostName={lobby.name ?? t("lobby.you")}
+                  hostDeck={myDeck}
+                  kit={{
+                    seats: modePlayers(mode) - 1,
+                    config: (players) => ({ mode, players }),
+                    auto: async () => {
+                      const engine = await loadEngine();
+                      return JSON.parse(engine.auto_deck(pickRandom(lobby.legends), randomSeed())) as EngineDeckList | null;
+                    },
+                    resolve: resolveDeckAction,
+                    needDeck: t("host.needDeck"),
+                  }}
+                />
+              )}
+            </section>
+          </>
+        )}
       </div>
 
       <aside className="flex flex-col gap-4">
@@ -430,9 +502,7 @@ export function PlayLobby() {
                       {t(`tableStatus.${table.status}`)}
                     </Badge>
                   </span>
-                  <span className="text-sm text-muted-foreground">
-                    {table.seats.map((seat) => seat.name).join(" · ")}
-                  </span>
+                  <span className="text-sm text-muted-foreground">{table.seats.map((seat) => seat.name).join(" · ")}</span>
                 </Link>
               </li>
             ))}

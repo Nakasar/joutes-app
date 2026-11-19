@@ -1,6 +1,7 @@
 import "server-only";
 
 import {
+  cp_booster_sets,
   cp_catalog,
   cp_validate_deck,
   initSync,
@@ -46,4 +47,10 @@ export function cpAutoLegends(): string[] {
     .filter((card) => card.kind === "legend" && card.coverage !== "none")
     .map((card) => card.code);
   return legends;
+}
+
+/** Les codes des extensions dont le moteur ouvre des boosters. */
+export function cpBoosterSetCodes(): string[] {
+  engine();
+  return (JSON.parse(cp_booster_sets()) as { code: string }[]).map((set) => set.code);
 }

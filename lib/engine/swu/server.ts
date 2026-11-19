@@ -4,6 +4,7 @@ import { EngineError } from "@/lib/engine/errors";
 import {
   initSync,
   swu_auto_deck,
+  swu_booster_sets,
   swu_catalog,
   swu_judge_review,
   swu_judge_simulate,
@@ -40,6 +41,17 @@ export function swuEngineCards(): Map<string, SwuEngineCard> {
 export function validateSwuDeck(list: SwuDeckList): string[] {
   engine();
   return JSON.parse(swu_validate_deck(JSON.stringify(list))) as string[];
+}
+
+let sets: string[] | undefined;
+
+/** Les extensions dont le moteur sait ouvrir des boosters (scellé et draft), par code. */
+export function swuBoosterSetCodes(): string[] {
+  if (!sets) {
+    engine();
+    sets = (JSON.parse(swu_booster_sets()) as { code: string }[]).map((set) => set.code);
+  }
+  return sets;
 }
 
 let leaders: string[] | undefined;
