@@ -125,7 +125,7 @@ export function LimitedRoom<D, C, R extends MatchRecord, G>({ kit }: { kit: Limi
   const { event } = state;
   if (event.status === "cancelled") return closed(t("room.cancelled"));
 
-  if (event.status === "playing") {
+  if (event.status === "playing" || event.status === "finished") {
     return (
       <OnlineLimited
         kit={kit}

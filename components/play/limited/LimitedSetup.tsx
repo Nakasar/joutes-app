@@ -33,6 +33,14 @@ import { cn } from "@/lib/utils";
 
 const TABLE_SIZES = [2, 4, 6, 8];
 
+/** Le libellé de mes évènements, selon où ils en sont (les annulés ne sont pas listés). */
+const MINE_STATUS = {
+  waiting: "setup.mineWaiting",
+  playing: "setup.minePlaying",
+  finished: "setup.mineFinished",
+  cancelled: "setup.minePlaying",
+} as const;
+
 type Where = "ai" | "online" | "host";
 
 /** Les délais proposés à l'hôte, en secondes ; 0 : pas de limite. */
@@ -359,7 +367,7 @@ export function LimitedSetup({
                     <li key={event.id} className="flex flex-row flex-wrap items-center gap-2 rounded-lg border p-2 text-sm">
                       <span className="font-medium">{t(`room.title.${event.kind}`)}</span>
                       <span className="text-muted-foreground">
-                        {t(event.status === "waiting" ? "setup.mineWaiting" : "setup.minePlaying", {
+                        {t(MINE_STATUS[event.status], {
                           players: event.seats.length,
                         })}
                       </span>

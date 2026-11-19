@@ -121,8 +121,9 @@ export async function createLimitedEvent(
 ): Promise<LimitedEvent> {
   if (!engineServer()) throw new TableFailure("OFFLINE");
   if (!isLimitedGame(game.slug)) throw new TableFailure("INVALID");
-  // Un seul évènement en attente par hôte, comme pour les tables.
-  await eventsDb.cancelWaitingLimitedEventsOf(host.userId);
+  // Un seul évènement en attente par hôte et par jeu : une salle ouverte à un
+  // autre jeu reste ouverte.
+  await eventsDb.cancelWaitingLimitedEventsOf(host.userId, game.slug);
   for (let attempt = 0; attempt < 3; attempt++) {
     const event: LimitedEvent = {
       id: newEventId(),
@@ -226,8 +227,9 @@ export async function startLimitedEvent(userId: string, id: string, game: TableG
   const event = await eventsDb.claimLimitedEventStart(id, userId, engineId);
   if (!event) throw new TableFailure("NOT_WAITING");
 
+  let response: Response;
   try {
-    const response = await fetch(`${server.url}/events`, {
+    response = await fetch(`${server.url}/events`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${server.adminToken}` },
       body: JSON.stringify({
@@ -239,33 +241,67 @@ export async function startLimitedEvent(userId: string, id: string, game: TableG
       }),
       signal: AbortSignal.timeout(10_000),
     });
-    if (!response.ok) {
-      const body = (await response.json().catch(() => null)) as { error?: string } | null;
-      throw new TableFailure("SERVER", body?.error ? [body.error] : []);
+  } catch {
+    // Pas de réponse (délai dépassé, coupure) : le serveur a peut-être créé
+    // l'évènement. On le lui demande avant de rouvrir la salle, sinon un
+    // évènement orphelin continuerait seul pendant qu'un second est lancé.
+    const known = await engineEventStatus(server, engineId);
+    if (known === "unknown") {
+      // Toujours injoignable : la salle reste « en cours », et la
+      // réconciliation la rouvrira si le serveur ne connaît pas l'évènement.
+      throw new TableFailure("SERVER");
     }
-  } catch (error) {
+    if (known === "missing") {
+      await eventsDb.revertLimitedEventStart(id, engineId);
+      throw new TableFailure("SERVER");
+    }
+    return;
+  }
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
     await eventsDb.revertLimitedEventStart(id, engineId);
-    throw error instanceof TableFailure ? error : new TableFailure("SERVER");
+    throw new TableFailure("SERVER", body?.error ? [body.error] : []);
+  }
+}
+
+type EngineEventStatus = { phase: string } | "missing" | "unknown";
+
+/** L'état d'un évènement sur le serveur de parties : sa phase, inconnu (404) ou injoignable. */
+async function engineEventStatus(
+  server: NonNullable<ReturnType<typeof engineServer>>,
+  engineId: string,
+): Promise<EngineEventStatus> {
+  try {
+    const response = await fetch(`${server.url}/events/${engineId}`, {
+      headers: { authorization: `Bearer ${server.adminToken}` },
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (response.status === 404) return "missing";
+    if (!response.ok) return "unknown";
+    const body = (await response.json().catch(() => null)) as { phase?: unknown } | null;
+    return typeof body?.phase === "string" ? { phase: body.phase } : "unknown";
+  } catch {
+    return "unknown";
   }
 }
 
 const RECONCILE_AFTER_SECONDS = 60;
 
-/** Un évènement « en cours » que le serveur de parties ne connaît plus est abandonné. */
+/**
+ * Un évènement « en cours » que le serveur de parties ne connaît plus est
+ * abandonné ; celui dont il a joué tous les matchs est terminé. Serveur
+ * injoignable : rien ne change.
+ */
 export async function reconcileLimitedEvent(event: LimitedEvent): Promise<LimitedEvent> {
   const server = engineServer();
   if (!server || event.status !== "playing" || !event.engineId || !event.startedAt) return event;
   if (DateTime.fromISO(event.startedAt).diffNow("seconds").seconds > -RECONCILE_AFTER_SECONDS) return event;
-  try {
-    const response = await fetch(`${server.url}/events/${event.engineId}`, {
-      headers: { authorization: `Bearer ${server.adminToken}` },
-      signal: AbortSignal.timeout(5_000),
-    });
-    if (response.status === 404 && (await eventsDb.abandonLimitedEvent(event.id, event.engineId))) {
-      return { ...event, status: "cancelled" };
-    }
-  } catch {
-    // Serveur injoignable : rien ne change.
+  const known = await engineEventStatus(server, event.engineId);
+  if (known === "missing" && (await eventsDb.abandonLimitedEvent(event.id, event.engineId))) {
+    return { ...event, status: "cancelled" };
+  }
+  if (typeof known === "object" && known.phase === "done" && (await eventsDb.finishLimitedEvent(event.id, event.engineId))) {
+    return { ...event, status: "finished" };
   }
   return event;
 }
@@ -285,7 +321,8 @@ const TICKET_SECONDS = 12 * 60 * 60;
 /** L'entrée d'une personne à un évènement lancé : son siège, ou une place de spectateur. */
 export function limitedAccess(event: LimitedEvent, viewer: Seated | null): LimitedAccess | null {
   const server = engineServer();
-  if (!server || event.status !== "playing" || !event.engineId) return null;
+  // Un évènement terminé reste ouvert à la lecture : son bilan vient du serveur de parties.
+  if (!server || (event.status !== "playing" && event.status !== "finished") || !event.engineId) return null;
   const seat = viewer ? event.seats.findIndex((candidate) => candidate.userId === viewer.userId) : -1;
   const ticket = signTicket(
     {

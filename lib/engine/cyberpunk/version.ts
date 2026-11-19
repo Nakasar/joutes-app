@@ -2,4 +2,4 @@
  * Le commit de joutes-engine copié dans `lib/engine/cyberpunk/pkg/` (voir son
  * fichier `VERSION`, que `version.test.ts` compare).
  */
-export const CP_ENGINE_VERSION = "083f2b2";
+export const CP_ENGINE_VERSION = "2d47d31";

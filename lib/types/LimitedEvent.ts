@@ -1,7 +1,8 @@
 import type { LimitedKind } from "@/lib/engine/limited";
 import type { BotLevel } from "@/lib/engine/types";
 
-export type LimitedEventStatus = "waiting" | "playing" | "cancelled";
+/** `finished` : le serveur de parties a joué tous les matchs. */
+export type LimitedEventStatus = "waiting" | "playing" | "finished" | "cancelled";
 
 /** Un siège d'un évènement : une personne, ou un robot (`bot`). */
 export type LimitedEventSeat = { userId?: string; name: string; bot?: BotLevel };

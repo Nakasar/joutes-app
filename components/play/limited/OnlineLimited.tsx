@@ -139,6 +139,9 @@ export function OnlineLimited<D, C, R extends MatchRecord, G>({
   const subtitle = t("subtitle", { players: view.seats.length, sets: [...new Set(view.packs)].join(", ") });
   const mine = seat === null ? null : matchOf(view, seat);
   const over = view.phase === "done" || (view.phase === "play" && (!mine || mine.match.done));
+  // L'adversaire a quitté en plein match : le match est à moi, sa table n'ira pas plus loin.
+  const opponentLeft =
+    !!mine && mine.match.done && mine.match.seats.some((other) => other !== seat && view.seats[other]?.out);
 
   const leave = () => {
     writeDraft(storageKey, null);
@@ -276,7 +279,7 @@ export function OnlineLimited<D, C, R extends MatchRecord, G>({
   }
 
   // Les matchs : le mien sur la table du serveur, puis le bilan.
-  if (kit.OnlineMatch && mine && feed.table && (atTable || !mine.match.done) && !summary) {
+  if (kit.OnlineMatch && mine && feed.table && (atTable || !mine.match.done) && !summary && !opponentLeft) {
     return (
       <>
         <Seated onSeated={() => setAtTable(true)} />
@@ -300,6 +303,11 @@ export function OnlineLimited<D, C, R extends MatchRecord, G>({
     <div className="flex flex-col gap-4">
       {header("match")}
       {offline}
+      {opponentLeft && (
+        <p className="rounded-xl border bg-card p-4 text-center text-sm text-muted-foreground" role="status">
+          {t("online.opponentLeft")}
+        </p>
+      )}
       {mine && !mine.match.done && !feed.table && (
         <p className="rounded-xl border bg-card p-4 text-center text-sm text-muted-foreground" role="status">
           {t("online.tableOpening")}

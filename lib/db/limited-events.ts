@@ -123,14 +123,23 @@ export async function cancelLimitedEvent(id: string): Promise<boolean> {
   return result.modifiedCount === 1;
 }
 
-/** Une personne n'a qu'un évènement en attente à la fois : en ouvrir un autre ferme les précédents. */
-export async function cancelWaitingLimitedEventsOf(hostId: string): Promise<void> {
-  await collection.updateMany({ hostId, status: "waiting" }, { $set: { status: "cancelled" } });
+/**
+ * Une personne n'a qu'un évènement en attente par jeu : en ouvrir un autre
+ * ferme les précédents du même jeu.
+ */
+export async function cancelWaitingLimitedEventsOf(hostId: string, gameSlug: string): Promise<void> {
+  await collection.updateMany({ hostId, gameSlug, status: "waiting" }, { $set: { status: "cancelled" } });
 }
 
 /** Un évènement que le serveur de parties ne connaît plus. */
 export async function abandonLimitedEvent(id: string, engineId: string): Promise<boolean> {
   const result = await collection.updateOne({ id, engineId, status: "playing" }, { $set: { status: "cancelled" } });
+  return result.modifiedCount === 1;
+}
+
+/** Un évènement dont le serveur de parties a joué tous les matchs. */
+export async function finishLimitedEvent(id: string, engineId: string): Promise<boolean> {
+  const result = await collection.updateOne({ id, engineId, status: "playing" }, { $set: { status: "finished" } });
   return result.modifiedCount === 1;
 }
 

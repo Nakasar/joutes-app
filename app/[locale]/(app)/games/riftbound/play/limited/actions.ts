@@ -124,7 +124,8 @@ export async function listLimitedEventsAction(slug: unknown): Promise<PlayResult
     const played = await game(slug);
     const seated = await viewer();
     if (!seated || !engineServer()) return { events: [] };
-    const events = await listLimitedEventsOf(seated.userId, played.slug, 5);
+    const stored = await listLimitedEventsOf(seated.userId, played.slug, 5);
+    const events = await Promise.all(stored.map(reconcileLimitedEvent));
     return { events: events.map(summarizeLimitedEvent) };
   });
 }
