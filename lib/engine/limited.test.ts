@@ -134,31 +134,38 @@ test("le vainqueur d'un match est un siège de l'évènement, pas de la table", 
   assert.equal(matchOf(view, 5), null);
 });
 
-test("le tirage d'une collection rend autant de boosters que demandé, repris s'il le faut", () => {
+test("le tirage d'une collection ne prend chaque booster qu'une fois", () => {
   const toCode = (cardId: string) => (cardId.startsWith("ZZZ") ? null : cardId.replace("OGN", "OGN-"));
+  // WNCB est un tirage rangé à part au catalogue, équivalent moteur de WNC.
+  const setOf = (setCode: string) => ({ OGN: "OGN", SFD: "SFD", WNCB: "WNC" })[setCode] ?? null;
   const boosters = [
     { setCode: "OGN", cards: [{ cardId: "OGN001" }, { cardId: "OGN002", foil: true }, { cardId: "ZZZ999" }] },
     { setCode: "WNCB", cards: [{ cardId: "OGN003" }] },
     { setCode: "SFD", cards: [{ cardId: "ZZZ998" }] },
+    { setCode: "XXX", cards: [{ cardId: "OGN004" }] },
   ];
-  const { packs, sets } = drawPacks(toCode, ["OGN", "SFD"], boosters, 4);
-  assert.equal(packs.length, 4);
-  assert.equal(sets.length, 4);
-  // Le booster dont le moteur ne connaît aucune carte n'est pas tiré ; les deux
-  // restants sont repris pour atteindre les quatre boosters demandés.
+  const { packs, sets, ignored, skipped } = drawPacks(toCode, setOf, boosters, 6);
+  // Deux boosters seulement sont tirés (au plus `count`), jamais deux fois le même.
+  assert.equal(packs.length, 2);
+  assert.equal(sets.length, 2);
+  assert.deepEqual([...sets].sort(), ["OGN", "WNC"]);
+  // Les cartes inconnues du moteur sont comptées, le booster SFD (plus que des
+  // inconnues) et le booster XXX (extension sans équivalent) sont écartés.
+  assert.equal(ignored, 2);
+  assert.equal(skipped, 2);
   const flat = packs.flat().map((card) => card.code).sort();
-  assert.deepEqual(flat, ["OGN-001", "OGN-001", "OGN-002", "OGN-002", "OGN-003", "OGN-003"]);
+  assert.deepEqual(flat, ["OGN-001", "OGN-002", "OGN-003"]);
   assert.ok(packs.flat().some((card) => card.foil === true));
-  // L'extension du tirage Beta retombe sur une extension que le moteur sait jouer.
-  assert.ok(sets.every((set) => set === "OGN" || set === "SFD"));
   // Chaque tirage est une copie : modifier un booster tiré ne touche pas les autres.
   packs[0][0].code = "MUTATED";
   assert.ok(packs.slice(1).every((pack) => pack.every((card) => card.code !== "MUTATED")));
 });
 
 test("un tirage sans aucun booster jouable rend rien", () => {
-  assert.deepEqual(drawPacks(() => null, ["OGN"], [{ setCode: "OGN", cards: [{ cardId: "OGN001" }] }], 6), {
+  assert.deepEqual(drawPacks(() => null, () => "OGN", [{ setCode: "OGN", cards: [{ cardId: "OGN001" }] }], 6), {
     packs: [],
     sets: [],
+    ignored: 1,
+    skipped: 1,
   });
 });

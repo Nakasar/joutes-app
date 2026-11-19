@@ -4,6 +4,7 @@ import {Booster, BoosterCard, BoosterCardDb, BoosterDb, BoosterValue} from "@/li
 import {CARD_ATTRIBUTE_KEYS, CardAttributes, CardPrinting} from "@/lib/types/card";
 import {changePrinting, editionPrinting} from "@/lib/cards/printings";
 import {boosterTypeStoredValues, normalizeBoosterType, OTHER_BOOSTER_TYPE} from "@/lib/constants/booster-types";
+import {boosterTypeCountsPipeline, sampleBoostersPipeline} from "@/lib/db/booster-sampling";
 import {ObjectId} from "bson";
 import {removeSellListItemsByCollectionEntryIds} from "@/lib/db/sell-lists";
 import {getCardsByIds} from "@/lib/db/cards";
@@ -373,19 +374,7 @@ export async function sampleBoosters({ userId, gameId, type, count }: BoosterFil
   const query = await boostersQuery({ userId, gameId, type });
   const rows = await db
     .collection<BoosterDb>('boosters')
-    .aggregate([
-      { $match: query },
-      { $sample: { size: count } },
-      {
-        $lookup: {
-          from: 'booster-cards',
-          localField: '_id',
-          foreignField: 'boosterId',
-          as: 'cards',
-          pipeline: [{ $project: { _id: 0, boosterId: 0, userId: 0, cardId: 1, setCode: 1, collectorNumber: 1, foil: 1 } }],
-        },
-      },
-    ])
+    .aggregate(sampleBoostersPipeline(query, count))
     .toArray();
 
   return rows.map((row) => ({
@@ -393,6 +382,32 @@ export async function sampleBoosters({ userId, gameId, type, count }: BoosterFil
     setCode: row.setCode,
     cards: row.cards as SampledBooster['cards'],
   }));
+}
+
+/** Un type de boosters de l'utilisateur, avec le nombre d'exemplaires et le détail par extension. */
+export type BoosterTypeCount = { type: string; count: number; sets: Record<string, number> };
+
+/**
+ * Les types de boosters d'un utilisateur pour un jeu, en un aller-retour :
+ * un `$group` par (type, extension), replié ici. Un booster sans type compte
+ * comme « Autre ».
+ */
+export async function getBoosterTypeCounts({ userId, gameId }: BoosterFilters): Promise<BoosterTypeCount[]> {
+  const rows = await db
+    .collection<BoosterDb>('boosters')
+    .aggregate<{ _id: { type?: unknown; set?: unknown }; count: number }>(boosterTypeCountsPipeline(await boostersQuery({ userId, gameId })))
+    .toArray();
+
+  const byType = new Map<string, BoosterTypeCount>();
+  for (const row of rows) {
+    const type = normalizeBoosterType(typeof row._id.type === 'string' ? row._id.type : undefined);
+    const set = typeof row._id.set === 'string' && row._id.set ? row._id.set : '?';
+    const entry = byType.get(type) ?? { type, count: 0, sets: {} };
+    entry.count += row.count;
+    entry.sets[set] = (entry.sets[set] ?? 0) + row.count;
+    byType.set(type, entry);
+  }
+  return [...byType.values()].sort((a, b) => a.type.localeCompare(b.type));
 }
 
 export async function getBooster(boosterId: string): Promise<Booster | null> {

@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bot, Globe, Server } from "lucide-react";
+import { Bot, Globe, Package, Server, Shuffle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { useBoosterTypeLabel } from "@/app/[locale]/(app)/collection/[gameSlug]/boosters/useBoosterTypeLabel.ts";
+import { useBoosterTypeLabel } from "@/components/boosters/useBoosterTypeLabel.ts";
 import {
   collectionBoosterTypesAction,
   createLimitedEventAction,
@@ -30,6 +30,7 @@ import {
   type LimitedSettings,
   type Pulled,
 } from "@/lib/engine/limited";
+import { boosterSetBreakdown } from "@/lib/constants/booster-types";
 import type { LimitedProfile } from "@/lib/engine/limited-profile";
 import { BOT_LEVELS, type BotLevel } from "@/lib/engine/types";
 import type { LimitedEventSummary, LimitedTimers } from "@/lib/types/LimitedEvent";
@@ -93,7 +94,10 @@ export function LimitedSetup({
   const [mine, setMine] = useState<LimitedEventSummary[]>([]);
   // Piocher dans les boosters de ma collection plutôt que des boosters générés.
   const [source, setSource] = useState<"random" | "collection">("random");
-  const [boosterTypes, setBoosterTypes] = useState<{ types: { type: string; count: number }[]; labels: Record<string, string> } | null>(null);
+  const [boosterTypes, setBoosterTypes] = useState<{
+    types: { type: string; count: number; sets: Record<string, number> }[];
+    labels: Record<string, string>;
+  } | null>(null);
   const [collectionType, setCollectionType] = useState<string | null>(null);
   const errorText = useLimitedError();
   const delayLabel = useDelayLabel();
@@ -126,8 +130,10 @@ export function LimitedSetup({
     };
   }, [profile]);
 
+  // Les types de la collection ne sont chargés que quand on choisit d'y piocher.
+  const typesLoaded = boosterTypes !== null;
   useEffect(() => {
-    if (!lobby.signedIn) return;
+    if (source !== "collection" || !lobby.signedIn || typesLoaded) return;
     let cancelled = false;
     void collectionBoosterTypesAction(profile.slug).then((result) => {
       if (cancelled || !result.ok) return;
@@ -137,7 +143,7 @@ export function LimitedSetup({
     return () => {
       cancelled = true;
     };
-  }, [lobby.signedIn, profile.slug]);
+  }, [source, lobby.signedIn, typesLoaded, profile.slug]);
 
   if (failed) return <p className="rounded-xl border bg-card p-5 text-sm text-muted-foreground">{t("setup.failed")}</p>;
   if (!sets) return <p className="rounded-xl border bg-card p-5 text-sm text-muted-foreground">{t("setup.loading")}</p>;
@@ -171,14 +177,21 @@ export function LimitedSetup({
           setBusy(false);
           return;
         }
-        const result = await drawCollectionBoostersAction(profile.slug, collectionType, rules.boosters);
+        const result = await drawCollectionBoostersAction(profile.slug, kind, collectionType, rules.boosters);
         if (!result.ok) {
           toast.error(result.error === "NOT_FOUND" ? t("setup.collectionNone") : errorText(result.error));
           setBusy(false);
           return;
         }
+        if (result.cards < rules.minMain) {
+          toast.error(t("setup.collectionTooSmall", { cards: result.cards, min: rules.minMain }));
+          setBusy(false);
+          return;
+        }
+        if (result.ignored > 0) toast.warning(t("setup.collectionIgnored", { count: result.ignored }));
         drawn = result.packs;
-        packs = result.sets;
+        // Les boosters manquants sont complétés par des boosters générés, dans les extensions choisies au-dessus.
+        packs = [...result.sets, ...chosen.slice(result.sets.length)];
       }
       const settings: LimitedSettings = {
         kind,
@@ -196,10 +209,10 @@ export function LimitedSetup({
       let record = JSON.parse(event.record()) as LimitedRecord;
       event.free();
       if (drawn && Array.isArray(record.packs)) {
-        // Mes boosters de collection remplacent ceux du siège du joueur (le siège 0) ;
-        // le journal les garde, rouvrir l'événement rouvre donc les mêmes boosters.
-        record.settings.packs = packs;
-        record.packs[0] = drawn;
+        // Mes boosters de collection prennent la tête du siège du joueur (le siège 0), les
+        // générés remplissent la suite ; le journal les garde, rouvrir l'événement rouvre
+        // donc les mêmes boosters.
+        record.packs[0] = [...drawn, ...record.packs[0].slice(drawn.length)];
         const restored = engine.restore(JSON.stringify(record));
         record = JSON.parse(restored.record()) as LimitedRecord;
         restored.free();
@@ -230,9 +243,11 @@ export function LimitedSetup({
     { key: "online", icon: Globe, title: tPlay("lobby.online"), hint: t("setup.whereOnlineHint") },
     { key: "host", icon: Server, title: tPlay("lobby.host"), hint: t("setup.whereHostHint") },
   ];
-  // Piocher dans sa collection ne se joue que contre l'IA : en ligne et en mode
-  // hôte, c'est le serveur qui tire les boosters.
-  const shownPlaces = source === "collection" ? places.filter((place) => place.key === "ai") : places;
+  /** Les deux sources de boosters, en cartes comme les lieux de jeu en dessous. */
+  const sources: { key: "random" | "collection"; icon: typeof Bot; title: string; hint: string }[] = [
+    { key: "random", icon: Shuffle, title: t("setup.sourceRandom"), hint: t("setup.sourceRandomHint") },
+    { key: "collection", icon: Package, title: t("setup.sourceCollection"), hint: t("setup.sourceCollectionHint") },
+  ];
 
   const delaySelect = (id: string, label: string, values: number[], value: number, onChange: (next: number) => void) => (
     <div className="flex flex-col gap-1">
@@ -318,17 +333,28 @@ export function LimitedSetup({
           })}
         </p>
         {lobby.signedIn && (
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="limited-source">{t("setup.source")}</Label>
-            <Select value={source} onValueChange={(value) => chooseSource(value === "collection" ? "collection" : "random")}>
-              <SelectTrigger id="limited-source" className="w-full max-w-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="random">{t("setup.sourceRandom")}</SelectItem>
-                <SelectItem value="collection">{t("setup.sourceCollection")}</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{t("setup.source")}</span>
+            <div className="grid max-w-md gap-2 sm:grid-cols-2" role="group" aria-label={t("setup.source")}>
+              {sources.map(({ key, icon: Icon, title, hint }) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={source === key}
+                  onClick={() => chooseSource(key)}
+                  className={cn(
+                    "flex flex-col gap-1 rounded-lg border p-3 text-left transition hover:border-primary/60",
+                    source === key && "border-primary bg-primary/10",
+                  )}
+                >
+                  <span className="flex items-center gap-2 font-medium">
+                    <Icon className="size-4" aria-hidden />
+                    {title}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{hint}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {source === "collection" ? (
@@ -351,16 +377,18 @@ export function LimitedSetup({
                 <SelectContent>
                   {boosterTypes.types.map((entry) => (
                     <SelectItem key={entry.type} value={entry.type}>
-                      {typeLabel(entry.type)} ({entry.count})
+                      {typeLabel(entry.type)} ({entry.count} · {boosterSetBreakdown(entry.sets)})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                {t("setup.collectionTypeHint", {
-                  count: boosterTypes.types.find((entry) => entry.type === collectionType)?.count ?? 0,
-                  boosters: rules.boosters,
-                })}
+                {(() => {
+                  const selected = boosterTypes.types.find((entry) => entry.type === collectionType);
+                  return selected && selected.count < rules.boosters
+                    ? t("setup.collectionTypeFill", { count: selected.count, missing: rules.boosters - selected.count })
+                    : t("setup.collectionTypeHint", { count: selected?.count ?? 0 });
+                })()}
               </p>
             </div>
           )
@@ -393,31 +421,39 @@ export function LimitedSetup({
             </label>
           </>
         )}
-        {source === "collection" && <p className="text-xs text-muted-foreground">{t("setup.collectionOnlyAi")}</p>}
       </section>
 
       <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
         <h2 className="font-semibold">{t("setup.whoTitle")}</h2>
         <div className={cn("grid gap-2 sm:grid-cols-3", !game && "hidden")}>
-          {shownPlaces.map(({ key, icon: Icon, title, hint }) => (
-            <button
-              key={key}
-              type="button"
-              aria-pressed={where === key}
-              onClick={() => setWhere(key)}
-              className={cn(
-                "flex flex-col gap-1 rounded-lg border p-3 text-left transition hover:border-primary/60",
-                where === key && "border-primary bg-primary/10",
-              )}
-            >
-              <span className="flex items-center gap-2 font-medium">
-                <Icon className="size-4" aria-hidden />
-                {title}
-              </span>
-              <span className="text-xs text-muted-foreground">{hint}</span>
-            </button>
-          ))}
+          {places.map(({ key, icon: Icon, title, hint }) => {
+            // Piocher dans sa collection ne se joue que contre l'IA : en ligne et en
+            // mode hôte, c'est le serveur qui tire les boosters.
+            const locked = source === "collection" && key !== "ai";
+            return (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={where === key}
+                aria-disabled={locked}
+                disabled={locked}
+                onClick={() => setWhere(key)}
+                className={cn(
+                  "flex flex-col gap-1 rounded-lg border p-3 text-left transition hover:border-primary/60",
+                  where === key && "border-primary bg-primary/10",
+                  locked && "cursor-not-allowed opacity-50 hover:border-border",
+                )}
+              >
+                <span className="flex items-center gap-2 font-medium">
+                  <Icon className="size-4" aria-hidden />
+                  {title}
+                </span>
+                <span className="text-xs text-muted-foreground">{hint}</span>
+              </button>
+            );
+          })}
         </div>
+        {source === "collection" && <p className="text-xs text-muted-foreground">{t("setup.collectionOnlyAi")}</p>}
 
         {where === "ai" && (
           <>

@@ -239,39 +239,61 @@ export function fitToPool(deck: EngineDeckList, pool: Pulled[]): EngineDeckList 
 /** Un booster enregistré dans la collection d'un joueur, tel que le tirage le lit. */
 export type CollectionBooster = { setCode: string; cards: { cardId: string; foil?: boolean }[] };
 
+/** Le résultat d'un tirage dans une collection de boosters. */
+export type DrawnPacks = {
+  /** Les boosters tirés, au plus `count` : jamais un même booster deux fois. */
+  packs: Pulled[][];
+  /** L'extension affichée de chaque booster tiré, dans le même ordre. */
+  sets: string[];
+  /** Cartes laissées de côté parce que le moteur ne les connaît pas. */
+  ignored: number;
+  /** Boosters écartés : extension sans équivalent moteur, ou plus aucune carte jouable. */
+  skipped: number;
+};
+
 /**
- * Les boosters tirés d'une collection pour un événement : `count` boosters parmi
- * ceux donnés, mélangés, et repris depuis le début s'il n'y en a pas assez.
- * `toCode` rend le code moteur d'une carte du catalogue, ou `null` pour une carte
- * que le moteur ne connaît pas : elle est laissée de côté, et un booster dont il
- * ne reste aucune carte n'est pas tiré. `sets` : les extensions que le moteur sait
- * jouer ; celle du booster y est reprise quand elle y figure, sinon la première
- * (un tirage rangé à part au catalogue, un Beta de Cyberpunk par exemple).
+ * Les boosters tirés d'une collection pour un événement : jusqu'à `count`
+ * boosters parmi ceux donnés, mélangés (Fisher-Yates) — un même booster n'est
+ * jamais tiré deux fois, le complément est généré ailleurs. `toCode` rend le code
+ * moteur d'une carte du catalogue, ou `null` pour une carte que le moteur ne
+ * connaît pas : elle est comptée dans `ignored` et laissée de côté.
+ * `setOf` rend l'extension moteur d'un `setCode` du catalogue, ou `null` quand
+ * elle n'a pas d'équivalent : le booster est alors compté dans `skipped` et
+ * écarté, plutôt que de s'afficher sous une mauvaise extension.
  */
 export function drawPacks(
   toCode: (cardId: string) => string | null,
-  sets: string[],
+  setOf: (setCode: string) => string | null,
   boosters: CollectionBooster[],
   count: number,
-): { packs: Pulled[][]; sets: string[] } {
-  const available = boosters
-    .map((booster) => ({
-      set: sets.includes(booster.setCode) ? booster.setCode : (sets[0] ?? ""),
-      cards: booster.cards.flatMap((card) => {
-        const code = toCode(card.cardId);
-        return code ? [{ code, ...(card.foil === true ? { foil: true } : {}) }] : [];
-      }),
-    }))
-    .filter((booster) => booster.cards.length > 0);
-  if (available.length === 0) return { packs: [], sets: [] };
+): DrawnPacks {
+  let ignored = 0;
+  let skipped = 0;
+  const available: { set: string; cards: Pulled[] }[] = [];
+  for (const booster of boosters) {
+    const set = setOf(booster.setCode);
+    const cards: Pulled[] = [];
+    for (const card of booster.cards) {
+      const code = toCode(card.cardId);
+      if (code) cards.push(card.foil === true ? { code, foil: true } : { code });
+      else ignored += 1;
+    }
+    if (!set || cards.length === 0) {
+      skipped += 1;
+      continue;
+    }
+    available.push({ set, cards });
+  }
   for (let i = available.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [available[i], available[j]] = [available[j], available[i]];
   }
-  const pick = (index: number) => available[index % available.length];
+  const drawn = available.slice(0, count);
   return {
-    packs: Array.from({ length: count }, (_, i) => pick(i).cards.map((card) => ({ ...card }))),
-    sets: Array.from({ length: count }, (_, i) => pick(i).set),
+    packs: drawn.map((booster) => booster.cards.map((card) => ({ ...card }))),
+    sets: drawn.map((booster) => booster.set),
+    ignored,
+    skipped,
   };
 }
 

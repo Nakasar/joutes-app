@@ -1,6 +1,7 @@
 "use server";
 
-import { collectionBoosterTypes, collectionPacks, type CollectionBoosterType, type CollectionDraw } from "@/lib/collection/booster-packs.ts";
+import { collectionBoosterTypes, collectionPacks, type CollectionDraw } from "@/lib/collection/booster-packs.ts";
+import type { BoosterTypeCount } from "@/lib/db/boosters.ts";
 import { isBoosterType, normalizeBoosterType } from "@/lib/constants/booster-types.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getLimitedEvent, listLimitedEventsOf } from "@/lib/db/limited-events.ts";
@@ -25,8 +26,9 @@ import {
   viewer,
   type PlayResult,
 } from "@/lib/engine/table-actions.ts";
-import { isLimitedGame } from "@/lib/engine/limited.ts";
-import { MAX_PLAYERS } from "@/lib/engine/limited-events.ts";
+import { isLimitedGame, LIMITED_KINDS, limitedRules, type LimitedKind, type LimitedRules } from "@/lib/engine/limited.ts";
+import { swuLimitedRules } from "@/lib/engine/swu/limited.ts";
+import { cpLimitedRules } from "@/lib/engine/cyberpunk/limited.ts";
 import { engineServer, isBotLevel, TableFailure } from "@/lib/engine/tables.ts";
 import type { LimitedEventSummary } from "@/lib/types/LimitedEvent.ts";
 
@@ -130,13 +132,20 @@ const collectionGame = async (slug: unknown) => {
   return game;
 };
 
+/** Les règles du scellé et du draft d'un jeu ; `null` pour un format qu'il n'a pas (le draft de Cyberpunk). */
+const COLLECTION_RULES: Record<string, (kind: LimitedKind) => LimitedRules | null> = {
+  riftbound: limitedRules,
+  swu: swuLimitedRules,
+  cp: (kind) => (kind === "sealed" ? cpLimitedRules() : null),
+};
+
 /**
  * Les types de boosters enregistrés dans ma collection pour un jeu, avec le
  * nombre d'exemplaires de chacun, pour n'offrir à tirer que ceux qui existent.
  */
 export async function collectionBoosterTypesAction(
   slug: unknown,
-): Promise<PlayResult<{ types: CollectionBoosterType[]; labels: Record<string, string> }>> {
+): Promise<PlayResult<{ types: BoosterTypeCount[]; labels: Record<string, string> }>> {
   return guarded(async () => {
     const game = await collectionGame(slug);
     const seated = await requireViewer();
@@ -146,23 +155,27 @@ export async function collectionBoosterTypesAction(
 }
 
 /**
- * Tire `count` boosters d'un type de ma collection pour un scellé ou un draft
- * contre l'IA, en codes du moteur (`packs`), avec l'extension affichée de chacun
- * (`sets`).
+ * Tire jusqu'à `count` boosters d'un type de ma collection pour un scellé ou un
+ * draft contre l'IA, en codes du moteur (`packs`), avec l'extension affichée de
+ * chacun (`sets`) et les compteurs de ce qui a été écarté. `kind` et `count`
+ * doivent être ceux du format joué : `count` vaut le nombre de boosters du
+ * format, et les boosters manquants sont générés côté client.
  */
 export async function drawCollectionBoostersAction(
   slug: unknown,
+  kind: unknown,
   type: unknown,
   count: unknown,
 ): Promise<PlayResult<CollectionDraw>> {
   return guarded(async () => {
     const game = await collectionGame(slug);
     const seated = await requireViewer();
+    const rulesOf = COLLECTION_RULES[game.slug ?? (typeof slug === "string" ? slug : "")];
+    if (!LIMITED_KINDS.includes(kind as LimitedKind) || !rulesOf) throw new TableFailure("INVALID");
+    const rules = rulesOf(kind as LimitedKind);
+    if (!rules || typeof count !== "number" || count !== rules.boosters) throw new TableFailure("INVALID");
     const normalized = normalizeBoosterType(typeof type === "string" ? type : undefined);
     if (!isBoosterType(game, normalized)) throw new TableFailure("INVALID");
-    if (typeof count !== "number" || !Number.isInteger(count) || count < 1 || count > MAX_PLAYERS) {
-      throw new TableFailure("INVALID");
-    }
     const draw = await collectionPacks(seated.userId, game, typeof slug === "string" ? slug : "", normalized, count);
     if (!draw || draw.packs.length === 0) throw new TableFailure("NOT_FOUND");
     return draw;

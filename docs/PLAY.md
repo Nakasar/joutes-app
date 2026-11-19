@@ -267,14 +267,17 @@ du moteur), le nombre de joueurs (2 à 8) et le niveau des IA, puis crée un
 - **Piocher dans sa collection.** Dans `LimitedSetup`, la source des boosters peut
   être « Ma collection » (connecté) : l'utilisateur choisit alors le **type** de
   boosters à tirer parmi ceux qu'il a enregistrés pour le jeu
-  (`collectionBoosterTypesAction`), et `drawCollectionBoostersAction` tire
-  `rules.boosters` boosters de ce type (`$sample`, repris depuis le début s'il
-  n'y en a pas assez), cartes ramenées aux codes du moteur
-  (`lib/collection/booster-packs.ts`). Au lancement contre l'IA, les boosters
-  tirés remplacent ceux du siège du joueur dans `record.packs[0]` avant
-  `LimitedEvent.restore` : le journal les garde, donc l'évènement rouvre les
-  mêmes boosters. Cela ne vaut que contre l'IA — en ligne et en mode hôte,
-  c'est le serveur qui tire les boosters.
+  (`collectionBoosterTypesAction`, un `$group` par type et extension), et
+  `drawCollectionBoostersAction` tire jusqu'à `rules.boosters` boosters de ce
+  type (`$sample`, sans remise : un même booster n'est jamais tiré deux fois),
+  cartes ramenées aux codes du moteur (`lib/collection/booster-packs.ts`) ;
+  les cartes inconnues du moteur sont comptées et signalées, les boosters dont
+  l'extension n'a pas d'équivalent moteur (table explicite par jeu, les Beta de
+  Cyberpunk) sont écartés. Au lancement contre l'IA, les boosters tirés prennent
+  la tête du siège du joueur dans `record.packs[0]` et les manquants sont
+  complétés par les boosters générés, avant `LimitedEvent.restore` : le journal
+  les garde, donc l'évènement rouvre les mêmes boosters. Cela ne vaut que contre
+  l'IA — en ligne et en mode hôte, c'est le serveur qui tire les boosters.
 
 ### En ligne et en mode hôte
 

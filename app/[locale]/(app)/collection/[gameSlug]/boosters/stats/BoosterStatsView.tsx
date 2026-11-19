@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, BarChart3, Package, Sparkles, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge.tsx";
 import type { BoosterGroupStats, BoosterStats, RarityCount } from "@/lib/db/booster-stats.ts";
-import { useBoosterTypeLabel } from "../useBoosterTypeLabel.ts";
+import { useBoosterTypeLabel } from "@/components/boosters/useBoosterTypeLabel.ts";
 
 type Props = {
   gameSlug: string;
