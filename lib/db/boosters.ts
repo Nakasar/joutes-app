@@ -357,6 +357,44 @@ export async function getBoosters({userId, gameId, type, cards, page = 0, limit 
   }));
 }
 
+/** Un booster tiré au hasard, avec le détail minimal de ses cartes. */
+export type SampledBooster = {
+  id: string;
+  setCode: string;
+  cards: { cardId?: string; setCode: string; collectorNumber: string; foil?: boolean }[];
+};
+
+/**
+ * Un tirage au hasard (`$sample`) de boosters de l'utilisateur, avec leurs cartes
+ * réduites à l'identité (identifiant ou impression, et brillant) : c'est tout ce
+ * qu'il faut pour ouvrir un booster dans une partie.
+ */
+export async function sampleBoosters({ userId, gameId, type, count }: BoosterFilters & { count: number }): Promise<SampledBooster[]> {
+  const query = await boostersQuery({ userId, gameId, type });
+  const rows = await db
+    .collection<BoosterDb>('boosters')
+    .aggregate([
+      { $match: query },
+      { $sample: { size: count } },
+      {
+        $lookup: {
+          from: 'booster-cards',
+          localField: '_id',
+          foreignField: 'boosterId',
+          as: 'cards',
+          pipeline: [{ $project: { _id: 0, boosterId: 0, userId: 0, cardId: 1, setCode: 1, collectorNumber: 1, foil: 1 } }],
+        },
+      },
+    ])
+    .toArray();
+
+  return rows.map((row) => ({
+    id: row._id.toString(),
+    setCode: row.setCode,
+    cards: row.cards as SampledBooster['cards'],
+  }));
+}
+
 export async function getBooster(boosterId: string): Promise<Booster | null> {
   if (!ObjectId.isValid(boosterId)) {
     return null;

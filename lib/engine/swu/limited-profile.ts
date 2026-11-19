@@ -7,6 +7,7 @@ export const SWU_LIMITED_STORAGE_KEY = "joutes.play.swu.limited";
 /** Le scellé et le draft de Star Wars: Unlimited (Comprehensive Rules, section 10). */
 export const swuLimited: LimitedProfile = {
   game: "swu",
+  slug: "swu",
   words: "swu",
   base: "/games/swu/play",
   storageKey: SWU_LIMITED_STORAGE_KEY,

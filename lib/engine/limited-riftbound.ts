@@ -5,6 +5,7 @@ import type { LimitedProfile } from "@/lib/engine/limited-profile";
 /** Le scellé et le draft de Riftbound (Tournament Rules, section 602). */
 export const riftboundLimited: LimitedProfile = {
   game: "riftbound",
+  slug: "riftbound",
   words: "setup",
   base: "/games/riftbound/play",
   storageKey: LIMITED_STORAGE_KEY,

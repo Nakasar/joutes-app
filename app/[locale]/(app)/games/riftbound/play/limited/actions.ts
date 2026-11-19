@@ -1,5 +1,8 @@
 "use server";
 
+import { collectionBoosterTypes, collectionPacks, type CollectionBoosterType, type CollectionDraw } from "@/lib/collection/booster-packs.ts";
+import { isBoosterType, normalizeBoosterType } from "@/lib/constants/booster-types.ts";
+import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getLimitedEvent, listLimitedEventsOf } from "@/lib/db/limited-events.ts";
 import {
   addLimitedBot,
@@ -23,6 +26,7 @@ import {
   type PlayResult,
 } from "@/lib/engine/table-actions.ts";
 import { isLimitedGame } from "@/lib/engine/limited.ts";
+import { MAX_PLAYERS } from "@/lib/engine/limited-events.ts";
 import { engineServer, isBotLevel, TableFailure } from "@/lib/engine/tables.ts";
 import type { LimitedEventSummary } from "@/lib/types/LimitedEvent.ts";
 
@@ -115,6 +119,53 @@ export async function readLimitedEventAction(slug: unknown, id: unknown): Promis
         access: limitedAccess(event, seated),
       },
     };
+  });
+}
+
+/** Le jeu dont on pioche dans la collection : sa page Jouer existe. */
+const collectionGame = async (slug: unknown) => {
+  if (typeof slug !== "string") throw new TableFailure("INVALID");
+  const game = await readGameBySlugOrId(slug);
+  if (!game?.features?.play) throw new TableFailure("NOT_FOUND");
+  return game;
+};
+
+/**
+ * Les types de boosters enregistrés dans ma collection pour un jeu, avec le
+ * nombre d'exemplaires de chacun, pour n'offrir à tirer que ceux qui existent.
+ */
+export async function collectionBoosterTypesAction(
+  slug: unknown,
+): Promise<PlayResult<{ types: CollectionBoosterType[]; labels: Record<string, string> }>> {
+  return guarded(async () => {
+    const game = await collectionGame(slug);
+    const seated = await requireViewer();
+    const { types, labels } = await collectionBoosterTypes(seated.userId, game);
+    return { types, labels };
+  });
+}
+
+/**
+ * Tire `count` boosters d'un type de ma collection pour un scellé ou un draft
+ * contre l'IA, en codes du moteur (`packs`), avec l'extension affichée de chacun
+ * (`sets`).
+ */
+export async function drawCollectionBoostersAction(
+  slug: unknown,
+  type: unknown,
+  count: unknown,
+): Promise<PlayResult<CollectionDraw>> {
+  return guarded(async () => {
+    const game = await collectionGame(slug);
+    const seated = await requireViewer();
+    const normalized = normalizeBoosterType(typeof type === "string" ? type : undefined);
+    if (!isBoosterType(game, normalized)) throw new TableFailure("INVALID");
+    if (typeof count !== "number" || !Number.isInteger(count) || count < 1 || count > MAX_PLAYERS) {
+      throw new TableFailure("INVALID");
+    }
+    const draw = await collectionPacks(seated.userId, game, typeof slug === "string" ? slug : "", normalized, count);
+    if (!draw || draw.packs.length === 0) throw new TableFailure("NOT_FOUND");
+    return draw;
   });
 }
 

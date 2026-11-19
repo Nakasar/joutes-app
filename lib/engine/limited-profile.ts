@@ -31,6 +31,8 @@ export type LimitedProfile = {
    * site ; `null` pour un jeu qui ne se joue que contre des IA.
    */
   game: LimitedGameKey | null;
+  /** Le slug du jeu sur le site (`/games/<slug>/…`), aussi celui de sa collection. */
+  slug: string;
   /** Où sont les phrases du jeu dans `Games.Limited` (« setup » pour Riftbound). */
   words: "setup" | "swu" | "cp";
   /** La page Jouer du jeu. */

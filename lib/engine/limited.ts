@@ -236,6 +236,45 @@ export function fitToPool(deck: EngineDeckList, pool: Pulled[]): EngineDeckList 
   return { ...deck, legend, champion, main, battlefields, extra_legends: [] };
 }
 
+/** Un booster enregistré dans la collection d'un joueur, tel que le tirage le lit. */
+export type CollectionBooster = { setCode: string; cards: { cardId: string; foil?: boolean }[] };
+
+/**
+ * Les boosters tirés d'une collection pour un événement : `count` boosters parmi
+ * ceux donnés, mélangés, et repris depuis le début s'il n'y en a pas assez.
+ * `toCode` rend le code moteur d'une carte du catalogue, ou `null` pour une carte
+ * que le moteur ne connaît pas : elle est laissée de côté, et un booster dont il
+ * ne reste aucune carte n'est pas tiré. `sets` : les extensions que le moteur sait
+ * jouer ; celle du booster y est reprise quand elle y figure, sinon la première
+ * (un tirage rangé à part au catalogue, un Beta de Cyberpunk par exemple).
+ */
+export function drawPacks(
+  toCode: (cardId: string) => string | null,
+  sets: string[],
+  boosters: CollectionBooster[],
+  count: number,
+): { packs: Pulled[][]; sets: string[] } {
+  const available = boosters
+    .map((booster) => ({
+      set: sets.includes(booster.setCode) ? booster.setCode : (sets[0] ?? ""),
+      cards: booster.cards.flatMap((card) => {
+        const code = toCode(card.cardId);
+        return code ? [{ code, ...(card.foil === true ? { foil: true } : {}) }] : [];
+      }),
+    }))
+    .filter((booster) => booster.cards.length > 0);
+  if (available.length === 0) return { packs: [], sets: [] };
+  for (let i = available.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [available[i], available[j]] = [available[j], available[i]];
+  }
+  const pick = (index: number) => available[index % available.length];
+  return {
+    packs: Array.from({ length: count }, (_, i) => pick(i).cards.map((card) => ({ ...card }))),
+    sets: Array.from({ length: count }, (_, i) => pick(i).set),
+  };
+}
+
 /** Une pile de cartes identiques. */
 export type Stack = { code: string; count: number; foil: boolean };
 
