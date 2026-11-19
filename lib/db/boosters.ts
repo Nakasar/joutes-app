@@ -4,6 +4,7 @@ import {Booster, BoosterCard, BoosterCardDb, BoosterDb, BoosterValue} from "@/li
 import {CARD_ATTRIBUTE_KEYS, CardAttributes, CardPrinting} from "@/lib/types/card";
 import {changePrinting, editionPrinting} from "@/lib/cards/printings";
 import {boosterTypeStoredValues, normalizeBoosterType, OTHER_BOOSTER_TYPE} from "@/lib/constants/booster-types";
+import {boosterTypeCountsPipeline, sampleBoostersPipeline} from "@/lib/db/booster-sampling";
 import {ObjectId} from "bson";
 import {removeSellListItemsByCollectionEntryIds} from "@/lib/db/sell-lists";
 import {getCardsByIds} from "@/lib/db/cards";
@@ -355,6 +356,58 @@ export async function getBoosters({userId, gameId, type, cards, page = 0, limit 
     id: booster._id.toString(),
     _id: undefined,
   }));
+}
+
+/** Un booster tiré au hasard, avec le détail minimal de ses cartes. */
+export type SampledBooster = {
+  id: string;
+  setCode: string;
+  cards: { cardId?: string; setCode: string; collectorNumber: string; foil?: boolean }[];
+};
+
+/**
+ * Un tirage au hasard (`$sample`) de boosters de l'utilisateur, avec leurs cartes
+ * réduites à l'identité (identifiant ou impression, et brillant) : c'est tout ce
+ * qu'il faut pour ouvrir un booster dans une partie.
+ */
+export async function sampleBoosters({ userId, gameId, type, count }: BoosterFilters & { count: number }): Promise<SampledBooster[]> {
+  const query = await boostersQuery({ userId, gameId, type });
+  const rows = await db
+    .collection<BoosterDb>('boosters')
+    .aggregate(sampleBoostersPipeline(query, count))
+    .toArray();
+
+  return rows.map((row) => ({
+    id: row._id.toString(),
+    setCode: row.setCode,
+    cards: row.cards as SampledBooster['cards'],
+  }));
+}
+
+/** Un type de boosters de l'utilisateur, avec le nombre d'exemplaires et le détail par extension. */
+export type BoosterTypeCount = { type: string; count: number; sets: Record<string, number> };
+
+/**
+ * Les types de boosters d'un utilisateur pour un jeu, en un aller-retour :
+ * un `$group` par (type, extension), replié ici. Un booster sans type compte
+ * comme « Autre ».
+ */
+export async function getBoosterTypeCounts({ userId, gameId }: BoosterFilters): Promise<BoosterTypeCount[]> {
+  const rows = await db
+    .collection<BoosterDb>('boosters')
+    .aggregate<{ _id: { type?: unknown; set?: unknown }; count: number }>(boosterTypeCountsPipeline(await boostersQuery({ userId, gameId })))
+    .toArray();
+
+  const byType = new Map<string, BoosterTypeCount>();
+  for (const row of rows) {
+    const type = normalizeBoosterType(typeof row._id.type === 'string' ? row._id.type : undefined);
+    const set = typeof row._id.set === 'string' && row._id.set ? row._id.set : '?';
+    const entry = byType.get(type) ?? { type, count: 0, sets: {} };
+    entry.count += row.count;
+    entry.sets[set] = (entry.sets[set] ?? 0) + row.count;
+    byType.set(type, entry);
+  }
+  return [...byType.values()].sort((a, b) => a.type.localeCompare(b.type));
 }
 
 export async function getBooster(boosterId: string): Promise<Booster | null> {

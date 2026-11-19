@@ -10,6 +10,7 @@ export const CP_LIMITED_STORAGE_KEY = "joutes.play.cp.limited";
  */
 export const cpLimited: LimitedProfile = {
   game: null,
+  slug: "cp",
   words: "cp",
   base: "/games/cp/play",
   storageKey: CP_LIMITED_STORAGE_KEY,

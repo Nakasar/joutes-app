@@ -10,8 +10,8 @@
 
 import type { CpColor, CpKind } from "@/lib/engine/cyberpunk/types";
 
-/** Les extensions dont le catalogue range un tirage Beta à part. */
-const BETA_SETS: Record<string, string> = { WNCB: "WNC", EPSB: "EPS", THSB: "THS" };
+/** Les extensions dont le catalogue range un tirage Beta à part, vers l'extension du moteur. */
+export const BETA_SETS: Record<string, string> = { WNCB: "WNC", EPSB: "EPS", THSB: "THS" };
 
 /**
  * Le code moteur d'une carte du catalogue. `known` dit si le moteur connaît un

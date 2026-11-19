@@ -58,7 +58,7 @@ import {
   type CardSearchCriteria,
 } from "@/lib/cards/search-filters.ts";
 import { CardSearchToolbar } from "@/components/cards/CardSearchToolbar.tsx";
-import { useBoosterTypeLabel } from "../useBoosterTypeLabel.ts";
+import { useBoosterTypeLabel } from "@/components/boosters/useBoosterTypeLabel.ts";
 import BoosterScanner from "./BoosterScanner.tsx";
 import type { ScannerSetCard } from "@/lib/db/cards.ts";
 

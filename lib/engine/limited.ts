@@ -236,6 +236,67 @@ export function fitToPool(deck: EngineDeckList, pool: Pulled[]): EngineDeckList 
   return { ...deck, legend, champion, main, battlefields, extra_legends: [] };
 }
 
+/** Un booster enregistré dans la collection d'un joueur, tel que le tirage le lit. */
+export type CollectionBooster = { setCode: string; cards: { cardId: string; foil?: boolean }[] };
+
+/** Le résultat d'un tirage dans une collection de boosters. */
+export type DrawnPacks = {
+  /** Les boosters tirés, au plus `count` : jamais un même booster deux fois. */
+  packs: Pulled[][];
+  /** L'extension affichée de chaque booster tiré, dans le même ordre. */
+  sets: string[];
+  /** Cartes laissées de côté parce que le moteur ne les connaît pas. */
+  ignored: number;
+  /** Boosters écartés : extension sans équivalent moteur, ou plus aucune carte jouable. */
+  skipped: number;
+};
+
+/**
+ * Les boosters tirés d'une collection pour un événement : jusqu'à `count`
+ * boosters parmi ceux donnés, mélangés (Fisher-Yates) — un même booster n'est
+ * jamais tiré deux fois, le complément est généré ailleurs. `toCode` rend le code
+ * moteur d'une carte du catalogue, ou `null` pour une carte que le moteur ne
+ * connaît pas : elle est comptée dans `ignored` et laissée de côté.
+ * `setOf` rend l'extension moteur d'un `setCode` du catalogue, ou `null` quand
+ * elle n'a pas d'équivalent : le booster est alors compté dans `skipped` et
+ * écarté, plutôt que de s'afficher sous une mauvaise extension.
+ */
+export function drawPacks(
+  toCode: (cardId: string) => string | null,
+  setOf: (setCode: string) => string | null,
+  boosters: CollectionBooster[],
+  count: number,
+): DrawnPacks {
+  let ignored = 0;
+  let skipped = 0;
+  const available: { set: string; cards: Pulled[] }[] = [];
+  for (const booster of boosters) {
+    const set = setOf(booster.setCode);
+    const cards: Pulled[] = [];
+    for (const card of booster.cards) {
+      const code = toCode(card.cardId);
+      if (code) cards.push(card.foil === true ? { code, foil: true } : { code });
+      else ignored += 1;
+    }
+    if (!set || cards.length === 0) {
+      skipped += 1;
+      continue;
+    }
+    available.push({ set, cards });
+  }
+  for (let i = available.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [available[i], available[j]] = [available[j], available[i]];
+  }
+  const drawn = available.slice(0, count);
+  return {
+    packs: drawn.map((booster) => booster.cards.map((card) => ({ ...card }))),
+    sets: drawn.map((booster) => booster.set),
+    ignored,
+    skipped,
+  };
+}
+
 /** Une pile de cartes identiques. */
 export type Stack = { code: string; count: number; foil: boolean };
 

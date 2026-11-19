@@ -107,3 +107,14 @@ export function getBoosterTypeOptions(types: string[], current?: string): string
   const normalized = normalizeBoosterType(current);
   return types.includes(normalized) ? types : [normalized, ...types];
 }
+
+/**
+ * Le détail par extension d'un type de boosters, pour un libellé de sélecteur :
+ * « 3 OGN, 1 SFD » (les plus nombreux d'abord).
+ */
+export function boosterSetBreakdown(sets: Record<string, number>): string {
+  return Object.entries(sets)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([set, count]) => `${count} ${set}`)
+    .join(", ");
+}

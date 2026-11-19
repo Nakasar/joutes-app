@@ -42,7 +42,7 @@ import { OTHER_BOOSTER_TYPE } from "@/lib/constants/booster-types.ts";
 import { BOOSTER_CARD_FILTER_MAX } from "@/lib/constants/boosters.ts";
 import CardsPicker from "@/components/CardsPicker.tsx";
 import SetCombobox from "./SetCombobox.tsx";
-import { useBoosterTypeLabel } from "./useBoosterTypeLabel.ts";
+import { useBoosterTypeLabel } from "@/components/boosters/useBoosterTypeLabel.ts";
 
 const LANG_LABELS: Record<string, string> = {
   en: "🇬🇧 EN", fr: "🇫🇷 FR", it: "🇮🇹 IT", de: "🇩🇪 DE",
