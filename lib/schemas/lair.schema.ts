@@ -52,23 +52,31 @@ const htmlFieldRuleSchema = z.object({
   attribute: z.string().max(100, "Le nom d'attribut est trop long").optional(),
 });
 
+// Les champs d'un événement, sur la liste comme sur sa propre page
+const htmlFieldsSchema = z.object({
+  id: htmlFieldRuleSchema.optional(),
+  title: htmlFieldRuleSchema.optional(),
+  name: htmlFieldRuleSchema.optional(),
+  gameName: htmlFieldRuleSchema.optional(),
+  date: htmlFieldRuleSchema.optional(),
+  time: htmlFieldRuleSchema.optional(),
+  startDateTime: htmlFieldRuleSchema.optional(),
+  endDateTime: htmlFieldRuleSchema.optional(),
+  endTime: htmlFieldRuleSchema.optional(),
+  price: htmlFieldRuleSchema.optional(),
+  status: htmlFieldRuleSchema.optional(),
+  url: htmlFieldRuleSchema.optional(),
+  venue: htmlFieldRuleSchema.optional(),
+}).default({});
+
 // Schéma pour la lecture d'une page par sélecteurs
 const eventHtmlConfigSchema = z.object({
   itemSelector: z.string().trim().min(1, "Le sélecteur des événements est requis").max(300, "Le sélecteur est trop long"),
-  fields: z.object({
-    id: htmlFieldRuleSchema.optional(),
-    title: htmlFieldRuleSchema.optional(),
-    name: htmlFieldRuleSchema.optional(),
-    gameName: htmlFieldRuleSchema.optional(),
-    date: htmlFieldRuleSchema.optional(),
-    time: htmlFieldRuleSchema.optional(),
-    startDateTime: htmlFieldRuleSchema.optional(),
-    endDateTime: htmlFieldRuleSchema.optional(),
-    price: htmlFieldRuleSchema.optional(),
-    status: htmlFieldRuleSchema.optional(),
-    url: htmlFieldRuleSchema.optional(),
-    venue: htmlFieldRuleSchema.optional(),
-  }).default({}),
+  fields: htmlFieldsSchema,
+  detail: z.object({
+    selector: z.string().trim().max(300, "Le sélecteur est trop long").optional(),
+    fields: htmlFieldsSchema,
+  }).optional(),
   titleSeparator: z.string().max(10, "Le séparateur est trop long").optional(),
   venues: z.array(z.string().trim().min(1).max(200, "Le nom de ville est trop long")).max(50, "Trop de villes").optional(),
   venueOptionsSelector: z.string().trim().max(300, "Le sélecteur est trop long").optional(),

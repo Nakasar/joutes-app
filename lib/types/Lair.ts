@@ -58,6 +58,12 @@ export type HtmlFieldRule = {
  * ne les donne pas champ par champ. Un champ dédié, s'il est renseigné,
  * l'emporte sur ce que le titre en dit.
  */
+export type EventHtmlDetail = {
+  /** L'élément de la page de l'événement où lire les champs ; vide : toute la page. */
+  selector?: string;
+  fields: EventHtmlConfig["fields"];
+};
+
 export type EventHtmlConfig = {
   /** Le sélecteur de chaque événement de la page. */
   itemSelector: string;
@@ -72,12 +78,21 @@ export type EventHtmlConfig = {
     time?: HtmlFieldRule;
     startDateTime?: HtmlFieldRule;
     endDateTime?: HtmlFieldRule;
+    /** Une heure de fin seule — « 00:00 », « 17h » —, le lendemain si elle précède le début. */
+    endTime?: HtmlFieldRule;
     price?: HtmlFieldRule;
     status?: HtmlFieldRule;
     url?: HtmlFieldRule;
     /** Le lieu ou la ville de l'événement, pour `venues`. */
     venue?: HtmlFieldRule;
   };
+  /**
+   * La page de chaque événement, quand elle en dit plus que la liste : elle
+   * est téléchargée (le champ `url` y mène) et ses champs l'emportent, un à
+   * un, sur ceux de la liste. Un champ qu'elle ne donne pas reste celui de la
+   * liste ; une page illisible laisse l'événement tel que la liste le décrit.
+   */
+  detail?: EventHtmlDetail;
   /** Ce qui sépare les segments du titre composé. « - » par défaut. */
   titleSeparator?: string;
   /**
