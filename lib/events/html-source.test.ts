@@ -3,16 +3,18 @@ import { describe, it } from "node:test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { DateTime } from "luxon";
+import { parse } from "node-html-parser";
 import {
   extractHtmlEvents,
   formFieldsForVenue,
   hasVenuePlaceholder,
+  htmlDetailUrls,
   parseCompositeTitle,
   parseDateText,
   parseTimeRange,
   readVenueOptions,
 } from "./html-source";
-import { GOBELIN_PRESET, OASIS_PRESET } from "./html-presets";
+import { GOBELIN_PRESET, OASIS_PRESET, withPresetDetail } from "./html-presets";
 
 const PARIS = "Europe/Paris";
 const NOW = DateTime.fromISO("2026-09-01T10:00", { zone: PARIS });
@@ -20,6 +22,20 @@ const SOURCE_URL = "https://www.antretemps.com/evenements-boutique-tournois/";
 
 /** Quatre cases de la grille de l'Antre Temps, telles que le site les sert. */
 const OASIS_PAGE = readFileSync(path.join(import.meta.dirname, "__fixtures__", "antretemps-oasis.html"), "utf-8");
+
+/**
+ * La page de novembre 2026 : le calendrier en JavaScript, et la grille masquée
+ * qui le nourrit — une soirée jeux, une Nexus Night, une initiation Kill Team
+ * et la nuit du jeu des 5 ans.
+ */
+const CALENDAR_PAGE = readFileSync(path.join(import.meta.dirname, "__fixtures__", "antretemps-calendrier.html"), "utf-8");
+
+/** Les fiches de ces quatre événements, par adresse : ce que le calendrier lit pour chacun. */
+const CALENDAR_DETAILS: Record<string, string> = Object.fromEntries(
+  parse(readFileSync(path.join(import.meta.dirname, "__fixtures__", "antretemps-fiches.html"), "utf-8"))
+    .querySelectorAll("article")
+    .map((article) => [article.getAttribute("data-url") ?? "", article.innerHTML]),
+);
 
 /** Cinq cartes de la page du Gobelin, filtrée sur Thionville, telles que le site les sert. */
 const GOBELIN_PAGE = readFileSync(path.join(import.meta.dirname, "__fixtures__", "gobelin-thionville.html"), "utf-8");
@@ -35,6 +51,10 @@ const GAMES = [
 ];
 
 describe("titre composé", () => {
+  it("lit une date ISO, comme en porte un attribut", () => {
+    assert.deepEqual(parseDateText("2026-11-12"), { day: 12, month: 11, year: 2026 });
+  });
+
   it("lit « Jeu - Nom - JJ/MM/AAAA - HHhMM »", () => {
     const title = parseCompositeTitle("Riftbound - Tournois Nexus - 03/09/2026 - 19h30");
     assert.equal(title.game, "Riftbound");
@@ -69,6 +89,19 @@ describe("titre composé", () => {
     const title = parseCompositeTitle("Cyberpunk TCG – Beta Event (Avant-Première Lancement) - 19/09/2026 - 14h");
     assert.equal(title.game, "Cyberpunk TCG");
     assert.equal(title.name, "Beta Event (Avant-Première Lancement)");
+  });
+
+  it("retire un jour de la semaine qui accompagne la date", () => {
+    const evening = parseCompositeTitle("Soirée jeux - jeudi - 12/11/2026 - 19h30");
+    assert.equal(evening.name, "Soirée jeux");
+    assert.equal(evening.game, undefined);
+
+    const night = parseCompositeTitle("Nuit du jeu - Les 5 ans de L'Antre Temps - samedi - 28/11/2026 - 19h30");
+    assert.equal(night.game, "Nuit du jeu");
+    assert.equal(night.name, "Les 5 ans de L'Antre Temps");
+
+    // Un jour dans un nom reste dans le nom.
+    assert.equal(parseCompositeTitle("Riftbound - Nexus du jeudi - 12/11/2026 - 19h30").name, "Nexus du jeudi");
   });
 
   it("garde tout le titre comme nom quand rien ne le découpe", () => {
@@ -149,6 +182,96 @@ describe("page Oasis — L'Antre Temps", () => {
     // « MTG », lui, ne ressemble à rien sans alias.
     assert.equal(withoutAliases.events.find((event) => event.name.startsWith("Avant Premiere"))?.gameName, "Jeu non spécifié");
     assert.ok(withoutAliases.warnings.some((warning) => warning.includes("jeu absent")));
+  });
+});
+
+describe("page calendrier — L'Antre Temps, novembre 2026", () => {
+  const source = { url: SOURCE_URL, gameAliases: { MTG: "Magic: The Gathering" } };
+  const config = OASIS_PRESET.config;
+  const NOVEMBER = DateTime.fromISO("2026-11-01T10:00", { zone: PARIS });
+  const byId = <T extends { externalId?: string }>(events: T[], id: string) => events.find((event) => event.externalId === id);
+
+  it("lit toujours la grille, masquée derrière le calendrier", () => {
+    const extraction = extractHtmlEvents({ html: CALENDAR_PAGE, config, source, games: GAMES, now: NOVEMBER });
+    assert.equal(extraction.itemCount, 4);
+    assert.equal(extraction.events.length, 4);
+    assert.equal(byId(extraction.events, "30755")?.name, "Soirée jeux", "pas « jeudi »");
+    assert.equal(byId(extraction.events, "30765")?.name, "Initiation Kill Team", "pas « samedi »");
+  });
+
+  it("désigne la fiche de chaque événement, dans l'ordre de la grille", () => {
+    assert.deepEqual(htmlDetailUrls({ html: CALENDAR_PAGE, config, sourceUrl: SOURCE_URL }), [
+      "https://www.antretemps.com/soiree-jeux-jeudi-12/11/2026-19h30-a30755.html",
+      "https://www.antretemps.com/initiation-kill-team-samedi-14/11/2026-14h-a30765.html",
+      "https://www.antretemps.com/riftbound-nexus-night-12/11/2026-19h30-a30864.html",
+      "https://www.antretemps.com/nuit-du-jeu-les-5-ans-de-lantre-temps-samedi-28/11/2026-19h30-a30951.html",
+    ]);
+    assert.deepEqual(htmlDetailUrls({ html: CALENDAR_PAGE, config: { ...config, detail: undefined }, sourceUrl: SOURCE_URL }), []);
+  });
+
+  const extraction = extractHtmlEvents({ html: CALENDAR_PAGE, config, source, games: GAMES, now: NOVEMBER, details: CALENDAR_DETAILS });
+
+  it("prend l'heure de fin de la fiche, le lendemain quand elle passe minuit", () => {
+    const evening = byId(extraction.events, "30755");
+    assert.equal(evening?.startDateTime, "2026-11-12T19:30:00.000+01:00");
+    assert.equal(evening?.endDateTime, "2026-11-13T00:00:00.000+01:00");
+
+    const night = byId(extraction.events, "30951");
+    assert.equal(night?.startDateTime, "2026-11-28T19:30:00.000+01:00");
+    assert.equal(night?.endDateTime, "2026-11-29T07:00:00.000+01:00");
+
+    const initiation = byId(extraction.events, "30765");
+    assert.equal(initiation?.startDateTime, "2026-11-14T14:00:00.000+01:00");
+    assert.equal(initiation?.endDateTime, "2026-11-14T16:00:00.000+01:00");
+  });
+
+  it("prend le tarif sur place de la fiche quand la grille n'a pas de prix", () => {
+    assert.equal(byId(extraction.events, "30755")?.price, 5);
+    assert.equal(byId(extraction.events, "30765")?.price, 3);
+  });
+
+  it("garde ce que la grille dit quand la fiche ne le précise pas", () => {
+    const nexus = byId(extraction.events, "30864");
+    assert.equal(nexus?.name, "Nexus Night");
+    assert.equal(nexus?.gameName, "Riftbound");
+    assert.equal(nexus?.price, 8);
+    assert.equal(nexus?.startDateTime, "2026-11-12T19:30:00.000+01:00");
+    // Pas de « data-fin » : la durée par défaut, comme avant.
+    assert.equal(nexus?.endDateTime, "2026-11-12T23:30:00.000+01:00");
+  });
+
+  it("lit depuis la grille un événement dont la fiche manque ou n'a pas le bloc", () => {
+    const url = "https://www.antretemps.com/soiree-jeux-jeudi-12/11/2026-19h30-a30755.html";
+    const missing = extractHtmlEvents({ html: CALENDAR_PAGE, config, source, games: GAMES, now: NOVEMBER, details: {} });
+    assert.equal(byId(missing.events, "30755")?.endDateTime, "2026-11-12T23:30:00.000+01:00");
+    assert.deepEqual(missing.warnings.filter((warning) => warning.includes("at-event")), []);
+
+    const without = extractHtmlEvents({
+      html: CALENDAR_PAGE,
+      config,
+      source,
+      games: GAMES,
+      now: NOVEMBER,
+      details: { [url]: "<p>Fiche refaite, sans bloc</p>" },
+    });
+    assert.equal(byId(without.events, "30755")?.endDateTime, "2026-11-12T23:30:00.000+01:00");
+    assert.ok(without.warnings.some((warning) => warning.includes("« .at-event » absent")));
+  });
+});
+
+describe("préréglage et sources déjà créées", () => {
+  const OLD_COPY = { ...OASIS_PRESET.config, detail: undefined };
+
+  it("donne la fiche du préréglage à une source qui en est une copie ancienne", () => {
+    assert.deepEqual(withPresetDetail(OLD_COPY, SOURCE_URL).detail, OASIS_PRESET.config.detail);
+    assert.deepEqual(withPresetDetail(OLD_COPY, "https://antretemps.com/evenements/").detail, OASIS_PRESET.config.detail);
+  });
+
+  it("laisse une autre boutique, un autre sélecteur ou une fiche configurée", () => {
+    assert.equal(withPresetDetail(OLD_COPY, "https://www.autre-boutique.fr/evenements/").detail, undefined);
+    assert.equal(withPresetDetail({ ...OLD_COPY, itemSelector: ".autre" }, SOURCE_URL).detail, undefined);
+    const own = { selector: ".mien", fields: { date: { attribute: "data-jour" } } };
+    assert.deepEqual(withPresetDetail({ ...OLD_COPY, detail: own }, SOURCE_URL).detail, own);
   });
 });
 

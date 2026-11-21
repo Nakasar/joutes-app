@@ -21,6 +21,14 @@ export type HtmlPreset = {
  * jeux françaises : les événements y sont des produits, dans une grille dont
  * chaque case porte l'identifiant produit, un titre composé « Jeu - Nom -
  * JJ/MM/AAAA - HHhMM », le stock et le prix.
+ *
+ * Depuis novembre 2026, l'Antre Temps affiche un calendrier construit en
+ * JavaScript : la grille reste dans la page (masquée), et chaque fiche
+ * d'événement porte un `<div class="at-event" hidden>` dont les attributs
+ * donnent la date, l'heure de début et de fin, et le tarif sur place. Le
+ * préréglage lit cette fiche : la fin n'est plus devinée (une soirée finit à
+ * minuit, un goûter à 17 h, la nuit du jeu au matin). Une fiche sans ce bloc
+ * garde ce que la grille en dit.
  */
 export const OASIS_PRESET: HtmlPreset = {
   key: "oasis",
@@ -35,6 +43,15 @@ export const OASIS_PRESET: HtmlPreset = {
       url: { selector: ".bp_designation a", attribute: "href" },
       price: { selector: ".bp_prix" },
       status: { selector: ".bp_stock" },
+    },
+    detail: {
+      selector: ".at-event",
+      fields: {
+        date: { attribute: "data-date" },
+        time: { attribute: "data-heure" },
+        endTime: { attribute: "data-fin" },
+        price: { attribute: "data-tarif" },
+      },
     },
     titleSeparator: " - ",
   },
@@ -72,3 +89,33 @@ export const GOBELIN_PRESET: HtmlPreset = {
 };
 
 export const HTML_PRESETS: HtmlPreset[] = [OASIS_PRESET, GOBELIN_PRESET];
+
+/**
+ * La configuration à lire pour une source HTML : la sienne, complétée de la
+ * lecture des fiches d'événement du préréglage dont elle est issue.
+ *
+ * Une source garde une copie du préréglage prise à sa création ; quand le
+ * site change et que le préréglage apprend à lire ses fiches, les sources
+ * déjà créées n'en sauraient rien. Celles dont le domaine et le sélecteur
+ * d'événements sont ceux du préréglage, et qui n'ont pas de fiche à elles,
+ * reçoivent donc la sienne. Une fiche configurée sur la source l'emporte.
+ */
+export function withPresetDetail(config: EventHtmlConfig, sourceUrl: string): EventHtmlConfig {
+  if (config.detail) return config;
+
+  let hostname: string;
+  try {
+    hostname = new URL(sourceUrl).hostname.toLowerCase();
+  } catch {
+    return config;
+  }
+
+  const preset = HTML_PRESETS.find(
+    (candidate) =>
+      candidate.config.detail &&
+      candidate.config.itemSelector.trim() === config.itemSelector.trim() &&
+      candidate.hosts.some((host) => hostname === host || hostname.endsWith(`.${host}`)),
+  );
+
+  return preset?.config.detail ? { ...config, detail: preset.config.detail } : config;
+}

@@ -50,10 +50,14 @@ const HTML_FIELDS: { key: keyof EventHtmlConfig["fields"]; hint: string }[] = [
   { key: "time", hint: "Heure ou plage : « 19h30 », « 13:30 - 18:30 »" },
   { key: "startDateTime", hint: "Début complet, si la page le donne" },
   { key: "endDateTime", hint: "Fin complète, si la page la donne" },
+  { key: "endTime", hint: "Heure de fin seule : « 00:00 », le lendemain si besoin" },
   { key: "price", hint: "Prix, en texte ou en nombre" },
   { key: "status", hint: "Stock, places restantes ou disponibilité" },
   { key: "venue", hint: "Ville ou lieu, pour le filtre ci-dessous" },
 ];
+
+/** Ce qu'une fiche d'événement peut préciser : tout sauf ce qui sert à la trouver. */
+const HTML_DETAIL_FIELDS = HTML_FIELDS.map(({ key }) => key).filter((key) => key !== "url" && key !== "venue");
 
 /**
  * Les champs de formulaire, ligne par ligne : « animation = Thionville.lieu ».
@@ -77,6 +81,22 @@ function formatKeyValues(values: Record<string, string> | undefined): string {
   return Object.entries(values ?? {})
     .map(([key, value]) => `${key} = ${value}`)
     .join("\n");
+}
+
+/** Les champs, une règle changée ; une règle vide retire le champ. */
+function withFieldRule(
+  fields: EventHtmlConfig["fields"],
+  field: keyof EventHtmlConfig["fields"],
+  next: { selector?: string; attribute?: string },
+): EventHtmlConfig["fields"] {
+  const rule = { ...fields[field], ...next };
+  const result = { ...fields };
+  if (!rule.selector?.trim() && !rule.attribute?.trim()) {
+    delete result[field];
+  } else {
+    result[field] = rule;
+  }
+  return result;
 }
 
 function emptyHtml(source: EventSource): EventHtmlConfig {
@@ -236,14 +256,20 @@ export function LairEventSourcesForm({
     next: { selector?: string; attribute?: string },
   ) => {
     const current = emptyHtml(source);
-    const rule = { ...current.fields[field], ...next };
-    const fields = { ...current.fields };
-    if (!rule.selector?.trim() && !rule.attribute?.trim()) {
-      delete fields[field];
-    } else {
-      fields[field] = rule;
-    }
-    patchHtml(key, source, { fields });
+    patchHtml(key, source, { fields: withFieldRule(current.fields, field, next) });
+  };
+
+  /** La fiche de chaque événement : un sélecteur et des champs, retirée quand tout est vide. */
+  const patchHtmlDetail = (
+    key: string,
+    source: EventSource,
+    next: { selector?: string; field?: keyof EventHtmlConfig["fields"]; rule?: { selector?: string; attribute?: string } },
+  ) => {
+    const current = emptyHtml(source).detail ?? { fields: {} };
+    const selector = next.selector !== undefined ? next.selector : current.selector;
+    const fields = next.field && next.rule ? withFieldRule(current.fields ?? {}, next.field, next.rule) : current.fields ?? {};
+    const empty = !selector?.trim() && Object.keys(fields).length === 0;
+    patchHtml(key, source, { detail: empty ? undefined : { ...(selector ? { selector } : {}), fields } });
   };
 
   const patchDraftText = (key: string, next: Partial<Pick<SourceDraft, "aliasesText" | "formFieldsText">>) => {
@@ -858,6 +884,60 @@ export function LairEventSourcesForm({
                                 value={source.htmlConfig?.fields?.[field]?.attribute ?? ""}
                                 onChange={(e) =>
                                   patchHtmlField(key, source, field, { attribute: e.target.value })
+                                }
+                                placeholder="attribut"
+                                className={`${FIELD_CLASS} font-mono`}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Fiche de chaque événement (optionnel)</p>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Quand la page de l&apos;événement (le lien du champ <span className="font-mono">url</span>)
+                        en dit plus que la liste, elle est lue aussi : ses champs l&apos;emportent un à un sur
+                        ceux de la liste. Le sélecteur désigne l&apos;élément de la fiche où les lire (vide :
+                        toute la page).
+                      </p>
+                      <input
+                        id={`html-detail-selector-${key}`}
+                        type="text"
+                        aria-label="Sélecteur dans la fiche de l'événement"
+                        value={source.htmlConfig?.detail?.selector ?? ""}
+                        onChange={(e) => patchHtmlDetail(key, source, { selector: e.target.value })}
+                        placeholder=".at-event"
+                        className={`${FIELD_CLASS} font-mono mb-3`}
+                      />
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        {HTML_DETAIL_FIELDS.map((field) => (
+                          <div key={field} className="rounded-md border border-border/60 p-2">
+                            <label
+                              htmlFor={`html-detail-${field}-selector-${key}`}
+                              className="block font-mono text-xs text-foreground mb-1"
+                            >
+                              {field}
+                            </label>
+                            <div className="grid grid-cols-[2fr_1fr] gap-2">
+                              <input
+                                id={`html-detail-${field}-selector-${key}`}
+                                type="text"
+                                value={source.htmlConfig?.detail?.fields?.[field]?.selector ?? ""}
+                                onChange={(e) =>
+                                  patchHtmlDetail(key, source, { field, rule: { selector: e.target.value } })
+                                }
+                                placeholder="sélecteur"
+                                className={`${FIELD_CLASS} font-mono`}
+                              />
+                              <input
+                                id={`html-detail-${field}-attribute-${key}`}
+                                type="text"
+                                aria-label={`Attribut pour ${field} dans la fiche`}
+                                value={source.htmlConfig?.detail?.fields?.[field]?.attribute ?? ""}
+                                onChange={(e) =>
+                                  patchHtmlDetail(key, source, { field, rule: { attribute: e.target.value } })
                                 }
                                 placeholder="attribut"
                                 className={`${FIELD_CLASS} font-mono`}

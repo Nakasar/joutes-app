@@ -26,8 +26,10 @@ import {
   extractHtmlEvents,
   formFieldsForVenue,
   hasVenuePlaceholder,
+  htmlDetailUrls,
   readVenueOptions,
 } from "@/lib/events/html-source";
+import { withPresetDetail } from "@/lib/events/html-presets";
 import {
   extractHobbynextEvents,
   HOBBYNEXT_GAMES_URL,
@@ -611,10 +613,10 @@ async function readHtmlSource(
   now: DateTime,
   { probeVenues }: { probeVenues: boolean },
 ): Promise<SourceReadResult> {
-  const config = source.htmlConfig;
-  if (!config) {
+  if (!source.htmlConfig) {
     return { source, ok: false, error: "Source HTML sans configuration", warnings: [], events: [] };
   }
+  const config = withPresetDetail(source.htmlConfig, source.url);
 
   const accept = "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8";
   // Une ville par orthographe normalisée : « Metz » et « metz » ne font
@@ -671,8 +673,23 @@ async function readHtmlSource(
   const events: SourceEvent[] = [];
   let itemCount = 0;
 
+  // Les fiches d'événement, quand la configuration en lit : une par
+  // événement, quelques-unes à la fois. En sondage, rien n'est gardé, rien
+  // n'est à compléter.
+  const details: Record<string, string> = {};
+  if (config.detail && !(perVenue && chosen.length === 0)) {
+    const urls = [...new Set(pages.flatMap((page) => htmlDetailUrls({ html: page.html, config, sourceUrl: source.url })))];
+    if (urls.length > MAX_DETAIL_PAGES) {
+      warnings.add(`${urls.length} fiches d'événement : seules les ${MAX_DETAIL_PAGES} premières sont lues`);
+    }
+    const failures = await readDetailPages(urls.slice(0, MAX_DETAIL_PAGES), accept, details);
+    if (failures > 0) {
+      warnings.add(`${failures} fiche${failures > 1 ? "s" : ""} d'événement illisible${failures > 1 ? "s" : ""}, lue${failures > 1 ? "s" : ""} depuis la liste`);
+    }
+  }
+
   for (const page of pages) {
-    const extraction = extractHtmlEvents({ html: page.html, config, source, games, now, venues: page.venues });
+    const extraction = extractHtmlEvents({ html: page.html, config, source, games, now, venues: page.venues, details });
     itemCount += extraction.itemCount;
     for (const warning of extraction.warnings) warnings.add(warning);
     for (const [venue, count] of Object.entries(extraction.venueCounts)) {
@@ -710,6 +727,97 @@ async function readHtmlSource(
   }
 
   return { source, ok: true, warnings: warnings.list(), events, venues };
+}
+
+/** Au-delà, les fiches ne sont pas lues : une boutique n'a pas deux cents événements à venir. */
+const MAX_DETAIL_PAGES = 120;
+
+/**
+ * Combien de fiches d'événement se téléchargent à la fois. Peu : une
+ * boutique répond « 429 Too Many Requests » dès quatre lectures simultanées
+ * (l'Antre Temps, novembre 2026).
+ */
+const DETAIL_CONCURRENCY = 2;
+
+/** Combien de fois une fiche refusée pour excès de demandes est redemandée. */
+const DETAIL_RETRIES = 3;
+
+/** L'attente avant de redemander, quand le site ne dit pas combien (`Retry-After`). */
+const DETAIL_RETRY_DELAY_MS = 1_500;
+
+/** Au-delà, on n'attend pas plus le site : il dit combien, on plafonne. */
+const DETAIL_RETRY_MAX_DELAY_MS = 5_000;
+
+/** Le temps laissé aux fiches d'une source : passé, le reste se lit depuis la liste. */
+const DETAIL_BUDGET_MS = 60_000;
+
+/** Une lecture refusée pour excès de demandes, et combien attendre. */
+class TooManyRequests extends Error {
+  readonly delayMs: number;
+
+  constructor(delayMs: number) {
+    super("HTTP 429");
+    this.delayMs = delayMs;
+  }
+}
+
+/** Une fiche : la page, redemandée après une pause si le site en refuse trop d'un coup. */
+async function readDetailPage(url: string, accept: string, deadline: number): Promise<string> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      const result = await safeFetch(new URL(url), {
+        method: "GET",
+        timeoutMs: FETCH_TIMEOUT_MS,
+        headers: { "User-Agent": USER_AGENT, Accept: accept },
+      });
+      if ("failure" in result) throw new Error(result.failure);
+
+      const response = result.response;
+      if (response.status === 429) {
+        const seconds = Number.parseInt(response.headers.get("retry-after") ?? "", 10);
+        throw new TooManyRequests(
+          Number.isFinite(seconds) ? Math.min(seconds * 1000, DETAIL_RETRY_MAX_DELAY_MS) : DETAIL_RETRY_DELAY_MS,
+        );
+      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      return await readResponseText(response);
+    } catch (error) {
+      if (!(error instanceof TooManyRequests) || attempt >= DETAIL_RETRIES || Date.now() + error.delayMs > deadline) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, error.delayMs));
+    }
+  }
+}
+
+/**
+ * Télécharge les fiches d'événement dans `into`, par adresse. Rend le nombre
+ * de fiches illisibles — ou laissées faute de temps : leur événement reste
+ * tel que la liste le décrit.
+ */
+async function readDetailPages(urls: string[], accept: string, into: Record<string, string>): Promise<number> {
+  const deadline = Date.now() + DETAIL_BUDGET_MS;
+  let next = 0;
+  let failures = 0;
+
+  const worker = async () => {
+    while (next < urls.length) {
+      const url = urls[next++];
+      if (Date.now() > deadline) {
+        failures += 1;
+        continue;
+      }
+      try {
+        into[url] = await readDetailPage(url, accept, deadline);
+      } catch {
+        failures += 1;
+      }
+    }
+  };
+
+  await Promise.all(Array.from({ length: Math.min(DETAIL_CONCURRENCY, urls.length) }, worker));
+  return failures;
 }
 
 // ---------------------------------------------------------------------------

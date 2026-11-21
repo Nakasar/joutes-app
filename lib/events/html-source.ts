@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { parse, type HTMLElement } from "node-html-parser";
-import type { EventHtmlConfig, EventSource, HtmlFieldRule } from "@/lib/types/Lair";
+import type { EventHtmlConfig, EventHtmlDetail, EventSource, HtmlFieldRule } from "@/lib/types/Lair";
 import type { Game } from "@/lib/types/Game";
 import {
   canonicalGameName,
@@ -42,6 +42,7 @@ export const HTML_FIELDS = [
   "time",
   "startDateTime",
   "endDateTime",
+  "endTime",
   "price",
   "status",
   "url",
@@ -103,12 +104,18 @@ const FRENCH_MONTHS = [
   "juillet", "aout", "septembre", "octobre", "novembre", "decembre",
 ];
 
+/** « 2026-11-12 », la date ISO qu'un attribut `data-*` porte souvent. */
+const ISO_DATE = /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/;
+
 /** « 03/09/2026 », « 25/09/26 », « 3.9.2026 ». */
 const NUMERIC_DATE = /\b(\d{1,2})[/.](\d{1,2})[/.](\d{2}|\d{4})\b/;
 
 /** « 15 mars 2026 », « 1er mars », « samedi 15 mars ». */
 const FRENCH_DATE =
   /\b(\d{1,2})(?:er)?\s+(janvier|f[ée]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[ée]cembre)(?:\s+(\d{4}))?\b/i;
+
+/** Un segment de titre qui n'est qu'un jour de la semaine : « Soirée jeux - jeudi - 05/11/2026 ». */
+const WEEKDAY = /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)$/i;
 
 /** « 19h30 », « 14h », « 10:30 », « 19 h 30 ». */
 const TIME = /\b(\d{1,2})\s*(?:h|H|:)\s*(\d{2})?\b/;
@@ -136,6 +143,10 @@ function stripAccents(text: string): string {
  * boutique met l'heure avant la date sur un événement et après sur le
  * suivant. Ce qui reste est coupé au séparateur : le premier segment est le
  * jeu, le reste le nom. Un titre sans séparateur est tout entier un nom.
+ *
+ * Un segment qui n'est qu'un jour de la semaine accompagne la date et part
+ * avec elle : « Soirée jeux - jeudi - 05/11/2026 - 19h30 » s'appelle
+ * « Soirée jeux », pas « jeudi ».
  */
 export function parseCompositeTitle(title: string, separator: string = DEFAULT_TITLE_SEPARATOR): CompositeTitle {
   const { date, rest: withoutDate } = takeDate(title.replace(/\s+/g, " ").trim());
@@ -146,7 +157,7 @@ export function parseCompositeTitle(title: string, separator: string = DEFAULT_T
   const segments = rest
     .split(separatorPattern(separator))
     .map((segment) => segment.replace(/\s+/g, " ").trim())
-    .filter((segment) => /[\p{L}\p{N}]/u.test(segment));
+    .filter((segment) => /[\p{L}\p{N}]/u.test(segment) && !WEEKDAY.test(segment));
 
   if (segments.length >= 2) {
     return { game: segments[0], name: segments.slice(1).join(separator), segments, date, time };
@@ -157,6 +168,14 @@ export function parseCompositeTitle(title: string, separator: string = DEFAULT_T
 
 /** Retire la première date d'un texte, et la rend. */
 function takeDate(text: string): { date?: DayOfYear; rest: string } {
+  const iso = ISO_DATE.exec(text);
+  if (iso) {
+    return {
+      date: { day: Number.parseInt(iso[3], 10), month: Number.parseInt(iso[2], 10), year: Number.parseInt(iso[1], 10) },
+      rest: text.replace(iso[0], " "),
+    };
+  }
+
   const numeric = NUMERIC_DATE.exec(text);
   if (numeric) {
     const year = Number.parseInt(numeric[3], 10);
@@ -196,7 +215,7 @@ function takeTime(text: string): { time?: TimeOfDay; rest: string } {
   };
 }
 
-/** « mercredi 02 septembre », « 03/09/2026 » : une date seule. */
+/** « mercredi 02 septembre », « 03/09/2026 », « 2026-11-12 » : une date seule. */
 export function parseDateText(text: string): DayOfYear | undefined {
   return takeDate(text.replace(/\s+/g, " ").trim()).date;
 }
@@ -250,6 +269,52 @@ export function readHtmlField(item: HTMLElement, rule: HtmlFieldRule | undefined
   return value || undefined;
 }
 
+/** Les champs d'un événement, sa propre page d'abord, la liste ensuite. */
+type FieldReader = (field: HtmlField) => string | undefined;
+
+function fieldReader(
+  item: HTMLElement,
+  fields: EventHtmlConfig["fields"],
+  detail: { element: HTMLElement; fields: EventHtmlConfig["fields"] } | null,
+): FieldReader {
+  return (field) => (detail ? readHtmlField(detail.element, detail.fields[field]) : undefined) ?? readHtmlField(item, fields[field]);
+}
+
+/**
+ * L'élément d'une page d'événement où lire ses champs : celui que désigne
+ * `detail.selector`, ou la page entière.
+ */
+function detailElement(html: string | undefined, detail: EventHtmlDetail): HTMLElement | null {
+  if (html === undefined) return null;
+  const root = parse(html);
+  const selector = detail.selector?.trim();
+  return selector ? root.querySelector(selector) : root;
+}
+
+/**
+ * Les adresses des pages d'événement à télécharger, dans l'ordre de la
+ * liste et sans doublon — ce que `extractHtmlEvents` attend ensuite dans
+ * `details`. Rien quand la configuration ne lit pas de page d'événement.
+ */
+export function htmlDetailUrls({
+  html,
+  config,
+  sourceUrl,
+}: {
+  html: string;
+  config: EventHtmlConfig;
+  sourceUrl: string;
+}): string[] {
+  if (!config.detail) return [];
+
+  const urls = new Set<string>();
+  for (const item of parse(html).querySelectorAll(config.itemSelector)) {
+    const url = resolveEventUrl(readHtmlField(item, config.fields?.url), sourceUrl);
+    if (url) urls.add(url);
+  }
+  return [...urls];
+}
+
 /**
  * Lit tous les événements d'une page.
  *
@@ -265,6 +330,7 @@ export function extractHtmlEvents({
   games,
   now,
   venues = config.venues ?? [],
+  details = {},
 }: {
   html: string;
   config: EventHtmlConfig;
@@ -273,6 +339,12 @@ export function extractHtmlEvents({
   now: DateTime;
   /** Les villes à garder pour cette page — celles de la configuration par défaut. */
   venues?: string[];
+  /**
+   * Les pages d'événement téléchargées, par adresse (`htmlDetailUrls`). Une
+   * adresse absente — page illisible, ou pas encore lue — laisse l'événement
+   * à ce que la liste en dit.
+   */
+  details?: Record<string, string>;
 }): HtmlExtraction {
   const root = parse(html);
   const items = root.querySelectorAll(config.itemSelector);
@@ -290,7 +362,16 @@ export function extractHtmlEvents({
   let skippedVenues = 0;
 
   for (const item of items) {
-    const venue = readHtmlField(item, fields.venue);
+    const url = resolveEventUrl(readHtmlField(item, fields.url), source.url);
+    let detail: { element: HTMLElement; fields: EventHtmlConfig["fields"] } | null = null;
+    if (config.detail && url && details[url] !== undefined) {
+      const element = detailElement(details[url], config.detail);
+      if (element) detail = { element, fields: config.detail.fields ?? {} };
+      else warn(`« ${config.detail.selector} » absent de la page de l'événement, lu depuis la liste`);
+    }
+    const read = fieldReader(item, fields, detail);
+
+    const venue = read("venue");
     if (venue) {
       venueCounts[venue] = (venueCounts[venue] ?? 0) + 1;
     }
@@ -300,17 +381,17 @@ export function extractHtmlEvents({
       continue;
     }
 
-    const rawTitle = readHtmlField(item, fields.title);
+    const rawTitle = read("title");
     const title = rawTitle ? parseCompositeTitle(rawTitle, separator) : null;
-    const explicitGame = readHtmlField(item, fields.gameName);
+    const explicitGame = read("gameName");
 
-    const name = readHtmlField(item, fields.name) ?? (title ? titleName(title, explicitGame, games, source.gameAliases, separator) : undefined);
+    const name = read("name") ?? (title ? titleName(title, explicitGame, games, source.gameAliases, separator) : undefined);
     if (!name) {
       warn("événement sans nom, ignoré");
       continue;
     }
 
-    const dates = resolveStartAndEnd({ item, fields, title, now });
+    const dates = resolveStartAndEnd({ read, title, now });
     if (!dates) {
       warn(`date de début illisible pour « ${name} », événement ignoré`);
       continue;
@@ -325,22 +406,22 @@ export function extractHtmlEvents({
     });
     if (warning) warn(warning);
 
-    const rawStatus = readHtmlField(item, fields.status);
+    const rawStatus = read("status");
     let status = rawStatus ? normalizeEventStatus(rawStatus) ?? inferStatusFromText(rawStatus) : null;
     if (!status) {
       if (rawStatus) warn(`statut « ${rawStatus} » inconnu, lu comme « available »`);
       status = "available";
     }
 
-    const externalId = readHtmlField(item, fields.id);
+    const externalId = read("id");
 
     events.push({
       name,
       ...dates,
       gameName,
-      price: normalizeEventPrice(readHtmlField(item, fields.price)),
+      price: normalizeEventPrice(read("price")),
       status,
-      url: resolveEventUrl(readHtmlField(item, fields.url), source.url),
+      url,
       addedBy: "HTML-SCRAPPING",
       sourceUrl: source.url,
       ...(externalId ? { externalId } : {}),
@@ -398,28 +479,30 @@ function titleName(
  * 3. la date et l'heure du titre composé.
  *
  * Une date sans année prend celle qu'un agenda suggère ; sans heure, elle
- * commence à minuit.
+ * commence à minuit. La fin vient d'une fin complète, de la plage horaire,
+ * ou d'une heure de fin seule (`endTime`) — le lendemain quand elle ne suit
+ * pas le début : une soirée de 19h30 à « 00:00 » finit à minuit, une nuit du
+ * jeu à « 07:00 » au matin.
  */
 function resolveStartAndEnd({
-  item,
-  fields,
+  read,
   title,
   now,
 }: {
-  item: HTMLElement;
-  fields: NonNullable<EventHtmlConfig["fields"]>;
+  read: FieldReader;
   title: CompositeTitle | null;
   now: DateTime;
 }): { startDateTime: string; endDateTime: string } | null {
-  const explicitStart = readHtmlField(item, fields.startDateTime);
-  const explicitEnd = readHtmlField(item, fields.endDateTime);
+  const explicitStart = read("startDateTime");
+  const explicitEnd = read("endDateTime");
 
   if (explicitStart) {
     return resolveEventDates({ start: explicitStart, end: explicitEnd, now, trustYear: true });
   }
 
-  const dateText = readHtmlField(item, fields.date);
-  const timeText = readHtmlField(item, fields.time);
+  const dateText = read("date");
+  const timeText = read("time");
+  const endTimeText = read("endTime");
   const range = timeText ? parseTimeRange(timeText) : undefined;
 
   const date = (dateText ? parseDateText(dateText) : undefined) ?? title?.date;
@@ -429,9 +512,17 @@ function resolveStartAndEnd({
   const start = dayAt(date, time, now);
   if (!start) return null;
 
-  const end = explicitEnd ?? (range?.end ? dayAt(date, range.end, now)?.toISO() : undefined);
+  const endTime = range?.end ?? (endTimeText ? parseTimeRange(endTimeText)?.start : undefined);
+  const end = explicitEnd ?? (endTime ? endAfter(start, endTime)?.toISO() ?? undefined : undefined);
 
   return resolveEventDates({ start: start.toISO(), end, now, trustYear: true });
+}
+
+/** L'heure de fin qui suit un début : le même jour, ou le lendemain. */
+function endAfter(start: DateTime, time: TimeOfDay): DateTime | null {
+  const sameDay = start.set({ hour: time.hour, minute: time.minute, second: 0, millisecond: 0 });
+  if (!sameDay.isValid) return null;
+  return sameDay > start ? sameDay : sameDay.plus({ days: 1 });
 }
 
 /** Une date et une heure, dans l'année qu'un agenda suggère si elle manque. */
