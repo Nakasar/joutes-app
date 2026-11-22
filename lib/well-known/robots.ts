@@ -25,10 +25,14 @@ export const CONTENT_SIGNAL = "search=yes, ai-input=yes, ai-train=yes";
 export const META_DISALLOWS = ["/games/*/meta", "/*/games/*/meta", "/api/games/*/meta"];
 
 /**
- * Robots sans intérêt pour Joutes, qui parcourent tout le site : SE Ranking
- * (outil d'analyse de liens) a pesé ~1,5 Go les mêmes jours.
+ * Robots refusés sur tout le site, aussi refusés par le proxy
+ * (`lib/net/blocked-bots.ts`) : SE Ranking (outil d'analyse de liens) a pesé
+ * ~1,5 Go les mêmes jours, Meta-ExternalAgent (entraînement d'IA de Meta)
+ * ~2,6 Go en 18 heures les 21-22 nov. 2026.
  */
-export const BLOCKED_AGENTS = ["SERankingBacklinksBot"];
+import { BLOCKED_BOT_AGENTS } from "@/lib/net/blocked-bots";
+
+export const BLOCKED_AGENTS = BLOCKED_BOT_AGENTS;
 
 const SITEMAPS = [
   "https://www.joutes.app/sitemap.xml",
