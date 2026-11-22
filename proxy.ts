@@ -5,6 +5,7 @@ import createIntlProxy from 'next-intl/middleware'
 import { routing } from '@/i18n/routing'
 import { isCredentialedOrigin } from '@/lib/net/own-origins'
 import { isBlockedMetaBot } from '@/lib/net/meta-bots'
+import { isBlockedBot } from '@/lib/net/blocked-bots'
 
 const intlProxy = createIntlProxy(routing);
 
@@ -17,6 +18,14 @@ const intlProxy = createIntlProxy(routing);
  * d'avoir deux proxys, que Next ne permet de toute façon pas.
  */
 export function proxy(request: NextRequest) {
+  // Robots refusés partout (`lib/net/blocked-bots.ts`), l'API comprise.
+  if (isBlockedBot(request.headers.get("user-agent"))) {
+    return new NextResponse("Robot non admis.", {
+      status: 403,
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Robots-Tag": "noindex, nofollow" },
+    });
+  }
+
   if (request.nextUrl.pathname.startsWith("/api/")) {
     const origin = request.headers.get("origin");
     const res = NextResponse.next();
