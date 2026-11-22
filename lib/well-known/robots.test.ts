@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { BLOCKED_AGENTS, buildRobotsTxt, CONTENT_SIGNAL, META_DISALLOWS } from "./robots";
+import { AI_AGENTS, AI_ALLOWS, BLOCKED_AGENTS, buildRobotsTxt, CONTENT_SIGNAL, META_DISALLOWS } from "./robots";
 
 /**
  * `robots.txt` et ses Content Signals.
@@ -77,6 +77,25 @@ describe("buildRobotsTxt", () => {
       const opener = lines.indexOf(`User-Agent: ${agent}`);
       assert.notEqual(opener, -1, `${agent} absent`);
       assert.equal(lines[opener + 1], "Disallow: /");
+    }
+  });
+
+  it("ferme le site aux robots d'IA, sauf le serveur MCP", () => {
+    const lines = directives(buildRobotsTxt());
+    const first = lines.indexOf(`User-Agent: ${AI_AGENTS[0]}`);
+    assert.notEqual(first, -1, "groupe des robots d'IA absent");
+    // Un seul groupe : toutes les lignes User-Agent à la suite, puis ses règles.
+    assert.deepEqual(
+      lines.slice(first, first + AI_AGENTS.length),
+      AI_AGENTS.map((agent) => `User-Agent: ${agent}`)
+    );
+    const end = lines.findIndex((line, index) => index >= first + AI_AGENTS.length && line.startsWith("User-Agent:"));
+    const rules = lines.slice(first + AI_AGENTS.length, end === -1 ? undefined : end);
+    for (const path of AI_ALLOWS) assert.ok(rules.includes(`Allow: ${path}`), `${path} fermé aux robots d'IA`);
+    assert.ok(rules.includes("Disallow: /"));
+    assert.ok(rules.includes(`Content-Signal: ${CONTENT_SIGNAL}`));
+    for (const token of ["Googlebot", "bingbot", "Applebot", "facebookexternalhit"]) {
+      assert.ok(!AI_AGENTS.includes(token), `${token} fermé`);
     }
   });
 });
