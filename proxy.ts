@@ -18,8 +18,9 @@ const intlProxy = createIntlProxy(routing);
  * d'avoir deux proxys, que Next ne permet de toute façon pas.
  */
 export function proxy(request: NextRequest) {
-  // Robots refusés partout (`lib/net/blocked-bots.ts`), l'API comprise.
-  if (isBlockedBot(request.headers.get("user-agent"))) {
+  // Robots d'IA et robots indésirables (`lib/net/blocked-bots.ts`), API
+  // comprise : refus avant tout rendu, sauf le serveur MCP et son OAuth.
+  if (isBlockedBot(request.nextUrl.pathname, request.headers.get("user-agent"))) {
     return new NextResponse("Robot non admis.", {
       status: 403,
       headers: { "Content-Type": "text/plain; charset=utf-8", "X-Robots-Tag": "noindex, nofollow" },

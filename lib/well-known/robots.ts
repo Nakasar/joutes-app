@@ -3,15 +3,18 @@
  *
  * Les Content Signals (https://contentsignals.org/) disent ce qu'on accepte
  * qu'il soit fait du contenu de Joutes, là où `Allow` / `Disallow` ne disaient
- * que qui pouvait le lire. Joutes ouvre les trois : le site expose déjà une API
- * publique et un serveur MCP, autant que la déclaration le dise.
+ * que qui pouvait le lire. Joutes ouvre la recherche et ferme l'IA
+ * (entraînement comme réponses, Kevin, 2026-11-22) ; les robots d'IA gardent le
+ * serveur MCP, qui est fait pour eux.
  *
  * La directive est une ligne de groupe, comme `Allow` : hors d'un bloc
  * `User-Agent`, elle serait ignorée sans le moindre avertissement.
  */
 
+import { AI_BOT_AGENTS, AI_ROBOTS_TXT_TOKENS, BLOCKED_BOT_AGENTS } from "@/lib/net/blocked-bots";
+
 /** Préférences déclarées, dans l'ordre où la spécification les présente. */
-export const CONTENT_SIGNAL = "search=yes, ai-input=yes, ai-train=yes";
+export const CONTENT_SIGNAL = "search=yes, ai-input=no, ai-train=no";
 
 /**
  * La méta (`/games/:jeu/meta` et ses sous-pages) est fermée aux robots : ses
@@ -27,12 +30,18 @@ export const META_DISALLOWS = ["/games/*/meta", "/*/games/*/meta", "/api/games/*
 /**
  * Robots refusés sur tout le site, aussi refusés par le proxy
  * (`lib/net/blocked-bots.ts`) : SE Ranking (outil d'analyse de liens) a pesé
- * ~1,5 Go les mêmes jours, Meta-ExternalAgent (entraînement d'IA de Meta)
- * ~2,6 Go en 18 heures les 21-22 nov. 2026.
+ * ~1,5 Go les mêmes jours.
  */
-import { BLOCKED_BOT_AGENTS } from "@/lib/net/blocked-bots";
-
 export const BLOCKED_AGENTS = BLOCKED_BOT_AGENTS;
+
+/**
+ * Robots d'IA (entraînement et réponses), fermés au site sauf le serveur MCP,
+ * à la demande de Kevin (2026-11-22). Le proxy les refuse aussi.
+ */
+export const AI_AGENTS = [...AI_BOT_AGENTS, ...AI_ROBOTS_TXT_TOKENS];
+
+/** Ce que les robots d'IA gardent : le serveur MCP et sa découverte OAuth. */
+export const AI_ALLOWS = ["/mcp", "/.well-known/"];
 
 const SITEMAPS = [
   "https://www.joutes.app/sitemap.xml",
@@ -46,13 +55,19 @@ export function buildRobotsTxt(): string {
 #   ai-input : donner le contenu à un modèle au moment de répondre
 #              (RAG, ancrage, réponses de recherche générative).
 #   ai-train : entraîner ou affiner un modèle.
-# Joutes autorise les trois.
+# Joutes autorise la recherche, pas l'IA : les robots d'IA n'ont que le
+# serveur MCP (/mcp).
 
 User-Agent: *
 Content-Signal: ${CONTENT_SIGNAL}
 Allow: /
 Disallow: /admin/
 ${META_DISALLOWS.map((path) => `Disallow: ${path}`).join("\n")}
+
+${AI_AGENTS.map((agent) => `User-Agent: ${agent}`).join("\n")}
+Content-Signal: ${CONTENT_SIGNAL}
+${AI_ALLOWS.map((path) => `Allow: ${path}`).join("\n")}
+Disallow: /
 
 ${BLOCKED_AGENTS.map((agent) => `User-Agent: ${agent}\nDisallow: /`).join("\n\n")}
 
