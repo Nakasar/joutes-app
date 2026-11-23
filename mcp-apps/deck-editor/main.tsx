@@ -11,10 +11,12 @@ import {
   changeCardQuantity,
   deckLegality,
   deckSize,
+  isDeckCompliant,
   zoneEntries,
   type DeckCardInfo,
   type DeckCards,
 } from "@/lib/decks/contents.ts";
+import {zonesForDeck} from "@/lib/decks/extra-legends.ts";
 import {routeCardToZone} from "@/lib/decks/routing.ts";
 import {zoneCounterLabel, type DeckZoneKey} from "@/lib/decks/zones.ts";
 import {describeDeck} from "@/lib/mcp/decks.ts";
@@ -60,6 +62,23 @@ function localeOf(hostLocale?: string): Locale {
 
 /** Délai entre le dernier clic et l'enregistrement : dix « + » font un seul aller-retour. */
 const SAVE_DELAY_MS = 700;
+/** Essais après une panne réseau, à délai doublé ; une erreur rendue par le serveur n'est pas relancée. */
+const MAX_RETRIES = 4;
+
+/** Ce qui a changé de `from` à `to`, carte par carte et zone par zone. */
+function cardsDelta(from: DeckCards, to: DeckCards): { zone: DeckZoneKey; cardId: string; delta: number }[] {
+  const keys = new Set([...Object.keys(from), ...Object.keys(to)] as DeckZoneKey[]);
+  const changes: { zone: DeckZoneKey; cardId: string; delta: number }[] = [];
+  for (const zone of keys) {
+    const before = new Map(zoneEntries(from, zone).map((entry) => [entry.cardId, entry.quantity]));
+    const after = new Map(zoneEntries(to, zone).map((entry) => [entry.cardId, entry.quantity]));
+    for (const cardId of new Set([...before.keys(), ...after.keys()])) {
+      const delta = (after.get(cardId) ?? 0) - (before.get(cardId) ?? 0);
+      if (delta !== 0) changes.push({zone, cardId, delta});
+    }
+  }
+  return changes;
+}
 
 type SaveStatus = "saved" | "pending" | "saving" | "conflict" | "error";
 type Banner = { applied: string[]; skipped: string[]; previousCards: DeckCards };
@@ -331,7 +350,7 @@ function Editor({app, initial, displayMode, canExpand, canAsk, handle, onBack}: 
   canExpand: boolean;
   canAsk: boolean;
   handle: React.RefObject<EditorHandle | null>;
-  onBack?: () => void;
+  onBack?: (deck: DeckEditorDeck) => void;
 }) {
   const t = useTranslations("McpDeckEditor");
   const [deck, setDeck] = useState(initial);
@@ -350,6 +369,12 @@ function Editor({app, initial, displayMode, canExpand, canAsk, handle, onBack}: 
   cardsRef.current = cards;
 
   const expanded = displayMode === "fullscreen";
+  // Les zones suivent le contenu, comme sur le site : avec Neeko, quatre légendes.
+  const zones = useMemo(() => zonesForDeck(deck.zones, cards), [deck.zones, cards]);
+  const shown = useMemo(() => ({...deck, zones}), [deck, zones]);
+  const failures = useRef(0);
+  /** Le contenu au moment où l'assistant a pris la main, pour reporter les clics faits pendant son appel. */
+  const baseline = useRef<DeckCards | null>(null);
 
   /** Dit au modèle ce que montre l'éditeur, pour la question suivante de l'utilisateur. */
   const shareContext = useCallback((saved: DeckEditorDeck) => {
@@ -360,19 +385,22 @@ function Editor({app, initial, displayMode, canExpand, canAsk, handle, onBack}: 
   }, [app]);
 
   const saveRef = useRef<(force?: boolean) => Promise<void>>(async () => undefined);
-  const schedule = useCallback(() => {
+  const schedule = useCallback((delay = SAVE_DELAY_MS) => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       timer.current = null;
       void saveRef.current();
-    }, SAVE_DELAY_MS);
+    }, delay);
   }, []);
 
   const save = useCallback(async (force = false): Promise<void> => {
-    if (saving.current) {
+    // Attendre tous les envois en cours, pas seulement le premier : un autre
+    // appelant a pu en lancer un pendant qu'on attendait.
+    while (saving.current) {
       await saving.current;
     }
     if (!dirty.current && !force) return;
+    const outcome: { value: "done" | "refused" | "retry" } = {value: "done"};
     dirty.current = false;
     const sent = cardsRef.current;
     setStatus("saving");
@@ -385,11 +413,15 @@ function Editor({app, initial, displayMode, canExpand, canAsk, handle, onBack}: 
         });
         const content = result.structuredContent as DeckEditorSaveResult | undefined;
         if (result.isError || !content) {
+          // Refus du serveur (deck supprimé, carte inconnue) : relancer n'y
+          // changerait rien, le prochain clic réessaiera.
           dirty.current = true;
+          outcome.value = "refused";
           setStatus("error");
           return;
         }
         if (!content.ok) {
+          outcome.value = "refused";
           setConflict(content.deck);
           setStatus("conflict");
           return;
@@ -398,16 +430,23 @@ function Editor({app, initial, displayMode, canExpand, canAsk, handle, onBack}: 
         setDeck(content.deck);
         setCatalog((previous) => new Map([...previous, ...content.deck.catalog.map((card) => [card.id, card] as const)]));
         shareContext(content.deck);
+        failures.current = 0;
         setStatus(dirty.current ? "pending" : "saved");
       } catch {
         dirty.current = true;
+        outcome.value = "retry";
         setStatus("error");
       }
     })();
     saving.current = run;
     await run;
     saving.current = null;
-    if (dirty.current) schedule();
+    if (outcome.value === "retry") {
+      failures.current += 1;
+      if (failures.current <= MAX_RETRIES) schedule(SAVE_DELAY_MS * 2 ** failures.current);
+    } else if (outcome.value === "done" && dirty.current) {
+      schedule();
+    }
   }, [app, initial.id, schedule, shareContext]);
 
   useEffect(() => {
@@ -419,6 +458,7 @@ function Editor({app, initial, displayMode, canExpand, canAsk, handle, onBack}: 
     setCards(next);
     cardsRef.current = next;
     dirty.current = true;
+    failures.current = 0;
     setStatus("pending");
     setBanner(null);
     schedule();
@@ -430,7 +470,7 @@ function Editor({app, initial, displayMode, canExpand, canAsk, handle, onBack}: 
 
   const addCard = (card: DeckCardInfo, zone: DeckZoneKey | "auto") => {
     setCatalog((previous) => new Map(previous).set(card.id, card));
-    const target = zone === "auto" ? routeCardToZone(card, deck.zones, cardsRef.current) : zone;
+    const target = zone === "auto" ? routeCardToZone(card, zonesForDeck(deck.zones, cardsRef.current), cardsRef.current) : zone;
     edit(changeCardQuantity(cardsRef.current, target, card.id, 1));
     setHighlight(new Set([card.id]));
   };
@@ -470,9 +510,22 @@ function Editor({app, initial, displayMode, canExpand, canAsk, handle, onBack}: 
           timer.current = null;
         }
         await save();
+        baseline.current = cardsRef.current;
       },
       applyChanges: (result) => {
+        // Les clics faits pendant l'appel de l'assistant se reportent sur le
+        // deck qu'il rend, au lieu d'être écrasés.
+        const local = baseline.current ? cardsDelta(baseline.current, cardsRef.current) : [];
+        baseline.current = null;
         adopt(result.deck);
+        if (local.length > 0) {
+          const rebased = local.reduce((acc, change) => changeCardQuantity(acc, change.zone, change.cardId, change.delta), result.deck.cards);
+          setCards(rebased);
+          cardsRef.current = rebased;
+          dirty.current = true;
+          setStatus("pending");
+          schedule();
+        }
         if (result.applied.length > 0 || result.skipped.length > 0) {
           setBanner({applied: result.applied, skipped: result.skipped, previousCards: result.previousCards});
         }
@@ -494,8 +547,18 @@ function Editor({app, initial, displayMode, canExpand, canAsk, handle, onBack}: 
     };
   }, [app, save]);
 
-  const size = deckSize(cards, deck.zones);
-  const legality = deckLegality(cards, deck.zones);
+  /** Retour à la liste, après avoir enregistré : la liste montre le deck à jour. */
+  const goBack = async () => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    await save();
+    onBack?.({...deck, version: version.current, cards: cardsRef.current});
+  };
+
+  const size = deckSize(cards, zones);
+  const legality = deckLegality(cards, zones);
 
   const statusLabel = {
     saved: t("saved"),
@@ -521,7 +584,7 @@ function Editor({app, initial, displayMode, canExpand, canAsk, handle, onBack}: 
       <header className="space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
           {onBack && (
-            <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">← {t("myDecks")}</button>
+            <button type="button" onClick={goBack} className="text-sm text-muted-foreground hover:text-foreground">← {t("myDecks")}</button>
           )}
           <h1 className="text-xl font-semibold mr-1">{deck.name}</h1>
           {deck.gameName && <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{deck.gameName}</span>}
@@ -580,16 +643,16 @@ function Editor({app, initial, displayMode, canExpand, canAsk, handle, onBack}: 
       {expanded ? (
         <div className="flex flex-col md:flex-row gap-4">
           <aside className="md:w-72 md:shrink-0">
-            <Catalog app={app} deck={deck} onAdd={addCard}/>
+            <Catalog app={app} deck={shown} onAdd={addCard}/>
           </aside>
           <div className="flex-1 min-w-0">
-            <Zones deck={deck} cards={cards} catalog={catalog} onChange={changeQuantity} highlight={highlight}/>
+            <Zones deck={shown} cards={cards} catalog={catalog} onChange={changeQuantity} highlight={highlight}/>
           </div>
         </div>
       ) : (
         <>
-          <Zones deck={deck} cards={cards} catalog={catalog} onChange={changeQuantity} highlight={highlight} compact/>
-          <Catalog app={app} deck={deck} onAdd={addCard} compact/>
+          <Zones deck={shown} cards={cards} catalog={catalog} onChange={changeQuantity} highlight={highlight} compact/>
+          <Catalog app={app} deck={shown} onAdd={addCard} compact/>
           <p className="text-xs text-muted-foreground">{t("autosaveHint")}</p>
         </>
       )}
@@ -694,6 +757,20 @@ function DeckEditorApp() {
     }
   };
 
+  /** La liste reçue à l'ouverture, avec la taille et la légalité du deck qu'on quitte. */
+  const backToList = (left: DeckEditorDeck) => {
+    if (!list) return;
+    const zones = zonesForDeck(left.zones, left.cards);
+    const refreshed = {
+      ...list,
+      decks: list.decks.map((summary) => summary.id === left.id
+        ? {...summary, size: deckSize(left.cards, zones), compliant: isDeckCompliant(left.cards, zones), updatedAt: new Date().toISOString()}
+        : summary),
+    };
+    setList(refreshed);
+    setState({status: "ready", result: refreshed});
+  };
+
   // La liste n'a pas de deck ouvert : les outils de l'assistant le disent.
   useEffect(() => {
     if (state.status === "ready" && state.result.mode === "list") editor.current = null;
@@ -708,7 +785,7 @@ function DeckEditorApp() {
     <IntlProvider locale={locale} messages={messages} timeZone="Europe/Paris">
       <main className="p-4">
         <Body state={state} app={app} list={list} opening={opening} onOpen={openDeck}
-              onBack={list ? () => setState({status: "ready", result: list}) : undefined}
+              onBack={list ? backToList : undefined}
               displayMode={displayMode} canExpand={canExpand} canAsk={canAsk} editor={editor}/>
       </main>
     </IntlProvider>
@@ -721,7 +798,7 @@ function Body({state, app, list, opening, onOpen, onBack, displayMode, canExpand
   list: Extract<DeckEditorResult, { mode: "list" }> | null;
   opening: string | null;
   onOpen: (deckId: string) => void;
-  onBack?: () => void;
+  onBack?: (deck: DeckEditorDeck) => void;
   displayMode: McpUiDisplayMode;
   canExpand: boolean;
   canAsk: boolean;

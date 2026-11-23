@@ -39,8 +39,12 @@ describe("applyDeckChanges", () => {
         ], byName);
 
         assert.deepEqual(result.cards.legend, [{ cardId: "OGN-269", quantity: 1 }]);
-        // Le premier champion prend la place du champion choisi, entier.
-        assert.deepEqual(result.cards.champions, [{ cardId: "OGN-202", quantity: 3 }]);
+        // Exemplaire par exemplaire : le premier prend la place du champion
+        // choisi, les deux autres vont au deck principal.
+        assert.deepEqual(result.cards.champions, [{ cardId: "OGN-202", quantity: 1 }]);
+        assert.deepEqual(result.cards.maindeck, [{ cardId: "OGN-202", quantity: 2 }]);
+        assert.ok(result.applied.includes("+1 Jinx, Rebel (Champion choisi)"));
+        assert.ok(result.applied.includes("+2 Jinx, Rebel (Deck principal)"));
         assert.deepEqual(result.cards.runes, [{ cardId: "OGN-007", quantity: 6 }]);
         assert.deepEqual(result.cards.battlefields, [{ cardId: "OGN-291", quantity: 1 }]);
         assert.deepEqual(result.skipped, []);
@@ -71,6 +75,16 @@ describe("applyDeckChanges", () => {
         assert.match(result.skipped[0], /Hextech Gauntlet : carte introuvable/);
         assert.match(result.skipped[1], /zone « cimetière » inconnue/);
         assert.match(result.skipped[2], /Flame Chompers : pas dans le deck/);
+    });
+});
+
+describe("Neeko", () => {
+    it("compte quatre légendes comme conformes quand Neeko est dans le deck", () => {
+        const cards = {
+            legend: [{ cardId: "OGN-269", quantity: 1 }, { cardId: "L2", quantity: 1 }, { cardId: "L3", quantity: 1 }, { cardId: "L4", quantity: 1 }],
+            maindeck: [{ cardId: "RAD-167", quantity: 1 }],
+        };
+        assert.ok(describeLegality(cards, zones).some((line) => line.startsWith("Légende 4 / 4") && line.endsWith("conforme")));
     });
 });
 

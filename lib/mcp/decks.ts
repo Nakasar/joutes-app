@@ -18,6 +18,7 @@ import {
     type DeckCardInfo,
     type DeckCards,
 } from "@/lib/decks/contents";
+import { zonesForDeck } from "@/lib/decks/extra-legends";
 import { routeCardToZone, zoneHoldingCard } from "@/lib/decks/routing";
 import { normalizeCardName } from "@/lib/decks/text";
 import { zoneCounterLabel, type DeckZone, type DeckZoneKey } from "@/lib/decks/zones";
@@ -84,8 +85,8 @@ export function deckEditorSummary(
         gameSlug: game?.slug,
         legendName: deck.legendName,
         coverImage: deck.coverImage,
-        size: deckSize(deck.cards, zones),
-        compliant: isDeckCompliant(deck.cards, zones),
+        size: deckSize(deck.cards, zonesForDeck(zones, deck.cards)),
+        compliant: isDeckCompliant(deck.cards, zonesForDeck(zones, deck.cards)),
         updatedAt: isoDate(deck.updatedAt),
     };
 }
@@ -152,22 +153,33 @@ export function applyDeckChanges(
             zoneKey = zone.key;
         }
 
-        if (change.quantity > 0) {
-            const target = zoneKey ?? routeCardToZone(card, zones, next);
-            next = changeCardQuantity(next, target, card.id, change.quantity);
-            applied.push(`+${change.quantity} ${card.name} (${zoneLabel(zones, target)})`);
-            continue;
+        // Exemplaire par exemplaire, comme l'éditeur du site et l'import texte :
+        // le premier Jinx prend la place du champion choisi, les suivants vont
+        // au deck principal. Les zones suivent le contenu (Neeko).
+        const moved = new Map<DeckZoneKey, number>();
+        const count = Math.abs(change.quantity);
+        for (let copy = 0; copy < count; copy++) {
+            const current = zonesForDeck(zones, next);
+            let target: DeckZoneKey | undefined;
+            if (change.quantity > 0) {
+                target = zoneKey ?? routeCardToZone(card, current, next);
+            } else {
+                const from = zoneKey ?? zoneHoldingCard(card, current, next);
+                const held = from ? zoneEntries(next, from).find((entry) => entry.cardId === card.id)?.quantity ?? 0 : 0;
+                target = held > 0 ? from : undefined;
+            }
+            if (!target) break;
+            next = changeCardQuantity(next, target, card.id, change.quantity > 0 ? 1 : -1);
+            moved.set(target, (moved.get(target) ?? 0) + 1);
         }
 
-        const from = zoneKey ?? zoneHoldingCard(card, zones, next);
-        const held = from ? zoneEntries(next, from).find((entry) => entry.cardId === card.id)?.quantity ?? 0 : 0;
-        if (!from || held === 0) {
-            skipped.push(`${card.name} : pas dans ${from ? `la zone ${zoneLabel(zones, from)}` : "le deck"}.`);
+        if (moved.size === 0) {
+            skipped.push(`${card.name} : pas dans ${zoneKey ? `la zone ${zoneLabel(zones, zoneKey)}` : "le deck"}.`);
             continue;
         }
-        const removed = Math.min(held, -change.quantity);
-        next = changeCardQuantity(next, from, card.id, -removed);
-        applied.push(`−${removed} ${card.name} (${zoneLabel(zones, from)})`);
+        for (const [key, quantity] of moved) {
+            applied.push(`${change.quantity > 0 ? "+" : "−"}${quantity} ${card.name} (${zoneLabel(zones, key)})`);
+        }
     }
 
     return { cards: next, applied, skipped };
@@ -178,7 +190,9 @@ function zoneLabel(zones: DeckZone[], key: DeckZoneKey): string {
 }
 
 /** L'état de chaque zone, en une ligne : « Runes 6 / 12 (à ajuster) ». */
-export function describeLegality(cards: DeckCards | undefined, zones: DeckZone[], copyLimit?: number): string[] {
+export function describeLegality(cards: DeckCards | undefined, gameZones: DeckZone[], copyLimit?: number): string[] {
+    // Les bornes suivent le contenu, comme sur le site : avec Neeko, quatre légendes.
+    const zones = zonesForDeck(gameZones, cards);
     const lines = deckLegality(cards, zones).map((row) =>
         `${row.zone.label} ${zoneCounterLabel(row.zone, row.count, row.contributed)} — ${row.zone.rule} : ${row.compliant ? "conforme" : "à ajuster"}`
     );

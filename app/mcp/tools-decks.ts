@@ -335,7 +335,10 @@ async function handleSave(
     const zones = getDeckZones(game);
     const catalog = await getDeckCardInfos(found.deck.gameId, deckCardIds(args.cards));
     const known = new Set(catalog.map((card) => card.id));
-    const unknown = deckCardIds(args.cards).filter((id) => !known.has(id));
+    // Seuls les identifiants nouveaux doivent exister : un deck qui porte déjà
+    // une carte sortie du catalogue reste enregistrable, comme sur le site.
+    const already = new Set(deckCardIds(found.deck.cards));
+    const unknown = deckCardIds(args.cards).filter((id) => !known.has(id) && !already.has(id));
     if (unknown.length > 0) {
         return errorResult(`Carte(s) inconnue(s) dans ce jeu : ${unknown.join(", ")}.`);
     }
