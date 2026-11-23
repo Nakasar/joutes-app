@@ -142,6 +142,16 @@ export const TOOL_POLICIES = {
     // Lit des liens Piltover Archive ou des decks du locator : hors de Joutes.
     import_meta_decks: { access: "account", effect: "create", openWorld: true },
 
+    // Decks de l'utilisateur, et l'éditeur de deck intégré au client
+    list_my_decks: { access: "account", effect: "read" },
+    get_deck: { access: "account", effect: "read" },
+    create_deck: { access: "account", effect: "create" },
+    update_deck_cards: { access: "account", effect: "update", idempotent: false },
+    open_deck_editor: { access: "account", effect: "read" },
+    // Réservés à la vue de l'éditeur (`visibility: ["app"]`) : le modèle ne les voit pas.
+    deck_editor_search_cards: { access: "account", effect: "read" },
+    deck_editor_save: { access: "account", effect: "update" },
+
     // Actualités
     list_news: { access: "public", effect: "read" },
     get_news: { access: "public", effect: "read" },
@@ -228,6 +238,19 @@ export function registerJoutesTool<Shape extends z.ZodRawShape>(
          * son texte pour le modèle et les clients sans vue.
          */
         view?: string;
+        /**
+         * Qui peut appeler l'outil (extension MCP Apps) : `model` pour
+         * l'assistant, `app` pour la vue. Défaut : les deux. Un outil `["app"]`
+         * n'est jamais proposé au modèle : la vue seule l'appelle, par
+         * `callServerTool`, sans demande d'accord de l'utilisateur.
+         */
+        visibility?: ("model" | "app")[];
+        /**
+         * L'outil ouvre sa vue depuis le point d'entrée du client (page
+         * Artifacts de Claude), sans question posée à l'assistant. Ses
+         * arguments doivent alors être tous facultatifs.
+         */
+        entrypoint?: boolean;
     },
     handler: (args: z.output<z.ZodObject<Shape>>, ctx: ServerContext) => Promise<ToolResult>,
 ): void {
@@ -243,7 +266,15 @@ export function registerJoutesTool<Shape extends z.ZodRawShape>(
             securitySchemes: toolSecuritySchemes(policy.access),
             // La clé à plat est celle des premiers clients MCP Apps, que
             // `registerAppTool` de l'extension renseigne aussi.
-            ...(config.view && { ui: { resourceUri: config.view }, [RESOURCE_URI_META_KEY]: config.view }),
+            ...(config.view && { [RESOURCE_URI_META_KEY]: config.view }),
+            ...((config.view || config.visibility) && {
+                ui: {
+                    ...(config.view && { resourceUri: config.view }),
+                    ...(config.visibility && { visibility: config.visibility }),
+                },
+            }),
+            // Convention des points d'entrée, lue par Claude comme par ChatGPT.
+            ...(config.entrypoint && { "openai/ui": { entrypoints: [{ type: "global" }] } }),
         },
     }, async (args, ctx) => {
         if (policy.access === "account" && !userIdFrom(ctx)) return AUTH_REQUIRED;

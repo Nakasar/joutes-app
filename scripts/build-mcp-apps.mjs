@@ -23,6 +23,7 @@ const outDir = path.join(root, "app/mcp/apps");
 
 const VIEWS = [
   {name: "deck-check", exportName: "DECK_CHECK_VIEW_HTML"},
+  {name: "deck-editor", exportName: "DECK_EDITOR_VIEW_HTML"},
 ];
 
 /** Les blocs de thème de app/globals.css : couleurs et rayons du site. */
@@ -49,7 +50,7 @@ const messagesPlugin = {
   setup(build) {
     build.onLoad({filter: /[\\/]messages[\\/]\w+\.json$/}, async (args) => {
       const messages = JSON.parse(await readFile(args.path, "utf8"));
-      const subset = {Games: {DeckChecker: messages.Games.DeckChecker}};
+      const subset = {Games: {DeckChecker: messages.Games.DeckChecker}, McpDeckEditor: messages.McpDeckEditor};
       return {contents: JSON.stringify(subset), loader: "json"};
     });
   },

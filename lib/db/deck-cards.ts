@@ -5,6 +5,7 @@ import type { DeckCardInfo, DeckCards } from "@/lib/decks/contents";
 import { deckCardIds } from "@/lib/decks/contents";
 import { CARD_COST_KEYS, toDeckCardInfo, type RawCard } from "@/lib/decks/card-info";
 import { normalizeCardName } from "@/lib/decks/text";
+import { escapeRegex } from "@/lib/utils/regex";
 import { computeDeckDomains } from "@/lib/decks/domains";
 import { championKey, startingLegendFirst } from "@/lib/decks/extra-legends";
 import { getCardnexusProductIds } from "@/lib/db/card-prices";
@@ -160,4 +161,45 @@ export async function getDeckCardnexusOrder(
 
   const productIds = await getCardnexusProductIds(new ObjectId(deck.gameId), lines);
   return deckCardnexusOrder(lines, (line) => productIds.get(copyPriceKey(line.cardId)));
+}
+
+/**
+ * Cherche des cartes d'un jeu par nom, pour l'éditeur de deck intégré à un
+ * client MCP.
+ *
+ * Une recherche par nom en base plutôt que l'index de recherche du site : la
+ * vue ne sert qu'à trouver la carte que l'on a en tête, et ne dépend ainsi que
+ * de Mongo. Les cartes dont le nom commence par la saisie passent devant les
+ * autres ; une même carte en plusieurs langues ne sort qu'une fois.
+ */
+export async function searchDeckCards(
+  gameId: string,
+  query: string,
+  { domain, limit = 24 }: { domain?: string; limit?: number } = {}
+): Promise<DeckCardInfo[]> {
+  const trimmed = query.trim();
+  if (!ObjectId.isValid(gameId) || (!trimmed && !domain)) {
+    return [];
+  }
+
+  const filter: Record<string, unknown> = { gameId: new ObjectId(gameId) };
+  if (trimmed) filter.name = { $regex: escapeRegex(trimmed), $options: "i" };
+  if (domain) filter.domain = domain;
+
+  const docs = await db
+    .collection<CardDoc & { gameId: ObjectId }>("cards")
+    .find(filter, { projection: DECK_CARD_PROJECTION })
+    .sort({ name: 1, id: 1 })
+    .limit(limit * 4)
+    .toArray();
+
+  const byId = new Map<string, DeckCardInfo>();
+  for (const doc of docs) {
+    if (!byId.has(doc.id)) byId.set(doc.id, toDeckCardInfo(doc));
+  }
+
+  const prefix = normalizeCardName(trimmed);
+  return [...byId.values()]
+    .sort((a, b) => Number(!normalizeCardName(a.name).startsWith(prefix)) - Number(!normalizeCardName(b.name).startsWith(prefix)))
+    .slice(0, limit);
 }
