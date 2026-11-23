@@ -1327,7 +1327,7 @@ export function deckForView(deck: DeckList): DeckViewList {
  * (Arcane), et le stockage de Joutes pour les images déposées. Une image
  * ailleurs est bloquée par le client : la vue affiche alors le nom de la carte.
  */
-const CARD_IMAGE_DOMAINS = [
+export const CARD_IMAGE_DOMAINS = [
     "https://cmsassets.rgpub.io",
     "https://russeus.github.io",
     "https://*.public.blob.vercel-storage.com",

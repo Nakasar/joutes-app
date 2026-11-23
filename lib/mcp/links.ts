@@ -53,6 +53,9 @@ export const mcpLinks = {
     metaTournament: (gameSlugOrId: string, date: string, slug: string, env?: Env) =>
         joutesUrl(`/games/${segment(gameSlugOrId)}/meta/tournois/${segment(date)}/${segment(slug)}`, env),
     deck: (deckId: string, env?: Env) => joutesUrl(`/decks/${segment(deckId)}`, env),
+    /** « Mes decks ». */
+    decks: (env?: Env) => joutesUrl(`/decks`, env),
+    deckEdit: (deckId: string, env?: Env) => joutesUrl(`/decks/${segment(deckId)}/edit`, env),
     /** Une actualité ; `path` vient de `newsPath`, qui choisit l'adresse de la langue. */
     news: (path: string, env?: Env) => joutesUrl(path, env),
     /**

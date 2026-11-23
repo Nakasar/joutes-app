@@ -22,6 +22,7 @@ import { registerJoutesDataTools, withToolLogging } from "./tools";
 import { registerMetaTools } from "./tools-meta";
 import { registerJudgeTools } from "./tools-judge";
 import { registerNewsTools } from "./tools-news";
+import { registerDeckTools } from "./tools-decks";
 import { registerPlayGroupGameTools } from "./tools-play-group-game";
 import { registerJoutesTool, requiresAccount, userIdFrom } from "./tool-policy";
 import { linkLine, mcpLinks } from "@/lib/mcp/links";
@@ -705,6 +706,7 @@ const handler = createMcpHandler(server => {
     registerMetaTools(server);
     registerJudgeTools(server);
     registerNewsTools(server);
+    registerDeckTools(server);
     registerPlayGroupGameTools(server);
 }, {
     // Partagé avec la carte du serveur : ce que dit la poignée de main et ce
