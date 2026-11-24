@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {ArrowDownSquareIcon} from "lucide-react";
+import { isCompanionGame } from "@/lib/companion/state";
 
 export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string; currentTab?: string }) {
   const t = await getTranslations('Games.nav');
@@ -77,6 +78,13 @@ export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string
           <Button variant="secondary" asChild>
             <Link href={`/games/${gameSlug}/play`} className="hover:underline">
               {t("play")}
+            </Link>
+          </Button>
+        }
+        {isCompanionGame(game.slug) && currentTab !== 'companion' &&
+          <Button variant="secondary" asChild>
+            <Link href={`/games/${game.slug}/companion`} className="hover:underline">
+              {t("companion")}
             </Link>
           </Button>
         }
@@ -192,6 +200,13 @@ export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string
               <DropdownMenuItem asChild>
                 <Link href={`/games/${gameSlug}/play`}>
                   {t("play")}
+                </Link>
+              </DropdownMenuItem>
+            }
+            {isCompanionGame(game.slug) &&
+              <DropdownMenuItem asChild>
+                <Link href={`/games/${game.slug}/companion`}>
+                  {t("companion")}
                 </Link>
               </DropdownMenuItem>
             }

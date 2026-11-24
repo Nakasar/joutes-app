@@ -64,6 +64,22 @@ const nextConfig: NextConfig = {
   // `private, no-cache, no-store`, donc aucun cache partagé ne les retient,
   // alors que la réponse markdown, elle, est publiquement cacheable et porte
   // son `Vary`.
+  // L'ancien suivi de partie Riftbound est devenu le compagnon : la partie
+  // qu'il avait enregistrée est reprise à la première ouverture du compagnon.
+  async redirects() {
+    return [
+      {
+        source: "/games/riftbound/tracker",
+        destination: "/games/riftbound/companion",
+        permanent: true,
+      },
+      {
+        source: "/:locale(en|de|it)/games/riftbound/tracker",
+        destination: "/:locale/games/riftbound/companion",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return {
       // Avant les fichiers : la page existe, c'est justement elle qu'on veut

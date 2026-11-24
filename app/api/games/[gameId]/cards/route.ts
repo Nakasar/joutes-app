@@ -68,6 +68,14 @@ async function getFilterValues(gameSlug: string): Promise<CardFilterValues> {
  * les réglages datent d'avant ne sait pas trier sur l'extension : plutôt que de
  * perdre aussi les filtres dans le repli général, on retente sans elle.
  */
+/** Combien de résultats relire pour filtrer le type à la main, quand l'index ne sait pas le faire. */
+const TYPE_FALLBACK_WINDOW = 300;
+
+function cardHasType(card: { type?: unknown; types?: unknown }, wanted: string): boolean {
+  if (typeof card.type === "string" && card.type.toLowerCase() === wanted) return true;
+  return Array.isArray(card.types) && card.types.some((t) => typeof t === "string" && t.toLowerCase() === wanted);
+}
+
 async function searchWithSort(
   index: ReturnType<typeof meilisearch.index<SearchCard>>,
   queryString: string,
@@ -159,6 +167,7 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
     // atteignable depuis la barre (`type:"Battlefield Rune"`).
     queryOptions.filter.push(`type = ${quoteFilterValue(effectiveType)}`)
   }
+  const typeFilter = effectiveType ? `type = ${quoteFilterValue(effectiveType)}` : null;
 
   if (typeof limit === 'number') {
     queryOptions.limit = limit;
@@ -182,15 +191,41 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
   // résultats non filtrés qui ressemblent à une page qui marche.
   let degraded = false;
   let result;
+  // Le type aussi peut manquer à un index créé avant qu'il ne soit déclaré
+  // (SWU, Magic) : on le retire alors de la requête et on le filtre ici, sur
+  // une page plus large, pour que « Leader » ou « Base » restent cherchables.
+  let typeInMemory: string | null = null;
   try {
     result = await searchWithSort(index, queryString, { ...queryOptions, filter: [...queryOptions.filter, ...facetFilters] }, sort, indexConfig.keys.set);
   } catch (error) {
-    if (!isUndeclaredCriteriaError(error) || (facetFilters.length === 0 && sort.length === 0)) {
+    if (!isUndeclaredCriteriaError(error) || (facetFilters.length === 0 && sort.length === 0 && !typeFilter)) {
       throw error;
     }
     console.error("Recherche de cartes : filtres ou tri refusés par l'index", error);
-    degraded = true;
-    result = await index.search(queryString, queryOptions);
+    degraded = facetFilters.length > 0 || sort.length > 0;
+    try {
+      if (!degraded) throw error;
+      result = await index.search(queryString, queryOptions);
+    } catch (retryError) {
+      if (!typeFilter || !isUndeclaredCriteriaError(retryError)) {
+        throw retryError;
+      }
+      typeInMemory = effectiveType ?? null;
+      result = await index.search(queryString, {
+        filter: queryOptions.filter.filter((filter) => filter !== typeFilter),
+        limit: TYPE_FALLBACK_WINDOW,
+      });
+    }
+  }
+  if (typeInMemory) {
+    const wanted = typeInMemory.toLowerCase();
+    const matching = result.hits.filter((hit) => cardHasType(hit, wanted));
+    const start = queryOptions.offset ?? 0;
+    result = {
+      ...result,
+      hits: matching.slice(start, start + (queryOptions.limit ?? 20)),
+      estimatedTotalHits: matching.length,
+    };
   }
   const cards = result.hits.map(result => ({
     ...result,
