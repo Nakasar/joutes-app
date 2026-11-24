@@ -4,6 +4,7 @@ import { readGameBySlugOrId } from "@/lib/db/games-cached";
 import { loadMetaEventsMatches } from "@/lib/db/meta-events";
 import { buildMetaAppView, readMetaAppParams } from "@/lib/meta/app-view";
 import { loadMetaSample } from "@/lib/meta/load";
+import { META_CACHE_CONTROL, readMetaReader } from "@/lib/meta/access";
 import { resolveMetaSettings } from "@/lib/meta/settings";
 
 type Params = { params: Promise<{ gameId: string }> };
@@ -12,9 +13,13 @@ type Params = { params: Promise<{ gameId: string }> };
  * La méta d'un jeu, pour l'application mobile : la vue d'ensemble de la page
  * `/games/{jeu}/meta` (légendes, domaines, cartes jouées, tournois, winrates
  * de l'extension en cours). Filtres `period`, `legend`, `domain`, `source`,
- * comme la page. Lecture publique ; 404 si la méta n'est pas ouverte.
+ * comme la page. Réservée aux abonnés Joutes Expert (`readMetaReader`) ; 404 si
+ * la méta n'est pas ouverte.
  */
 export async function GET(request: NextRequest, { params }: Params) {
+  const reader = await readMetaReader(request);
+  if ("error" in reader) return reader.error;
+
   try {
     const { gameId } = await params;
     const game = await readGameBySlugOrId(gameId);
@@ -34,7 +39,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     return NextResponse.json(
       { game: { id: game.id, slug: game.slug ?? game.id, name: game.name }, ...view },
-      { headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=600" } }
+      { headers: { "Cache-Control": META_CACHE_CONTROL } }
     );
   } catch (error) {
     console.error("Error reading game meta:", error);

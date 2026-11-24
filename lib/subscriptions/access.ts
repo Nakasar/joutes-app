@@ -1,11 +1,13 @@
 import 'server-only';
 
 import { cache } from "react";
+import { ObjectId } from "bson";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/config/admins";
 import type { EntitlementKey, SubscriptionPlanKey } from "@/lib/constants/subscription-plans";
 import { devForcedPlans } from "@/lib/patreon/config";
+import db from "@/lib/mongodb";
 import {
   getLairIdsWithPlan,
   getSubscriptionByUserId,
@@ -117,6 +119,30 @@ export async function hasEntitlement(entitlement: EntitlementKey): Promise<boole
   }
 
   return grantsEntitlement(await getMyPlans(), entitlement);
+}
+
+/**
+ * Vrai si ce compte désigné a ce droit — pour qui ne tient pas de session
+ * navigateur : un outil MCP (jeton), une route REST appelée par clé API, un
+ * envoi programmé. Même règle que `hasEntitlement` : un administrateur les a
+ * tous, qu'il soit listé par adresse ou marqué `isAdmin` en base.
+ */
+export async function userHasEntitlement(userId: string, entitlement: EntitlementKey): Promise<boolean> {
+  if (!ObjectId.isValid(userId)) {
+    return false;
+  }
+
+  const user = await db
+    .collection<{ email?: string; isAdmin?: boolean }>("user")
+    .findOne({ _id: new ObjectId(userId) }, { projection: { email: 1, isAdmin: 1 } });
+  if (!user) {
+    return false;
+  }
+  if (user.isAdmin || (user.email && isAdmin(user.email))) {
+    return true;
+  }
+
+  return grantsEntitlement(await plansForUserId(userId), entitlement);
 }
 
 export async function requireEntitlement(entitlement: EntitlementKey): Promise<true> {

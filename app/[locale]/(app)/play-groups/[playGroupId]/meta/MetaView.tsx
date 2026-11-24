@@ -19,6 +19,8 @@ import {
 } from "@/lib/play-groups/meta.ts";
 import { readGroupMeta, type GroupMetaPage } from "@/lib/play-groups/meta-data.ts";
 import { cn } from "@/lib/utils.ts";
+import { canSeeMeta } from "@/lib/meta/access.ts";
+import { PlanUpsell } from "@/components/play/PlanUpsell.tsx";
 
 import { FilterChip, GameIcon, LegendThumb, MemberDot } from "../game-ui.tsx";
 import { readGroupMembers, requirePlayGroup, requirePlayGroupMember, type PlayGroupMemberProfile } from "../group-data.ts";
@@ -43,6 +45,8 @@ type View = {
  * La méta du groupe (`?view=meta`) : ce que les membres jouent en tournoi,
  * comparé à la méta du jeu sur la même période. Les calculs sont dans
  * `lib/play-groups/meta.ts`, la lecture dans `lib/play-groups/meta-data.ts`.
+ * Réservée aux abonnés Joutes Expert, comme la méta du jeu (`lib/meta/access.ts`) :
+ * c'est le lecteur qui doit l'être, pas le groupe.
  */
 export default async function MetaView({
   playGroupId,
@@ -51,13 +55,15 @@ export default async function MetaView({
   playGroupId: string;
   searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const [viewer, group, members, t, locale] = await Promise.all([
+  const [viewer, group, members, t, locale, allowed] = await Promise.all([
     requirePlayGroupMember(playGroupId),
     requirePlayGroup(playGroupId),
     readGroupMembers(playGroupId),
     getTranslations("PlayGroups.hub.meta"),
     getLocale(),
+    canSeeMeta(),
   ]);
+  if (!allowed) return <PlanUpsell feature="groupMeta" />;
   const params = readGroupMetaParams(searchParams);
   const page = await readGroupMeta(
     playGroupId,

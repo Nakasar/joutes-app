@@ -12,6 +12,7 @@ import { TOURNAMENT_RESULTS_COLLECTION } from "@/lib/db/tournament-results";
 import { groupSpace } from "@/lib/decks/comments";
 import { withHighlights } from "@/lib/events/highlights-service";
 import { loadMetaSample } from "@/lib/meta/load";
+import { userCanSeeMeta } from "@/lib/meta/access";
 import { legendLabel } from "@/lib/meta/stats";
 import db from "@/lib/mongodb";
 import type { Event } from "@/lib/types/Event";
@@ -143,7 +144,8 @@ export async function loadWeeklyEmailContent(
     content.playGroups = await guard("playGroups", [], () => loadPlayGroups(reader.id, groups, now, weekEnd));
   }
 
-  if (has("meta") && (reader.games ?? []).length > 0) {
+  // La méta est réservée aux abonnés Joutes Expert : l'encart aussi.
+  if (has("meta") && (reader.games ?? []).length > 0 && (await guard("metaAccess", false, () => userCanSeeMeta(reader.id)))) {
     content.meta = await guard("meta", [], () => loadMeta(reader.games, now));
   }
 

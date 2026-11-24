@@ -21,6 +21,7 @@ import {
     topCutPlayers,
 } from "@/lib/meta/match-stats";
 import { META_DECKS_PERMISSION } from "@/lib/meta/permissions";
+import { userCanSeeMeta } from "@/lib/meta/access";
 import { resolveMetaSettings, type ResolvedMetaSettings } from "@/lib/meta/settings";
 import {
     computeAssociations,
@@ -66,7 +67,7 @@ import {
     sampleLegends,
     type NameMatch,
 } from "@/lib/mcp/meta";
-import { linkLine, mcpLinks } from "@/lib/mcp/links";
+import { joutesUrl, linkLine, mcpLinks } from "@/lib/mcp/links";
 import { validateDeckList, type DeckList, type DeckListCard } from "@/app/[locale]/(app)/games/riftbound/deck-checker/action";
 import { serializeDeckList } from "@/app/[locale]/(app)/games/riftbound/deck-checker/utils";
 import { DECK_CHECK_VIEW_URI, type DeckCheckResult } from "@/mcp-apps/deck-check/result";
@@ -573,14 +574,33 @@ async function handleImportMetaDecks(
     }
 }
 
+/** Le refus des outils de la méta pour qui n'est pas abonné Joutes Expert. */
+export function metaRefusal(): ToolResult {
+    return errorResult(`La méta est réservée aux abonnés Joutes Expert. Voir les offres : ${joutesUrl("/pricing")}`);
+}
+
+/**
+ * Les outils de lecture de la méta, réservés comme la page aux abonnés Joutes
+ * Expert et aux gestionnaires de la méta (`userCanSeeMeta`). `access: "account"`
+ * dans `TOOL_POLICIES` refuse déjà l'appel anonyme ; ceci vérifie l'abonnement.
+ */
+function expertOnly<Args>(handler: (args: Args) => Promise<ToolResult>) {
+    return async (args: Args, extra: ServerContext): Promise<ToolResult> => {
+        const userId = userIdFrom(extra);
+        if (!userId || !(await userCanSeeMeta(userId))) return metaRefusal();
+        return handler(args);
+    };
+}
+
 export function registerMetaTools(server: McpServer) {
     registerJoutesTool(server, "get_meta_overview", {
         title: "Get deck meta overview",
         description:
             "Méta des decks de tournoi d'un jeu (Riftbound par défaut), comme la page Méta de Joutes : nombre de decks, légendes les plus jouées " +
-            "(part et top 8), domaines et paire de domaines dominante, cartes en hausse ou en baisse sur 30 jours. Filtrable par période, tournoi, légende, domaine.",
+            "(part et top 8), domaines et paire de domaines dominante, cartes en hausse ou en baisse sur 30 jours. Filtrable par période, tournoi, légende, domaine. " +
+            "Comme tous les outils get_meta_* et list_meta_tournaments, réservé aux abonnés Joutes Expert.",
         inputSchema: filterShape,
-    }, withToolLogging("get_meta_overview", handleGetMetaOverview));
+    }, withToolLogging("get_meta_overview", expertOnly(handleGetMetaOverview)));
 
     registerJoutesTool(server, "get_meta_cards", {
         title: "Get most played meta cards",
@@ -594,7 +614,7 @@ export function registerMetaTools(server: McpServer) {
             limit: z.number().int().min(1).max(100).default(25),
             offset: z.number().int().min(0).default(0),
         },
-    }, withToolLogging("get_meta_cards", handleGetMetaCards));
+    }, withToolLogging("get_meta_cards", expertOnly(handleGetMetaCards)));
 
     registerJoutesTool(server, "get_meta_staples", {
         title: "Get meta staples",
@@ -605,7 +625,7 @@ export function registerMetaTools(server: McpServer) {
             ...filterShape,
             threshold: z.number().min(0.05).max(1).optional().describe("Seuil d'une staple, de 0 à 1 (ex. 0.75 = 75 % des decks du domaine)"),
         },
-    }, withToolLogging("get_meta_staples", handleGetMetaStaples));
+    }, withToolLogging("get_meta_staples", expertOnly(handleGetMetaStaples)));
 
     registerJoutesTool(server, "get_meta_winrates", {
         title: "Get meta winrates",
@@ -624,7 +644,7 @@ export function registerMetaTools(server: McpServer) {
             opponent: z.string().optional().describe("Légende adverse, avec legend"),
             limit: z.number().int().min(1).max(60).default(20),
         },
-    }, withToolLogging("get_meta_winrates", handleGetMetaWinrates));
+    }, withToolLogging("get_meta_winrates", expertOnly(handleGetMetaWinrates)));
 
     registerJoutesTool(server, "list_meta_tournaments", {
         title: "List meta tournaments",
@@ -636,7 +656,7 @@ export function registerMetaTools(server: McpServer) {
             periodDays: z.number().int().min(0).max(3650).optional().describe("Seulement les N derniers jours ; 0 ou absent = tout"),
             limit: z.number().int().min(1).max(100).default(30),
         },
-    }, withToolLogging("list_meta_tournaments", handleListMetaTournaments));
+    }, withToolLogging("list_meta_tournaments", expertOnly(handleListMetaTournaments)));
 
     registerJoutesTool(server, "get_meta_tournament", {
         title: "Get meta tournament",
@@ -649,7 +669,7 @@ export function registerMetaTools(server: McpServer) {
             date: z.string().optional().describe("Jour du tournoi, AAAA-MM-JJ, si plusieurs portent ce nom"),
             includeAllDecks: z.boolean().optional().describe("Lister tous les decks du tournoi avec leur id, pas seulement le top 8"),
         },
-    }, withToolLogging("get_meta_tournament", handleGetMetaTournament));
+    }, withToolLogging("get_meta_tournament", expertOnly(handleGetMetaTournament)));
 
     registerJoutesTool(server, "get_meta_deck", {
         title: "Get meta deck",
@@ -660,7 +680,7 @@ export function registerMetaTools(server: McpServer) {
         inputSchema: {
             deckId: z.string().describe("Id du deck, lu dans get_meta_tournament"),
         },
-    }, withToolLogging("get_meta_deck", handleGetMetaDeck));
+    }, withToolLogging("get_meta_deck", expertOnly(handleGetMetaDeck)));
 
     registerJoutesTool(server, "import_meta_decks", {
         title: "Import meta decks",

@@ -131,14 +131,15 @@ export const TOOL_POLICIES = {
     control_tournament_timer: { access: "account", effect: "update" },
     send_tournament_announcement: { access: "account", effect: "create" },
 
-    // Méta des decks (page /games/[jeu]/meta)
-    get_meta_overview: { access: "public", effect: "read" },
-    get_meta_cards: { access: "public", effect: "read" },
-    get_meta_staples: { access: "public", effect: "read" },
-    get_meta_winrates: { access: "public", effect: "read" },
-    list_meta_tournaments: { access: "public", effect: "read" },
-    get_meta_tournament: { access: "public", effect: "read" },
-    get_meta_deck: { access: "public", effect: "read" },
+    // Méta des decks (page /games/[jeu]/meta) : réservée aux abonnés Joutes
+    // Expert, vérifiés par l'outil lui-même (`lib/meta/access.ts`).
+    get_meta_overview: { access: "account", effect: "read" },
+    get_meta_cards: { access: "account", effect: "read" },
+    get_meta_staples: { access: "account", effect: "read" },
+    get_meta_winrates: { access: "account", effect: "read" },
+    list_meta_tournaments: { access: "account", effect: "read" },
+    get_meta_tournament: { access: "account", effect: "read" },
+    get_meta_deck: { access: "account", effect: "read" },
     // Lit des liens Piltover Archive ou des decks du locator : hors de Joutes.
     import_meta_decks: { access: "account", effect: "create", openWorld: true },
 
