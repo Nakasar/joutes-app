@@ -140,6 +140,15 @@ describe("palier auquel attribuer une permission", () => {
   });
 });
 
+describe("droits de la méta", () => {
+  it("réserve la méta à Joutes Expert", () => {
+    assert.ok(grantsEntitlement(["expert"], "sub:meta"));
+    assert.ok(!grantsEntitlement(["pro"], "sub:meta"));
+    assert.ok(!grantsEntitlement(["supporter"], "sub:meta"));
+    assert.ok(!grantsEntitlement([], "sub:meta"));
+  });
+});
+
 describe("droits des pages Jouer", () => {
   it("réserve la simulation de decks à Joutes Expert", () => {
     assert.ok(grantsEntitlement(["expert"], "sub:play-simulate"));

@@ -4,6 +4,7 @@ import { readGameBySlugOrId } from "@/lib/db/games-cached";
 import { loadMetaEventsMatches } from "@/lib/db/meta-events";
 import { buildMetaTournamentAppView } from "@/lib/meta/app-view";
 import { loadMetaSample } from "@/lib/meta/load";
+import { META_CACHE_CONTROL, readMetaReader } from "@/lib/meta/access";
 
 type Params = { params: Promise<{ gameId: string; date: string; slug: string }> };
 
@@ -12,9 +13,13 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 /**
  * Un tournoi de la méta, pour l'application mobile : ses decks par classement,
  * ses légendes et, s'il a été importé avec ses matchs, son top 8 et ses
- * winrates. Même adresse que la page `…/meta/tournois/{date}/{slug}`.
+ * winrates. Même adresse que la page `…/meta/tournois/{date}/{slug}`, et même
+ * réserve aux abonnés Joutes Expert (`readMetaReader`).
  */
-export async function GET(_request: NextRequest, { params }: Params) {
+export async function GET(request: NextRequest, { params }: Params) {
+  const reader = await readMetaReader(request);
+  if ("error" in reader) return reader.error;
+
   try {
     const { gameId, date, slug } = await params;
     if (!DAY.test(date)) {
@@ -31,7 +36,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Tournoi introuvable" }, { status: 404 });
     }
 
-    return NextResponse.json(view, { headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=600" } });
+    return NextResponse.json(view, { headers: { "Cache-Control": META_CACHE_CONTROL } });
   } catch (error) {
     console.error("Error reading meta tournament:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });

@@ -620,6 +620,16 @@
           "title": "Tavolo filmato: Joutes Pro o Joutes Expert",
           "body": "Filma una partita reale, o fornisci il suo video: Joutes riconosce le carte, segue la partita e segnala gli scostamenti dalle regole. Questo strumento arbitrale è riservato agli abbonati Joutes Pro e Joutes Expert.",
           "cta": "Vedi le offerte"
+        },
+        "meta": {
+          "title": "Il meta: Joutes Expert",
+          "body": "Le carte più giocate, gli staple, i winrate per leggenda e per matchup e il dettaglio di ogni torneo rilevato. Il meta è riservato agli abbonati Joutes Expert.",
+          "cta": "Scopri Joutes Expert"
+        },
+        "groupMeta": {
+          "title": "Il meta del gruppo: Joutes Expert",
+          "body": "Cosa giocano i membri nei tornei, i loro scontri diretti e il confronto con il meta del gioco. Il meta è riservato agli abbonati Joutes Expert.",
+          "cta": "Scopri Joutes Expert"
         }
       },
       "card": {
@@ -7865,7 +7875,8 @@
           "Le tue locandine della settimana in messaggio diretto su Discord, ogni lunedì",
           "Simulare i tuoi mazzi: decine di partite giocate dall'IA contro un mazzo preciso o il meta",
           "Ospitare partite online e sul tuo server",
-          "Arbitrare una partita reale filmata: carte riconosciute, scostamenti dalle regole segnalati"
+          "Arbitrare una partita reale filmata: carte riconosciute, scostamenti dalle regole segnalati",
+          "Il meta di ogni gioco e dei tuoi gruppi: carte giocate, staple, winrate e tornei"
         ]
       },
       "pro": {

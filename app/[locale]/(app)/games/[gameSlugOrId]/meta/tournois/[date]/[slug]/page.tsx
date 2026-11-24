@@ -37,6 +37,8 @@ import {
   type TournamentStats,
 } from "@/lib/meta/tournaments.ts";
 import { cn } from "@/lib/utils.ts";
+import { canSeeMeta } from "@/lib/meta/access.ts";
+import { PlanUpsell } from "@/components/play/PlanUpsell.tsx";
 import { Donut, DonutKey, LEGEND_COLORS, LegendThumb, OTHERS_COLOR, swatchBackground, type DonutPart } from "../../../charts.tsx";
 import {
   DomainWinratesPanel,
@@ -85,6 +87,9 @@ export async function generateMetadata({ params, searchParams }: TournamentPageP
   const game = await readGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games.meta");
   if (!game?.features?.meta) return { title: t("metadata.notFoundTitle") };
+  // Le nom du tournoi est déjà une donnée de la méta : rien de plus que le jeu
+  // pour qui n'y a pas accès.
+  if (!(await canSeeMeta())) return { title: t("metadata.title", { gameName: game.name }), robots: { index: false } };
   const sample = await loadMetaSample(game.id, game.slug);
   const decks = findTournamentDecks(sample.decks, date, slug);
   if (decks.length === 0) return { title: t("metadata.notFoundTitle") };
@@ -102,7 +107,8 @@ export async function generateMetadata({ params, searchParams }: TournamentPageP
 /**
  * La méta d'un tournoi : les decks méta de même source et de même date
  * (`lib/meta/tournaments.ts`), leurs légendes, domaines et classements.
- * Page publique, tirée du même échantillon en cache que la méta du jeu.
+ * Tirée du même échantillon en cache que la méta du jeu, et réservée comme
+ * elle aux abonnés Joutes Expert.
  */
 export default function TournamentMetaPage({ params, searchParams }: TournamentPageProps) {
   return (
@@ -122,6 +128,7 @@ export default function TournamentMetaPage({ params, searchParams }: TournamentP
 }
 
 async function TournamentContent({ params, searchParams }: TournamentPageProps) {
+  if (!(await canSeeMeta())) return <PlanUpsell feature="meta" />;
   const [{ game, sample, decks, date, slug, matches, metaPath }, raw, t, locale] = await Promise.all([
     loadTournament(params),
     searchParams,

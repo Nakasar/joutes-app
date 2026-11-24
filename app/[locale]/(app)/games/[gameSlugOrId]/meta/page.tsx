@@ -28,6 +28,8 @@ import {
   legendLabel,
 } from "@/lib/meta/stats.ts";
 import { listTournaments } from "@/lib/meta/tournaments.ts";
+import { canSeeMeta } from "@/lib/meta/access.ts";
+import { PlanUpsell } from "@/components/play/PlanUpsell.tsx";
 import { cn } from "@/lib/utils.ts";
 import { MetaFilters } from "./MetaFilters.tsx";
 import { WinratesTab } from "./WinratesTab.tsx";
@@ -71,7 +73,8 @@ export async function generateMetadata({ params, searchParams }: MetaPageProps):
 
 /**
  * La méta d'un jeu : ce que jouent les decks de tournoi relevés par l'équipe
- * (`lib/meta/load.ts`), en six onglets. Page publique.
+ * (`lib/meta/load.ts`), en six onglets. Réservée aux abonnés Joutes Expert
+ * (`lib/meta/access.ts`) : les autres voient l'en-tête et l'offre.
  *
  * L'en-tête ne dépend que du jeu ; le reste dépend de l'échantillon et des
  * filtres de l'adresse (`lib/meta/page-params.ts`).
@@ -118,6 +121,7 @@ async function MetaHeader({ params }: { params: GameParams }) {
 async function MetaContent({ params, searchParams }: MetaPageProps) {
   const { gameSlugOrId } = await params;
   const game = await requireGameWithDecks(gameSlugOrId);
+  if (!(await canSeeMeta())) return <PlanUpsell feature="meta" />;
   const [raw, t, locale, sample, matchEvents] = await Promise.all([
     searchParams,
     getTranslations("Games.meta"),

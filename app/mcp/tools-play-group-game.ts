@@ -36,6 +36,8 @@ import type { Deck } from "@/lib/types/Deck";
 import type { PlayGroup } from "@/lib/types/PlayGroup";
 import { registerJoutesTool, userIdFrom, type ToolResult } from "./tool-policy";
 import { errorResult, textResult, withToolLogging } from "./tools";
+import { metaRefusal } from "./tools-meta";
+import { userCanSeeMeta } from "@/lib/meta/access";
 
 /*
  * Le jeu en groupe : la bibliothèque de decks partagés, les commentaires d'un
@@ -326,6 +328,8 @@ async function handleGroupMeta(
     const userId = userIdFrom(extra)!;
     const opened = await openGroup(args.playGroupId, userId);
     if ("error" in opened) return opened.error;
+    // Comme la méta du jeu : réservée aux abonnés Joutes Expert.
+    if (!(await userCanSeeMeta(userId))) return metaRefusal();
 
     let gameId: string | undefined;
     if (args.gameName) {
@@ -452,7 +456,7 @@ export function registerPlayGroupGameTools(server: McpServer) {
         description:
             "La méta d'un groupe de jeu, calculée sur les résultats de tournoi de ses membres : légendes jouées (part, écart à la méta " +
             "du jeu, winrate), domaines, bilan contre les légendes adverses, membres. Par défaut le jeu le plus joué et l'extension en " +
-            "cours ; setCode = une extension ou « tout ».",
+            "cours ; setCode = une extension ou « tout ». Réservé aux abonnés Joutes Expert.",
         inputSchema: {
             playGroupId: z.string(),
             gameName: z.string().optional(),

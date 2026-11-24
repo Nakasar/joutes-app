@@ -620,6 +620,16 @@
           "title": "Filmed table: Joutes Pro or Joutes Expert",
           "body": "Film a real game, or provide its video: Joutes recognises the cards, follows the game and flags departures from the rules. This judging tool is reserved for Joutes Pro and Joutes Expert subscribers.",
           "cta": "See plans"
+        },
+        "meta": {
+          "title": "The meta: Joutes Expert",
+          "body": "The most played cards, staples, winrates by legend and by matchup, and the details of every tracked tournament. The meta is reserved for Joutes Expert subscribers.",
+          "cta": "Discover Joutes Expert"
+        },
+        "groupMeta": {
+          "title": "Your group's meta: Joutes Expert",
+          "body": "What members play in tournaments, their head-to-heads and how it compares with the game's meta. The meta is reserved for Joutes Expert subscribers.",
+          "cta": "Discover Joutes Expert"
         }
       },
       "card": {
@@ -7865,7 +7875,8 @@
           "Your posters for the week as a Discord direct message, every Monday",
           "Simulate your decks: dozens of AI-played games against a specific deck or the meta",
           "Host games online and on your own server",
-          "Judge a real game filmed by camera: cards recognised, departures from the rules flagged"
+          "Judge a real game filmed by camera: cards recognised, departures from the rules flagged",
+          "The meta of every game and of your play groups: played cards, staples, winrates and tournaments"
         ]
       },
       "pro": {

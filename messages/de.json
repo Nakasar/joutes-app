@@ -620,6 +620,16 @@
           "title": "Gefilmter Tisch: Joutes Pro oder Joutes Expert",
           "body": "Filme eine echte Partie oder gib ihr Video an: Joutes erkennt die Karten, verfolgt die Partie und meldet Regelabweichungen. Dieses Schiedsrichterwerkzeug ist Abonnenten von Joutes Pro und Joutes Expert vorbehalten.",
           "cta": "Angebote ansehen"
+        },
+        "meta": {
+          "title": "Das Meta: Joutes Expert",
+          "body": "Die meistgespielten Karten, Staples, Winrates nach Legende und Matchup und die Details jedes erfassten Turniers. Das Meta ist Abonnenten von Joutes Expert vorbehalten.",
+          "cta": "Joutes Expert entdecken"
+        },
+        "groupMeta": {
+          "title": "Das Meta der Gruppe: Joutes Expert",
+          "body": "Was die Mitglieder auf Turnieren spielen, ihre direkten Duelle und der Vergleich mit dem Meta des Spiels. Das Meta ist Abonnenten von Joutes Expert vorbehalten.",
+          "cta": "Joutes Expert entdecken"
         }
       },
       "card": {
@@ -7865,7 +7875,8 @@
           "Deine Plakate der Woche als Discord-Direktnachricht, jeden Montag",
           "Deine Decks simulieren: Dutzende von der KI gespielte Partien gegen ein bestimmtes Deck oder das Meta",
           "Partien online und auf deinem eigenen Server hosten",
-          "Eine echte, gefilmte Partie leiten: Karten erkannt, Regelabweichungen gemeldet"
+          "Eine echte, gefilmte Partie leiten: Karten erkannt, Regelabweichungen gemeldet",
+          "Das Meta jedes Spiels und deiner Spielgruppen: gespielte Karten, Staples, Winrates und Turniere"
         ]
       },
       "pro": {

@@ -15,14 +15,18 @@ import { cn } from "@/lib/utils";
  *
  * - `host` : créer une partie en ligne en tant qu'hôte (Joutes Pro ou Expert) ;
  * - `simulate` : simuler un deck (Joutes Expert) ;
- * - `filmed` : la table filmée (Joutes Pro ou Expert).
+ * - `filmed` : la table filmée (Joutes Pro ou Expert) ;
+ * - `meta` : la méta d'un jeu, ses tournois et ses joueurs (Joutes Expert) ;
+ * - `groupMeta` : la méta d'un groupe de jeu (Joutes Expert).
+ *
+ * Il sert hors des pages Jouer aussi (méta), d'où ses textes sous `Games.Play.upsell`.
  */
 export function PlanUpsell({
   feature,
   compact = false,
   className,
 }: {
-  feature: "host" | "simulate" | "filmed";
+  feature: "host" | "simulate" | "filmed" | "meta" | "groupMeta";
   compact?: boolean;
   className?: string;
 }) {

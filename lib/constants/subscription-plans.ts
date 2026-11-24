@@ -88,6 +88,11 @@ export const SUBSCRIPTION_PLANS = {
     // ou « Mon serveur » (`lib/engine/table-actions.ts`). Rejoindre reste libre.
     // `sub:play-filmed` : la table filmée (suivre une partie réelle à la caméra
     // ou depuis une vidéo), ouverte aussi à Pro.
+    // `sub:meta` : la méta des jeux (`/games/[jeu]/meta`, ses tournois, ses
+    // joueurs, ses winrates), la méta des groupes de jeu, leurs routes et leurs
+    // outils MCP (`lib/meta/access.ts`). Réservée à Expert seul : c'est un outil
+    // de joueur, comme la simulation. Les gestionnaires de la méta
+    // (`metaDecks:manage`) la voient aussi, pour vérifier ce qu'ils importent.
     entitlements: [
       "sub:poster-styles",
       "sub:poster-library",
@@ -95,6 +100,7 @@ export const SUBSCRIPTION_PLANS = {
       "sub:play-simulate",
       "sub:play-host",
       "sub:play-filmed",
+      "sub:meta",
     ],
     permissions: ["trades:full_history", "collection:advanced"],
     tone: "amethyst",
@@ -112,7 +118,8 @@ export const SUBSCRIPTION_PLANS = {
     // `sub:play-host` est répété pour la même raison : une boutique héberge les
     // parties en ligne de ses joueurs. La simulation de decks, elle, reste à
     // Expert — c'est un outil de joueur. `sub:play-filmed` aussi : une boutique
-    // arbitre les tables filmées de ses tournois.
+    // arbitre les tables filmées de ses tournois. La méta (`sub:meta`) reste à
+    // Expert, comme la simulation.
     entitlements: ["sub:lair-pro", "sub:poster-styles", "sub:poster-library", "sub:play-host", "sub:play-filmed"],
     // Répétées et non héritées : Pro n'inclut pas Expert (deux publics, pas deux
     // barreaux). Une boutique qui tient l'historique de ses échanges, ou
