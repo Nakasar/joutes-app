@@ -17,6 +17,8 @@ import { findTournamentDecks, findTournamentMatches } from "@/lib/meta/tournamen
 import { cn } from "@/lib/utils.ts";
 import { canSeeMeta } from "@/lib/meta/access.ts";
 import { PlanUpsell } from "@/components/play/PlanUpsell.tsx";
+import { MetaPaused } from "@/components/meta/MetaPaused.tsx";
+import { META_PAUSED } from "@/lib/meta/paused.ts";
 import { LegendThumb } from "../../../../../charts.tsx";
 import { FacedLegendsList, MatchPanel } from "../../../../../matches.tsx";
 
@@ -43,7 +45,7 @@ async function loadPlayer(params: Params) {
 
 export async function generateMetadata({ params }: PlayerPageProps): Promise<Metadata> {
   const t = await getTranslations("Games.meta");
-  if (!(await canSeeMeta())) {
+  if (META_PAUSED || !(await canSeeMeta())) {
     // Le nom du joueur est une donnée de la méta : seulement le jeu pour qui n'y a pas accès.
     const game = await readGameBySlugOrId((await params).gameSlugOrId);
     return { title: game ? t("metadata.title", { gameName: game.name }) : t("metadata.notFoundTitle"), robots: { index: false } };
@@ -82,6 +84,7 @@ const RESULT_CLASS = {
 } as const;
 
 async function PlayerContent({ params }: PlayerPageProps) {
+  if (META_PAUSED) return <MetaPaused />;
   if (!(await canSeeMeta())) return <PlanUpsell feature="meta" />;
   const [{ event, player, deck, date, tournamentHref }, t, locale] = await Promise.all([
     loadPlayer(params),

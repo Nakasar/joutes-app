@@ -30,6 +30,8 @@ import {
 import { listTournaments } from "@/lib/meta/tournaments.ts";
 import { canSeeMeta } from "@/lib/meta/access.ts";
 import { PlanUpsell } from "@/components/play/PlanUpsell.tsx";
+import { MetaPaused } from "@/components/meta/MetaPaused.tsx";
+import { META_PAUSED } from "@/lib/meta/paused.ts";
 import { cn } from "@/lib/utils.ts";
 import { MetaFilters } from "./MetaFilters.tsx";
 import { WinratesTab } from "./WinratesTab.tsx";
@@ -121,6 +123,7 @@ async function MetaHeader({ params }: { params: GameParams }) {
 async function MetaContent({ params, searchParams }: MetaPageProps) {
   const { gameSlugOrId } = await params;
   const game = await requireGameWithDecks(gameSlugOrId);
+  if (META_PAUSED) return <MetaPaused />;
   if (!(await canSeeMeta())) return <PlanUpsell feature="meta" />;
   const [raw, t, locale, sample, matchEvents] = await Promise.all([
     searchParams,
