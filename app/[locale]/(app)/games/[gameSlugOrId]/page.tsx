@@ -29,6 +29,7 @@ import {
   GameSectionSkeleton,
 } from "./GamePortalSkeletons.tsx";
 import { BackLink } from "@/components/navigation/BackLink.tsx";
+import { isCompanionGame } from "@/lib/companion/state";
 
 interface GameDetailPageProps {
   params: Promise<{
@@ -415,8 +416,8 @@ async function GameTools({ params }: GameDetailPageProps) {
             </Link>
           )}
 
-          {game.slug === "riftbound" && (
-            <Link href={`/games/${game.slug}/tracker`} className="group">
+          {isCompanionGame(game.slug) && (
+            <Link href={`/games/${game.slug}/companion`} className="group">
               <div className="bg-gradient-to-br from-orange-900/30 to-orange-800/20 backdrop-blur-sm rounded-xl border border-orange-500/20 p-8 hover:border-orange-500/50 transition-all hover:scale-105">
                 <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsTracker.title")}</h3>
                 <p className="text-gray-300">{t("detail.toolsTracker.description")}</p>
