@@ -36,7 +36,8 @@ import type { Deck } from "@/lib/types/Deck";
 import type { PlayGroup } from "@/lib/types/PlayGroup";
 import { registerJoutesTool, userIdFrom, type ToolResult } from "./tool-policy";
 import { errorResult, textResult, withToolLogging } from "./tools";
-import { metaRefusal } from "./tools-meta";
+import { metaPausedResult, metaRefusal } from "./tools-meta";
+import { META_PAUSED } from "@/lib/meta/paused";
 import { userCanSeeMeta } from "@/lib/meta/access";
 
 /*
@@ -325,6 +326,7 @@ async function handleGroupMeta(
     args: { playGroupId: string; gameName?: string; setCode?: string; memberName?: string; compare?: boolean },
     extra: ServerContext,
 ): Promise<ToolResult> {
+    if (META_PAUSED) return metaPausedResult();
     const userId = userIdFrom(extra)!;
     const opened = await openGroup(args.playGroupId, userId);
     if ("error" in opened) return opened.error;

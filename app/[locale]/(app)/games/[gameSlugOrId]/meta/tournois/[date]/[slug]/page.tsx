@@ -39,6 +39,8 @@ import {
 import { cn } from "@/lib/utils.ts";
 import { canSeeMeta } from "@/lib/meta/access.ts";
 import { PlanUpsell } from "@/components/play/PlanUpsell.tsx";
+import { MetaPaused } from "@/components/meta/MetaPaused.tsx";
+import { META_PAUSED } from "@/lib/meta/paused.ts";
 import { Donut, DonutKey, LEGEND_COLORS, LegendThumb, OTHERS_COLOR, swatchBackground, type DonutPart } from "../../../charts.tsx";
 import {
   DomainWinratesPanel,
@@ -89,7 +91,7 @@ export async function generateMetadata({ params, searchParams }: TournamentPageP
   if (!game?.features?.meta) return { title: t("metadata.notFoundTitle") };
   // Le nom du tournoi est déjà une donnée de la méta : rien de plus que le jeu
   // pour qui n'y a pas accès.
-  if (!(await canSeeMeta())) return { title: t("metadata.title", { gameName: game.name }), robots: { index: false } };
+  if (META_PAUSED || !(await canSeeMeta())) return { title: t("metadata.title", { gameName: game.name }), robots: { index: false } };
   const sample = await loadMetaSample(game.id, game.slug);
   const decks = findTournamentDecks(sample.decks, date, slug);
   if (decks.length === 0) return { title: t("metadata.notFoundTitle") };
@@ -128,6 +130,7 @@ export default function TournamentMetaPage({ params, searchParams }: TournamentP
 }
 
 async function TournamentContent({ params, searchParams }: TournamentPageProps) {
+  if (META_PAUSED) return <MetaPaused />;
   if (!(await canSeeMeta())) return <PlanUpsell feature="meta" />;
   const [{ game, sample, decks, date, slug, matches, metaPath }, raw, t, locale] = await Promise.all([
     loadTournament(params),

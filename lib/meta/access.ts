@@ -6,6 +6,7 @@ import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { anyUserHasPermission, hasPermission } from "@/lib/db/permissions";
 import { hasEntitlement, userHasEntitlement } from "@/lib/subscriptions/access";
 import { META_DECKS_PERMISSION } from "./permissions";
+import { META_PAUSED, META_PAUSED_BODY } from "./paused";
 
 /**
  * Qui voit la méta : les abonnés Joutes Expert (`sub:meta`), et les
@@ -38,6 +39,8 @@ export async function userCanSeeMeta(userId: string): Promise<boolean> {
  * cache partagé les rendrait à qui n'y a pas droit.
  */
 export async function readMetaReader(request: Request): Promise<{ userId: string } | { error: NextResponse }> {
+  // Méta coupée (`./paused.ts`) : 503 avant même de lire le compte.
+  if (META_PAUSED) return { error: metaPausedResponse() };
   const viewer = await authenticateApiRequest(request);
   if (!viewer) {
     return { error: NextResponse.json({ error: "Non authentifié" }, { status: 401 }) };
@@ -54,3 +57,8 @@ export async function readMetaReader(request: Request): Promise<{ userId: string
 }
 
 export const META_CACHE_CONTROL = "private, max-age=300";
+
+/** La réponse des routes REST de la méta tant qu'elle est coupée (`./paused.ts`). */
+export function metaPausedResponse(): NextResponse {
+  return NextResponse.json(META_PAUSED_BODY, { status: 503, headers: { "Retry-After": "86400" } });
+}

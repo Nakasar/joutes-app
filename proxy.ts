@@ -4,7 +4,8 @@ import createIntlProxy from 'next-intl/middleware'
 
 import { routing } from '@/i18n/routing'
 import { isCredentialedOrigin } from '@/lib/net/own-origins'
-import { isBlockedMetaBot } from '@/lib/net/meta-bots'
+import { isBlockedMetaBot, isMetaPath } from '@/lib/net/meta-bots'
+import { META_PAUSED, metaPausedPage } from '@/lib/meta/paused'
 import { isBlockedBot } from '@/lib/net/blocked-bots'
 
 const intlProxy = createIntlProxy(routing);
@@ -54,6 +55,19 @@ export function proxy(request: NextRequest) {
     res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
     return res;
+  }
+
+  // La méta est coupée pour tout le monde (`lib/meta/paused.ts`) : la page
+  // d'attente part d'ici, sans rendu ni base, quels que soient les filtres.
+  if (META_PAUSED && isMetaPath(request.nextUrl.pathname)) {
+    return new NextResponse(metaPausedPage(), {
+      status: 503,
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Retry-After": "86400",
+        "X-Robots-Tag": "noindex",
+      },
+    });
   }
 
   // Les robots n'ont rien à faire sur la méta, qui recalcule ses statistiques

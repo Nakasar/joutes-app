@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { readPlayGroupViewer } from "@/lib/api/play-groups";
 import { readGroupMetaParams } from "@/lib/play-groups/meta";
 import { readGroupMeta } from "@/lib/play-groups/meta-data";
-import { userCanSeeMeta } from "@/lib/meta/access";
+import { metaPausedResponse, userCanSeeMeta } from "@/lib/meta/access";
+import { META_PAUSED } from "@/lib/meta/paused";
 
 type Params = Promise<{ playGroupId: string }>;
 
@@ -14,6 +15,7 @@ type Params = Promise<{ playGroupId: string }>;
  * comme toute la méta aux abonnés Joutes Expert (403 `code: "SUBSCRIPTION"`).
  */
 export async function GET(request: NextRequest, { params }: { params: Params }) {
+  if (META_PAUSED) return metaPausedResponse();
   const { playGroupId } = await params;
   const gate = await readPlayGroupViewer(request, playGroupId);
   if ("error" in gate) return gate.error;

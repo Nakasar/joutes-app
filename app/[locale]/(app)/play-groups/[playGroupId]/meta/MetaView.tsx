@@ -21,6 +21,8 @@ import { readGroupMeta, type GroupMetaPage } from "@/lib/play-groups/meta-data.t
 import { cn } from "@/lib/utils.ts";
 import { canSeeMeta } from "@/lib/meta/access.ts";
 import { PlanUpsell } from "@/components/play/PlanUpsell.tsx";
+import { MetaPaused } from "@/components/meta/MetaPaused.tsx";
+import { META_PAUSED } from "@/lib/meta/paused.ts";
 
 import { FilterChip, GameIcon, LegendThumb, MemberDot } from "../game-ui.tsx";
 import { readGroupMembers, requirePlayGroup, requirePlayGroupMember, type PlayGroupMemberProfile } from "../group-data.ts";
@@ -63,6 +65,7 @@ export default async function MetaView({
     getLocale(),
     canSeeMeta(),
   ]);
+  if (META_PAUSED) return <MetaPaused />;
   if (!allowed) return <PlanUpsell feature="groupMeta" />;
   const params = readGroupMetaParams(searchParams);
   const page = await readGroupMeta(

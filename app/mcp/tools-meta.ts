@@ -22,6 +22,7 @@ import {
 } from "@/lib/meta/match-stats";
 import { META_DECKS_PERMISSION } from "@/lib/meta/permissions";
 import { userCanSeeMeta } from "@/lib/meta/access";
+import { META_PAUSED, META_PAUSED_MESSAGE } from "@/lib/meta/paused";
 import { resolveMetaSettings, type ResolvedMetaSettings } from "@/lib/meta/settings";
 import {
     computeAssociations,
@@ -574,6 +575,11 @@ async function handleImportMetaDecks(
     }
 }
 
+/** La réponse des outils de lecture de la méta tant qu'elle est coupée (`lib/meta/paused.ts`). */
+export function metaPausedResult(): ToolResult {
+    return textResult(`${META_PAUSED_MESSAGE} La méta des decks est en pause le temps de l'améliorer.`);
+}
+
 /** Le refus des outils de la méta pour qui n'est pas abonné Joutes Expert. */
 export function metaRefusal(): ToolResult {
     return errorResult(`La méta est réservée aux abonnés Joutes Expert. Voir les offres : ${joutesUrl("/pricing")}`);
@@ -586,6 +592,7 @@ export function metaRefusal(): ToolResult {
  */
 function expertOnly<Args>(handler: (args: Args) => Promise<ToolResult>) {
     return async (args: Args, extra: ServerContext): Promise<ToolResult> => {
+        if (META_PAUSED) return metaPausedResult();
         const userId = userIdFrom(extra);
         if (!userId || !(await userCanSeeMeta(userId))) return metaRefusal();
         return handler(args);
