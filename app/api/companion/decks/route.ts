@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
-
-import { auth } from "@/lib/auth";
+import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { readGameBySlugOrId } from "@/lib/db/games-cached";
 import { listCompanionDecks } from "@/lib/companion/decks";
 import { isCompanionGame } from "@/lib/companion/state";
@@ -18,8 +16,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
+    // Session du site ou de l'app mobile, ou clé API.
+    const user = await authenticateApiRequest(request);
+    if (!user) {
       return NextResponse.json({ decks: [] });
     }
 
@@ -28,7 +27,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ decks: [] });
     }
 
-    const decks = await listCompanionDecks(game, gameDoc.id, session.user.id);
+    const decks = await listCompanionDecks(game, gameDoc.id, user.userId);
     return NextResponse.json({ decks });
   } catch (error) {
     console.error("Compagnon : lecture des decks", error);

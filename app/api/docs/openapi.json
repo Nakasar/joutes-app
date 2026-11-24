@@ -98,6 +98,233 @@
     }
   ],
   "paths": {
+    "/companion/decks": {
+      "get": {
+        "tags": [
+          "Decks"
+        ],
+        "summary": "Decks for the game companion",
+        "description": "The signed-in user's decks for a companion game, reduced to what the companion puts on the table: Riftbound legend and battlefields, SWU leader and base, Magic commander. Signed out, the list is empty.",
+        "parameters": [
+          {
+            "name": "game",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "riftbound",
+                "swu",
+                "mtg"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Companion decks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "decks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "legend": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string"
+                              },
+                              "backImage": {
+                                "type": "string",
+                                "description": "SWU leader: the deployed (unit) side."
+                              },
+                              "orientation": {
+                                "type": "string",
+                                "enum": [
+                                  "portrait",
+                                  "landscape"
+                                ]
+                              },
+                              "hp": {
+                                "type": "integer",
+                                "description": "SWU base: starting hit points."
+                              }
+                            }
+                          },
+                          "battlefields": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "id",
+                                "name"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "image": {
+                                  "type": "string"
+                                },
+                                "backImage": {
+                                  "type": "string",
+                                  "description": "SWU leader: the deployed (unit) side."
+                                },
+                                "orientation": {
+                                  "type": "string",
+                                  "enum": [
+                                    "portrait",
+                                    "landscape"
+                                  ]
+                                },
+                                "hp": {
+                                  "type": "integer",
+                                  "description": "SWU base: starting hit points."
+                                }
+                              }
+                            }
+                          },
+                          "leader": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string"
+                              },
+                              "backImage": {
+                                "type": "string",
+                                "description": "SWU leader: the deployed (unit) side."
+                              },
+                              "orientation": {
+                                "type": "string",
+                                "enum": [
+                                  "portrait",
+                                  "landscape"
+                                ]
+                              },
+                              "hp": {
+                                "type": "integer",
+                                "description": "SWU base: starting hit points."
+                              }
+                            }
+                          },
+                          "base": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string"
+                              },
+                              "backImage": {
+                                "type": "string",
+                                "description": "SWU leader: the deployed (unit) side."
+                              },
+                              "orientation": {
+                                "type": "string",
+                                "enum": [
+                                  "portrait",
+                                  "landscape"
+                                ]
+                              },
+                              "hp": {
+                                "type": "integer",
+                                "description": "SWU base: starting hit points."
+                              }
+                            }
+                          },
+                          "commander": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string"
+                              },
+                              "backImage": {
+                                "type": "string",
+                                "description": "SWU leader: the deployed (unit) side."
+                              },
+                              "orientation": {
+                                "type": "string",
+                                "enum": [
+                                  "portrait",
+                                  "landscape"
+                                ]
+                              },
+                              "hp": {
+                                "type": "integer",
+                                "description": "SWU base: starting hit points."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown game."
+          }
+        }
+      }
+    },
     "/auth/{path}": {
       "parameters": [
         {
