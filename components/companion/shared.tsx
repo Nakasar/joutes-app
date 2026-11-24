@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Cinzel, Cormorant_Garamond } from "next/font/google";
-import { useTranslations } from "next-intl";
-import { Dices, History, Loader2, LogOut, RotateCcw, Search, Undo2, X } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import ReactMarkdown from "react-markdown";
+import { Dices, ExternalLink, History, Loader2, LogOut, RotateCcw, Search, Undo2, X } from "lucide-react";
 
 import {
   companionStorageKey,
@@ -21,6 +22,7 @@ import {
 import type { CompanionDeck } from "@/lib/companion/decks";
 import { cn } from "@/lib/utils";
 
+import { CardPageLink, fetchLookupCard, formatErrataDate, type LookupCard, type LookupErrata } from "./card-api";
 import "./companion.css";
 
 /*
@@ -203,7 +205,11 @@ function seatLayout(count: number, band: boolean): { style: CSSProperties; seats
  * La table plein écran. À deux, la bande commune (`hub`) se glisse entre les
  * joueurs ; à plus, elle devient un bouton rond au centre.
  */
+/** Ouvre la loupe de la table, là où une table est à l'écran. */
+const LookupContext = createContext<(() => void) | null>(null);
+
 export function CompanionTable({
+  game,
   theme,
   count,
   band,
@@ -212,6 +218,7 @@ export function CompanionTable({
   className,
   children,
 }: {
+  game: CompanionGame;
   theme: "rb" | "swu" | "mtg";
   count: number;
   /** Une bande commune entre deux joueurs plutôt qu'un bouton au centre. */
@@ -223,7 +230,10 @@ export function CompanionTable({
 }) {
   const withBand = band && count <= 2;
   const layout = seatLayout(count, withBand);
+  const [lookup, setLookup] = useState(false);
+  const openLookup = useCallback(() => setLookup(true), []);
   return (
+    <LookupContext.Provider value={openLookup}>
     <div
       className={cn("cmp cmp-screen", `cmp-${theme}`, companionFonts, className)}
       style={layout.style}
@@ -243,6 +253,123 @@ export function CompanionTable({
       ))}
       {withBand ? <div style={{ gridArea: "hub" }} className="cmp-hub">{hub}</div> : <div className="cmp-hub-float">{hub}</div>}
       {children}
+      {lookup && <CardLookup game={game} onClose={() => setLookup(false)} />}
+    </div>
+    </LookupContext.Provider>
+  );
+}
+
+/** La loupe : un bouton rond, posé à côté d'« Annuler » sur la table. */
+export function LookupButton({ className, size }: { className?: string; size?: number }) {
+  const t = useTranslations("Games.Companion");
+  const openLookup = useContext(LookupContext);
+  if (!openLookup) return null;
+  return (
+    <button
+      type="button"
+      className={cn("cmp-round", className)}
+      style={size ? { width: size, height: size, flex: "none" } : undefined}
+      onClick={openLookup}
+      aria-label={t("lookup.button")}
+      title={t("lookup.button")}
+    >
+      <Search className={size && size < 36 ? "h-3.5 w-3.5" : "h-4 w-4"} />
+    </button>
+  );
+}
+
+const ERRATA_ORDER: Record<LookupErrata["type"], number> = { errata: 0, ruling: 1, clarification: 2 };
+
+/**
+ * Chercher une carte en pleine partie et lire ses erratas, clarifications et
+ * rulings, sans quitter la table : les tranchés d'abord, les obsolètes à la fin.
+ */
+function CardLookup({ game, onClose }: { game: CompanionGame; onClose: () => void }) {
+  const t = useTranslations("Games.Companion");
+  const locale = useLocale();
+  const [picked, setPicked] = useState<CompanionCard | null>(null);
+  const [card, setCard] = useState<LookupCard | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!picked) return;
+    let cancelled = false;
+    setCard(null);
+    setFailed(false);
+    fetchLookupCard(game, picked.id)
+      .then((detail) => {
+        if (!cancelled) setCard(detail);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [game, picked]);
+
+  const erratas = [...(card?.erratas ?? [])].sort(
+    (a, b) =>
+      Number(!!a.deprecatedAt) - Number(!!b.deprecatedAt) ||
+      ERRATA_ORDER[a.type] - ERRATA_ORDER[b.type] ||
+      (b.errataDate ?? "").localeCompare(a.errataDate ?? ""),
+  );
+  const image = card?.image ?? picked?.image;
+
+  return (
+    <div className="cmp-sheet-backdrop" onClick={onClose}>
+      <div className="cmp-sheet cmp-lookup" role="dialog" aria-modal="true" aria-label={t("lookup.title")} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="cmp-title text-lg">{t("lookup.title")}</h2>
+          <button type="button" className="cmp-round" onClick={onClose} aria-label={t("close")}>
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <CardSearch game={game} placeholder={t("lookup.placeholder")} label={t("lookup.title")} onPick={setPicked} autoFocus />
+
+        {picked && (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              {image && <img src={image} alt={picked.name} className="cmp-lookup-image" data-landscape={picked.orientation === "landscape" ? "true" : "false"} />}
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <h3 className="cmp-title text-base leading-tight">{picked.name}</h3>
+                <CardPageLink game={game} cardId={picked.id} className="cmp-link inline-flex items-center gap-1 text-xs">
+                  {t("lookup.fullCard")} <ExternalLink className="h-3 w-3" />
+                </CardPageLink>
+              </div>
+            </div>
+
+            <span className="cmp-label">{t("lookup.rulings")}</span>
+            {failed ? (
+              <p className="text-sm cmp-muted">{t("lookup.error")}</p>
+            ) : !card ? (
+              <Loader2 className="h-5 w-5 animate-spin cmp-muted" aria-label={t("lookup.loading")} />
+            ) : erratas.length === 0 ? (
+              <p className="text-sm cmp-muted">{t("lookup.none")}</p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {erratas.map((errata) => (
+                  <li key={errata.id} className="cmp-ruling" data-deprecated={errata.deprecatedAt ? "true" : "false"}>
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="cmp-pill" data-type={errata.type}>{t(`lookup.types.${errata.type}`)}</span>
+                      {errata.errataDate && <span className="cmp-muted">{formatErrataDate(errata.errataDate, locale)}</span>}
+                      {errata.deprecatedAt && <span className="cmp-muted">{t("lookup.deprecated")}</span>}
+                    </div>
+                    <div className="cmp-ruling-text">
+                      <ReactMarkdown>{errata.translations?.find((tr) => tr.lang === locale)?.details ?? errata.details}</ReactMarkdown>
+                    </div>
+                    {errata.source && /^https?:\/\//.test(errata.source) && (
+                      <a href={errata.source} target="_blank" rel="noopener noreferrer" className="cmp-link text-xs">
+                        {t("lookup.source")}
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -270,12 +397,14 @@ export function CardSearch({
   placeholder,
   label,
   onPick,
+  autoFocus,
 }: {
   game: CompanionGame;
   type?: string;
   placeholder: string;
   label: string;
   onPick: (card: CompanionCard) => void;
+  autoFocus?: boolean;
 }) {
   const t = useTranslations("Games.Companion");
   const [query, setQuery] = useState("");
@@ -334,7 +463,7 @@ export function CardSearch({
       <label className="cmp-search-field">
         <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
         <span className="sr-only">{label}</span>
-        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder} />
+        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder} autoFocus={autoFocus} />
         {loading && <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />}
       </label>
       {unique && (
@@ -479,6 +608,7 @@ export function GameMenu({
   children?: ReactNode;
 }) {
   const t = useTranslations("Games.Companion");
+  const openLookup = useContext(LookupContext);
   const [roll, setRoll] = useState<string | null>(null);
   const [confirmRestart, setConfirmRestart] = useState(false);
 
@@ -512,6 +642,18 @@ export function GameMenu({
           <button type="button" className="cmp-button" onClick={onUndo} disabled={!canUndo}>
             <Undo2 className="h-4 w-4" /> {t("undo")}
           </button>
+          {openLookup && (
+            <button
+              type="button"
+              className="cmp-button"
+              onClick={() => {
+                onClose();
+                openLookup();
+              }}
+            >
+              <Search className="h-4 w-4" /> {t("lookup.button")}
+            </button>
+          )}
           <button type="button" className="cmp-button" onClick={() => setRoll(t("rolled", { sides: 6, value: rollDie(6) }))}>
             <Dices className="h-4 w-4" /> {t("d6")}
           </button>
