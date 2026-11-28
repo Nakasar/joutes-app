@@ -50,6 +50,16 @@ import {viewerPricePreference, viewerPriceSources} from "@/lib/prices/viewer.ts"
 import { UserLabel } from "@/components/UserLabel.tsx";
 import { BackLink } from "@/components/navigation/BackLink.tsx";
 import {getCardGlossary} from "@/lib/db/card-translations.ts";
+import {localizedAlternates} from "@/lib/seo/alternates.ts";
+import {
+  readCardErratas,
+  readCardGlossary,
+  readCardHeadline,
+  readCardPrices,
+  readCardsByNames,
+  readCatalogCard,
+  type CatalogCard,
+} from "@/lib/cards/public-card.ts";
 import {glossaryLookup, publishedTranslation, readCardTranslations, translateAttributeValue} from "@/lib/cards/translations.ts";
 
 function hasNegativeVoteRatio(errata: Errata): boolean {
@@ -59,9 +69,9 @@ function hasNegativeVoteRatio(errata: Errata): boolean {
 export async function generateMetadata({
                                          params,
                                        }: {
-  params: Promise<{ cardId: string }>;
+  params: Promise<{ cardId: string; gameSlugOrId: string }>;
 }): Promise<Metadata> {
-  const {cardId} = await params;
+  const {cardId, gameSlugOrId} = await params;
   const t = await getTranslations("Games");
 
   // Même piège Mongo que dans le corps, à désarmer une seconde fois : les
@@ -69,7 +79,9 @@ export async function generateMetadata({
   // lecture de la carte.
   await connection();
 
-  const card = await db.collection<BoosterCard>("cards").findOne({id: cardId});
+  // Lecture partagée et gardée en cache (`lib/cards/public-card.ts`) : les
+  // métadonnées sont les mêmes pour tous.
+  const card = await readCardHeadline(cardId);
 
   if (!card) {
     return {
@@ -77,9 +89,12 @@ export async function generateMetadata({
     };
   }
 
-  const erratas = await getErratasByCardId(cardId);
+  const erratas = {length: card.erratas};
 
   return {
+    // Une fiche existe dans chaque langue : chacune se déclare canonique et
+    // cite les autres (`lib/seo/alternates.ts`).
+    alternates: localizedAlternates(`/games/${gameSlugOrId}/cards/${cardId}`, await getLocale()),
     title: t("cards.detail.metadata.title", {cardName: card.name}),
     description: t("cards.detail.metadata.description", {
       cardName: card.name,
@@ -93,7 +108,7 @@ export async function generateMetadata({
         count: erratas.length,
         banned: card.banned ? t("cards.detail.metadata.banned") : ""
       }),
-      images: [card.image],
+      images: card.image ? [card.image] : [],
     },
   };
 }
@@ -137,9 +152,15 @@ async function CardDetail({
 
   // `BoosterCard` décrit une carte de collection ; le document de catalogue
   // porte en plus ses variantes d'impression.
-  const card = await db
-    .collection<BoosterCard & { printings?: CardPrinting[] }>("cards")
-    .findOne({id: cardId, gameId: new ObjectId(game.id)});
+  //
+  // Sans compte, la fiche est la même pour tous : ses lectures passent par le
+  // cache (`lib/cards/public-card.ts`). Connecté, on lit la base, pour voir
+  // tout de suite ce qu'on vient de changer.
+  const card: CatalogCard | null = userId
+    ? await db
+      .collection<BoosterCard & { printings?: CardPrinting[] }>("cards")
+      .findOne({id: cardId, gameId: new ObjectId(game.id)})
+    : await readCatalogCard(game.id, cardId);
 
   if (!card) {
     return (
@@ -167,7 +188,9 @@ async function CardDetail({
   const translation = translatable
     ? publishedTranslation(readCardTranslations((card as unknown as {translations?: unknown}).translations), locale)
     : undefined;
-  const glossary = translatable ? glossaryLookup(await getCardGlossary(new ObjectId(game.id), locale)) : glossaryLookup([]);
+  const glossary = translatable
+    ? glossaryLookup(userId ? await getCardGlossary(new ObjectId(game.id), locale) : await readCardGlossary(game.id, locale))
+    : glossaryLookup([]);
   const displayName = translation?.name ?? card.name;
   const displayText = translation?.text ?? card.text;
 
@@ -184,7 +207,9 @@ async function CardDetail({
   // liraient pas (cf. docs/CARD_PRICES.md). Le premier de la liste la
   // représente — le premier fournisseur choisi par le joueur qui la cote.
   const priceSources = await viewerPriceSources();
-  const cardPrices = await getCardPrices(new ObjectId(game.id), card.id, priceSources);
+  const cardPrices = userId
+    ? await getCardPrices(new ObjectId(game.id), card.id, priceSources)
+    : await readCardPrices(game.id, card.id, priceSources);
   const referencePrice = referenceCardPrice(cardPrices, priceSources);
   // Les variantes cotées à part (le tirage Beta d'une carte Cyberpunk) ont
   // leur prix sous leur vignette ; les autres prennent celui de la carte.
@@ -196,7 +221,7 @@ async function CardDetail({
   );
   const pricePreference = await viewerPricePreference();
 
-  const erratas = [...await getErratasByCardId(cardId, userId)].sort(
+  const erratas = [...(userId ? await getErratasByCardId(cardId, userId) : await readCardErratas(cardId))].sort(
     (a, b) => Number(hasNegativeVoteRatio(a)) - Number(hasNegativeVoteRatio(b))
   );
   const userIsAdmin = isAdmin(session?.user?.email);
@@ -213,7 +238,9 @@ async function CardDetail({
       ])
     ),
   ];
-  const mentionedCards = await getCardsByNames(new ObjectId(game.id), mentionedCardNames);
+  const mentionedCards = userId
+    ? await getCardsByNames(new ObjectId(game.id), mentionedCardNames)
+    : await readCardsByNames(game.id, [...mentionedCardNames].sort());
   const cardIdByName = Object.fromEntries(mentionedCards.map((c) => [c.name.toLowerCase(), c.id]));
   const cardsById = Object.fromEntries(mentionedCards.map((c) => [c.id, c]));
 
