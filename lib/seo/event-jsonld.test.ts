@@ -5,6 +5,15 @@ import type { Event } from "@/lib/types/Event";
 
 import { eventJsonLd, jsonLdScript } from "./event-jsonld.ts";
 
+/** La forme lue par ces tests, sans typer tout schema.org. */
+type Described = {
+  "@type": string;
+  url: string;
+  eventStatus: string;
+  location: { name: string; geo: unknown };
+  offers: { price: number; availability: string };
+};
+
 const base = {
   id: "ev1",
   lairId: "l1",
@@ -18,7 +27,7 @@ const base = {
 } as unknown as Event;
 
 test("un événement de boutique est décrit avec son lieu et son prix", () => {
-  const data = eventJsonLd({ ...base, price: 5 }, "/events/ev1") as Record<string, any>;
+  const data = eventJsonLd({ ...base, price: 5 }, "/events/ev1") as Described;
   assert.equal(data["@type"], "Event");
   assert.equal(data.url, "https://www.joutes.app/events/ev1");
   assert.equal(data.location.name, "L'Antre");
@@ -29,11 +38,11 @@ test("un événement de boutique est décrit avec son lieu et son prix", () => {
 
 test("annulé et complet se disent", () => {
   assert.equal(
-    (eventJsonLd({ ...base, status: "cancelled" }, "/events/ev1") as Record<string, any>).eventStatus,
+    (eventJsonLd({ ...base, status: "cancelled" }, "/events/ev1") as Described).eventStatus,
     "https://schema.org/EventCancelled",
   );
   assert.equal(
-    (eventJsonLd({ ...base, status: "sold-out", price: 0 }, "/events/ev1") as Record<string, any>).offers.availability,
+    (eventJsonLd({ ...base, status: "sold-out", price: 0 }, "/events/ev1") as Described).offers.availability,
     "https://schema.org/SoldOut",
   );
 });
