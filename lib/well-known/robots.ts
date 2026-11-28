@@ -11,7 +11,7 @@
  * `User-Agent`, elle serait ignorée sans le moindre avertissement.
  */
 
-import { AI_BOT_AGENTS, AI_ROBOTS_TXT_TOKENS, BLOCKED_BOT_AGENTS } from "@/lib/net/blocked-bots";
+import { AI_BOT_AGENTS, AI_ROBOTS_TXT_TOKENS, BLOCKED_BOT_AGENTS, SLOWED_BOT_AGENTS } from "@/lib/net/blocked-bots";
 
 /** Préférences déclarées, dans l'ordre où la spécification les présente. */
 export const CONTENT_SIGNAL = "search=yes, ai-input=no, ai-train=no";
@@ -48,6 +48,22 @@ const SITEMAPS = [
   "https://www.joutes.app/sitemap_index.xml",
 ];
 
+/** Ce que tout robot admis doit éviter : l'administration et la méta. */
+const COMMON_DISALLOWS = ["/admin/", ...META_DISALLOWS];
+
+/**
+ * Les moteurs priés de ralentir. Un robot ne lit que le groupe le plus précis
+ * qui le nomme : chaque groupe reprend donc les règles de `*`.
+ */
+function slowedGroups(): string {
+  return Object.entries(SLOWED_BOT_AGENTS)
+    .map(
+      ([agent, seconds]) =>
+        `User-Agent: ${agent}\nContent-Signal: ${CONTENT_SIGNAL}\nCrawl-delay: ${seconds}\nAllow: /\n${COMMON_DISALLOWS.map((path) => `Disallow: ${path}`).join("\n")}`,
+    )
+    .join("\n\n");
+}
+
 export function buildRobotsTxt(): string {
   return `# Content Signals — préférences d'usage du contenu (https://contentsignals.org/).
 #   search   : indexer le contenu et le restituer en résultats de recherche
@@ -61,8 +77,9 @@ export function buildRobotsTxt(): string {
 User-Agent: *
 Content-Signal: ${CONTENT_SIGNAL}
 Allow: /
-Disallow: /admin/
-${META_DISALLOWS.map((path) => `Disallow: ${path}`).join("\n")}
+${COMMON_DISALLOWS.map((path) => `Disallow: ${path}`).join("\n")}
+
+${slowedGroups()}
 
 ${AI_AGENTS.map((agent) => `User-Agent: ${agent}`).join("\n")}
 Content-Signal: ${CONTENT_SIGNAL}

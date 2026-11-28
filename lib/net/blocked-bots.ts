@@ -9,6 +9,11 @@
  * moteurs de recherche, et de leur laisser le serveur MCP. Déclencheur :
  * Meta-ExternalAgent a parcouru les fiches de cartes du 21 au 22 nov. 2026,
  * ~46 000 requêtes et ~2,6 Go sortis en 18 heures.
+ *
+ * Deux exceptions, décidées par Kevin le 2026-11-28 : OAI-SearchBot (la
+ * recherche de ChatGPT) et Claude-User (une lecture demandée par un
+ * utilisateur de Claude) sont admis, parce qu'ils amènent des visites. Ils ne
+ * figurent donc plus dans la liste. Amzn-SearchBot, lui, y entre.
  */
 
 /**
@@ -22,10 +27,8 @@ export const AI_BOT_AGENTS = [
   // OpenAI
   "GPTBot",
   "ChatGPT-User",
-  "OAI-SearchBot",
   // Anthropic
   "ClaudeBot",
-  "Claude-User",
   "Claude-SearchBot",
   "Claude-Web",
   "anthropic-ai",
@@ -43,6 +46,9 @@ export const AI_BOT_AGENTS = [
   "Gemini-Deep-Research",
   // Autres
   "Amazonbot",
+  "Amzn-SearchBot",
+  "Amzn-User",
+  "ExaBot",
   "Bytespider",
   "TikTokSpider",
   "CCBot",
@@ -72,10 +78,55 @@ export const AI_BOT_AGENTS = [
 export const AI_ROBOTS_TXT_TOKENS = ["Google-Extended", "Applebot-Extended"];
 
 /**
- * Robots sans intérêt pour Joutes, refusés partout, MCP compris :
- * SERankingBacklinksBot (analyse de liens) a pesé ~1,5 Go les 9-10 nov. 2026.
+ * Robots sans intérêt pour Joutes, refusés partout, MCP compris : les outils
+ * d'analyse SEO commerciaux. Ils alimentent des rapports payants, pas un
+ * moteur de recherche : les refuser ne change rien au classement dans Google
+ * ou Bing. SERankingBacklinksBot a pesé ~1,5 Go les 9-10 nov. 2026 ; Semrush,
+ * Ahrefs, ShapBot et Barkrowler ~3 000 requêtes la semaine du 21 nov. 2026.
  */
-export const BLOCKED_BOT_AGENTS = ["SERankingBacklinksBot"];
+export const BLOCKED_BOT_AGENTS = [
+  "SERankingBacklinksBot",
+  "SemrushBot",
+  "AhrefsBot",
+  "ShapBot",
+  "Barkrowler",
+  "MJ12bot",
+  "DotBot",
+  "DataForSeoBot",
+  "BLEXBot",
+  "serpstatbot",
+];
+
+/**
+ * Moteurs de recherche gardés mais priés de ralentir (`Crawl-delay`, en
+ * secondes, dans `robots.txt`). PetalBot a fait 12 000 requêtes en une
+ * semaine, Yandex 1 650 en un jour. La consigne n'engage que ceux qui la
+ * suivent : PetalBot et Bing oui, Google non (il règle son rythme seul).
+ */
+export const SLOWED_BOT_AGENTS: Record<string, number> = { PetalBot: 10, YandexBot: 10 };
+
+/**
+ * Bibliothèques HTTP et outils en ligne de commande : sur une page du site,
+ * ce n'est jamais un lecteur. Cherchés en tête d'agent.
+ */
+const SCRIPT_AGENT = /^(?:python-requests|python-urllib|python-httpx|aiohttp|curl|wget|go-http-client|okhttp|axios|node-fetch|node|undici|scrapy|libwww-perl|java|ruby|php|guzzlehttp|httpclient|restsharp|postmanruntime|insomnia)\b/i;
+
+/**
+ * Ce que le refus des scripts ne touche pas : l'API (l'app mobile et les
+ * intégrations n'envoient pas toujours d'agent), le serveur MCP, les fichiers
+ * de découverte, et les fichiers faits pour être lus par une machine.
+ */
+const MACHINE_PATH = /^\/(?:api|mcp|discord)(?:\/|$)|\/\.well-known(?:\/|$)|\.(?:md|txt|xml|json)$/;
+
+/**
+ * Vrai pour une page demandée sans agent, ou par une bibliothèque HTTP : les
+ * scripts de collecte les plus simples. Aucun moteur de recherche ni aperçu de
+ * lien n'est concerné, tous se nomment.
+ */
+export function isScriptOnPage(pathname: string, userAgent: string | null): boolean {
+  if (MACHINE_PATH.test(pathname)) return false;
+  return !userAgent?.trim() || SCRIPT_AGENT.test(userAgent.trim());
+}
 
 /**
  * Adresses laissées aux robots d'IA : le serveur MCP et ce dont sa connexion
@@ -99,7 +150,8 @@ export function isAiBot(userAgent: string | null): boolean {
 
 /** Vrai si le proxy doit refuser cette requête à ce robot. */
 export function isBlockedBot(pathname: string, userAgent: string | null): boolean {
-  if (!userAgent) return false; // l'app mobile n'envoie pas toujours d'agent
+  if (isScriptOnPage(pathname, userAgent)) return true;
+  if (!userAgent) return false; // sur l'API, l'app mobile n'envoie pas toujours d'agent
   if (BLOCKED_BOT.test(userAgent)) return true;
   return isAiBot(userAgent) && !MCP_PATH.test(pathname);
 }
