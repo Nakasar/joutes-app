@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { createReport } from "@/lib/db/reports.ts";
+import { isRateLimited, RATE_LIMITS } from "@/lib/net/rate-limit.ts";
 import { createReportSchema } from "@/lib/schemas/report.schema.ts";
 import { ReportableContentType } from "@/lib/types/Report.ts";
 
@@ -26,6 +27,10 @@ export async function reportContent(input: {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
       return { success: false, error: "Vous devez être connecté pour signaler un contenu." };
+    }
+
+    if (await isRateLimited(RATE_LIMITS.report, `user:${session.user.id}`)) {
+      return { success: false, error: "Trop de signalements en peu de temps. Réessayez dans une heure." };
     }
 
     const parsed = createReportSchema.safeParse(input);

@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: GameDecksPageProps): Promise<
     title,
     description,
     openGraph: {
-      url: `https://joutes.app/games/${gameSlugOrId}/decks`,
+      url: `https://www.joutes.app/games/${gameSlugOrId}/decks`,
       title,
       description,
       images: game.banner ? [game.banner] : [],

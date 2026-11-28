@@ -20,7 +20,8 @@ import GameLiveSection from "./GameLiveSection.tsx";
 import GamePublisherLinks from "./GamePublisherLinks.tsx";
 import { GameSocialSection } from "./GameSocialSection.tsx";
 import { GameNewsSection } from "./GameNewsSection.tsx";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { localizedAlternates } from "@/lib/seo/alternates.ts";
 import { Suspense, cache } from "react";
 import { connection } from "next/server";
 import {
@@ -49,10 +50,11 @@ export async function generateMetadata({ params }: GameDetailPageProps): Promise
   }
 
   return {
+    alternates: localizedAlternates(`/games/${game.slug ?? gameSlugOrId}`, await getLocale()),
     title: t("detail.metadata.title", { gameName: game.name }),
     description: game.description,
     openGraph: {
-      url: `https://joutes.app/games/${gameSlugOrId}`,
+      url: `https://www.joutes.app/games/${gameSlugOrId}`,
       siteName: 'Joutes - Star Wars Unlimited',
       title: game.name,
       description: t("detail.metadata.ogDescription", { gameName: game.name }),

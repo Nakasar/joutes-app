@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: { params: GameParams }): Prom
     title: t("metadata.title", { gameName: game.name }),
     description: t("metadata.description", { gameName: game.name }),
     openGraph: {
-      url: `https://joutes.app/games/${gameSlugOrId}/social`,
+      url: `https://www.joutes.app/games/${gameSlugOrId}/social`,
       title: t("metadata.title", { gameName: game.name }),
       description: t("metadata.description", { gameName: game.name }),
       images: game.banner ? [game.banner] : [],

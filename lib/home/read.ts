@@ -1,6 +1,7 @@
 import "server-only";
 
 import { DateTime } from "luxon";
+import { cacheLife } from "next/cache";
 
 import { getLairIdsNearLocation, getLairsByIds } from "@/lib/db/lairs";
 import { getAllEvents, getEventsByLairIds, getEventsForUser, getEventsWithUsers } from "@/lib/db/events";
@@ -295,6 +296,37 @@ export async function readHomeHighlights(
 /** Ce que l'accueil regarde au plus pour composer « À ne pas manquer ». */
 const MAX_CANDIDATS_MIS_EN_AVANT = 400;
 
+/** Le pas de temps qui sert de clé au cache de l'agenda public. */
+const PAS_AGENDA_PUBLIC_MINUTES = 10;
+
+/** Le début du pas courant : dix minutes de visiteurs partagent une lecture. */
+function agendaSlot(now: DateTime): string {
+  const utc = now.toUTC();
+  const slot = utc.set({ minute: utc.minute - (utc.minute % PAS_AGENDA_PUBLIC_MINUTES), second: 0, millisecond: 0 });
+  return slot.toISO() ?? "";
+}
+
+/**
+ * L'agenda d'un visiteur sans compte ni position : tout ce qui se passe, chez
+ * tous les lieux publics. C'est le même pour chacun d'eux, donc il est lu une
+ * fois par pas de dix minutes et gardé en cache — c'était la lecture la plus
+ * coûteuse du site, refaite à chaque affichage de l'accueil.
+ *
+ * `use cache: remote` : le cache par défaut vit dans la mémoire d'une
+ * instance de fonction, et chaque instance referait la lecture pour elle.
+ * Celui-ci est partagé par toutes.
+ *
+ * La lecture déborde d'un pas à la fin ; l'appelant recoupe à l'instant exact.
+ */
+async function readPublicAgenda(slot: string, days: number): Promise<Event[]> {
+  "use cache: remote";
+  cacheLife({ stale: 300, revalidate: 600, expire: 3600 });
+
+  const start = DateTime.fromISO(slot, { zone: "utc" });
+  const end = start.plus({ days, minutes: PAS_AGENDA_PUBLIC_MINUTES });
+  return getAllEvents({ afterDate: start.toISO() ?? undefined, beforeDate: end.toISO() ?? undefined });
+}
+
 /**
  * Les événements à venir sur `days` jours, dans le périmètre de l'accueil,
  * triés par date. `readHomeAgenda` en garde les premiers ; « À ne pas
@@ -326,13 +358,7 @@ async function readAgendaWindow(
     const near = await getLairIdsNearLocation(position.longitude, position.latitude, position.radiusKm * 1000);
     events = await getEventsByLairIds(near, { ...bounds, gameIds: game ? [game.id] : undefined });
   } else {
-    // La fenêtre peut chevaucher deux mois : on lit les deux et on recolle.
-    const thisMonth = await getAllEvents({ year: now.year, month: now.month });
-    const nextMonth =
-      end.month === now.month && end.year === now.year
-        ? []
-        : await getAllEvents({ year: end.year, month: end.month });
-    events = [...thisMonth, ...nextMonth];
+    events = await readPublicAgenda(agendaSlot(now), days);
   }
 
   const startMs = now.toMillis();

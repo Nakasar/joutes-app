@@ -712,7 +712,13 @@ const handler = createMcpHandler(server => {
     // Partagé avec la carte du serveur : ce que dit la poignée de main et ce
     // que dit `/.well-known/mcp/server-card.json` ne peuvent pas diverger.
     serverInfo: MCP_SERVER_INFO,
-    verboseLogs: true,
+    // Les clients au protocole 2026-07-28 ouvrent un flux `subscriptions/listen`
+    // pour apprendre qu'une liste d'outils a changé. Les outils d'ici ne
+    // changent qu'à un déploiement : ce flux n'aurait jamais rien à dire, et
+    // chacun restait ouvert jusqu'à `maxDuration` (un quart de la mémoire
+    // facturée du site, 1 455 « Task timed out » en sept jours). À zéro, la
+    // demande est refusée dans la réponse, sans ouvrir de flux.
+    maxSubscriptions: 0,
 });
 
 // Durée max de la fonction serverless. Sans cet export, Vercel applique sa

@@ -123,6 +123,8 @@ export type Event = {
     location?: GeoJSONPoint;
     address?: string;
     owners?: string[];
+    /** Lieu privé : montré à ceux qui le suivent seulement. Renseigné par `getEventById`. */
+    isPrivate?: boolean;
   };
   /**
    * Événements que l'organisation a liés à celui-ci (séances d'une même

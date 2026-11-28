@@ -1,3 +1,4 @@
+import { CRAWLER_CACHE_CONTROL } from "@/lib/net/crawler-cache";
 import db from "@/lib/mongodb";
 import { CGU_LAST_UPDATED, PRIVACY_LAST_UPDATED } from "@/lib/constants/legal";
 import type { Game } from "@/lib/types/Game";
@@ -115,6 +116,7 @@ ${urls.map(({ url, lastModified, changeFrequency, priority }) => `  <url>
   return new Response(xml, {
     headers: {
       'Content-Type': 'application/xml',
+      'Cache-Control': CRAWLER_CACHE_CONTROL,
     },
   });
 }

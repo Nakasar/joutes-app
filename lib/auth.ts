@@ -368,7 +368,9 @@ export const auth = betterAuth({
     allowedHosts: [
 			"joutes.app",
 			"*.joutes.app",
-			"*.vercel.app",
+			// Les aperçus Vercel : l'hôte de ce déploiement et celui de sa branche,
+			// pas « *.vercel.app », qui admettait n'importe quel projet Vercel.
+			...[process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL].filter((host): host is string => Boolean(host)),
       process.env.BETTER_AUTH_URL ?? 'joutes.app',
       process.env.NEXT_PUBLIC_BASE_URL ?? 'joutes.app',
 		],

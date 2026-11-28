@@ -1,3 +1,4 @@
+import { CRAWLER_CACHE_CONTROL } from "@/lib/net/crawler-cache";
 import {getGameBySlugOrId} from "@/lib/db/games";
 import db from "@/lib/mongodb";
 import {BoosterCard} from "@/lib/types/booster";
@@ -20,6 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return new NextResponse(xml, {
       headers: {
         'Content-Type': 'application/xml',
+        'Cache-Control': CRAWLER_CACHE_CONTROL,
       },
     });
   }
@@ -48,6 +50,7 @@ ${urls.map(({ url, lastModified, changeFrequency, priority }) => `  <url>
   return new NextResponse(xml, {
     headers: {
       'Content-Type': 'application/xml',
+        'Cache-Control': CRAWLER_CACHE_CONTROL,
     },
   });
 }

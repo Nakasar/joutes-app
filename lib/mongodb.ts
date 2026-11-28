@@ -19,6 +19,12 @@ const options = {
   // error instead of piling up slow/stuck requests.
   serverSelectionTimeoutMS: 5000,
   connectTimeoutMS: 10000,
+  // Chaque instance de fonction garde son propre pool. Le défaut du driver
+  // (100 connexions) multiplié par les instances d'un pic approche la limite
+  // du cluster ; vingt suffisent à une instance, et une connexion restée une
+  // minute sans servir est rendue.
+  maxPoolSize: 20,
+  maxIdleTimeMS: 60000,
   retryWrites: true,
   retryReads: true,
 };

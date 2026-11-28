@@ -1,6 +1,7 @@
 import type { IndexDefinition } from "./ensure";
 import { CARD_INDEXES } from "./cards";
 import { EVENT_INDEXES } from "./events";
+import { PLATFORM_INDEXES } from "./platform";
 import { TOURNAMENT_INDEXES } from "./tournaments";
 import { USER_INDEXES } from "./users";
 
@@ -17,4 +18,4 @@ import { USER_INDEXES } from "./users";
  * c'est une décision à prendre après avoir regardé la base. Seuls le sont ceux
  * que le code déclarait déjà comme tels.
  */
-export const INDEXES: IndexDefinition[] = [...EVENT_INDEXES, ...TOURNAMENT_INDEXES, ...CARD_INDEXES, ...USER_INDEXES];
+export const INDEXES: IndexDefinition[] = [...EVENT_INDEXES, ...TOURNAMENT_INDEXES, ...CARD_INDEXES, ...USER_INDEXES, ...PLATFORM_INDEXES];

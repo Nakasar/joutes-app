@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Explorez les jeux de cartes à collectionner et jeux de plateau disponibles sur Joutes : règles, cartes, rulings et communauté.",
   keywords: ["jeux de cartes à collectionner", "tcg", "jeux de plateau", "règles du jeu", "rulings", "riftbound", "lorcana", "altered"],
   openGraph: {
-    url: `https://joutes.app/games`,
+    url: `https://www.joutes.app/games`,
     siteName: 'Joutes',
     title: 'Jeux - Joutes',
     description: 'Explorez les jeux de cartes à collectionner et jeux de plateau disponibles sur Joutes.',

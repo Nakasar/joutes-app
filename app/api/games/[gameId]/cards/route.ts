@@ -1,3 +1,4 @@
+import { RATE_LIMITS, rateLimitResponse } from "@/lib/net/rate-limit";
 import {NextRequest, NextResponse} from "next/server";
 import {BoosterCard} from "@/lib/types/booster";
 import meilisearch, {cardIndexFor, isUndeclaredCriteriaError} from "@/lib/meilisearch";
@@ -247,6 +248,9 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = await params;
+
+  const limited = await rateLimitResponse(request, RATE_LIMITS.cards);
+  if (limited) return limited;
 
   const searchParams = new URL(request.url).searchParams;
   const setCode = searchParams.get('setCode') || '';

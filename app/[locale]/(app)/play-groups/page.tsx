@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: "Gérez vos groupes de jeu sur Joutes : partagez collections et wishlists, invitez des membres et organisez vos parties avec votre communauté.",
   keywords: ["groupes de jeu", "collection partagée", "wishlist", "communauté", "jeux de cartes à collectionner"],
   openGraph: {
-    url: `https://joutes.app/play-groups`,
+    url: `https://www.joutes.app/play-groups`,
     siteName: 'Joutes',
     title: 'Groupes de jeu - Joutes',
     description: "Partagez collections et wishlists, invitez des membres et organisez vos parties avec votre groupe de jeu.",

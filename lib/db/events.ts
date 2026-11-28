@@ -190,122 +190,87 @@ async function readLairNames(lairIds: string[]): Promise<Map<string, string>> {
   return new Map(lairs.map((lair) => [lair._id.toHexString(), lair.name as string]));
 }
 
-// Get all events across all lairs
-export async function getAllEvents({year, month, games, userId}: {
+/**
+ * Les événements de tous les lieux publics, sur un mois ou entre deux dates.
+ *
+ * Une lecture simple, puis les lieux et les jeux joints en mémoire en une
+ * requête chacun — comme `getEventsByLairId`. L'agrégation d'avant faisait deux
+ * `$lookup` **par événement**, et l'accueil d'un visiteur sans compte lisait
+ * ainsi le mois entier à chaque affichage.
+ */
+export async function getAllEvents({year, month, afterDate, beforeDate}: {
   year?: number;
   month?: number;
+  afterDate?: string;
+  beforeDate?: string;
   games?: string[];
   userId?: string
 } = {}): Promise<Event[]> {
-  // Build aggregation pipeline
-  const pipeline: Array<Record<string, unknown>> = [];
+  const startDateTime: Record<string, string> = {};
+  if (month && year) Object.assign(startDateTime, monthRange(year, month));
+  // Les bornes s'ajoutent au mois : la plus stricte l'emporte.
+  if (afterDate && !(startDateTime.$gte && startDateTime.$gte > afterDate)) startDateTime.$gte = afterDate;
+  if (beforeDate && !(startDateTime.$lte && startDateTime.$lte < beforeDate)) startDateTime.$lte = beforeDate;
 
-  // Add date range filter if month and year are provided
-  if (month && year) {
-    // Create date range for the month
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
-
-    pipeline.push({
-      $match: {
-        startDateTime: {
-          $gte: startDate.toISOString(),
-          $lte: endDate.toISOString()
-        }
-      }
-    });
-  }
-
-  pipeline.push({
-    $lookup: {
-      from: "lairs",
-      let: {lairId: {$toObjectId: "$lairId"}},
-      pipeline: [
-        {
-          $match: {
-            $expr: {$eq: ["$_id", "$$lairId"]}
-          }
-        },
-        // Le nom et la confidentialité, pas le lieu entier recopié dans
-        // chaque événement (actualités, thème… : voir `getEventsByLairId`).
-        {$project: {_id: 1, name: 1, isPrivate: 1}},
-      ],
-      as: "lairDetails"
-    }
-  });
-
-  // Filtrer les lairs privés
-  pipeline.push({
-    $match: {
-      "lairDetails.isPrivate": {$ne: true}
-    }
-  });
-
-  pipeline.push(
-    {
-      $lookup: {
-        from: "games",
-        let: {eventGameName: "$gameName"},
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  {$eq: ["$name", "$$eventGameName"]},
-                ]
-              }
-            }
-          },
-          {
-            $project: {
-              _id: 1,
-              name: 1,
-              icon: 1,
-              banner: 1,
-              slug: 1,
-              type: 1,
-            }
-          }
-        ],
-        as: "game"
-      }
-    },
-    {
-      $unwind: {
-        path: "$game",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-  );
-
-  // Execute aggregation
   const events = await db
     .collection<EventDocument>(COLLECTION_NAME)
-    .aggregate(pipeline)
+    .find(Object.keys(startDateTime).length > 0 ? {startDateTime} : {}, {projection: AGENDA_PROJECTION})
+    .sort({startDateTime: 1})
     .toArray();
 
-  // Map results to Event type
-  return events.map((event) => ({
-    id: event.id,
-    lairId: event.lairId,
-    name: event.name,
-    banner: event.banner,
-    startDateTime: event.startDateTime,
-    endDateTime: event.endDateTime,
-    gameName: event.gameName,
-    game: event.game,
-    url: event.url,
-    price: event.price,
-    status: event.status,
-    addedBy: event.addedBy,
-    creatorId: event.creatorId,
-    participants: event.participants,
-    maxParticipants: event.maxParticipants,
-    lair: event.lairDetails && event.lairDetails.length > 0 ? {
-      id: event.lairDetails[0].id,
-      name: event.lairDetails[0].name,
-    } : undefined,
-  }));
+  const [lairs, games] = await Promise.all([
+    readLairVisibility(events.flatMap((event) => (event.lairId ? [event.lairId] : []))),
+    readGamesByName(events.map((event) => event.gameName)),
+  ]);
+
+  return events.flatMap((event) => {
+    const lair = event.lairId ? lairs.get(event.lairId) : undefined;
+    // Cette liste est publique (accueil sans compte, recherche du MCP) et
+    // passe par un cache partagé. Un événement sans lieu est privé — sa page
+    // ne s'ouvre qu'à son créateur et à ses inscrits —, un lieu privé garde
+    // ses événements pour lui, et un lieu disparu ne dit plus s'il l'était :
+    // aucun des trois n'y figure.
+    if (!lair || lair.isPrivate) return [];
+
+    const game = games.get(event.gameName);
+    return [{
+      id: event.id,
+      lairId: event.lairId,
+      name: event.name,
+      banner: event.banner,
+      startDateTime: event.startDateTime,
+      endDateTime: event.endDateTime,
+      gameName: event.gameName,
+      // Sans `_id` : ces événements traversent un cache, qui ne transporte
+      // que des objets simples.
+      game: game
+        ? {name: game.name, icon: game.icon, banner: game.banner, type: game.type, slug: game.slug}
+        : undefined,
+      url: event.url,
+      price: event.price,
+      status: event.status,
+      addedBy: event.addedBy,
+      creatorId: event.creatorId,
+      participants: event.participants,
+      maxParticipants: event.maxParticipants,
+      lair: {id: event.lairId as string, name: lair.name},
+    }];
+  });
+}
+
+/** Le nom et la confidentialité de chaque lieu, en une requête sur `_id`. */
+async function readLairVisibility(lairIds: string[]): Promise<Map<string, {name: string; isPrivate: boolean}>> {
+  const objectIds = [...new Set(lairIds)].filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (objectIds.length === 0) return new Map();
+
+  const lairs = await db
+    .collection("lairs")
+    .find({_id: {$in: objectIds}}, {projection: {_id: 1, name: 1, isPrivate: 1}})
+    .toArray();
+
+  return new Map(
+    lairs.map((lair) => [lair._id.toHexString(), {name: lair.name as string, isPrivate: lair.isPrivate === true}]),
+  );
 }
 
 // Get events for multiple lairs
@@ -932,7 +897,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
               $expr: {$eq: ["$_id", "$$lairId"]}
             }
           },
-          {$project: {_id: 1, name: 1, location: 1, address: 1}},
+          {$project: {_id: 1, name: 1, location: 1, address: 1, isPrivate: 1}},
         ],
         as: "lairDetails"
       }
@@ -1028,6 +993,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
       name: event.lairDetails[0].name,
       location: event.lairDetails[0].location,
       address: event.lairDetails[0].address,
+      isPrivate: event.lairDetails[0].isPrivate === true,
     } : undefined,
     staff: event.staff ?? [],
     linkedEventIds: event.linkedEventIds ?? [],

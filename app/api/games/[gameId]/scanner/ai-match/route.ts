@@ -1,3 +1,6 @@
+import { RATE_LIMITS, rateLimitResponse } from "@/lib/net/rate-limit";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { z } from "zod";
@@ -98,6 +101,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ gam
   if (image.length > MAX_IMAGE_LENGTH) {
     return NextResponse.json({ error: { message: "Image is too large." } }, { status: 400 });
   }
+
+  // Chaque scan appelle un modèle payant : un compte autorisé a un plafond par
+  // jour, pour qu'un script ne puisse pas vider le crédit.
+  const session = await auth.api.getSession({ headers: await headers() });
+  const limited = await rateLimitResponse(
+    request,
+    RATE_LIMITS.scannerAiDaily,
+    session?.user?.id ? `user:${session.user.id}` : undefined,
+  );
+  if (limited) return limited;
 
   let identification: z.infer<typeof identificationSchema>;
   try {

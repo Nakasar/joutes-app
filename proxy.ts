@@ -7,6 +7,7 @@ import { isCredentialedOrigin } from '@/lib/net/own-origins'
 import { isBlockedMetaBot, isMetaPath } from '@/lib/net/meta-bots'
 import { META_PAUSED, metaPausedPage } from '@/lib/meta/paused'
 import { isBlockedBot } from '@/lib/net/blocked-bots'
+import { isProbePath } from '@/lib/net/probe-paths'
 
 const intlProxy = createIntlProxy(routing);
 
@@ -19,6 +20,19 @@ const intlProxy = createIntlProxy(routing);
  * d'avoir deux proxys, que Next ne permet de toute façon pas.
  */
 export function proxy(request: NextRequest) {
+  // Sondes de scanners (`lib/net/probe-paths.ts`) : rien de tel n'existe ici,
+  // et la réponse part sans rendu ni base.
+  if (isProbePath(request.nextUrl.pathname)) {
+    return new NextResponse("Not found.", {
+      status: 404,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
+        "X-Robots-Tag": "noindex",
+      },
+    });
+  }
+
   // Robots d'IA et robots indésirables (`lib/net/blocked-bots.ts`), API
   // comprise : refus avant tout rendu, sauf le serveur MCP et son OAuth.
   if (isBlockedBot(request.nextUrl.pathname, request.headers.get("user-agent"))) {
@@ -96,8 +110,14 @@ export const config = {
    * Next, les ressources statiques, et les adresses qui doivent rester à la
    * racine quelle que soit la langue — découverte (`.well-known`), robots et
    * plans de site, MCP, et les fichiers d'icônes servis depuis `app/`.
+   *
+   * Les deux lignes suivantes font revenir dans le proxy les chemins à point
+   * que seuls les scanners demandent (`lib/net/probe-paths.ts`, dont la liste
+   * d'extensions est recopiée ici : `matcher` n'accepte que des littéraux).
    */
   matcher: [
     '/((?!_next|_vercel|\\.well-known|mcp|discord|auth\\.md|robots\\.txt|sitemap\\.xml|sitemap_index\\.xml|sitemaps|favicon\\.ico|icon\\.png|apple-icon\\.png|.*\\..*).*)',
+    '/(.*\\.(?:php|phtml|asp|aspx|jsp|cgi|env|sql|bak|old|orig|ini|yml|yaml|conf|config|log|sh|swp|pem|key)\\d?)',
+    '/((?:.*/)?\\.(?!well-known).*)',
   ],
 };

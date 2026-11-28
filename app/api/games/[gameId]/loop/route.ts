@@ -1,3 +1,4 @@
+import { RATE_LIMITS, rateLimitResponse } from "@/lib/net/rate-limit";
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getGameBySlugOrId } from "@/lib/db/games";
@@ -10,6 +11,10 @@ const MAX_TEXT_LENGTH = 20000;
 
 export async function POST(request: Request, { params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = await params;
+
+  // Chaque appel compare le texte à tous les noms de cartes du jeu.
+  const limited = await rateLimitResponse(request, RATE_LIMITS.loop);
+  if (limited) return limited;
 
   const game = await getGameBySlugOrId(gameId);
   if (!game) {
