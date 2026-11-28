@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import type { Event } from "@/lib/types/Event";
 
-import { eventJsonLd, jsonLdScript } from "./event-jsonld.ts";
+import { eventJsonLd, isUnlistedEvent, jsonLdScript } from "./event-jsonld.ts";
 
 /** La forme lue par ces tests, sans typer tout schema.org. */
 type Described = {
@@ -53,4 +53,12 @@ test("un événement privé (sans lieu) n'est pas décrit", () => {
 
 test("le script ne peut pas être fermé par un nom d'événement", () => {
   assert.ok(!jsonLdScript({ name: "</script><script>alert(1)" }).includes("<"));
+});
+
+test("un événement d'un lieu privé, ou sans lieu, n'est pas décrit aux moteurs", () => {
+  const privateLair = { ...base, lair: { ...base.lair, isPrivate: true } } as Event;
+  assert.equal(isUnlistedEvent(privateLair), true);
+  assert.equal(eventJsonLd(privateLair, "/events/ev1"), null);
+  assert.equal(isUnlistedEvent({ ...base, lairId: undefined, lair: undefined } as unknown as Event), true);
+  assert.equal(isUnlistedEvent(base), false);
 });

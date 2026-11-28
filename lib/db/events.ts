@@ -225,9 +225,12 @@ export async function getAllEvents({year, month, afterDate, beforeDate}: {
 
   return events.flatMap((event) => {
     const lair = event.lairId ? lairs.get(event.lairId) : undefined;
-    // Un lieu privé garde ses événements pour lui. Un événement sans lieu, ou
-    // dont le lieu a disparu, reste montré, comme avant.
-    if (lair?.isPrivate) return [];
+    // Cette liste est publique (accueil sans compte, recherche du MCP) et
+    // passe par un cache partagé. Un événement sans lieu est privé — sa page
+    // ne s'ouvre qu'à son créateur et à ses inscrits —, un lieu privé garde
+    // ses événements pour lui, et un lieu disparu ne dit plus s'il l'était :
+    // aucun des trois n'y figure.
+    if (!lair || lair.isPrivate) return [];
 
     const game = games.get(event.gameName);
     return [{
@@ -250,7 +253,7 @@ export async function getAllEvents({year, month, afterDate, beforeDate}: {
       creatorId: event.creatorId,
       participants: event.participants,
       maxParticipants: event.maxParticipants,
-      lair: event.lairId && lair ? {id: event.lairId, name: lair.name} : undefined,
+      lair: {id: event.lairId as string, name: lair.name},
     }];
   });
 }
@@ -894,7 +897,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
               $expr: {$eq: ["$_id", "$$lairId"]}
             }
           },
-          {$project: {_id: 1, name: 1, location: 1, address: 1}},
+          {$project: {_id: 1, name: 1, location: 1, address: 1, isPrivate: 1}},
         ],
         as: "lairDetails"
       }
@@ -990,6 +993,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
       name: event.lairDetails[0].name,
       location: event.lairDetails[0].location,
       address: event.lairDetails[0].address,
+      isPrivate: event.lairDetails[0].isPrivate === true,
     } : undefined,
     staff: event.staff ?? [],
     linkedEventIds: event.linkedEventIds ?? [],

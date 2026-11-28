@@ -61,7 +61,7 @@ import ReactMarkdown from "react-markdown";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { Event } from "@/lib/types/Event.ts";
 import { localizedAlternates } from "@/lib/seo/alternates.ts";
-import { eventJsonLd, jsonLdScript } from "@/lib/seo/event-jsonld.ts";
+import { eventJsonLd, isUnlistedEvent, jsonLdScript } from "@/lib/seo/event-jsonld.ts";
 
 // Les heures d'un événement se lisent à l'heure du lieu, comme dans l'agenda.
 const EVENT_ZONE = "Europe/Paris";
@@ -96,9 +96,9 @@ export async function generateMetadata({
 
   // Les événements privés (sans lieu partenaire associé) ne doivent pas être indexés
   // ni divulguer leurs détails dans les métadonnées, même si la page redirige déjà
-  // les utilisateurs non autorisés.
-  const isPrivateEvent = !event.lairId;
-  if (isPrivateEvent) {
+  // les utilisateurs non autorisés. Ceux d'un lieu privé non plus : la page
+  // s'ouvre à qui a le lien, mais ni la date ni le lieu ne vont aux moteurs.
+  if (isUnlistedEvent(event)) {
     return {
       title: event.name,
       robots: { index: false, follow: false },

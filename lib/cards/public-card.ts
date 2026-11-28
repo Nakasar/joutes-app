@@ -25,7 +25,8 @@ import type { Errata } from "@/lib/types/errata";
  * suite ce qu'il vient de changer (son vote, un errata, un bannissement).
  *
  * `cacheLife("minutes")` : une copie sert cinq minutes, et se refait en
- * arrière-plan au-delà d'une minute.
+ * arrière-plan au-delà d'une minute. `use cache: remote` : la copie est
+ * partagée par toutes les instances de fonction, pas refaite par chacune.
  */
 
 export type CatalogCard = BoosterCard & { printings?: CardPrinting[] };
@@ -43,7 +44,7 @@ function toPlain<T>(value: T): T {
 
 /** La carte d'un jeu, par son identifiant. */
 export async function readCatalogCard(gameId: string, cardId: string): Promise<CatalogCard | null> {
-  "use cache";
+  "use cache: remote";
   cacheLife("minutes");
 
   const card = await db
@@ -54,14 +55,15 @@ export async function readCatalogCard(gameId: string, cardId: string): Promise<C
 
 /** Ce que les métadonnées de la fiche lisent : le nom, l'image, le bannissement, le nombre de rulings. */
 export async function readCardHeadline(
+  gameId: string,
   cardId: string,
 ): Promise<{ name: string; image?: string; banned: boolean; erratas: number } | null> {
-  "use cache";
+  "use cache: remote";
   cacheLife("minutes");
 
   const card = await db
     .collection<BoosterCard>("cards")
-    .findOne({ id: cardId }, { projection: { _id: 0, name: 1, image: 1, banned: 1 } });
+    .findOne({ id: cardId, gameId: new ObjectId(gameId) }, { projection: { _id: 0, name: 1, image: 1, banned: 1 } });
   if (!card) return null;
 
   const erratas = await getErratasByCardId(cardId);
@@ -70,7 +72,7 @@ export async function readCardHeadline(
 
 /** Les erratas et rulings de la carte, sans le vote de quiconque. */
 export async function readCardErratas(cardId: string): Promise<Errata[]> {
-  "use cache";
+  "use cache: remote";
   cacheLife("minutes");
 
   return toPlain(await getErratasByCardId(cardId));
@@ -78,7 +80,7 @@ export async function readCardErratas(cardId: string): Promise<Errata[]> {
 
 /** Le glossaire d'un jeu dans une langue. */
 export async function readCardGlossary(gameId: string, lang: string): Promise<CardGlossaryEntry[]> {
-  "use cache";
+  "use cache: remote";
   cacheLife("hours");
 
   return toPlain(await getCardGlossary(new ObjectId(gameId), lang));
@@ -90,7 +92,7 @@ export async function readCardPrices(
   cardId: string,
   sources: readonly CardPriceSource[],
 ): Promise<CardPrice[]> {
-  "use cache";
+  "use cache: remote";
   cacheLife("hours");
 
   return toPlain(await getCardPrices(new ObjectId(gameId), cardId, sources));
@@ -98,7 +100,7 @@ export async function readCardPrices(
 
 /** Les cartes citées par leur nom dans les erratas. */
 export async function readCardsByNames(gameId: string, names: string[]) {
-  "use cache";
+  "use cache: remote";
   cacheLife("hours");
 
   return toPlain(await getCardsByNames(new ObjectId(gameId), names));

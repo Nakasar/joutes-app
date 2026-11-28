@@ -5,6 +5,9 @@ import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import db from "@/lib/mongodb";
+import { clientAddress } from "@/lib/net/client-address";
+
+export { clientAddress };
 
 /**
  * Limites de débit hors de la connexion.
@@ -38,15 +41,6 @@ type Counter = { _id: string; count: number; expiresAt: Date };
 /** La fenêtre courante : toutes les requêtes d'une même fenêtre partagent ce numéro. */
 export function rateLimitSlot(nowMs: number, windowSeconds: number): number {
   return Math.floor(nowMs / (windowSeconds * 1000));
-}
-
-/**
- * L'adresse de l'appelant, telle que Vercel la transmet. `x-forwarded-for`
- * peut porter plusieurs adresses : la première est celle du client.
- */
-export function clientAddress(headers: Headers): string {
-  const forwarded = headers.get("x-vercel-forwarded-for") ?? headers.get("x-forwarded-for");
-  return forwarded?.split(",")[0]?.trim() || headers.get("x-real-ip")?.trim() || "unknown";
 }
 
 /** La clé d'un appelant : son adresse n'est jamais écrite en clair en base. */

@@ -312,10 +312,14 @@ function agendaSlot(now: DateTime): string {
  * fois par pas de dix minutes et gardé en cache — c'était la lecture la plus
  * coûteuse du site, refaite à chaque affichage de l'accueil.
  *
+ * `use cache: remote` : le cache par défaut vit dans la mémoire d'une
+ * instance de fonction, et chaque instance referait la lecture pour elle.
+ * Celui-ci est partagé par toutes.
+ *
  * La lecture déborde d'un pas à la fin ; l'appelant recoupe à l'instant exact.
  */
 async function readPublicAgenda(slot: string, days: number): Promise<Event[]> {
-  "use cache";
+  "use cache: remote";
   cacheLife({ stale: 300, revalidate: 600, expire: 3600 });
 
   const start = DateTime.fromISO(slot, { zone: "utc" });

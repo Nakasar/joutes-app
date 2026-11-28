@@ -80,10 +80,13 @@ export async function generateMetadata({
   await connection();
 
   // Lecture partagée et gardée en cache (`lib/cards/public-card.ts`) : les
-  // métadonnées sont les mêmes pour tous.
-  const card = await readCardHeadline(cardId);
+  // métadonnées sont les mêmes pour tous. La carte se cherche dans son jeu,
+  // comme le corps de la page : sous l'adresse d'un autre jeu, elle est
+  // introuvable ici aussi.
+  const game = await readGameBySlugOrId(gameSlugOrId);
+  const card = game ? await readCardHeadline(game.id, cardId) : null;
 
-  if (!card) {
+  if (!game || !card) {
     return {
       title: t("cards.detail.metadata.notFoundTitle"),
     };
@@ -93,8 +96,9 @@ export async function generateMetadata({
 
   return {
     // Une fiche existe dans chaque langue : chacune se déclare canonique et
-    // cite les autres (`lib/seo/alternates.ts`).
-    alternates: localizedAlternates(`/games/${gameSlugOrId}/cards/${cardId}`, await getLocale()),
+    // cite les autres (`lib/seo/alternates.ts`). Par le slug du jeu, comme le
+    // sitemap : la même fiche ouverte par l'identifiant du jeu renvoie à lui.
+    alternates: localizedAlternates(`/games/${game.slug ?? gameSlugOrId}/cards/${cardId}`, await getLocale()),
     title: t("cards.detail.metadata.title", {cardName: card.name}),
     description: t("cards.detail.metadata.description", {
       cardName: card.name,
