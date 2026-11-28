@@ -122,7 +122,15 @@ async function LairPoster({ params, searchParams }: { params: PosterParams; sear
   });
 
   const [events, games] = await Promise.all([
-    getEventsByLairId(lairId, { gameId: "all", userId: session?.user?.id }),
+    // Seulement la période de l'affiche, à un jour près de chaque côté : les
+    // dates stockées portent leur décalage horaire et se comparent en chaînes,
+    // `eventsInRange` tranche ensuite sur l'instant.
+    getEventsByLairId(lairId, {
+      gameId: "all",
+      userId: session?.user?.id,
+      afterDate: range.start.minus({ days: 1 }).toUTC().toISO() ?? undefined,
+      beforeDate: range.end.plus({ days: 2 }).toUTC().toISO() ?? undefined,
+    }),
     Promise.all(lair.games.map((gameId) => readGameBySlugOrId(gameId))),
   ]);
 

@@ -27,11 +27,14 @@ export type EventDocument = Event;
  * @param userId - Optional user ID to filter by their followed games
  * @returns Array of events for the lair
  */
-export async function getEventsByLairId(lairId: string, {year, month, gameId, userId}: {
+export async function getEventsByLairId(lairId: string, {year, month, gameId, userId, afterDate, beforeDate}: {
   userId?: string;
   year?: number;
   month?: number;
-  gameId?: string
+  gameId?: string;
+  /** Bornes ISO sur `startDateTime`, en plus du mois s'il est donné. */
+  afterDate?: string;
+  beforeDate?: string;
 } = {}): Promise<Event[]> {
   // Le filtre par jeu se résout avant toute lecture : un filtre impossible
   // (aucun jeu suivi, identifiant invalide) ne coûte pas une requête.
@@ -55,9 +58,10 @@ export async function getEventsByLairId(lairId: string, {year, month, gameId, us
   }
 
   const filter: Record<string, unknown> = {lairId};
-  if (month && year) {
-    filter.startDateTime = monthRange(year, month);
-  }
+  const startDateTime: Record<string, string> = month && year ? monthRange(year, month) : {};
+  if (afterDate && !(startDateTime.$gte && startDateTime.$gte > afterDate)) startDateTime.$gte = afterDate;
+  if (beforeDate && !(startDateTime.$lte && startDateTime.$lte < beforeDate)) startDateTime.$lte = beforeDate;
+  if (Object.keys(startDateTime).length > 0) filter.startDateTime = startDateTime;
 
   // Une lecture simple sur l'index `lairId_1_startDateTime_1`, puis les jeux
   // et le lieu joints en mémoire. Les deux `$lookup` d'avant (jeu par nom,
