@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: GameNewsPageProps): Promise<M
     title: t("metadata.title", { gameName: game.name }),
     description: t("metadata.description", { gameName: game.name }),
     openGraph: {
-      url: `https://joutes.app/games/${gameSlugOrId}/news`,
+      url: `https://www.joutes.app/games/${gameSlugOrId}/news`,
       title: t("metadata.title", { gameName: game.name }),
       description: t("metadata.description", { gameName: game.name }),
       images: game.banner ? [game.banner] : [],

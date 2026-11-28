@@ -66,7 +66,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://joutes.app"),
+  metadataBase: new URL("https://www.joutes.app"),
   title: {
     default: "Joutes - Ligues et rencontres multi-jeux à proximité",
     template: "%s - Joutes",
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
   creator: "Nakasar",
   publisher: "Nakasar",
   openGraph: {
-    url: "https://joutes.app",
+    url: "https://www.joutes.app",
     title: "Ligues et rencontres multi-jeux à proximité",
     description: "Ligues et rencontres multi-jeux à proximité pour les passionnés de jeux de cartes à collectionner et de jeux de société. Trouvez des événements organisés et consultez les règles et rulings communautaires.",
     siteName: "Joutes",

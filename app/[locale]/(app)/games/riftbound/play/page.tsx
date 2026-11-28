@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: PlayPageProps): Promise<Metad
     title: `Joutes - ${t("title")}`,
     description: t("description"),
     openGraph: {
-      url: "https://joutes.app/games/riftbound/play",
+      url: "https://www.joutes.app/games/riftbound/play",
       siteName: "Joutes",
       title: `Joutes - ${t("title")}`,
       description: t("description"),

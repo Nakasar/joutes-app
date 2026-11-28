@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description: "Consultez et enregistrez l'historique de vos parties de jeux de cartes à collectionner : résultats, adversaires et statistiques.",
   keywords: ["historique des parties", "suivi de matchs", "jeux de cartes à collectionner", "statistiques de jeu", "résultats"],
   openGraph: {
-    url: `https://joutes.app/game-matches`,
+    url: `https://www.joutes.app/game-matches`,
     siteName: 'Joutes',
     title: 'Historique des parties - Joutes',
     description: "Consultez et enregistrez l'historique de vos parties : résultats, adversaires et statistiques.",

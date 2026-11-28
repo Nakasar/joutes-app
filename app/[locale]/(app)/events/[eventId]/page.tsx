@@ -60,6 +60,8 @@ import { toURLSearchParams } from "@/lib/navigation/url-query.ts";
 import ReactMarkdown from "react-markdown";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { Event } from "@/lib/types/Event.ts";
+import { localizedAlternates } from "@/lib/seo/alternates.ts";
+import { eventJsonLd, jsonLdScript } from "@/lib/seo/event-jsonld.ts";
 
 // Les heures d'un événement se lisent à l'heure du lieu, comme dans l'agenda.
 const EVENT_ZONE = "Europe/Paris";
@@ -114,6 +116,8 @@ export async function generateMetadata({
   return {
     title: event.name,
     description,
+    // Une adresse par langue, chacune canonique pour la sienne (`lib/seo/alternates.ts`).
+    alternates: localizedAlternates(`/events/${eventId}`, await getLocale()),
     openGraph: {
       title: `${event.name} - Joutes`,
       description,
@@ -213,9 +217,15 @@ async function EventHeader({ params, searchParams }: EventPageProps) {
   const start = DateTime.fromISO(event.startDateTime).setZone(EVENT_ZONE).setLocale(locale);
   const end = DateTime.fromISO(event.endDateTime).setZone(EVENT_ZONE).setLocale(locale);
   const sameDay = start.hasSame(end, "day");
+  // La description schema.org de l'événement, pour les résultats enrichis des
+  // moteurs (`lib/seo/event-jsonld.ts`). Rien pour un événement privé.
+  const jsonLd = eventJsonLd(event, `/events/${eventId}`);
 
   return (
     <div className="space-y-3">
+      {jsonLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />
+      )}
       {search.joined && (
         <Alert className="border-green-500 bg-green-50">
           <CheckCircle className="h-4 w-4 text-green-600" />

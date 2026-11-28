@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: "Trouvez et organisez des évènements de jeux de cartes à collectionner et jeux de plateau près de chez vous : tournois, organized play et rencontres locales.",
   keywords: ["événements", "tournois", "jeux de cartes à collectionner", "organized play", "communauté locale"],
   openGraph: {
-    url: `https://joutes.app/events`,
+    url: `https://www.joutes.app/events`,
     siteName: 'Joutes',
     title: 'Événements - Joutes',
     description: "Trouvez et organisez des évènements de jeux de cartes à collectionner et jeux de plateau près de chez vous.",

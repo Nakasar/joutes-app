@@ -32,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: t("metaTitle"),
     description: t("metaDescription"),
     openGraph: {
-      url: "https://joutes.app/play-groups/explore",
+      url: "https://www.joutes.app/play-groups/explore",
       siteName: "Joutes",
       title: t("metaTitle"),
       description: t("metaDescription"),

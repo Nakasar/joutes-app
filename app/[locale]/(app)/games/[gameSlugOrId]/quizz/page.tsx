@@ -63,7 +63,7 @@ export async function generateMetadata({ params }: GameQuizzPageProps): Promise<
     // veut se tester. La liste est traduite avec le reste.
     keywords: [game.name, ...tQuizz("keywords").split(",").map((keyword) => keyword.trim())],
     openGraph: {
-      url: `https://joutes.app/games/${gameSlugOrId}/quizz`,
+      url: `https://www.joutes.app/games/${gameSlugOrId}/quizz`,
       title,
       description,
       images: game.banner ? [game.banner] : [],

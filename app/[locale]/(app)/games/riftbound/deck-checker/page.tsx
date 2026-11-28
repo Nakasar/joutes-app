@@ -40,7 +40,7 @@ export async function generateMetadata({
     description: t("description"),
     keywords: ["deck checker", "riftbound", "légalité de deck", "vérification de deck"],
     openGraph: {
-      url: `https://joutes.app/games/riftbound/deck-checker`,
+      url: `https://www.joutes.app/games/riftbound/deck-checker`,
       siteName: `Joutes`,
       title: `Joutes - ${t("title")}`,
       description: t("description"),

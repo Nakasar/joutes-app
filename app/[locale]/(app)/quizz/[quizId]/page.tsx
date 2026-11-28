@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ],
     openGraph: {
       type: "article",
-      url: `https://joutes.app/quizz/${quizId}`,
+      url: `https://www.joutes.app/quizz/${quizId}`,
       siteName: "Joutes",
       title,
       description,

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: "Gérez votre liste d'amis sur Joutes : envoyez des demandes d'ami et retrouvez vos amis facilement.",
   keywords: ["amis", "liste d'amis", "communauté", "jeux de cartes à collectionner"],
   openGraph: {
-    url: `https://joutes.app/friends`,
+    url: `https://www.joutes.app/friends`,
     siteName: 'Joutes',
     title: 'Mes amis - Joutes',
     description: "Envoyez des demandes d'ami et retrouvez vos amis facilement.",

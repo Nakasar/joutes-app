@@ -1,7 +1,8 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { localizedAlternates } from "@/lib/seo/alternates.ts";
 import { Calendar } from "lucide-react";
 
 import { Link } from "@/i18n/navigation.ts";
@@ -66,6 +67,8 @@ export async function generateMetadata({
   }
 
   return {
+    // Les onglets (`?tab=…`) sont la même page : une seule adresse canonique par langue.
+    alternates: localizedAlternates(`/lairs/${lairId}`, await getLocale()),
     title: t("detail.metadata.title", { name: lair.name }),
     description: t("detail.metadata.description", { name: lair.name, count: lair.games.length }),
     openGraph: {

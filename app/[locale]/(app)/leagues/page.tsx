@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description: "Découvrez les ligues et tournois de jeux de cartes à collectionner et de jeux de plateau près de chez vous.",
   keywords: ["ligues", "tournois", "compétition", "classement", "jeux de cartes à collectionner", "organized play"],
   openGraph: {
-    url: `https://joutes.app/leagues`,
+    url: `https://www.joutes.app/leagues`,
     siteName: 'Joutes',
     title: 'Ligues - Joutes',
     description: "Découvrez les ligues et tournois de jeux de cartes à collectionner et de jeux de plateau près de chez vous.",

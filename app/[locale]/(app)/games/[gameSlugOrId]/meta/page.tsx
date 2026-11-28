@@ -65,7 +65,7 @@ export async function generateMetadata({ params, searchParams }: MetaPageProps):
     description,
     robots: metaViewRobots(raw),
     openGraph: {
-      url: `https://joutes.app/games/${game.slug ?? gameSlugOrId}/meta`,
+      url: `https://www.joutes.app/games/${game.slug ?? gameSlugOrId}/meta`,
       title,
       description,
       images: game.banner ? [game.banner] : [],

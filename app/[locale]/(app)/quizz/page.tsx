@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     keywords: t("keywords").split(",").map((keyword) => keyword.trim()),
     openGraph: {
-      url: "https://joutes.app/quizz",
+      url: "https://www.joutes.app/quizz",
       siteName: "Joutes",
       title,
       description,
