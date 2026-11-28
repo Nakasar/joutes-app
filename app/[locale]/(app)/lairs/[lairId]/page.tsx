@@ -28,8 +28,10 @@ import {
 import {
   countUpcomingByGame,
   readFollowersCount,
+  readAgendaMonth,
   readLairEvents,
   readLairGames,
+  readLairMonthEvents,
   readLairTab,
   readViewer,
   requireVisibleLair,
@@ -176,22 +178,27 @@ async function LairTabContent({
     return <LairAboutTab lair={lair} />;
   }
 
-  const events = await readLairEvents(lairId);
-
   if (tab === "agenda") {
+    // La vue calendrier ne montre qu'un mois ; les vues agenda et conférence,
+    // ce qui reste à venir.
+    const mode = lair.options?.calendar?.mode ?? "CALENDAR";
+    const { year, month } = readAgendaMonth(search);
+    const events =
+      mode === "CALENDAR" ? await readLairMonthEvents(lairId, year, month) : await readLairEvents(lairId);
+
     return (
       <LairAgendaTab
         lair={lair}
         events={events}
-        month={search.month}
-        year={search.year}
+        month={String(month)}
+        year={String(year)}
         gameId={search.gameId}
       />
     );
   }
 
   if (tab === "games") {
-    const games = await readLairGames(lairId);
+    const [games, events] = await Promise.all([readLairGames(lairId), readLairEvents(lairId)]);
     return <LairGamesTab games={games} upcomingByGame={countUpcomingByGame(events)} />;
   }
 

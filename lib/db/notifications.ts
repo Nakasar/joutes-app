@@ -37,7 +37,12 @@ function notificationAccessStages(
       $lookup: {
         from: 'lairs',
         let: { lairId: '$lairId' },
-        pipeline: [{ $match: { $expr: { $eq: ['$_id', { $toObjectId: '$$lairId' }] } } }],
+        pipeline: [
+          { $match: { $expr: { $eq: ['$_id', { $toObjectId: '$$lairId' }] } } },
+          // Le filtre lit `owners`, la cloche affiche le nom : pas le lieu entier
+          // dans chaque notification.
+          { $project: { _id: 1, name: 1, owners: 1 } },
+        ],
         as: 'lairDetails',
       },
     },

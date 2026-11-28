@@ -22,6 +22,23 @@ export const LAIR_TABS = ["news", "agenda", "games", "about"] as const;
 
 export type LairTab = (typeof LAIR_TABS)[number];
 
+/**
+ * Le mois affiché par la vue calendrier : celui de l'URL s'il est valide,
+ * sinon le mois en cours — la même règle que `EventsCalendarClient`.
+ */
+export function readAgendaMonth(
+  search: { month?: string; year?: string },
+  now: Date = new Date(),
+): { year: number; month: number } {
+  const month = Number(search.month);
+  const year = Number(search.year);
+
+  return {
+    month: Number.isInteger(month) && month >= 1 && month <= 12 ? month : now.getMonth() + 1,
+    year: Number.isInteger(year) && year >= 2000 && year <= 3000 ? year : now.getFullYear(),
+  };
+}
+
 /** L'onglet demandé par l'URL, ramené aux quatre connus. */
 export function readLairTab(value: string | undefined): LairTab {
   return LAIR_TABS.includes(value as LairTab) ? (value as LairTab) : "news";
@@ -97,29 +114,68 @@ export const readLairGames = cache(async (lairId: string): Promise<Game[]> => {
 });
 
 /**
- * Les événements du lieu sur l'année en cours.
+ * Combien de jours avant maintenant la lecture des événements à venir commence.
  *
- * Une seule lecture pour trois usages — l'événement à la une, la liste des
- * prochains événements et le calendrier — plutôt qu'une par section : le
- * cadrage au mois se fait ensuite, en mémoire. Chacun porte ses marques
- * (choix du lieu, populaire, amis) pour la personne qui regarde.
+ * Un événement de plusieurs jours (convention, ligue) qui a commencé reste à
+ * venir tant qu'il n'est pas fini : `upcomingOf` le décide sur sa fin, en
+ * mémoire. La marge couvre aussi les décalages horaires des dates stockées
+ * (`+01:00`), comparées en chaînes.
+ */
+const ONGOING_MARGIN_DAYS = 7;
+
+/**
+ * Les événements du lieu qui ne sont pas encore finis.
+ *
+ * Une seule lecture pour tout ce qui parle de l'avenir — l'événement à la une,
+ * la liste des prochains événements, les vignettes des jeux, les inscriptions
+ * du visiteur, les vues agenda et conférence — plutôt qu'une par section.
+ * Les événements passés ne sont pas lus : aucune de ces sections ne les
+ * montre, et un lieu qui importe son agenda en accumule des centaines.
+ * Chacun porte ses marques (choix du lieu, populaire, amis) pour la personne
+ * qui regarde.
  */
 export const readLairEvents = cache(async (lairId: string): Promise<Event[]> => {
+  const now = DateTime.now();
+  const events = await readEventsWithHighlights(lairId, {
+    afterDate: now.minus({ days: ONGOING_MARGIN_DAYS }).toUTC().toISO() ?? undefined,
+  });
+
+  return events.filter((event) => endOf(event) >= now);
+});
+
+/**
+ * Les événements d'un mois, pour la vue calendrier de l'onglet Agenda : la
+ * grille n'en montre pas d'autres, et le calendrier relit lui-même le mois
+ * suivant quand on navigue.
+ */
+export const readLairMonthEvents = cache(
+  async (lairId: string, year: number, month: number): Promise<Event[]> =>
+    readEventsWithHighlights(lairId, { year, month }),
+);
+
+async function readEventsWithHighlights(
+  lairId: string,
+  window: { afterDate?: string; year?: number; month?: number },
+): Promise<Event[]> {
   const { session, userId, friends } = await readViewer(lairId);
 
   const events = await getEventsByLairId(lairId, {
-    year: new Date().getFullYear(),
+    ...window,
     userId: session?.user?.id,
     gameId: "all",
   });
 
   return withHighlights(events, userId ? { id: userId, friends } : null);
-});
+}
+
+function endOf(event: Event): DateTime {
+  return DateTime.fromISO(event.endDateTime || event.startDateTime);
+}
 
 /** Les événements encore à venir, du plus proche au plus lointain. */
 export function upcomingOf(events: Event[], now: DateTime = DateTime.now()): Event[] {
   return events
-    .filter((event) => DateTime.fromISO(event.endDateTime || event.startDateTime) >= now)
+    .filter((event) => endOf(event) >= now)
     .filter((event) => event.status !== "cancelled")
     .sort((a, b) => a.startDateTime.localeCompare(b.startDateTime));
 }

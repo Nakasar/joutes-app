@@ -27,181 +27,167 @@ export type EventDocument = Event;
  * @param userId - Optional user ID to filter by their followed games
  * @returns Array of events for the lair
  */
-export async function getEventsByLairId(lairId: string, {year, month, gameId, userId}: {
+export async function getEventsByLairId(lairId: string, {year, month, gameId, userId, afterDate, beforeDate}: {
   userId?: string;
   year?: number;
   month?: number;
-  gameId?: string
+  gameId?: string;
+  /** Bornes ISO sur `startDateTime`, en plus du mois s'il est donné. */
+  afterDate?: string;
+  beforeDate?: string;
 } = {}): Promise<Event[]> {
-  const user = userId && await getUserById(userId);
-
-  // Build aggregation pipeline
-  const pipeline: Array<Record<string, unknown>> = [
-    // Match events from user's followed lairs
-    {
-      $match: {
-        lairId,
-      }
-    }
-  ];
-
-  // Add date range filter if month and year are provided
-  if (month && year) {
-    // Create date range for the month
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
-
-    pipeline.push({
-      $match: {
-        startDateTime: {
-          $gte: startDate.toISOString(),
-          $lte: endDate.toISOString()
-        }
-      },
-    });
-  }
-
-  pipeline.push(...[
-    {
-      $lookup: {
-        from: "games",
-        localField: 'gameName',
-        foreignField: 'name',
-        pipeline: [
-          {
-            $project: {
-              name: 1,
-              icon: 1,
-              banner: 1,
-              type: 1,
-              slug: 1,
-            }
-          }
-        ],
-        as: "matchedGame"
-      }
-    },
-    {
-      $unwind: "$matchedGame",
-    },
-  ]);
-
-  // Apply game filter if specified
+  // Le filtre par jeu se résout avant toute lecture : un filtre impossible
+  // (aucun jeu suivi, identifiant invalide) ne coûte pas une requête.
+  let allowedGameIds: Set<string> | null = null;
   if (gameId && gameId !== "all") {
-    if (gameId === "followed" && user) {
-      // Filter by user's followed games
-      if (!user.games || user.games.length === 0) {
-        return [];
-      }
-
-      // Convert user.games string IDs to ObjectIds for comparison
-      const gameObjectIds = user.games.map(id => {
-        try {
-          return new ObjectId(id);
-        } catch (e) {
-          console.error(`Invalid game ID: ${id}`);
-          return null;
+    if (gameId === "followed") {
+      const user = userId ? await getUserById(userId) : null;
+      if (user) {
+        if (!user.games || user.games.length === 0) {
+          return [];
         }
-      }).filter((id): id is ObjectId => id !== null);
-
-      // Add lookup stage to join with games collection
-      pipeline.push(
-        // Lookup games to get game names from game IDs
-        {
-          $match: {
-            'matchedGame._id': {$in: gameObjectIds},
-          }
-        },
-      );
+        allowedGameIds = new Set(user.games);
+      }
     } else {
-      // Filter by specific game ID
-      try {
-        const gameObjectId = new ObjectId(gameId);
-
-        // Add lookup stage to join with games collection
-        pipeline.push(
-          // Only keep events that have a matching game
-          {
-            $match: {
-              'matchedGame._id': gameObjectId,
-            },
-          },
-        );
-      } catch (e) {
+      if (!ObjectId.isValid(gameId)) {
         console.error(`Invalid game ID: ${gameId}`);
         return [];
       }
+      allowedGameIds = new Set([new ObjectId(gameId).toHexString()]);
     }
   }
 
-  // Add lookup to get lair details
-  pipeline.push({
-    $lookup: {
-      from: "lairs",
-      let: {lairId: {$toObjectId: "$lairId"}},
-      pipeline: [
-        {
-          $match: {
-            $expr: {$eq: ["$_id", "$$lairId"]}
-          }
-        }
-      ],
-      as: "lairDetails"
-    }
-  });
+  const filter: Record<string, unknown> = {lairId};
+  const startDateTime: Record<string, string> = month && year ? monthRange(year, month) : {};
+  if (afterDate && !(startDateTime.$gte && startDateTime.$gte > afterDate)) startDateTime.$gte = afterDate;
+  if (beforeDate && !(startDateTime.$lte && startDateTime.$lte < beforeDate)) startDateTime.$lte = beforeDate;
+  if (Object.keys(startDateTime).length > 0) filter.startDateTime = startDateTime;
 
-  // Execute aggregation
-  const events = await db
-    .collection<EventDocument>(COLLECTION_NAME)
-    .aggregate(pipeline)
+  // Une lecture simple sur l'index `lairId_1_startDateTime_1`, puis les jeux
+  // et le lieu joints en mémoire. Les deux `$lookup` d'avant (jeu par nom,
+  // lieu entier par `_id`) coûtaient deux sous-requêtes par événement, et le
+  // document complet du lieu recopié dans chacun : ~26 s pour les 279
+  // événements de L'Antre-Temps en production (2026-11-28), contre une poignée
+  // de millisecondes pour trois lectures. Tous ces événements ont le même
+  // lieu : il n'y a qu'un nom à lire.
+  const [events, lairName] = await Promise.all([
+    db.collection<EventDocument>(COLLECTION_NAME)
+      .find(filter, {projection: AGENDA_PROJECTION})
+      .toArray(),
+    readLairNames([lairId]).then((names) => names.get(lairId)),
+  ]);
+  const games = await readGamesByName(events.map((event) => event.gameName));
+
+  return events.flatMap((event) => {
+    const game = games.get(event.gameName);
+    // Comme l'ancien `$unwind` : un événement dont le jeu est inconnu sort.
+    if (!game) return [];
+    if (allowedGameIds && !allowedGameIds.has(game._id.toHexString())) return [];
+
+    return [{
+      id: event.id,
+      lairId: event.lairId,
+      name: event.name,
+      banner: event.banner,
+      description: event.description,
+      startDateTime: event.startDateTime,
+      endDateTime: event.endDateTime,
+      gameName: event.gameName,
+      // Sans l'`_id` de Mongo : ce n'est pas un objet simple, et il fait
+      // échouer la sérialisation dès qu'un composant serveur passe ces
+      // événements à un composant client.
+      game: {
+        name: game.name,
+        icon: game.icon,
+        banner: game.banner,
+        type: game.type,
+        slug: game.slug,
+      },
+      url: event.url,
+      price: event.price,
+      status: event.status,
+      addedBy: event.addedBy,
+      creatorId: event.creatorId,
+      participants: event.participants,
+      participantRegistrations: event.participantRegistrations,
+      // Ne compter que les REGISTERED (cf. joinEventAction) : un participant
+      // sans statut explicite est REGISTERED par défaut (addParticipantToEvent),
+      // mais PRE_REGISTERED/EXCLUDED ne doivent pas compter dans le remplissage.
+      registeredParticipantsCount: (event.participants ?? []).filter(
+        (userId: string) => (event.participantRegistrations?.[userId] ?? 'REGISTERED') === 'REGISTERED'
+      ).length,
+      maxParticipants: event.maxParticipants,
+      allowJoin: event.allowJoin,
+      favoritedBy: event.favoritedBy,
+      lair: lairName !== undefined ? {id: lairId, name: lairName} : undefined,
+    }];
+  });
+}
+
+/** L'intervalle ISO d'un mois, comparé à `startDateTime` (chaîne ISO). */
+function monthRange(year: number, month: number) {
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+  return {$gte: startDate.toISOString(), $lte: endDate.toISOString()};
+}
+
+/** Les champs qu'un agenda lit d'un événement, et seulement eux. */
+const AGENDA_PROJECTION = {
+  _id: 0,
+  id: 1,
+  lairId: 1,
+  name: 1,
+  banner: 1,
+  description: 1,
+  startDateTime: 1,
+  endDateTime: 1,
+  gameName: 1,
+  url: 1,
+  price: 1,
+  status: 1,
+  addedBy: 1,
+  creatorId: 1,
+  participants: 1,
+  participantRegistrations: 1,
+  maxParticipants: 1,
+  allowJoin: 1,
+  favoritedBy: 1,
+} as const;
+
+type GameSummary = NonNullable<Event["game"]> & {_id: ObjectId};
+
+/**
+ * Les jeux des événements, lus en une requête et indexés par nom : c'est
+ * `gameName` qui relie un événement à son jeu (index `games.name_1`).
+ */
+async function readGamesByName(names: (string | undefined)[]): Promise<Map<string, GameSummary>> {
+  const distinct = [...new Set(names.filter((name): name is string => typeof name === "string"))];
+  if (distinct.length === 0) return new Map();
+
+  const games = await db
+    .collection("games")
+    .find({name: {$in: distinct}}, {projection: {_id: 1, name: 1, icon: 1, banner: 1, type: 1, slug: 1}})
     .toArray();
 
-  // Map results to Event type
-  return events.map((event) => ({
-    id: event.id,
-    lairId: event.lairId,
-    name: event.name,
-    banner: event.banner,
-    description: event.description,
-    startDateTime: event.startDateTime,
-    endDateTime: event.endDateTime,
-    gameName: event.gameName,
-    // Champ par champ, et non `event.matchedGame` tel quel : la jointure y
-    // laisse l'`_id` de Mongo — inutile à `Event.game`, qui ne porte pas
-    // d'identifiant, mais qui n'est pas un objet simple et fait échouer la
-    // sérialisation dès qu'un composant serveur passe ces événements à un
-    // composant client. Le retirer de la projection ne suffirait pas : le
-    // filtre par jeu, plus bas, s'appuie sur `matchedGame._id`.
-    game: event.matchedGame
-      ? {
-          name: event.matchedGame.name,
-          icon: event.matchedGame.icon,
-          banner: event.matchedGame.banner,
-          type: event.matchedGame.type,
-          slug: event.matchedGame.slug,
-        }
-      : undefined,
-    url: event.url,
-    price: event.price,
-    status: event.status,
-    addedBy: event.addedBy,
-    creatorId: event.creatorId,
-    participants: event.participants,
-    participantRegistrations: event.participantRegistrations,
-    // Ne compter que les REGISTERED (cf. joinEventAction) : un participant
-    // sans statut explicite est REGISTERED par défaut (addParticipantToEvent),
-    // mais PRE_REGISTERED/EXCLUDED ne doivent pas compter dans le remplissage.
-    registeredParticipantsCount: (event.participants ?? []).filter(
-      (userId: string) => (event.participantRegistrations?.[userId] ?? 'REGISTERED') === 'REGISTERED'
-    ).length,
-    maxParticipants: event.maxParticipants,
-    allowJoin: event.allowJoin,
-    favoritedBy: event.favoritedBy,
-    lair: event.lairDetails && event.lairDetails.length > 0 ? {
-      id: event.lairDetails[0].id,
-      name: event.lairDetails[0].name,
-    } : undefined,
-  }));
+  const byName = new Map<string, GameSummary>();
+  for (const game of games) {
+    // Le premier gagne, comme le `$unwind` d'un `$lookup` qui en trouverait deux.
+    if (!byName.has(game.name)) byName.set(game.name, game as unknown as GameSummary);
+  }
+  return byName;
+}
+
+/** Le nom de chaque lieu, en une requête sur `_id` — et rien d'autre du lieu. */
+async function readLairNames(lairIds: string[]): Promise<Map<string, string>> {
+  const objectIds = [...new Set(lairIds)].filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (objectIds.length === 0) return new Map();
+
+  const lairs = await db
+    .collection("lairs")
+    .find({_id: {$in: objectIds}}, {projection: {_id: 1, name: 1}})
+    .toArray();
+
+  return new Map(lairs.map((lair) => [lair._id.toHexString(), lair.name as string]));
 }
 
 // Get all events across all lairs
@@ -239,7 +225,10 @@ export async function getAllEvents({year, month, games, userId}: {
           $match: {
             $expr: {$eq: ["$_id", "$$lairId"]}
           }
-        }
+        },
+        // Le nom et la confidentialité, pas le lieu entier recopié dans
+        // chaque événement (actualités, thème… : voir `getEventsByLairId`).
+        {$project: {_id: 1, name: 1, isPrivate: 1}},
       ],
       as: "lairDetails"
     }
@@ -321,7 +310,7 @@ export async function getAllEvents({year, month, games, userId}: {
 
 // Get events for multiple lairs
 export async function getEventsByLairIds(lairIds: string[], {
-  year, month, userId, gameIds, afterDate, beforeDate,
+  year, month, gameIds, afterDate, beforeDate,
 }: {
   gameIds?: string[];
   afterDate?: string;
@@ -330,143 +319,53 @@ export async function getEventsByLairIds(lairIds: string[], {
   month?: number;
   userId?: string;
 } = {}): Promise<Event[]> {
-  // Build aggregation pipeline
-  const pipeline: Array<Record<string, unknown>> = [
-    // Match events from user's followed lairs
-    {
-      $match: {
-        lairId: {$in: lairIds},
-      }
-    }
-  ];
+  const startDateTime: Record<string, string> = {};
+  if (month && year) Object.assign(startDateTime, monthRange(year, month));
+  // Les bornes s'ajoutent au mois comme les `$match` successifs d'avant : la
+  // plus stricte l'emporte.
+  if (afterDate && !(startDateTime.$gte && startDateTime.$gte > afterDate)) startDateTime.$gte = afterDate;
+  if (beforeDate && !(startDateTime.$lte && startDateTime.$lte < beforeDate)) startDateTime.$lte = beforeDate;
 
-  // Add date range filter if month and year are provided
-  if (month && year) {
-    // Create date range for the month
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+  const filter: Record<string, unknown> = {lairId: {$in: lairIds}};
+  if (Object.keys(startDateTime).length > 0) filter.startDateTime = startDateTime;
 
-    pipeline.push({
-      $match: {
-        startDateTime: {
-          $gte: startDate.toISOString(),
-          $lte: endDate.toISOString()
-        }
-      }
-    });
-  }
-  if (afterDate) {
-    pipeline.push({
-      $match: {
-        startDateTime: {
-          $gte: afterDate,
-        }
-      }
-    });
-  }
-  if (beforeDate) {
-    pipeline.push({
-      $match: {
-        startDateTime: {
-          $lte: beforeDate,
-        }
-      }
-    });
-  }
+  // Même lecture que `getEventsByLairId` : les jeux et les noms des lieux sont
+  // joints en mémoire, en une requête chacun, plutôt que par deux `$lookup`
+  // par événement.
+  const [events, lairNames] = await Promise.all([
+    db.collection<EventDocument>(COLLECTION_NAME)
+      .find(filter, {projection: AGENDA_PROJECTION})
+      .sort({startDateTime: 1})
+      .toArray(),
+    readLairNames(lairIds),
+  ]);
+  const games = await readGamesByName(events.map((event) => event.gameName));
+  const allowedGameIds = gameIds ? new Set(gameIds) : null;
 
-  pipeline.push({
-    $lookup: {
-      from: "lairs",
-      let: {lairId: {$toObjectId: "$lairId"}},
-      pipeline: [
-        {
-          $match: {
-            $expr: {$eq: ["$_id", "$$lairId"]}
-          }
-        }
-      ],
-      as: "lairDetails"
-    }
+  return events.flatMap((event) => {
+    const game = games.get(event.gameName);
+    if (allowedGameIds && (!game || !allowedGameIds.has(game._id.toHexString()))) return [];
+
+    const lairName = event.lairId ? lairNames.get(event.lairId) : undefined;
+    return [{
+      id: event.id,
+      lairId: event.lairId,
+      name: event.name,
+      banner: event.banner,
+      startDateTime: event.startDateTime,
+      endDateTime: event.endDateTime,
+      gameName: event.gameName,
+      game,
+      url: event.url,
+      price: event.price,
+      status: event.status,
+      addedBy: event.addedBy,
+      creatorId: event.creatorId,
+      participants: event.participants,
+      maxParticipants: event.maxParticipants,
+      lair: event.lairId && lairName !== undefined ? {id: event.lairId, name: lairName} : undefined,
+    }];
   });
-  pipeline.push(
-    {
-      $lookup: {
-        from: "games",
-        let: {eventGameName: "$gameName"},
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  {$eq: ["$name", "$$eventGameName"]},
-                ]
-              }
-            }
-          },
-          {
-            $project: {
-              _id: 1,
-              name: 1,
-              icon: 1,
-              banner: 1,
-              slug: 1,
-              type: 1,
-            }
-          }
-        ],
-        as: "game"
-      }
-    },
-    {
-      $unwind: {
-        path: "$game",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-  );
-
-  if (gameIds) {
-    pipeline.push({
-      $match: {
-        'game._id': {$in: gameIds.map(id => new ObjectId(id))},
-      }
-    });
-  }
-
-  pipeline.push({
-    $sort: {
-      'startDateTime': 1
-    }
-  });
-
-  // Execute aggregation
-  const events = await db
-    .collection<EventDocument>(COLLECTION_NAME)
-    .aggregate(pipeline)
-    .toArray();
-
-  // Map results to Event type
-  return events.map((event) => ({
-    id: event.id,
-    lairId: event.lairId,
-    name: event.name,
-    banner: event.banner,
-    startDateTime: event.startDateTime,
-    endDateTime: event.endDateTime,
-    gameName: event.gameName,
-    game: event.game,
-    url: event.url,
-    price: event.price,
-    status: event.status,
-    addedBy: event.addedBy,
-    creatorId: event.creatorId,
-    participants: event.participants,
-    maxParticipants: event.maxParticipants,
-    lair: event.lairDetails && event.lairDetails.length > 0 ? {
-      id: event.lairDetails[0].id,
-      name: event.lairDetails[0].name,
-    } : undefined,
-  }));
 }
 
 // Create a single event
@@ -939,7 +838,10 @@ export async function getEventsForUser(
           $match: {
             $expr: {$eq: ["$_id", "$$lairId"]}
           }
-        }
+        },
+        // Seulement ce que la fiche lit : le lieu entier recopié dans chaque
+        // événement coûtait plus que la requête elle-même.
+        {$project: {_id: 1, name: 1, location: 1, address: 1, owners: 1}},
       ],
       as: "lairDetails"
     }
@@ -1029,7 +931,8 @@ export async function getEventById(eventId: string): Promise<Event | null> {
             $match: {
               $expr: {$eq: ["$_id", "$$lairId"]}
             }
-          }
+          },
+          {$project: {_id: 1, name: 1, location: 1, address: 1}},
         ],
         as: "lairDetails"
       }
