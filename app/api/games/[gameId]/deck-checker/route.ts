@@ -1,3 +1,4 @@
+import { RATE_LIMITS, rateLimitResponse } from "@/lib/net/rate-limit";
 import {getGameBySlugOrId} from "@/lib/db/games";
 import {NextResponse} from "next/server";
 import {parseDeckList, serializeDeckList} from "@/app/[locale]/(app)/games/riftbound/deck-checker/utils";
@@ -10,6 +11,9 @@ import {
 
 export async function POST(request: Request, { params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = await params;
+
+  const limited = await rateLimitResponse(request, RATE_LIMITS.deckChecker);
+  if (limited) return limited;
 
   const game = await getGameBySlugOrId(gameId);
 

@@ -1,5 +1,6 @@
 "use server";
 
+import { isRateLimited, RATE_LIMITS } from "@/lib/net/rate-limit.ts";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 
@@ -109,6 +110,11 @@ export async function requestFriendshipAction(userId: string): Promise<ProfileAc
 
     if (viewerId === userId) {
       return { success: false, error: "SELF" };
+    }
+
+    // Trente demandes par heure : au-delà, c'est un script, pas une personne.
+    if (await isRateLimited(RATE_LIMITS.friendRequest, `user:${viewerId}`)) {
+      return { success: false, error: "FAILED" };
     }
 
     const [target, requester, alreadyFriends, pending] = await Promise.all([

@@ -1,3 +1,4 @@
+import { RATE_LIMITS, rateLimitResponse } from "@/lib/net/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { auth } from "@/lib/auth";
@@ -303,6 +304,9 @@ export async function GET(request: NextRequest) {
   if (query.length < 2) {
     return NextResponse.json({ games: [], cards: [], lairs: [], events: [], rules: [] } satisfies SearchResponse);
   }
+
+  const limited = await rateLimitResponse(request, RATE_LIMITS.search);
+  if (limited) return limited;
 
   const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
   const regex = { $regex: escapeRegex(query), $options: "i" };

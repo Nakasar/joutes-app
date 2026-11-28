@@ -323,6 +323,10 @@ async function loadWishlistOffers(userId: string, friendIds: string[], groups: P
     .distinct("cardId", { wishlistId: { $in: wishlists.map((wishlist) => wishlist._id) } });
   if (cardIds.length === 0) return [];
 
+  // Ni ami ni groupe : personne chez qui chercher, et un `$or` vide est refusé
+  // par MongoDB (l'e-mail du 23 nov. 2026 a perdu cette section pour un lecteur).
+  if (friendIds.length === 0 && groups.length === 0) return [];
+
   const groupNames = new Map(groups.map((group) => [group.id, group.name]));
   const sellLists = await db
     .collection("sellLists")

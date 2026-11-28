@@ -1,3 +1,4 @@
+import { RATE_LIMITS, rateLimitResponse } from "@/lib/net/rate-limit";
 import { NextResponse } from "next/server";
 import { getGameBySlugOrId } from "@/lib/db/games";
 import { getCatalogLanguages } from "@/lib/db/cards";
@@ -8,6 +9,9 @@ const MIN_TEXT_LENGTH = 3;
 
 export async function POST(request: Request, { params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = await params;
+
+  const limited = await rateLimitResponse(request, RATE_LIMITS.scannerMatch);
+  if (limited) return limited;
 
   const game = await getGameBySlugOrId(gameId);
   if (!game) {

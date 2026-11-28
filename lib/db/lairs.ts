@@ -377,13 +377,16 @@ export async function searchLairs(options: SearchLairsOptions): Promise<Paginate
 }
 
 export async function getLairById(id: string): Promise<Lair | null> {
-  
+  // Une adresse forgée (`/lairs/abc`) n'est pas un lieu : introuvable, pas une
+  // erreur 500 (`new ObjectId` lève sur un identifiant mal formé).
+  if (!ObjectId.isValid(id)) return null;
+
   const lair = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(id) });
   return lair ? toLair(lair) : null;
 }
 
 export async function getLairsByIds(ids: string[]): Promise<Lair[]> {
-  const objectIds = ids.map(id => new ObjectId(id));
+  const objectIds = ids.filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id));
   const lairs = await db.collection(COLLECTION_NAME).find({
     _id: { $in: objectIds }
   }).toArray();
