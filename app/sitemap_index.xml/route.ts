@@ -1,3 +1,4 @@
+import { CRAWLER_CACHE_CONTROL } from "@/lib/net/crawler-cache";
 import {NextResponse} from "next/server";
 import db from "@/lib/mongodb";
 import {Game} from "@/lib/types/Game";
@@ -45,13 +46,12 @@ export async function GET() {
       ...dynamicSitemaps.map(sitemap => `https://www.joutes.app/sitemaps/${sitemap.id}.xml`),
     ];
 
-    console.log('Generated sitemaps:', sitemaps);
-
     const sitemapIndexXML = buildSitemapIndex(sitemaps);
 
     return new NextResponse(sitemapIndexXML, {
       headers: {
         "Content-Type": "application/xml",
+        "Cache-Control": CRAWLER_CACHE_CONTROL,
         "Content-Length": Buffer.byteLength(sitemapIndexXML).toString(),
       },
     });

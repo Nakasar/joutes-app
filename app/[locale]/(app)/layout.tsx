@@ -15,7 +15,8 @@ import HalloweenDecorations from "@/components/HalloweenDecorations.tsx";
 import WebMcpTools from "@/components/WebMcpTools.tsx";
 import { Toaster } from "@/components/ui/sonner.tsx";
 import {NextIntlClientProvider} from "next-intl";
-import {setRequestLocale} from "next-intl/server";
+import {getMessages, setRequestLocale} from "next-intl/server";
+import {pickMessages, SHARED_NAMESPACES} from "@/i18n/client-messages.ts";
 import {locale as rootLocale} from "next/root-params";
 import {notFound} from "next/navigation";
 import {locales, type Locale} from "@/i18n/config.ts";
@@ -196,8 +197,13 @@ async function LocalizedFrame({ children }: { children: React.ReactNode }) {
   // rouvriraient le trou que cette migration vient de fermer.
   setRequestLocale(locale);
 
+  // Le navigateur ne reçoit ici que les textes communs : chaque section ajoute
+  // les siens (`i18n/client-messages.ts`). Tout le catalogue pesait ~350 Ko
+  // dans chaque page.
+  const messages = pickMessages(await getMessages({ locale }), SHARED_NAMESPACES);
+
   return (
-    <NextIntlClientProvider>
+    <NextIntlClientProvider locale={locale} messages={messages}>
       <HtmlLang locale={locale} />
       {/* Expose les outils du site aux agents IA (WebMCP) ; ne rend rien.
 
